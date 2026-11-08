@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Generated searches (`GET /api/v1/search-profiles/{id}/searches`): for every job board,
+  the profile's search in that board's syntax and a URL ready to open. `boolean` joins
+  titles with OR, keywords with AND and exclusions with NOT; `minus` uses -word for
+  exclusions; `keywords` gets one search per title, without exclusions. The profile's
+  work modes are listed so each board's own filter can be set.
+- `minus` job board syntax (e.g. Indeed).
+
 - Job boards (`/api/v1/job-boards`): create, view, list, edit and delete the job boards
   you search in, each with a search URL template (an http(s) URL with `{query}` and
   optionally `{location}`) and a search syntax (`boolean` or `keywords`).

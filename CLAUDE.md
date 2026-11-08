@@ -20,7 +20,8 @@ Backend con `core` completo (config, sesión por request, contrato de errores, a
 - [x] Alcance de la fase 0: `docs/fase0.md` (búsqueda asistida, portales como datos)
 - [x] Spec + implementación: `discovery/search_profiles`
 - [x] Spec + implementación: `discovery/job_boards`
-- [ ] Specs 3-5 de la fase 0: `generated_searches`, `inbox`, `ats_companies`
+- [x] Spec + implementación: `discovery/generated_searches`
+- [ ] Specs 4-6 de la fase 0: `inbox`, `ats_companies`, `public_feeds`
 
 ## Criterio: evitar la sobreingeniería
 
