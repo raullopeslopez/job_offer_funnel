@@ -1,0 +1,22 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install just
+        run: uv tool install rust-just
+      - name: Install dependencies
+        run: uv sync --locked
+        working-directory: backend
+      - name: Run CI
+        run: just ci

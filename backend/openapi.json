@@ -1,0 +1,48 @@
+{
+  "components": {
+    "schemas": {
+      "HealthRead": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthRead",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Job Offer Funnel",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "description": "Public liveness check that also verifies the database connection.",
+        "operationId": "read_health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Health",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  }
+}
