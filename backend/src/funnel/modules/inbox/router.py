@@ -5,10 +5,9 @@ from uuid import UUID
 
 import httpx2
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from funnel.core.clock import Clock, get_clock
-from funnel.core.db import get_session
+from funnel.core.db import SessionDep
 from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.service import build_application_service
@@ -32,7 +31,7 @@ offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
 
 def get_offer_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: SessionDep,
     clock: Annotated[Clock, Depends(get_clock)],
 ) -> OfferService:
     # Composition root. One session for all three services: promoting is all or nothing.
@@ -154,7 +153,7 @@ async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
 
 
 def get_feed_import_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: SessionDep,
     client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)],
 ) -> FeedImportService:
     return FeedImportService(

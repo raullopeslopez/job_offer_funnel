@@ -1,15 +1,12 @@
-from typing import Annotated
+from fastapi import APIRouter
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from funnel.core.db import get_session
+from funnel.core.db import SessionDep
 from funnel.modules.metrics import queries
 from funnel.modules.metrics.schemas import ConversionByChannelRead, ConversionRead, PipelineRead
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
-Session = Annotated[AsyncSession, Depends(get_session)]
+Session = SessionDep
 
 
 @router.get("/conversion")
