@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from funnel.core import health
 from funnel.core.auth import require_token
 from funnel.core.config import Settings
-from funnel.core.errors import ProblemRead, register_error_handlers
+from funnel.core.errors import ProblemRead, ValidationProblemRead, register_error_handlers
 from funnel.core.logging import configure_logging
 from funnel.modules.applications import router as applications
 
@@ -40,8 +40,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "description": "Missing or invalid token",
             },
             HTTPStatus.UNPROCESSABLE_CONTENT: {
-                "model": ProblemRead,
-                "description": "Invalid request",
+                "model": ValidationProblemRead,
+                "description": "Invalid request (`validation-error`)",
             },
         },
     )

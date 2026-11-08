@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter
 
-from funnel.core.errors import ProblemRead
+from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.modules.applications.schemas import ApplicationRead, TransitionCreate, TransitionRead
 
 router = APIRouter(prefix="/applications", tags=["applications"])
@@ -29,9 +29,9 @@ async def read_application(application_id: UUID) -> ApplicationRead:
             "description": "Transition not allowed from the current state (`invalid-transition`)",
         },
         HTTPStatus.UNPROCESSABLE_CONTENT: {
-            "model": ProblemRead,
-            "description": "Invalid body, or date in the future or before the previous "
-            "transition (`invalid-transition-date`)",
+            "model": ValidationProblemRead | ProblemRead,
+            "description": "Invalid body (`validation-error`), or date in the future or "
+            "before the previous transition (`invalid-transition-date`)",
         },
     },
 )

@@ -56,12 +56,23 @@ Un patrón entra cuando aparece el problema concreto que resuelve.
 
 ## API
 
-- REST, `/api/v1`, recursos en plural y en inglés. Sub-recursos solo con dependencia real.
-- Transición de fase: `POST /applications/{id}/transitions {to_stage, date, notes}`. Nunca `PATCH` sobre la fase.
-- Métricas de solo lectura: `GET /metrics/...`.
-- Errores RFC 9457 (problem+json), con un `type` por cada error de dominio.
-- IDs UUIDv7; fechas ISO 8601 UTC; listados con `limit`/`offset`, filtros y `sort`.
+- **Recursos**: REST, `/api/v1`, sustantivos en plural y en inglés. Sub-recursos solo con dependencia real. Una acción que no encaja se modela como un recurso que se crea (p. ej. `POST /applications/{id}/transitions {to_stage | outcome, occurred_on, note}`). Nunca `PATCH` sobre la fase.
+- **Métodos**: `GET` lee · `POST` crea (201) · `PATCH` modifica parcialmente (nunca `PUT`) · `DELETE` borra (204).
+- **Datos**: JSON en `snake_case`; enums en minúscula; IDs UUIDv7; fechas ISO 8601 (`occurred_on` para días, `*_at` para instantes UTC).
+- **Colecciones**: paginación offset (`limit`/`offset`), filtros por query y `sort` (`-campo` = descendente).
+- **Versionado**: cambio compatible (añadir) → sin más; cambio que rompe (quitar o renombrar un campo o un slug de error, cambiar un tipo) → `/v2`. El test de contrato detecta cualquier cambio.
 - Schemas `XCreate`/`XUpdate`/`XRead`; nunca exponer modelos ORM.
+
+### Contrato de errores (`core/errors.py`)
+
+- **Toda** respuesta de error es problem+json (RFC 9457): `type`, `title`, `status`, `detail` opcional.
+- **Controlados**: cada subclase de `AppError` es un `type` estable (`/problems/<slug>`); renombrar un slug rompe el contrato. Las reglas de dominio lanzan subclases de `DomainError` con un slug específico (p. ej. `invalid-transition`). Nunca se lanza `HTTPException` desde un módulo.
+- **Inesperados**: cualquier otra excepción → `500 /problems/internal-error` con `detail` genérico; el traceback va al log. Nunca se expone el mensaje real.
+- **Códigos**: 401 token (con `WWW-Authenticate: Bearer`) · 404 no existe · 409 conflicto con el estado actual · 422 datos inválidos (`validation-error` con `errors: [{field, message}]`, o un slug de regla de valor) · 500 inesperado.
+- Los errores de BD suben como 500, salvo los que tienen significado de negocio (p. ej. unicidad → 409), que el repository traduce a un error de dominio.
+- `title`/`detail` en inglés, para humanos; el cliente decide por `type` (también para la futura i18n).
+- Cada endpoint declara en `responses=` los errores que puede devolver (401 y 422 vienen del router `/api/v1`).
+- Aplazados: request/correlation id (disparador: deploy con logs concurrentes), URIs absolutas en `type`, campo `instance`.
 
 ## Clean code
 

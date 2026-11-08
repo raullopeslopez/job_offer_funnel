@@ -32,6 +32,24 @@
         "title": "ApplicationRead",
         "type": "object"
       },
+      "FieldErrorRead": {
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ],
+        "title": "FieldErrorRead",
+        "type": "object"
+      },
       "HealthRead": {
         "properties": {
           "status": {
@@ -57,7 +75,7 @@
         "type": "string"
       },
       "ProblemRead": {
-        "description": "RFC 9457 problem details, as returned by every error response (for OpenAPI docs).",
+        "description": "Problem details returned by every error response.",
         "properties": {
           "detail": {
             "anyOf": [
@@ -208,6 +226,49 @@
         ],
         "title": "TransitionRead",
         "type": "object"
+      },
+      "ValidationProblemRead": {
+        "description": "Problem details for invalid requests, with one entry per invalid field.",
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/FieldErrorRead"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "errors"
+        ],
+        "title": "ValidationProblemRead",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -273,11 +334,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemRead"
+                  "$ref": "#/components/schemas/ValidationProblemRead"
                 }
               }
             },
-            "description": "Invalid request"
+            "description": "Invalid request (`validation-error`)"
           }
         },
         "security": [
@@ -346,11 +407,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemRead"
+                  "$ref": "#/components/schemas/ValidationProblemRead"
                 }
               }
             },
-            "description": "Invalid request"
+            "description": "Invalid request (`validation-error`)"
           }
         },
         "security": [
@@ -433,11 +494,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemRead"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationProblemRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemRead"
+                    }
+                  ],
+                  "title": "Response 422 Create Transition Api V1 Applications  Application Id  Transitions Post"
                 }
               }
             },
-            "description": "Invalid body, or date in the future or before the previous transition (`invalid-transition-date`)"
+            "description": "Invalid body (`validation-error`), or date in the future or before the previous transition (`invalid-transition-date`)"
           }
         },
         "security": [

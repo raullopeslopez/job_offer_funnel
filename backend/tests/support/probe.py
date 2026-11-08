@@ -9,6 +9,7 @@ from funnel.core.errors import AppError, DomainError, NotFoundError, Unauthorize
 from funnel.main import create_app
 
 PROBE_TOKEN = "probe-token"
+LEAKY_MESSAGE = "connection to db password=s3cret failed"
 
 RAISABLE_ERRORS: dict[str, type[AppError]] = {
     "domain": DomainError,
@@ -35,5 +36,9 @@ def build_probe_app() -> FastAPI:
     @app.get("/probe/items/{item_id}")
     async def read_item(item_id: int) -> dict[str, int]:
         return {"item_id": item_id}
+
+    @app.get("/probe/crash")
+    async def crash() -> None:
+        raise RuntimeError(LEAKY_MESSAGE)
 
     return app

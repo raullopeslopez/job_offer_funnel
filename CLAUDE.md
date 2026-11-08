@@ -4,7 +4,7 @@ Dashboard para gestionar la búsqueda de empleo como un funnel, desde el punto d
 
 ## Estilo de respuesta
 
-Las respuestas que no sean breves terminan con una última línea `**Resumen:** <una frase>`, después de cualquier pregunta o siguiente paso.
+Responder siempre en español, aunque el código, las specs y la salida de las herramientas estén en inglés. Las respuestas que no sean breves terminan con una última línea `**Resumen:** <una frase>`, después de cualquier pregunta o siguiente paso.
 
 ## Estado actual
 
