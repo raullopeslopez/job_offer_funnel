@@ -24,6 +24,8 @@ Backend con `core` completo (config, sesión por request, contrato de errores, a
 - [x] Spec + implementación: `inbox/inbox`
 - [x] Spec + implementación: `inbox/public_feeds` (primera integración externa)
 - [ ] Spec 5 de la fase 0: `ats_companies` (aplazable: el flujo ya está completo sin ella)
+- [x] Alcance del frontend: `docs/frontend.md` (stack, tooling, una pantalla por PR)
+- [ ] `chore/frontend-setup`
 
 ## Criterio: evitar la sobreingeniería
 
