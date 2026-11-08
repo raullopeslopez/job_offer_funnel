@@ -1,6 +1,6 @@
 # Job Offer Funnel
 
-Dashboard para gestionar la búsqueda de empleo como un funnel, desde el punto de vista del candidato. Dominio: `docs/funnel.md`. Términos ES → EN: `docs/glossary.md`.
+Dashboard para gestionar la búsqueda de empleo como un funnel, desde el punto de vista del candidato. Dominio: `docs/funnel.md`. Términos ES → EN: `docs/glossary.md`. Alcance actual: `docs/mvp.md`.
 
 ## Estilo de respuesta
 
@@ -11,10 +11,12 @@ Las respuestas que no sean breves terminan con una última línea `**Resumen:** 
 Greenfield: existen `CLAUDE.md`, `docs/` y `.claude/` (rules y skill). Todavía no existen `backend/`, `specs/`, `Justfile` ni CI, así que los comandos `just` fallarán hasta crear el esqueleto. Actualizar esta sección al cerrar cada hito.
 
 - [x] Concepto, stack, convenciones, harness
-- [ ] Alcance del MVP
-- [ ] Esqueleto del backend (pyproject, core, Justfile, docker-compose, conftest con xdist, CI) + hooks de Claude Code (ruff tras editar, `just check` al terminar)
-- [ ] Primera spec: `specs/applications/stage_transitions.feature`
-- [ ] Primer módulo completo (`applications`)
+- [x] Alcance del MVP: `docs/mvp.md` (solo API; las features fuera del MVP no se implementan)
+- [ ] Esqueleto del backend (pyproject, core, Justfile, docker-compose, conftest con xdist, CI) + hooks de Claude Code (ruff tras editar, `just check` al terminar). Tests en el Justfile con `pytest -q --tb=short -rfE` (salida escueta; descartado un subagent test-runner, solo se reconsidera si `/usage` lo justifica)
+- [ ] Spec + implementación: `applications/stage_transitions`
+- [ ] Spec + implementación: `applications/manage_applications`
+- [ ] Spec + implementación: `companies/manage_companies`
+- [ ] Spec + implementación: `metrics/funnel_metrics`
 
 ## Criterio: evitar la sobreingeniería
 
