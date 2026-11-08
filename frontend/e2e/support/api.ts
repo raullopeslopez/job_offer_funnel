@@ -58,6 +58,14 @@ export class Api {
     return this.post(`/offers/${offerId}/promotion`, {});
   }
 
+  addWatchedCompany(
+    name: string,
+    ats: Schemas["Ats"] = "greenhouse",
+    board = name.toLowerCase(),
+  ): Promise<Schemas["WatchedCompanyRead"]> {
+    return this.post("/watched-companies", { name, ats, board });
+  }
+
   async addCompany(name: string, website?: string): Promise<Schemas["CompanyRead"]> {
     const company = await this.post<Schemas["CompanyRead"]>("/companies", { name, website });
     this.companyIds.set(name, company.id);
