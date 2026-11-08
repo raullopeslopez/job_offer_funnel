@@ -10,7 +10,8 @@ Feature: Public feeds
   - none of its excluded keywords appears in the title.
   Words are compared ignoring case. Offers already in the inbox are skipped.
   Every imported offer keeps the link to the original posting and its feed as source.
-  To respect each feed's terms, a feed can be imported at most once every 6 hours.
+  To respect each feed's terms, a feed can be imported at most once every 6 hours,
+  and the pending offers of a feed that are no longer in it are discarded as expired.
 
   Background:
     Given the time is 2026-03-10 09:00
@@ -85,6 +86,23 @@ Feature: Public feeds
     And the feed "jobicy" publishes no offers
     When I import the feed "jobicy" for the profile "Backend"
     Then the import found 0 offers, 0 matching, 0 added and 0 already in the inbox
+
+  Scenario: Pending offers that left the feed are discarded as expired
+    Given the feed "remoteok" was imported at 2026-03-10 01:00 with:
+      | title            | company | description     | url                    |
+      | Backend Engineer | Acme    | Python services | https://remoteok.com/1 |
+      | Python Developer | Globex  | Python services | https://remoteok.com/2 |
+    And I promoted the offer "Python Developer"
+    And the feed "remoteok" publishes no offers
+    When I import the feed "remoteok" for the profile "Backend"
+    Then the offer "Backend Engineer" is "discarded" with reason "expired"
+    And the offer "Python Developer" is "promoted"
+
+  Scenario: Offers added by hand never expire
+    Given an offer for "Acme" as "Backend Engineer"
+    And the feed "remoteok" publishes no offers
+    When I import the feed "remoteok" for the profile "Backend"
+    Then the offer "Backend Engineer" is "pending"
 
   Scenario: A feed that is not available adds nothing and can be retried at once
     Given the feed "remotive" is not available
