@@ -8,6 +8,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-08
+
+First release: the MVP. The API tracks applications through the funnel and answers
+where applications are lost and what is in progress.
+
 ### Added
 
 - Funnel metrics: `GET /api/v1/metrics/conversion` (conversion from each stage to the
@@ -39,6 +44,7 @@ While the version is `0.x`, the API may change without a major version bump.
   invalid field; unexpected errors return a generic 500 without internal details.
 - Bearer token authentication for every `/api/v1` endpoint.
 - `GET /health`, which also checks the database connection.
+- `just up` runs the API and its database with Docker Compose (port 8080), migrating on start.
 - Development setup: Justfile, Docker Compose Postgres, pre-commit, GitHub Actions CI,
   and a parallel test suite (unit, integration, BDD, migrations and API contract).
 
@@ -46,3 +52,6 @@ While the version is `0.x`, the API may change without a major version bump.
 
 - The backend runs on Python 3.14.
 - CI only runs for backend-related changes and cancels superseded runs.
+
+[Unreleased]: https://github.com/raullopeslopez/job_offer_funnel/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/raullopeslopez/job_offer_funnel/releases/tag/v0.1.0

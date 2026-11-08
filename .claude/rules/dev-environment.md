@@ -19,3 +19,4 @@ paths:
 - CI (`.github/workflows/backend.yml`): instala just con `uv tool install rust-just` y ejecuta `just ci`. No duplicar pasos del Justfile en el workflow.
 - Hooks de Claude Code (`.claude/hooks/`): `format_python.py` (PostToolUse, solo `ruff format`) y `check_on_stop.py` (Stop: `just check` si hay cambios en `backend/`, bloquea si falla).
 - pre-commit: ruff y mypy vía `uv run`; ruff con `--project backend`, porque recibe rutas relativas a la raíz.
+- **Uso diario**: `just up` levanta la API (perfil `app` de compose, puerto `8080`) y la BD; migra al arrancar. `just dev` y `just db-up` solo levantan la BD. Ambos usan el mismo volumen `pgdata`: son datos reales, y `just db-reset` los borra.

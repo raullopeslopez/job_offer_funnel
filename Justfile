@@ -18,9 +18,21 @@ setup:
     just db-up
     just migrate
 
+# Run the API and its database in Docker, migrated (Swagger UI at http://localhost:8080/docs)
+up:
+    {{compose}} --profile app up -d --build --wait
+
+# Stop the API and the database (data is kept)
+down:
+    {{compose}} --profile app down
+
+# Follow the API logs
+logs:
+    {{compose}} --profile app logs -f api
+
 # Start local Postgres (waits until healthy)
 db-up:
-    {{compose}} up -d --wait
+    {{compose}} up -d --wait db
 
 # Stop local Postgres
 db-down:
