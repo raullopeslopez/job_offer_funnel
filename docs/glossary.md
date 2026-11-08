@@ -90,3 +90,12 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Modalidad | `work_mode`: `remote` · `hybrid` · `onsite` |
 | Sintaxis de búsqueda | `syntax`: `boolean` · `minus` · `keywords` |
 | Plantilla de URL de búsqueda | `search_url_template` |
+
+## Bandeja
+
+| ES | EN |
+|----|----|
+| Estado de una oferta descubierta | `status`: `pending` · `discarded` · `promoted` |
+| Motivo de descarte | `discard_reason` |
+| Pasar a candidatura | `promote` |
+| Devolver a pendiente | `restore` |

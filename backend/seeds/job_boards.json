@@ -18,5 +18,20 @@
     "name": "Jobicy",
     "search_url_template": "https://jobicy.com/jobs?search_keywords={query}",
     "syntax": "keywords"
+  },
+  {
+    "name": "Welcome to the Jungle",
+    "search_url_template": "https://www.welcometothejungle.com/en/jobs?query={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Glassdoor",
+    "search_url_template": "https://www.glassdoor.com/Job/jobs.htm?sc.keyword={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Himalayas",
+    "search_url_template": "https://himalayas.app/jobs?search={query}",
+    "syntax": "keywords"
   }
 ]

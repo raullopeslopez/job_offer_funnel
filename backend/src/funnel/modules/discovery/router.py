@@ -195,7 +195,15 @@ async def update_job_board(
 
 
 @job_boards_router.delete(
-    "/{job_board_id}", status_code=HTTPStatus.NO_CONTENT, responses=_JOB_BOARD_NOT_FOUND
+    "/{job_board_id}",
+    status_code=HTTPStatus.NO_CONTENT,
+    responses={
+        **_JOB_BOARD_NOT_FOUND,
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "Offers in the inbox come from this job board (`in-use`)",
+        },
+    },
 )
 async def delete_job_board(job_board_id: UUID, service: JobBoardServiceDependency) -> None:
     await service.delete(job_board_id)

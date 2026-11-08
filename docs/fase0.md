@@ -41,9 +41,9 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 |--------|----------|-------|
 | LinkedIn | `boolean` | Sin scraping (términos de uso) |
 | Indeed | `minus` | |
-| Glints, Kalibrr, Dealls, Tech in Asia, Glassdoor, Snaphunt, Welcome to the Jungle | `keywords` | Sudeste asiático la mayoría |
-| Wellfound | `keywords` | Filtra más por rol que por texto: puede no admitir bien `{query}` |
-| RemoteOK | `keywords` | API JSON pública (`remoteok.com/api`): candidata a ingesta automática, con atribución |
+| Welcome to the Jungle, Glassdoor | `keywords` | En el seed. Plantillas sacadas de URLs indexadas (`?query=`, `?sc.keyword=`) |
+| Wellfound | — | La búsqueda va en la ruta como slug (`/role/r/software-engineer`), no como texto libre: no encaja en `{query}` |
+| RemoteOK | — | Busca por etiquetas en la ruta (`/remote-python-jobs`), sin parámetro de texto fiable. API JSON pública (`remoteok.com/api`): mejor por la spec 6 |
 
 **Candidatos encontrados** (búsqueda del 2026-11-08; condiciones de uso sin verificar):
 
@@ -51,7 +51,7 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 |--------|----------------|-------|
 | We Work Remotely | RSS por categoría | El tablero remoto más grande según varias fuentes. Plantilla confirmada: `https://weworkremotely.com/remote-jobs/search?term={query}` (`keywords`) |
 | Remotive | RSS público (24 h de retraso) | Pide no republicar sus ofertas en otros portales |
-| Himalayas | API pública | Exige atribución y enlace a la fuente. Plantilla de la web sin confirmar (`?search=` o `?q=`): copiarla de una búsqueda real |
+| Himalayas | API pública | Exige atribución y enlace a la fuente. En el seed con `?search=` (de un ejemplo de terceros) |
 | Jobicy | API pública | Filtro por región APAC y zona horaria. Plantilla probable: `https://jobicy.com/jobs?search_keywords={query}` (`keywords`) |
 | Remote Rocketship | No (de pago) | Ofertas que no salen en LinkedIn; filtro por Asia |
 | Jobgether | No | Ofertas remotas por región (Asia) |
@@ -62,6 +62,7 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 
 | Fuera | Entra cuando... |
 |-------|-----------------|
+| Portales asiáticos: Glints, Kalibrr, Tech in Asia, Snaphunt, Dealls | La búsqueda se centre en Asia; se añaden pegando la URL de una búsqueda real (su plantilla no se puede sacar de URLs indexadas) |
 | Consulta periódica de los ATS (jobs, procrastinate) | Lanzarla a mano se haga pesado |
 | Lectura de alertas por email | Dar de alta ofertas a mano sea el cuello de botella |
 | Scoring de encaje | La bandeja tenga más ofertas de las que se revisan |

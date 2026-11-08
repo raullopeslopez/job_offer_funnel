@@ -84,7 +84,11 @@ layers = ["router", "service", "repository", "models", "domain"]
 [[tool.importlinter.contracts]]
 name = "domains are framework-free"
 type = "forbidden"
-source_modules = ["funnel.modules.applications.domain", "funnel.modules.discovery.domain"]
+source_modules = [
+    "funnel.modules.applications.domain",
+    "funnel.modules.discovery.domain",
+    "funnel.modules.inbox.domain",
+]
 forbidden_modules = ["fastapi", "starlette", "pydantic", "sqlalchemy"]
 
 [[tool.importlinter.contracts]]
@@ -100,6 +104,12 @@ containers = ["funnel.modules.discovery"]
 layers = ["router", "service", "repository", "models", "domain"]
 
 [[tool.importlinter.contracts]]
+name = "inbox layers"
+type = "layers"
+containers = ["funnel.modules.inbox"]
+layers = ["router", "service", "repository", "models", "domain"]
+
+[[tool.importlinter.contracts]]
 name = "metrics layers"
 type = "layers"
 containers = ["funnel.modules.metrics"]
@@ -112,10 +122,19 @@ modules = [
     "funnel.modules.applications",
     "funnel.modules.companies",
     "funnel.modules.discovery",
+    "funnel.modules.inbox",
     "funnel.modules.metrics",
 ]
 # The stage and channel enums are the vocabulary metrics reports in.
-ignore_imports = ["funnel.modules.metrics.** -> funnel.modules.applications.domain"]
+ignore_imports = [
+    # The stage and channel enums are the shared vocabulary of the funnel.
+    "funnel.modules.metrics.** -> funnel.modules.applications.domain",
+    "funnel.modules.inbox.** -> funnel.modules.applications.domain",
+    # Promoting an offer creates its company and application through their services.
+    "funnel.modules.inbox.** -> funnel.modules.companies.service",
+    "funnel.modules.inbox.** -> funnel.modules.applications.service",
+    "funnel.modules.inbox.** -> funnel.modules.applications.schemas",
+]
 
 [dependency-groups]
 dev = [
