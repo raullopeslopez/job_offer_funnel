@@ -8,3 +8,4 @@ class Settings(BaseSettings):
     database_url: str
     auth_token: SecretStr
     log_level: str = "INFO"
+    timezone: str = "Europe/Madrid"

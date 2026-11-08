@@ -2,7 +2,7 @@
 name = "funnel"
 version = "0.1.0"
 description = "Job search funnel API"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.20.1",
     "asyncpg>=0.32.0",
@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings>=2.16.2",
     "sqlalchemy[asyncio]>=2.1.8",
     "structlog>=26.1.0",
+    "tzdata>=2026.6",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -22,7 +23,7 @@ packages = ["src/funnel"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py314"
 extend-exclude = ["migrations/versions"]
 
 [tool.ruff.lint]
@@ -38,7 +39,7 @@ max-args = 3
 ban-relative-imports = "all"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "PLR0913"]
+"tests/**" = ["PLR2004", "PLR0913", "PLR0917"]  # pytest injects fixtures by name
 
 [tool.mypy]
 strict = true
@@ -73,6 +74,18 @@ name = "core does not depend on modules"
 type = "forbidden"
 source_modules = ["funnel.core"]
 forbidden_modules = ["funnel.modules"]
+
+[[tool.importlinter.contracts]]
+name = "applications layers"
+type = "layers"
+containers = ["funnel.modules.applications"]
+layers = ["router", "service", "repository", "models", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "applications domain is framework-free"
+type = "forbidden"
+source_modules = ["funnel.modules.applications.domain"]
+forbidden_modules = ["fastapi", "starlette", "pydantic", "sqlalchemy"]
 
 [dependency-groups]
 dev = [

@@ -55,6 +55,7 @@ def test_app_errors_are_rendered_as_problem_details(
         pytest.param("/probe/errors/domain", id="app-error"),
         pytest.param("/probe/items/not-a-number", id="validation-error"),
         pytest.param("/does-not-exist", id="unknown-route"),
+        pytest.param("/probe/crash", id="unexpected-error"),
     ],
 )
 def test_error_responses_use_problem_media_type(probe_client: TestClient, path: str) -> None:
@@ -65,12 +66,33 @@ def test_error_responses_use_problem_media_type(probe_client: TestClient, path: 
     assert response.headers["content-type"] == "application/problem+json"
 
 
-def test_validation_error_lists_invalid_fields(probe_client: TestClient) -> None:
+def test_validation_error_lists_each_invalid_field_with_a_message(
+    probe_client: TestClient,
+) -> None:
     # Act
     response = probe_client.get("/probe/items/not-a-number")
 
     # Assert
-    assert [error["loc"] for error in response.json()["errors"]] == [["path", "item_id"]]
+    errors = response.json()["errors"]
+    assert [(sorted(error), error["field"]) for error in errors] == [
+        (["field", "message"], "path.item_id")
+    ]
+
+
+def test_unexpected_error_is_generic_internal_error_problem(probe_client: TestClient) -> None:
+    # Act
+    response = probe_client.get("/probe/crash")
+
+    # Assert
+    assert (response.status_code, response.json()) == (
+        500,
+        {
+            "type": "/problems/internal-error",
+            "title": "Internal error",
+            "status": 500,
+            "detail": "An unexpected error occurred.",
+        },
+    )
 
 
 def test_unknown_route_is_not_found_problem(probe_client: TestClient) -> None:

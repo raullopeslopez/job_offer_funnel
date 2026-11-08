@@ -21,6 +21,7 @@ No se escribe código de producción sin una spec aprobada. Si cambia el comport
 
 ## 3. Rojo
 9. Steps BDD en `backend/tests/bdd/`. Ejecutar `just test-bdd` y confirmar que **fallan por el motivo esperado** (no por errores de import o de setup).
+   - Si los `Given` necesitan estado persistido que ningún endpoint puede crear todavía: adelantar aquí `models.py` + migración y usar factories (`tests/support/factories.py`). Así el rojo es "endpoint no implementado" y no "la tabla no existe".
 10. Commit: `test(<modulo>): add failing steps for <feature>`.
 
 ## 4. Verde
@@ -36,7 +37,7 @@ No se escribe código de producción sin una spec aprobada. Si cambia el comport
 ## 5. Cierre
 15. Comprobar la Definition of Done del `CLAUDE.md`.
 16. Si se cierra un hito, actualizar "Estado actual" en el `CLAUDE.md`.
-17. Merge a `main` (PR + squash si hay remoto; si no, merge local).
+17. Push de la rama, `gh pr create` hacia `main` (resumen + evidencia) y `gh pr checks`. **El merge lo hace el usuario**: no mergear nunca.
 
 ## Reglas durante el ciclo
 - Ante la duda sobre el comportamiento: preguntar, no inventar. La spec manda.

@@ -42,26 +42,45 @@ backend/src/funnel/
 - Sesión por request vía dependency (`get_session` en `core/db.py`): `commit` al terminar sin errores, `rollback` si hay excepción.
 - Services y repositories nunca hacen `commit`; como mucho `flush` para obtener IDs.
 
+## Base de datos
+
+- Enums como `VARCHAR` + `CHECK` (no enums nativos de PG): añadir un valor no exige migrar un tipo. Un `Enum` de SQLAlchemy por columna, para que cada CHECK tenga su propio nombre.
+- IDs `uuid.uuid7()` de la stdlib: ordenables por tiempo, desempatan filas creadas el mismo día.
+- **Índices**: siempre uno en **cada clave foránea** (Postgres no los crea solo, y sin ellos cada lookup por padre y cada borrado en cascada recorre la tabla entera). Las PK y los `UNIQUE` ya traen el suyo. Cualquier otro índice está aplazado: disparador = una consulta lenta medida con `EXPLAIN ANALYZE`, o una tabla de más de ~10.000 filas.
+- Las migraciones autogeneradas se revisan siempre a mano antes del commit.
+
 ## Patrones
 
 Un patrón entra cuando aparece el problema concreto que resuelve.
 
-- **Adoptados**: Repository, Service Layer, `Depends`, Value Objects, máquina de estados declarativa (`ALLOWED_TRANSITIONS: Mapping[Stage, frozenset[Stage]]`; los `Outcome` se permiten desde cualquier fase no terminal), métricas con SQL directo (CTEs y window functions en `metrics`, sin entidades ni repositories), `Clock` inyectado.
+- **Adoptados**: Repository, Service Layer, `Depends`, Value Objects, máquina de estados declarativa (las reglas de avance y de salida por fase son datos en `applications/domain.py`, no `if` dispersos; la fuente de verdad es `specs/applications/stage_transitions.feature`), métricas con SQL directo (CTEs y window functions en `metrics`, sin entidades ni repositories), `Clock` inyectado.
 - **Aplazados**:
   - procrastinate: con el primer job real.
   - Encolar jobs en la misma transacción: con el primer job, verificando antes que procrastinate comparte conexión con SQLAlchemy async/asyncpg.
   - Domain events: cuando una acción dispare 2 o más efectos.
   - Adapters por portal: con la fase 0.
+  - `user_id` en las tablas: solo si el producto pasa a ser multiusuario. Hoy hay un único usuario y la columna no aportaría nada.
 - **Descartados**: `BaseRepository[T]` genérico, god services, Mediator o bus de comandos, DDD completo, Specification, `Protocol` con una sola implementación.
 
 ## API
 
-- REST, `/api/v1`, recursos en plural y en inglés. Sub-recursos solo con dependencia real.
-- Transición de fase: `POST /applications/{id}/transitions {to_stage, date, notes}`. Nunca `PATCH` sobre la fase.
-- Métricas de solo lectura: `GET /metrics/...`.
-- Errores RFC 9457 (problem+json), con un `type` por cada error de dominio.
-- IDs UUIDv7; fechas ISO 8601 UTC; listados con `limit`/`offset`, filtros y `sort`.
+- **Recursos**: REST, `/api/v1`, sustantivos en plural y en inglés. Sub-recursos solo con dependencia real. Una acción que no encaja se modela como un recurso que se crea (p. ej. `POST /applications/{id}/transitions {to_stage | outcome, occurred_on, note}`). Nunca `PATCH` sobre la fase.
+- **Métodos**: `GET` lee · `POST` crea (201) · `PATCH` modifica parcialmente (nunca `PUT`) · `DELETE` borra (204).
+- **Datos**: JSON en `snake_case`; enums en minúscula; IDs UUIDv7; fechas ISO 8601 (`occurred_on` para días, `*_at` para instantes UTC).
+- **Colecciones**: paginación offset (`limit`/`offset`), filtros por query y `sort` (`-campo` = descendente).
+- **Versionado**: cambio compatible (añadir) → sin más; cambio que rompe (quitar o renombrar un campo o un slug de error, cambiar un tipo) → `/v2`. El test de contrato detecta cualquier cambio.
 - Schemas `XCreate`/`XUpdate`/`XRead`; nunca exponer modelos ORM.
+
+### Contrato de errores (`core/errors.py`)
+
+- **Toda** respuesta de error es problem+json (RFC 9457): `type`, `title`, `status`, `detail` opcional.
+- **Controlados**: cada subclase de `AppError` es un `type` estable (`/problems/<slug>`); renombrar un slug rompe el contrato. Las reglas de dominio lanzan subclases de `DomainError` con un slug específico (p. ej. `invalid-transition`). Nunca se lanza `HTTPException` desde un módulo.
+- **Inesperados**: cualquier otra excepción → `500 /problems/internal-error` con `detail` genérico; el traceback va al log. Nunca se expone el mensaje real.
+- **Códigos**: 401 token (con `WWW-Authenticate: Bearer`) · 404 no existe · 409 conflicto con el estado actual · 422 datos inválidos (`validation-error` con `errors: [{field, message}]`, o un slug de regla de valor) · 500 inesperado.
+- Los errores de BD suben como 500, salvo los que tienen significado de negocio (p. ej. unicidad → 409), que el repository traduce a un error de dominio.
+- `title`/`detail` en inglés, para humanos; el cliente decide por `type` (también para la futura i18n).
+- Cada endpoint declara en `responses=` los errores que puede devolver (401 y 422 vienen del router `/api/v1`).
+- Aplazados: request/correlation id (disparador: deploy con logs concurrentes), URIs absolutas en `type`, campo `instance`.
 
 ## Clean code
 

@@ -30,7 +30,7 @@ paths:
 ## Parametrización
 
 - Prohibidos los micro-tests que solo cambian en entrada o resultado esperado: se usa `@pytest.mark.parametrize` con `pytest.param(..., id="legible")`.
-- En Gherkin: `Esquema del escenario` + `Ejemplos`.
+- En Gherkin: `Scenario Outline` + `Examples`.
 - No se parametriza si el Arrange o el Assert cambian de estructura: son tests distintos.
 
 ## Arrange-Act-Assert
@@ -38,7 +38,7 @@ paths:
 - Bloques `# Arrange` / `# Act` / `# Assert` (sin `# Arrange` si no hay preparación).
 - Un solo Act y un solo comportamiento por test.
 - Sin `if`, bucles ni `try` en los tests.
-- En BDD: `Dado` = Arrange, `Cuando` (uno solo) = Act, `Entonces` = Assert.
+- En BDD: `Given` = Arrange, `When` (uno solo) = Act, `Then` = Assert.
 - Nombre = comportamiento: `test_rejects_transition_when_skipping_stages`.
 
 ```python

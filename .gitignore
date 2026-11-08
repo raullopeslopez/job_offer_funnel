@@ -8,15 +8,15 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Entorno
+# Environment
 .env
 .env.local
 
-# Claude Code (personal, no se versiona)
+# Claude Code (personal, not versioned)
 CLAUDE.local.md
 .claude/settings.local.json
 
-# Editor / SO
+# Editor / OS
 .vscode/
 .idea/
 .DS_Store

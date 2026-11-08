@@ -30,3 +30,11 @@ def test_rejected_token_returns_unauthorized_problem(probe_client: TestClient) -
 
     # Assert
     assert response.json()["type"] == "/problems/unauthorized"
+
+
+def test_rejected_token_announces_bearer_scheme(probe_client: TestClient) -> None:
+    # Act
+    response = probe_client.get("/probe/protected")
+
+    # Assert
+    assert response.headers["www-authenticate"] == "Bearer"
