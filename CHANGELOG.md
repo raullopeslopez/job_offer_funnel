@@ -10,6 +10,14 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Undo the latest transition of an application
+  (`DELETE /api/v1/applications/{id}/transitions/latest`): it returns to its previous
+  stage and outcome. The first stage cannot be undone.
+- Delete an application created by mistake, with its history
+  (`DELETE /api/v1/applications/{id}`).
+- Edit a company (`PATCH /api/v1/companies/{id}`), keeping names unique, and delete one
+  with no applications (`DELETE /api/v1/companies/{id}`; `409 in-use` otherwise).
+- Applications show the current name of their company (`company_name`).
 - `just db-backup` saves the database to `backups/`, and `just db-restore <file>` brings
   a backup back.
 

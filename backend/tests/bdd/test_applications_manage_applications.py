@@ -150,6 +150,15 @@ def given_application_since(
     )
 
 
+@given(parsers.parse('the company "{name}" was renamed to "{new_name}"'))
+def given_company_renamed(
+    client: TestClient, state: ScenarioState, name: str, new_name: str
+) -> None:
+    url = f"/api/v1/companies/{state.companies[name]}"
+    response = client.patch(url, json={"name": new_name})
+    assert response.status_code == 200, response.text
+
+
 @given(parsers.parse('it was moved to stage "{stage}" on {day}'))
 def given_moved(client: TestClient, state: ScenarioState, stage: str, day: str) -> None:
     _move(client, state, {"to_stage": stage, "occurred_on": day})
@@ -278,6 +287,16 @@ def when_view_nonexistent(client: TestClient, state: ScenarioState) -> None:
     state.response = client.get(f"/api/v1/applications/{uuid7()}")
 
 
+@when("I delete that application")
+def when_delete(client: TestClient, state: ScenarioState) -> None:
+    state.response = client.delete(f"/api/v1/applications/{state.application_id}")
+
+
+@when("I delete a nonexistent application")
+def when_delete_nonexistent(client: TestClient, state: ScenarioState) -> None:
+    state.response = client.delete(f"/api/v1/applications/{uuid7()}")
+
+
 @when("I list the applications")
 def when_list(client: TestClient, state: ScenarioState) -> None:
     state.response = _list(client, {})
@@ -384,6 +403,26 @@ def then_roles_in_order(state: ScenarioState, roles: str) -> None:
     response = state.last_response
     assert response.status_code == 200, response.text
     assert [item["role"] for item in response.json()["items"]] == _quoted(roles)
+
+
+@then(parsers.parse('the application shows the company name "{name}"'))
+def then_shows_company_name(state: ScenarioState, name: str) -> None:
+    response = state.last_response
+    assert response.status_code == 200, response.text
+    assert response.json()["company_name"] == name
+
+
+@then("the application no longer exists")
+def then_no_longer_exists(client: TestClient, state: ScenarioState) -> None:
+    assert state.last_response.status_code == 204, state.last_response.text
+    assert client.get(f"/api/v1/applications/{state.application_id}").status_code == 404
+
+
+@then(parsers.parse("the listed company names are, in order: {names}"))
+def then_company_names_in_order(state: ScenarioState, names: str) -> None:
+    response = state.last_response
+    assert response.status_code == 200, response.text
+    assert [item["company_name"] for item in response.json()["items"]] == _quoted(names)
 
 
 @then("there are no applications")

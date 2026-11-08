@@ -60,6 +60,7 @@ class ApplicationFilters(BaseModel):
 class ApplicationRead(BaseModel):
     id: UUID
     company_id: UUID
+    company_name: str = Field(description="The company's current name.")
     role: str
     channel: Channel
     priority: Priority | None

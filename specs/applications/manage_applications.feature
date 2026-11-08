@@ -9,7 +9,7 @@ Feature: Manage applications
   Priorities: high, medium, low.
   An application starts in stage evaluated (default) or applied; that first
   stage is the first entry of its history. The same company and role may be
-  used by more than one application.
+  used by more than one application. Deleting an application deletes its history.
 
   Background:
     Given today is 2026-03-10
@@ -186,6 +186,24 @@ Feature: Manage applications
     When I view a nonexistent application
     Then it is rejected because the application does not exist
 
+  Scenario: An application shows the current name of its company
+    Given an application for "Acme" as "Backend Engineer"
+    And the company "Acme" was renamed to "Acme Corp"
+    When I view that application
+    Then the application shows the company name "Acme Corp"
+
+  # --- Deleting ---
+
+  Scenario: Delete an application with its history
+    Given an application for "Acme" as "Backend Engineer" in stage "applied" since 2026-03-05
+    When I delete that application
+    Then the application no longer exists
+    And there are 0 applications in total
+
+  Scenario: Cannot delete an application that does not exist
+    When I delete a nonexistent application
+    Then it is rejected because the application does not exist
+
   # --- Listing ---
 
   Scenario: Applications are listed from the most recently created
@@ -193,6 +211,13 @@ Feature: Manage applications
     When I list the applications
     Then the applications are, in order: "Platform Engineer", "Data Engineer", "Backend Engineer"
     And there are 3 applications in total
+
+  Scenario: Listed applications show the name of their company
+    Given a company named "Globex"
+    And an application for "Acme" as "Backend Engineer"
+    And an application for "Globex" as "Data Engineer"
+    When I list the applications
+    Then the listed company names are, in order: "Globex", "Acme"
 
   Scenario Outline: Filter the list by stage, outcome, channel or whether it is still active
     Given these applications for "Acme", created in this order:

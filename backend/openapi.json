@@ -95,6 +95,11 @@
             "title": "Company Id",
             "type": "string"
           },
+          "company_name": {
+            "description": "The company's current name.",
+            "title": "Company Name",
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -168,6 +173,7 @@
         "required": [
           "id",
           "company_id",
+          "company_name",
           "role",
           "channel",
           "priority",
@@ -189,6 +195,11 @@
           "company_id": {
             "format": "uuid",
             "title": "Company Id",
+            "type": "string"
+          },
+          "company_name": {
+            "description": "The company's current name.",
+            "title": "Company Name",
             "type": "string"
           },
           "created_at": {
@@ -256,6 +267,7 @@
         "required": [
           "id",
           "company_id",
+          "company_name",
           "role",
           "channel",
           "priority",
@@ -437,6 +449,41 @@
           "website"
         ],
         "title": "CompanyRead",
+        "type": "object"
+      },
+      "CompanyUpdate": {
+        "description": "Partial update: only the fields sent change. `null` clears the website.",
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "examples": [
+                  "https://acme.example"
+                ],
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "title": "CompanyUpdate",
         "type": "object"
       },
       "ConversionByChannelRead": {
@@ -1084,6 +1131,66 @@
       }
     },
     "/api/v1/applications/{application_id}": {
+      "delete": {
+        "description": "Delete an application created by mistake, with its history.\n\nTo archive one instead, close it with an outcome: it still counts in the metrics.",
+        "operationId": "delete_application_api_v1_applications__application_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Application does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Application",
+        "tags": [
+          "applications"
+        ]
+      },
       "get": {
         "description": "The application with its transition history.",
         "operationId": "read_application_api_v1_applications__application_id__get",
@@ -1405,6 +1512,78 @@
         ]
       }
     },
+    "/api/v1/applications/{application_id}/transitions/latest": {
+      "delete": {
+        "description": "Undo the most recent transition: the application returns to its previous state.",
+        "operationId": "undo_latest_transition_api_v1_applications__application_id__transitions_latest_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Application does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Only the first stage is left, which cannot be undone (`invalid-transition`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Undo Latest Transition",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
     "/api/v1/companies": {
       "get": {
         "description": "Companies in alphabetical order, ignoring case.",
@@ -1543,6 +1722,76 @@
       }
     },
     "/api/v1/companies/{company_id}": {
+      "delete": {
+        "description": "Delete a company that has no applications.",
+        "operationId": "delete_company_api_v1_companies__company_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Company does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "The company still has applications (`in-use`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Company",
+        "tags": [
+          "companies"
+        ]
+      },
       "get": {
         "operationId": "read_company_api_v1_companies__company_id__get",
         "parameters": [
@@ -1605,6 +1854,93 @@
           }
         ],
         "summary": "Read Company",
+        "tags": [
+          "companies"
+        ]
+      },
+      "patch": {
+        "description": "Change only the fields sent. Names stay unique ignoring case and surrounding spaces.",
+        "operationId": "update_company_api_v1_companies__company_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Company does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Another company already has that name (`already-exists`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Company",
         "tags": [
           "companies"
         ]

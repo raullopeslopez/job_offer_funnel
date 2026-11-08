@@ -4,7 +4,7 @@ Feature: Manage companies
   So that each application belongs to a company and I can see all my applications per company
 
   A company has a name (required, unique ignoring case and surrounding spaces)
-  and an optional website.
+  and an optional website. A company can only be deleted while it has no applications.
 
   # --- Creating ---
 
@@ -79,3 +79,69 @@ Feature: Manage companies
     When I list the companies
     Then there are no companies
     And there are 0 companies in total
+
+  # --- Editing ---
+
+  Scenario Outline: Edit the name or the website of a company
+    Given a company named "Acme" with website "https://acme.example"
+    When I change its "<field>" to "<value>"
+    Then the company has "<field>" "<value>"
+
+    Examples:
+      | field   | value                  |
+      | name    | Acme Corp              |
+      | website | https://acme.example/b |
+
+  Scenario: A company can change the case of its own name
+    Given a company named "Acme"
+    When I change its "name" to "ACME"
+    Then the company has "name" "ACME"
+
+  Scenario: Clear the website of a company
+    Given a company named "Acme" with website "https://acme.example"
+    When I clear its "website"
+    Then the company "Acme" exists without a website
+
+  Scenario Outline: An edit needs a valid name and website
+    Given a company named "Acme" with website "https://acme.example"
+    When I change its "<field>" to "<value>"
+    Then it is rejected as invalid
+    And the company has "name" "Acme"
+
+    Examples:
+      | field   | value     |
+      | name    |           |
+      | website | not-a-url |
+
+  Scenario: The name of a company cannot be cleared
+    Given a company named "Acme"
+    When I clear its "name"
+    Then it is rejected as invalid
+
+  Scenario: A company cannot be renamed to the name of another one, ignoring case
+    Given a company named "Acme"
+    And a company named "Globex"
+    When I change its "name" to "acme"
+    Then it is rejected because the company already exists
+
+  Scenario: Cannot edit a company that does not exist
+    When I change the "name" of a nonexistent company to "Acme"
+    Then it is rejected because the company does not exist
+
+  # --- Deleting ---
+
+  Scenario: Delete a company without applications
+    Given a company named "Acme"
+    When I delete that company
+    Then the company no longer exists
+
+  Scenario: A company with applications cannot be deleted
+    Given a company named "Acme"
+    And the company has an application
+    When I delete that company
+    Then it is rejected because the company has applications
+    And the company "Acme" exists without a website
+
+  Scenario: Cannot delete a company that does not exist
+    When I delete a nonexistent company
+    Then it is rejected because the company does not exist

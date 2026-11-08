@@ -134,7 +134,7 @@ Perfil → Búsquedas por portal → Ingesta → Normalizar → Deduplicar → S
 
 **Flujo**: `Firmar → Retirarse del resto de procesos → Preaviso empresa actual → Retro`
 
-**Matices**: tarea "retirarse" automática para cada proceso activo · retro final (canal, CV y preparación que funcionaron) · archivar, nunca borrar.
+**Matices**: tarea "retirarse" automática para cada proceso activo · retro final (canal, CV y preparación que funcionaron) · archivar cerrándola con un outcome (borrar solo para corregir un alta por error).
 
 ---
 

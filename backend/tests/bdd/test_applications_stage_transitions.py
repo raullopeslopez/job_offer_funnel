@@ -128,6 +128,17 @@ def when_move_nonexistent(client: TestClient, state: ScenarioState, stage: str) 
     state.response = _post_transition(client, uuid7(), {"to_stage": stage})
 
 
+@when("I undo its last transition")
+def when_undo(client: TestClient, state: ScenarioState) -> None:
+    url = f"/api/v1/applications/{state.application_id}/transitions/latest"
+    state.response = client.delete(url)
+
+
+@when("I undo the last transition of a nonexistent application")
+def when_undo_nonexistent(client: TestClient, state: ScenarioState) -> None:
+    state.response = client.delete(f"/api/v1/applications/{uuid7()}/transitions/latest")
+
+
 # --- Then ---
 
 

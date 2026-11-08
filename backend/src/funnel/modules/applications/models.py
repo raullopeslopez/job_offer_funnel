@@ -2,8 +2,8 @@ from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID, uuid7
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, Text, column, func, select, table
+from sqlalchemy.orm import Mapped, column_property, mapped_column
 
 from funnel.core.db import Base
 from funnel.modules.applications.domain import Channel, Outcome, Priority, Stage
@@ -25,6 +25,10 @@ def _enum_column_type(enum: type[StrEnum], column: str) -> Enum:
 # Its violation means "the company does not exist": the repository translates it.
 COMPANY_FOREIGN_KEY = "fk_applications_company_id_companies"
 
+# A lightweight view of the companies table, by name: not a model, so nothing is imported
+# from the companies module and Alembic does not see a second definition of the table.
+_companies = table("companies", column("id"), column("name"))
+
 
 class ApplicationRow(Base):
     __tablename__ = "applications"
@@ -42,6 +46,10 @@ class ApplicationRow(Base):
     stage: Mapped[Stage] = mapped_column(_enum_column_type(Stage, "stage"))
     outcome: Mapped[Outcome | None] = mapped_column(_enum_column_type(Outcome, "outcome"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Loaded with every query, so responses always show the company's current name.
+    company_name: Mapped[str] = column_property(
+        select(_companies.c.name).where(_companies.c.id == company_id).scalar_subquery()
+    )
 
 
 class TransitionRow(Base):

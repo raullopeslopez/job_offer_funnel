@@ -141,8 +141,40 @@ Feature: Application stage transitions
       | applied   | screening |         | 2026-03-03 | Call with recruiter |
       | screening | screening | ghosted | 2026-03-09 |                     |
 
+  # --- Undoing the last transition ---
+
+  Scenario: Undoing a move brings the application back to the previous stage
+    Given an application that moved to stage "applied" on 2026-03-01
+    And I moved it to stage "screening" on 2026-03-03 with the note "Call with recruiter"
+    When I undo its last transition
+    Then the application is still in stage "applied" and open
+    And the latest transition is dated 2026-03-01
+
+  Scenario: Undoing a closure reopens the application in its reached stage
+    Given an application that moved to stage "interviewing" on 2026-03-01
+    And I closed it as "rejected" on 2026-03-09
+    When I undo its last transition
+    Then the application is still in stage "interviewing" and open
+
+  Scenario: Undoing a reactivation leaves the application ghosted again
+    Given an application that moved to stage "screening" on 2026-03-01
+    And I closed it as "ghosted" on 2026-03-05
+    And I moved it to stage "interviewing" on 2026-03-08 with the note "They wrote back"
+    When I undo its last transition
+    Then the application is closed as "ghosted" with reached stage "screening"
+
+  Scenario: The first stage of an application cannot be undone
+    Given an application that moved to stage "applied" on 2026-03-01
+    When I undo its last transition
+    Then it is rejected as an invalid transition
+    And the application is still in stage "applied" and open
+
   # --- Errors ---
 
   Scenario: Cannot move an application that does not exist
     When I move a nonexistent application to stage "screening"
+    Then it is rejected because the application does not exist
+
+  Scenario: Cannot undo a transition of an application that does not exist
+    When I undo the last transition of a nonexistent application
     Then it is rejected because the application does not exist
