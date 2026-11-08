@@ -70,7 +70,9 @@ Feature: Inbox screen
     And I see 1 offers in total
 
   # --- Importing feeds ---
+  # @component: the E2E tests cannot reach the public feeds; component tests cover these.
 
+  @component
   Scenario: Import a feed for a search profile
     Given a search profile named "Backend" with the title "Backend Engineer"
     And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer"
@@ -79,6 +81,7 @@ Feature: Inbox screen
     Then I see the import summary: 1 found, 1 matching, 1 added, 0 already in the inbox
     And I see the offers, in order: "Backend Engineer"
 
+  @component
   Scenario: A feed imported too recently says when it can be imported again
     Given a search profile named "Backend" with the title "Backend Engineer"
     And the feed "remoteok" was imported 1 hour ago

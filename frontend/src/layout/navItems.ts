@@ -1,2 +1,5 @@
 // One entry per screen, added by the PR of each screen (docs/frontend.md).
-export const navItems: { path: string; label: string }[] = [{ path: "/", label: "Home" }];
+export const navItems: { path: string; label: string }[] = [
+  { path: "/", label: "Home" },
+  { path: "/inbox", label: "Inbox" },
+];
