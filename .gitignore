@@ -8,6 +8,10 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Database backups (personal data)
+backups/*
+!backups/.gitkeep
+
 # Environment
 .env
 .env.local
