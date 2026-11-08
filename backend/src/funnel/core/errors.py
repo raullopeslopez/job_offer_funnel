@@ -10,7 +10,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from http import HTTPStatus
-from typing import Any, ClassVar
+from typing import Any
 
 import structlog
 from fastapi import FastAPI, Request
@@ -19,6 +19,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
+
+from funnel.core.exceptions import AppError
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 
@@ -43,40 +45,6 @@ class ValidationProblemRead(ProblemRead):
     """Problem details for invalid requests, with one entry per invalid field."""
 
     errors: list[FieldErrorRead]
-
-
-class AppError(Exception):
-    """Base for controlled errors. Subclasses set slug, title and status."""
-
-    slug: ClassVar[str] = "internal-error"
-    title: ClassVar[str] = "Internal error"
-    status: ClassVar[HTTPStatus] = HTTPStatus.INTERNAL_SERVER_ERROR
-    headers: ClassVar[Mapping[str, str]] = {}
-
-    def __init__(self, detail: str | None = None) -> None:
-        super().__init__(detail or self.title)
-        self.detail = detail
-
-
-class DomainError(AppError):
-    """Base for business rule violations."""
-
-    slug = "domain-error"
-    title = "Business rule violated"
-    status = HTTPStatus.CONFLICT
-
-
-class NotFoundError(AppError):
-    slug = "not-found"
-    title = "Resource not found"
-    status = HTTPStatus.NOT_FOUND
-
-
-class UnauthorizedError(AppError):
-    slug = "unauthorized"
-    title = "Missing or invalid credentials"
-    status = HTTPStatus.UNAUTHORIZED
-    headers = {"WWW-Authenticate": "Bearer"}
 
 
 @dataclass(frozen=True)

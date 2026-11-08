@@ -75,6 +75,18 @@ type = "forbidden"
 source_modules = ["funnel.core"]
 forbidden_modules = ["funnel.modules"]
 
+[[tool.importlinter.contracts]]
+name = "applications layers"
+type = "layers"
+containers = ["funnel.modules.applications"]
+layers = ["router", "service", "repository", "models", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "applications domain is framework-free"
+type = "forbidden"
+source_modules = ["funnel.modules.applications.domain"]
+forbidden_modules = ["fastapi", "starlette", "pydantic", "sqlalchemy"]
+
 [dependency-groups]
 dev = [
     "filelock>=4.2.9",

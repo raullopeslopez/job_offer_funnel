@@ -8,12 +8,12 @@ Responder siempre en español, aunque el código, las specs y la salida de las h
 
 ## Estado actual
 
-Esqueleto del backend listo: `core` (config, sesión por request, errores problem+json, auth por token, logging), `GET /health`, Alembic sin migraciones, tests con xdist y CI. Todavía no hay módulos de dominio ni `specs/`. Actualizar esta sección al cerrar cada hito.
+Backend con `core` completo (config, sesión por request, contrato de errores, auth por token, logging, `Clock`) y el primer módulo de dominio, `applications` (transiciones de fase), que es la **referencia** para los siguientes. Actualizar esta sección al cerrar cada hito.
 
 - [x] Concepto, stack, convenciones, harness
 - [x] Alcance del MVP: `docs/mvp.md` (solo API; las features fuera del MVP no se implementan)
 - [x] Esqueleto del backend + hooks de Claude Code. Descartado un subagent test-runner (pytest ya da salida escueta; solo se reconsidera si `/usage` lo justifica)
-- [ ] Spec + implementación: `applications/stage_transitions`
+- [x] Spec + implementación: `applications/stage_transitions`
 - [ ] Spec + implementación: `applications/manage_applications`
 - [ ] Spec + implementación: `companies/manage_companies`
 - [ ] Spec + implementación: `metrics/funnel_metrics`

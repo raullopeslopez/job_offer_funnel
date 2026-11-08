@@ -7,7 +7,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from funnel.core.config import Settings
-from funnel.core.errors import UnauthorizedError
+from funnel.core.exceptions import UnauthorizedError
 
 _bearer = HTTPBearer(auto_error=False)
 

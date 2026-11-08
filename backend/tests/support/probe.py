@@ -5,7 +5,7 @@ from pydantic import SecretStr
 
 from funnel.core.auth import require_token
 from funnel.core.config import Settings
-from funnel.core.errors import AppError, DomainError, NotFoundError, UnauthorizedError
+from funnel.core.exceptions import AppError, DomainError, NotFoundError, UnauthorizedError
 from funnel.main import create_app
 
 PROBE_TOKEN = "probe-token"
