@@ -8,15 +8,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from funnel.core.db import get_session
 from funnel.core.errors import ProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
-from funnel.modules.discovery.repository import SearchProfileRepository
+from funnel.modules.discovery.repository import JobBoardRepository, SearchProfileRepository
 from funnel.modules.discovery.schemas import (
+    JobBoardCreate,
+    JobBoardRead,
+    JobBoardUpdate,
     SearchProfileCreate,
     SearchProfileRead,
     SearchProfileUpdate,
 )
-from funnel.modules.discovery.service import SearchProfileService
+from funnel.modules.discovery.service import JobBoardService, SearchProfileService
 
-router = APIRouter(prefix="/search-profiles", tags=["discovery"])
+profiles_router = APIRouter(prefix="/search-profiles", tags=["discovery"])
 
 
 def get_search_profile_service(
@@ -26,12 +29,12 @@ def get_search_profile_service(
     return SearchProfileService(SearchProfileRepository(session))
 
 
-Service = Annotated[SearchProfileService, Depends(get_search_profile_service)]
+ProfileServiceDependency = Annotated[SearchProfileService, Depends(get_search_profile_service)]
 
-_NOT_FOUND: dict[int | str, dict[str, Any]] = {
+_PROFILE_NOT_FOUND: dict[int | str, dict[str, Any]] = {
     HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Search profile does not exist"}
 }
-_NAME_TAKEN: dict[int | str, dict[str, Any]] = {
+_PROFILE_NAME_TAKEN: dict[int | str, dict[str, Any]] = {
     HTTPStatus.CONFLICT: {
         "model": ProblemRead,
         "description": "A search profile with that name already exists (`already-exists`)",
@@ -39,18 +42,18 @@ _NAME_TAKEN: dict[int | str, dict[str, Any]] = {
 }
 
 
-@router.post("", status_code=HTTPStatus.CREATED, responses=_NAME_TAKEN)
+@profiles_router.post("", status_code=HTTPStatus.CREATED, responses=_PROFILE_NAME_TAKEN)
 async def create_search_profile(
-    profile: SearchProfileCreate, service: Service
+    profile: SearchProfileCreate, service: ProfileServiceDependency
 ) -> SearchProfileRead:
     """Describe what you look for. Lists are trimmed and repeated words kept once."""
     created = await service.create(profile)
     return SearchProfileRead.model_validate(created, from_attributes=True)
 
 
-@router.get("")
+@profiles_router.get("")
 async def list_search_profiles(
-    page: Annotated[PageParams, Depends(get_page_params)], service: Service
+    page: Annotated[PageParams, Depends(get_page_params)], service: ProfileServiceDependency
 ) -> Page[SearchProfileRead]:
     """Search profiles in alphabetical order, ignoring case."""
     profiles, total = await service.list_page(page)
@@ -62,21 +65,92 @@ async def list_search_profiles(
     )
 
 
-@router.get("/{profile_id}", responses=_NOT_FOUND)
-async def read_search_profile(profile_id: UUID, service: Service) -> SearchProfileRead:
+@profiles_router.get("/{profile_id}", responses=_PROFILE_NOT_FOUND)
+async def read_search_profile(
+    profile_id: UUID, service: ProfileServiceDependency
+) -> SearchProfileRead:
     profile = await service.get(profile_id)
     return SearchProfileRead.model_validate(profile, from_attributes=True)
 
 
-@router.patch("/{profile_id}", responses={**_NOT_FOUND, **_NAME_TAKEN})
+@profiles_router.patch("/{profile_id}", responses={**_PROFILE_NOT_FOUND, **_PROFILE_NAME_TAKEN})
 async def update_search_profile(
-    profile_id: UUID, changes: SearchProfileUpdate, service: Service
+    profile_id: UUID, changes: SearchProfileUpdate, service: ProfileServiceDependency
 ) -> SearchProfileRead:
     """Change only the fields sent."""
     updated = await service.update(profile_id, changes.model_dump(exclude_unset=True))
     return SearchProfileRead.model_validate(updated, from_attributes=True)
 
 
-@router.delete("/{profile_id}", status_code=HTTPStatus.NO_CONTENT, responses=_NOT_FOUND)
-async def delete_search_profile(profile_id: UUID, service: Service) -> None:
+@profiles_router.delete(
+    "/{profile_id}", status_code=HTTPStatus.NO_CONTENT, responses=_PROFILE_NOT_FOUND
+)
+async def delete_search_profile(profile_id: UUID, service: ProfileServiceDependency) -> None:
     await service.delete(profile_id)
+
+
+# --- Job boards ---
+
+job_boards_router = APIRouter(prefix="/job-boards", tags=["discovery"])
+
+
+def get_job_board_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> JobBoardService:
+    return JobBoardService(JobBoardRepository(session))
+
+
+JobBoardServiceDependency = Annotated[JobBoardService, Depends(get_job_board_service)]
+
+_JOB_BOARD_NOT_FOUND: dict[int | str, dict[str, Any]] = {
+    HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Job board does not exist"}
+}
+_JOB_BOARD_NAME_TAKEN: dict[int | str, dict[str, Any]] = {
+    HTTPStatus.CONFLICT: {
+        "model": ProblemRead,
+        "description": "A job board with that name already exists (`already-exists`)",
+    }
+}
+
+
+@job_boards_router.post("", status_code=HTTPStatus.CREATED, responses=_JOB_BOARD_NAME_TAKEN)
+async def create_job_board(
+    job_board: JobBoardCreate, service: JobBoardServiceDependency
+) -> JobBoardRead:
+    """Register a job board with its search URL template and search syntax."""
+    raise NotImplementedError
+
+
+@job_boards_router.get("")
+async def list_job_boards(
+    page: Annotated[PageParams, Depends(get_page_params)], service: JobBoardServiceDependency
+) -> Page[JobBoardRead]:
+    """Job boards in alphabetical order, ignoring case."""
+    raise NotImplementedError
+
+
+@job_boards_router.get("/{job_board_id}", responses=_JOB_BOARD_NOT_FOUND)
+async def read_job_board(job_board_id: UUID, service: JobBoardServiceDependency) -> JobBoardRead:
+    raise NotImplementedError
+
+
+@job_boards_router.patch(
+    "/{job_board_id}", responses={**_JOB_BOARD_NOT_FOUND, **_JOB_BOARD_NAME_TAKEN}
+)
+async def update_job_board(
+    job_board_id: UUID, changes: JobBoardUpdate, service: JobBoardServiceDependency
+) -> JobBoardRead:
+    """Change only the fields sent."""
+    raise NotImplementedError
+
+
+@job_boards_router.delete(
+    "/{job_board_id}", status_code=HTTPStatus.NO_CONTENT, responses=_JOB_BOARD_NOT_FOUND
+)
+async def delete_job_board(job_board_id: UUID, service: JobBoardServiceDependency) -> None:
+    raise NotImplementedError
+
+
+router = APIRouter()
+router.include_router(profiles_router)
+router.include_router(job_boards_router)

@@ -56,3 +56,10 @@ class SearchProfileRepository:
             if UNIQUE_PROFILE_NAME_INDEX in str(error.orig):
                 raise AlreadyExistsError(detail) from error
             raise
+
+
+class JobBoardRepository:
+    """Never commits: the request session does."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session

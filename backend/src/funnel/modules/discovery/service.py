@@ -4,7 +4,7 @@ from uuid import UUID
 from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.models import SearchProfileRow
-from funnel.modules.discovery.repository import SearchProfileRepository
+from funnel.modules.discovery.repository import JobBoardRepository, SearchProfileRepository
 from funnel.modules.discovery.schemas import SearchProfileCreate
 
 
@@ -33,3 +33,8 @@ class SearchProfileService:
 
     async def list_page(self, page: PageParams) -> tuple[list[SearchProfileRow], int]:
         return await self._repository.list_page(page)
+
+
+class JobBoardService:
+    def __init__(self, repository: JobBoardRepository) -> None:
+        self._repository = repository

@@ -596,6 +596,109 @@
         "title": "HealthRead",
         "type": "object"
       },
+      "JobBoardCreate": {
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "search_url_template": {
+            "description": "http(s) URL with {query} where the search goes, and optionally {location}.",
+            "examples": [
+              "https://www.linkedin.com/jobs/search/?keywords={query}&location={location}"
+            ],
+            "maxLength": 2048,
+            "title": "Search Url Template",
+            "type": "string"
+          },
+          "syntax": {
+            "$ref": "#/components/schemas/Syntax"
+          }
+        },
+        "required": [
+          "name",
+          "search_url_template",
+          "syntax"
+        ],
+        "title": "JobBoardCreate",
+        "type": "object"
+      },
+      "JobBoardRead": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "search_url_template": {
+            "title": "Search Url Template",
+            "type": "string"
+          },
+          "syntax": {
+            "$ref": "#/components/schemas/Syntax"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "search_url_template",
+          "syntax"
+        ],
+        "title": "JobBoardRead",
+        "type": "object"
+      },
+      "JobBoardUpdate": {
+        "description": "Partial update: only the fields sent change. Every field is required.",
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "search_url_template": {
+            "anyOf": [
+              {
+                "description": "http(s) URL with {query} where the search goes, and optionally {location}.",
+                "examples": [
+                  "https://www.linkedin.com/jobs/search/?keywords={query}&location={location}"
+                ],
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Url Template"
+          },
+          "syntax": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Syntax"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "JobBoardUpdate",
+        "type": "object"
+      },
       "Outcome": {
         "description": "How a closed application ended. A closed application keeps the stage it reached.",
         "enum": [
@@ -667,6 +770,37 @@
           "offset"
         ],
         "title": "Page[CompanyRead]",
+        "type": "object"
+      },
+      "Page_JobBoardRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JobBoardRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[JobBoardRead]",
         "type": "object"
       },
       "Page_SearchProfileRead_": {
@@ -1037,6 +1171,15 @@
           "accepted"
         ],
         "title": "Stage",
+        "type": "string"
+      },
+      "Syntax": {
+        "description": "How a job board reads a search.",
+        "enum": [
+          "boolean",
+          "keywords"
+        ],
+        "title": "Syntax",
         "type": "string"
       },
       "TransitionCreate": {
@@ -2226,6 +2369,357 @@
         "summary": "Update Company",
         "tags": [
           "companies"
+        ]
+      }
+    },
+    "/api/v1/job-boards": {
+      "get": {
+        "description": "Job boards in alphabetical order, ignoring case.",
+        "operationId": "list_job_boards_api_v1_job_boards_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_JobBoardRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Job Boards",
+        "tags": [
+          "discovery"
+        ]
+      },
+      "post": {
+        "description": "Register a job board with its search URL template and search syntax.",
+        "operationId": "create_job_board_api_v1_job_boards_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobBoardCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBoardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "A job board with that name already exists (`already-exists`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Job Board",
+        "tags": [
+          "discovery"
+        ]
+      }
+    },
+    "/api/v1/job-boards/{job_board_id}": {
+      "delete": {
+        "operationId": "delete_job_board_api_v1_job_boards__job_board_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_board_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Board Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Job board does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Job Board",
+        "tags": [
+          "discovery"
+        ]
+      },
+      "get": {
+        "operationId": "read_job_board_api_v1_job_boards__job_board_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_board_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Board Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBoardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Job board does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Job Board",
+        "tags": [
+          "discovery"
+        ]
+      },
+      "patch": {
+        "description": "Change only the fields sent.",
+        "operationId": "update_job_board_api_v1_job_boards__job_board_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_board_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Board Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobBoardUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBoardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Job board does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "A job board with that name already exists (`already-exists`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Job Board",
+        "tags": [
+          "discovery"
         ]
       }
     },
