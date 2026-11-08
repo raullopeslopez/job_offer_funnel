@@ -14,15 +14,16 @@ default:
 # Install dependencies and git hooks, start the database and migrate
 setup:
     uv sync
+    just fe-install
     uv run pre-commit install
     just db-up
     just migrate
 
-# Run the API and its database in Docker, migrated (Swagger UI at http://localhost:8080/docs)
+# Run the web app, the API and its database in Docker (app at http://localhost:8081, Swagger UI at http://localhost:8080/docs)
 up:
     {{compose}} --profile app up -d --build --wait
 
-# Stop the API and the database (data is kept)
+# Stop the web app, the API and the database (data is kept)
 down:
     {{compose}} --profile app down
 
@@ -131,12 +132,51 @@ test-one expression:
 cov:
     {{pytest}} -n auto --cov=funnel --cov-report=term-missing
 
-# Export the OpenAPI contract to backend/openapi.json
+# Export the OpenAPI contract to backend/openapi.json and regenerate the frontend types
 openapi:
     uv run python -m funnel.openapi
+    just fe-types
+
+# Install the frontend dependencies
+[working-directory("../frontend")]
+fe-install:
+    pnpm install --frozen-lockfile
+
+# Run the frontend with hot reload (http://localhost:5173, /api proxied to `just dev`)
+[working-directory("../frontend")]
+fe-dev:
+    pnpm dev
+
+# Regenerate the frontend API types from backend/openapi.json (`just openapi` runs it)
+[working-directory("../frontend")]
+fe-types:
+    pnpm run api:types
+
+# Format and auto-fix the frontend
+[working-directory("../frontend")]
+fe-fmt:
+    pnpm run fmt
+
+# Frontend lint + type check + API types in sync with openapi.json
+[working-directory("../frontend")]
+fe-check:
+    pnpm run lint
+    pnpm run typecheck
+    pnpm run api:check
+
+# Frontend component tests (extra args go to vitest)
+[working-directory("../frontend")]
+fe-test *args:
+    pnpm run test {{args}}
+
+# Everything the backend CI job runs
+ci-backend: check test
+
+# Everything the frontend CI job runs
+ci-frontend: fe-check fe-test
 
 # Everything CI runs
-ci: check test
+ci: ci-backend ci-frontend
 
 # Start Claude Code with Remote Control (controllable from the Claude mobile app)
 [no-cd]
