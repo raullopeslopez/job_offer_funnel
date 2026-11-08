@@ -113,7 +113,9 @@ def fake_boards(client: TestClient, state: ScenarioState) -> Iterator[None]:
 
     def answer(request: httpx2.Request) -> httpx2.Response:
         ats = ATS_HOSTS[request.url.host]
-        board = request.url.path.rstrip("/").rsplit("/", 1)[-1]
+        # The board is the last path segment, except on Greenhouse (/v1/boards/<board>/jobs).
+        segments = request.url.path.strip("/").split("/")
+        board = segments[2] if ats == "greenhouse" else segments[-1]
         if (ats, board) in state.unavailable:
             return httpx2.Response(503)
         if (ats, board) not in state.published:

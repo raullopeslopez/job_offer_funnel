@@ -12,7 +12,9 @@ from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
 from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.discovery.service import SearchProfileService
+from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
+    BoardUnavailableError,
     Feed,
     FeedCooldownError,
     FeedOffer,
@@ -26,9 +28,13 @@ from funnel.modules.inbox.domain import (
     next_status,
 )
 from funnel.modules.inbox.feeds import FeedReader
-from funnel.modules.inbox.models import OfferRow
-from funnel.modules.inbox.repository import FeedImportRepository, OfferRepository
-from funnel.modules.inbox.schemas import OfferCreate
+from funnel.modules.inbox.models import OfferRow, WatchedCompanyRow
+from funnel.modules.inbox.repository import (
+    FeedImportRepository,
+    OfferRepository,
+    WatchedCompanyRepository,
+)
+from funnel.modules.inbox.schemas import OfferCreate, WatchedCompanyCreate
 
 
 class OfferService:
@@ -122,20 +128,14 @@ class FeedImportService:
 
         published = await self._read(feed, terms)
         matching = [offer for offer in published if matches(terms, offer)]
-        added = await self._imports.add_new([_offer_row(feed, offer) for offer in matching])
+        added = await self._imports.add_new([_offer_row(offer, feed=feed) for offer in matching])
         expired = await self._imports.expire_missing(feed, [offer.url for offer in published])
         # Only a successful read counts for the limit: a failed one can be retried at once.
         await self._imports.record(feed, now)
         return ImportResult(feed, len(published), len(matching), added, expired, now)
 
     async def _terms(self, profile_id: UUID) -> SearchTerms:
-        try:
-            profile = await self._profiles.get(profile_id)
-        except NotFoundError as error:
-            raise UnknownSearchProfileError(
-                f"Search profile {profile_id} does not exist"
-            ) from error
-        return SearchTerms(profile.titles, profile.keywords, profile.excluded_keywords)
+        return await _profile_terms(self._profiles, profile_id)
 
     async def _read(self, feed: Feed, terms: SearchTerms) -> list[FeedOffer]:
         try:
@@ -152,7 +152,72 @@ def _feed(name: str) -> Feed:
         raise NotFoundError(f"Feed {name} does not exist") from error
 
 
-def _offer_row(feed: Feed, offer: FeedOffer) -> OfferRow:
+@dataclass(frozen=True)
+class BoardImportResult:
+    watched_company_id: UUID
+    found: int
+    matching: int
+    added: int
+    expired: int
+    imported_at: datetime
+
+
+class WatchedCompanyService:
+    """Watched companies, and importing their ATS boards into the inbox (no rate limit)."""
+
+    def __init__(
+        self,
+        companies: WatchedCompanyRepository,
+        profiles: SearchProfileService,
+        reader: BoardReader,
+    ) -> None:
+        self._companies = companies
+        self._profiles = profiles
+        self._reader = reader
+
+    async def create(self, company: WatchedCompanyCreate) -> WatchedCompanyRow:
+        return await self._companies.add(WatchedCompanyRow(**company.model_dump()))
+
+    async def list_all(self) -> list[WatchedCompanyRow]:
+        return await self._companies.list_all()
+
+    async def get(self, company_id: UUID) -> WatchedCompanyRow:
+        company = await self._companies.get(company_id)
+        if company is None:
+            raise NotFoundError(f"Watched company {company_id} does not exist")
+        return company
+
+    async def delete(self, company_id: UUID) -> None:
+        await self._companies.delete(await self.get(company_id))
+
+    async def import_board(
+        self, company_id: UUID, profile_id: UUID, now: datetime
+    ) -> BoardImportResult:
+        company = await self.get(company_id)
+        terms = await _profile_terms(self._profiles, profile_id)
+        published = await self._read(company)
+        matching = [offer for offer in published if matches(terms, offer)]
+        added = await self._companies.add_new_offers(
+            [_offer_row(offer, watched_company_id=company.id) for offer in matching]
+        )
+        expired = await self._companies.expire_missing_offers(
+            company.id, [offer.url for offer in published]
+        )
+        return BoardImportResult(company.id, len(published), len(matching), added, expired, now)
+
+    async def _read(self, company: WatchedCompanyRow) -> list[FeedOffer]:
+        try:
+            return await self._reader.read(company.ats, company.board, company.name)
+        except (httpx2.HTTPError, ValueError, KeyError, TypeError) as error:
+            # Network failure, error status (404: unknown board) or an unexpected shape.
+            raise BoardUnavailableError(
+                f"The {company.ats} board {company.board} could not be read"
+            ) from error
+
+
+def _offer_row(
+    offer: FeedOffer, *, feed: Feed | None = None, watched_company_id: UUID | None = None
+) -> OfferRow:
     return OfferRow(
         url=offer.url,
         company=offer.company,
@@ -160,4 +225,13 @@ def _offer_row(feed: Feed, offer: FeedOffer) -> OfferRow:
         duplicate_key=duplicate_key(offer.company, offer.title),
         status=OfferStatus.PENDING,
         feed=feed,
+        watched_company_id=watched_company_id,
     )
+
+
+async def _profile_terms(profiles: SearchProfileService, profile_id: UUID) -> SearchTerms:
+    try:
+        profile = await profiles.get(profile_id)
+    except NotFoundError as error:
+        raise UnknownSearchProfileError(f"Search profile {profile_id} does not exist") from error
+    return SearchTerms(profile.titles, profile.keywords, profile.excluded_keywords)
