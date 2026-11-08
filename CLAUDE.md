@@ -54,6 +54,7 @@ Python 3.14 (fijado en `backend/.python-version`) · uv · FastAPI (async) · Py
 - Ramas `feat/`, `fix/` y `chore/<slug>`, de vida corta. Commits por paso del ciclo, en Conventional Commits y en inglés.
 - Al terminar: `just ci` en verde → push de la rama → `gh pr create` hacia `main`, con un resumen y la evidencia de los tests → comprobar el CI con `gh pr checks`.
 - **El merge lo hace el usuario.** Claude nunca mergea PRs ni hace push a `main`.
+- **Una sesión por PR.** Cuando el usuario confirme un merge: guardar en la memoria del proyecto o en `docs/` lo pendiente que no esté en el repo (decisiones tomadas en el chat, siguiente paso) y terminar la respuesta recordándole hacer `/clear` antes del siguiente PR. Las sesiones largas acaban compactando y pierden detalle.
 - **Changelog** (`CHANGELOG.md`, formato Keep a Changelog, en inglés): cada PR añade sus cambios en `[Unreleased]` (`Added`, `Changed`, `Fixed`, `Removed`), escritos para quien usa la API: qué puede hacer ahora, no cómo está hecho. Los refactors internos sin efecto visible no entran.
 - **Releases**, solo cuando el usuario lo pida: `[Unreleased]` pasa a `[X.Y.Z] - YYYY-MM-DD`, se sube la versión en `backend/pyproject.toml` (única fuente de la versión) y se crea el tag `vX.Y.Z`. SemVer; en `0.x` la API puede cambiar sin subir la versión mayor.
 - Sin líneas de autoría de Claude en commits ni PRs (`Co-Authored-By`, `Claude-Session`, "Generated with"). Lo garantiza `attribution` en `.claude/settings.json`.
