@@ -27,7 +27,7 @@ Esqueleto del backend listo: `core` (config, sesión por request, errores proble
 
 ## Stack
 
-Python 3.13 · uv · FastAPI (async) · Pydantic v2 · PostgreSQL · SQLAlchemy 2 async + asyncpg · Alembic · ruff · mypy strict · import-linter · pytest (asyncio, bdd, xdist, cov) + testcontainers + httpx · just · Docker Compose · pre-commit · structlog · GitHub Actions. Un solo usuario con auth simple; sin integraciones externas en el MVP; deploy local primero.
+Python 3.14 (fijado en `backend/.python-version`) · uv · FastAPI (async) · Pydantic v2 · PostgreSQL · SQLAlchemy 2 async + asyncpg · Alembic · ruff · mypy strict · import-linter · pytest (asyncio, bdd, xdist, cov) + testcontainers + httpx2 · just · Docker Compose · pre-commit · structlog · GitHub Actions. Un solo usuario con auth simple; sin integraciones externas en el MVP; deploy local primero.
 
 ## Idioma
 

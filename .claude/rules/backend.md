@@ -42,16 +42,24 @@ backend/src/funnel/
 - Sesión por request vía dependency (`get_session` en `core/db.py`): `commit` al terminar sin errores, `rollback` si hay excepción.
 - Services y repositories nunca hacen `commit`; como mucho `flush` para obtener IDs.
 
+## Base de datos
+
+- Enums como `VARCHAR` + `CHECK` (no enums nativos de PG): añadir un valor no exige migrar un tipo. Un `Enum` de SQLAlchemy por columna, para que cada CHECK tenga su propio nombre.
+- IDs `uuid.uuid7()` de la stdlib: ordenables por tiempo, desempatan filas creadas el mismo día.
+- **Índices**: siempre uno en **cada clave foránea** (Postgres no los crea solo, y sin ellos cada lookup por padre y cada borrado en cascada recorre la tabla entera). Las PK y los `UNIQUE` ya traen el suyo. Cualquier otro índice está aplazado: disparador = una consulta lenta medida con `EXPLAIN ANALYZE`, o una tabla de más de ~10.000 filas.
+- Las migraciones autogeneradas se revisan siempre a mano antes del commit.
+
 ## Patrones
 
 Un patrón entra cuando aparece el problema concreto que resuelve.
 
-- **Adoptados**: Repository, Service Layer, `Depends`, Value Objects, máquina de estados declarativa (`ALLOWED_TRANSITIONS: Mapping[Stage, frozenset[Stage]]`; los `Outcome` se permiten desde cualquier fase no terminal), métricas con SQL directo (CTEs y window functions en `metrics`, sin entidades ni repositories), `Clock` inyectado.
+- **Adoptados**: Repository, Service Layer, `Depends`, Value Objects, máquina de estados declarativa (las reglas de avance y de salida por fase son datos en `applications/domain.py`, no `if` dispersos; la fuente de verdad es `specs/applications/stage_transitions.feature`), métricas con SQL directo (CTEs y window functions en `metrics`, sin entidades ni repositories), `Clock` inyectado.
 - **Aplazados**:
   - procrastinate: con el primer job real.
   - Encolar jobs en la misma transacción: con el primer job, verificando antes que procrastinate comparte conexión con SQLAlchemy async/asyncpg.
   - Domain events: cuando una acción dispare 2 o más efectos.
   - Adapters por portal: con la fase 0.
+  - `user_id` en las tablas: solo si el producto pasa a ser multiusuario. Hoy hay un único usuario y la columna no aportaría nada.
 - **Descartados**: `BaseRepository[T]` genérico, god services, Mediator o bus de comandos, DDD completo, Specification, `Protocol` con una sola implementación.
 
 ## API

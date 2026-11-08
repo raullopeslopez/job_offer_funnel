@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, cast
-from uuid import UUID
+from uuid import UUID, uuid7
 
 import httpx2
 import pytest
@@ -10,7 +10,6 @@ from fastapi.testclient import TestClient
 from pytest_bdd import given, parsers, scenarios, then, when
 from support.clock import FixedClock
 from support.factories import make_application
-from uuid6 import uuid7
 
 from funnel.core.clock import get_clock
 from funnel.core.config import Settings

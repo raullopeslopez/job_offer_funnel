@@ -2,10 +2,9 @@
 
 import asyncio
 from datetime import date
-from uuid import UUID
+from uuid import UUID, uuid7
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from uuid6 import uuid7
 
 from funnel.core.db import Base
 from funnel.modules.applications.domain import Outcome, Stage

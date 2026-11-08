@@ -1,10 +1,9 @@
 from datetime import date, datetime
 from enum import StrEnum
-from uuid import UUID
+from uuid import UUID, uuid7
 
 from sqlalchemy import Date, DateTime, Enum, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
-from uuid6 import uuid7
 
 from funnel.core.db import Base
 from funnel.modules.applications.domain import Outcome, Stage
