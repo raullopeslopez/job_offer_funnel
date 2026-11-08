@@ -12,7 +12,19 @@ While the version is `0.x`, the API may change without a major version bump.
 
 - Web app at `http://localhost:8081`, started by `just up` together with the API. It asks
   for the API token the first time, keeps it in the browser and asks again if the API
-  rejects it. No screens yet beyond the navigation shell; they arrive one per release.
+  rejects it.
+- Inbox screen in the web app (`/inbox`): the pending, discarded and promoted offers,
+  most recent first, each linking to its posting. Add an offer by hand (invalid fields
+  and duplicates are shown in the form), import a public feed for a search profile and
+  see its summary (or when it can be imported again), discard an offer with an optional
+  reason and undo it, restore discarded offers, and promote an offer to an application
+  through a chosen channel.
+
+### Fixed
+
+- Every write is committed before the API answers. Before, the response could arrive
+  first: a read right after a write could still return the old data, and a failed
+  commit could still answer with a success.
 
 ## [0.2.0] - 2026-11-08
 

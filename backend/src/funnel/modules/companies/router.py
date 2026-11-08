@@ -3,9 +3,8 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from funnel.core.db import get_session
+from funnel.core.db import SessionDep
 from funnel.core.errors import ProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.companies.repository import CompanyRepository
@@ -16,7 +15,7 @@ router = APIRouter(prefix="/companies", tags=["companies"])
 
 
 def get_company_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: SessionDep,
 ) -> CompanyService:
     # Composition root: the only place in the router that knows about the repository.
     return CompanyService(CompanyRepository(session))

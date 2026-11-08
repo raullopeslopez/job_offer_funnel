@@ -3,10 +3,9 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from funnel.core.clock import Clock, get_clock
-from funnel.core.db import get_session
+from funnel.core.db import SessionDep
 from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.domain import StageChange
@@ -26,7 +25,7 @@ router = APIRouter(prefix="/applications", tags=["applications"])
 
 
 def get_application_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: SessionDep,
     clock: Annotated[Clock, Depends(get_clock)],
 ) -> ApplicationService:
     # Composition root: the only place in the router that knows about the repository.

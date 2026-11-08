@@ -6,12 +6,16 @@ on:
     paths:
       - "frontend/**"
       - "backend/openapi.json"
+      - "backend/tests/support/e2e_server.py"
+      - "specs/ui/**"
       - "Justfile"
       - ".github/workflows/frontend.yml"
   pull_request:
     paths:
       - "frontend/**"
       - "backend/openapi.json"
+      - "backend/tests/support/e2e_server.py"
+      - "specs/ui/**"
       - "Justfile"
       - ".github/workflows/frontend.yml"
 
@@ -34,9 +38,21 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - name: Install just
         run: uv tool install rust-just
       - name: Install dependencies
         run: just frontend-install
       - name: Run CI
         run: just frontend-ci
+      # E2E: the API of backend/tests/support/e2e_server.py, with Postgres in Docker.
+      - name: Install backend dependencies
+        run: uv sync --locked
+        working-directory: backend
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Run E2E
+        run: just frontend-e2e

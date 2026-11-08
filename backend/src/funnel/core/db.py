@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
+from typing import Annotated
 
-from fastapi import Request
+from fastapi import Depends, Request
 from sqlalchemy import MetaData
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -38,6 +39,12 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
+
+
+# `scope="function"`: commit before the response is sent. With the default ("request")
+# the commit runs after it, so a client could read stale data right after a write, or
+# get a 2xx for a commit that then fails. Routers always take the session through this.
+SessionDep = Annotated[AsyncSession, Depends(get_session, scope="function")]
 
 
 async def flush_checking_unique(session: AsyncSession, unique_index: str, detail: str) -> None:

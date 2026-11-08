@@ -3,9 +3,8 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from funnel.core.db import get_session
+from funnel.core.db import SessionDep
 from funnel.core.errors import ProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.discovery.domain import WorkMode
@@ -31,7 +30,7 @@ profiles_router = APIRouter(prefix="/search-profiles", tags=["discovery"])
 
 
 def get_search_profile_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: SessionDep,
 ) -> SearchProfileService:
     # Composition root: the only place in the router that knows about the repository.
     return SearchProfileService(SearchProfileRepository(session))
@@ -98,7 +97,7 @@ async def delete_search_profile(profile_id: UUID, service: ProfileServiceDepende
 
 
 def get_search_generation_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: SessionDep,
 ) -> SearchGenerationService:
     return SearchGenerationService(SearchProfileRepository(session), JobBoardRepository(session))
 
@@ -136,7 +135,7 @@ job_boards_router = APIRouter(prefix="/job-boards", tags=["discovery"])
 
 
 def get_job_board_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: SessionDep,
 ) -> JobBoardService:
     return JobBoardService(JobBoardRepository(session))
 
