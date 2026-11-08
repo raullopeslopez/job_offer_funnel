@@ -40,7 +40,7 @@
 
 ## PRs, en orden
 
-0. `chore/frontend-setup`: `frontend/` con el stack, el tema, el layout (navegación lateral), la pantalla de token, los tipos generados, el proxy, el servicio `web`, las recetas de `just`, el job de CI y `.claude/rules/frontend.md`. Sin pantallas de dominio.
+0. `chore/frontend-setup`: `frontend/` con el stack, el tema, el layout (navegación lateral), la pantalla de token, los tipos generados, el proxy, el servicio `web`, las recetas de `just`, el job de CI y `.claude/rules/frontend.md`. Sin pantallas de dominio. Las dependencias entran con la primera pantalla que las usa: MUI X DataGrid y Playwright + playwright-bdd con la bandeja (1), MUI X Charts con las métricas (5).
 
 Una pantalla por PR, en orden de uso:
 

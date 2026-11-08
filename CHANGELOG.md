@@ -8,6 +8,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ## [Unreleased]
 
+### Added
+
+- Web app at `http://localhost:8081`, started by `just up` together with the API. It asks
+  for the API token the first time, keeps it in the browser and asks again if the API
+  rejects it. No screens yet beyond the navigation shell; they arrive one per release.
+
 ## [0.2.0] - 2026-11-08
 
 Phase 0, assisted discovery: offers arrive from search profiles, job boards and public

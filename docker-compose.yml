@@ -35,5 +35,21 @@ services:
       timeout: 3s
       retries: 20
 
+  # The SPA built and served by nginx, which forwards /api to the API (same origin).
+  web:
+    profiles: ["app"]
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8081}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   pgdata:

@@ -1,4 +1,6 @@
-"""Stop hook: if backend/ has uncommitted changes, `just check` must pass before the turn ends.
+"""Stop hook: the checks of each area with uncommitted changes must pass before the turn ends.
+
+backend/ runs `just check`; frontend/ runs `just frontend-check`.
 
 Exit code 2 blocks the stop and shows stderr to Claude.
 """
@@ -10,11 +12,12 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[2]
 OUTPUT_TAIL_LINES = 40
+CHECKS = {"backend": "check", "frontend": "frontend-check"}
 
 
-def _backend_has_changes() -> bool:
+def _has_changes(area: str) -> bool:
     status = subprocess.run(
-        ["git", "status", "--porcelain", "--", "backend"],
+        ["git", "status", "--porcelain", "--", area],
         cwd=PROJECT,
         capture_output=True,
         text=True,
@@ -23,12 +26,9 @@ def _backend_has_changes() -> bool:
     return bool(status.stdout.strip())
 
 
-def main() -> int:
-    payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
-    if payload.get("stop_hook_active") or not _backend_has_changes():
-        return 0
-    result = subprocess.run(
-        ["just", "check"],
+def _run(recipe: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["just", recipe],
         cwd=PROJECT,
         capture_output=True,
         text=True,
@@ -36,15 +36,26 @@ def main() -> int:
         errors="replace",
         check=False,
     )
-    if result.returncode == 0:
+
+
+def main() -> int:
+    payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
+    if payload.get("stop_hook_active"):
         return 0
-    output = (result.stdout + result.stderr).strip().splitlines()
-    tail = "\n".join(output[-OUTPUT_TAIL_LINES:])
-    print(
-        f"`just check` failed with uncommitted backend changes. Fix it:\n{tail}",
-        file=sys.stderr,
-    )
-    return 2
+    for area, recipe in CHECKS.items():
+        if not _has_changes(area):
+            continue
+        result = _run(recipe)
+        if result.returncode == 0:
+            continue
+        output = (result.stdout + result.stderr).strip().splitlines()
+        tail = "\n".join(output[-OUTPUT_TAIL_LINES:])
+        print(
+            f"`just {recipe}` failed with uncommitted {area} changes. Fix it:\n{tail}",
+            file=sys.stderr,
+        )
+        return 2
+    return 0
 
 
 if __name__ == "__main__":

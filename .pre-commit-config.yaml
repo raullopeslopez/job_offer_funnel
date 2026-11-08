@@ -19,3 +19,9 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+      - id: biome
+        name: biome check
+        entry: pnpm --dir frontend exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true
+        language: system
+        files: ^frontend/
+        types_or: [ts, tsx, javascript, json]
