@@ -5,7 +5,8 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from funnel.core.exceptions import AlreadyExistsError, InUseError
+from funnel.core.db import flush_checking_unique
+from funnel.core.exceptions import InUseError
 from funnel.core.pagination import PageParams
 from funnel.modules.companies.models import UNIQUE_NAME_INDEX, CompanyRow
 
@@ -56,12 +57,5 @@ class CompanyRepository:
         return list(rows), total or 0
 
     async def _flush_checking_name(self, company: CompanyRow) -> None:
-        # Read before flushing: after a failed flush the row cannot be loaded any more.
         detail = f"A company named {company.name} already exists"
-        try:
-            # Flush now so a duplicate name surfaces here as a business error, not at commit.
-            await self._session.flush()
-        except IntegrityError as error:
-            if UNIQUE_NAME_INDEX in str(error.orig):
-                raise AlreadyExistsError(detail) from error
-            raise
+        await flush_checking_unique(self._session, UNIQUE_NAME_INDEX, detail)

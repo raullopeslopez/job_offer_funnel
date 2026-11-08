@@ -118,7 +118,8 @@ async def create_job_board(
     job_board: JobBoardCreate, service: JobBoardServiceDependency
 ) -> JobBoardRead:
     """Register a job board with its search URL template and search syntax."""
-    raise NotImplementedError
+    created = await service.create(job_board)
+    return JobBoardRead.model_validate(created, from_attributes=True)
 
 
 @job_boards_router.get("")
@@ -126,12 +127,19 @@ async def list_job_boards(
     page: Annotated[PageParams, Depends(get_page_params)], service: JobBoardServiceDependency
 ) -> Page[JobBoardRead]:
     """Job boards in alphabetical order, ignoring case."""
-    raise NotImplementedError
+    job_boards, total = await service.list_page(page)
+    return Page(
+        items=[JobBoardRead.model_validate(row, from_attributes=True) for row in job_boards],
+        total=total,
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @job_boards_router.get("/{job_board_id}", responses=_JOB_BOARD_NOT_FOUND)
 async def read_job_board(job_board_id: UUID, service: JobBoardServiceDependency) -> JobBoardRead:
-    raise NotImplementedError
+    job_board = await service.get(job_board_id)
+    return JobBoardRead.model_validate(job_board, from_attributes=True)
 
 
 @job_boards_router.patch(
@@ -141,14 +149,15 @@ async def update_job_board(
     job_board_id: UUID, changes: JobBoardUpdate, service: JobBoardServiceDependency
 ) -> JobBoardRead:
     """Change only the fields sent."""
-    raise NotImplementedError
+    updated = await service.update(job_board_id, changes.model_dump(exclude_unset=True))
+    return JobBoardRead.model_validate(updated, from_attributes=True)
 
 
 @job_boards_router.delete(
     "/{job_board_id}", status_code=HTTPStatus.NO_CONTENT, responses=_JOB_BOARD_NOT_FOUND
 )
 async def delete_job_board(job_board_id: UUID, service: JobBoardServiceDependency) -> None:
-    raise NotImplementedError
+    await service.delete(job_board_id)
 
 
 router = APIRouter()
