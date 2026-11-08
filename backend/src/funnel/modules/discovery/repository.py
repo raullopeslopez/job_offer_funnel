@@ -89,6 +89,13 @@ class JobBoardRepository:
         total = await self._session.scalar(select(func.count()).select_from(JobBoardRow))
         return list(rows), total or 0
 
+    async def list_all(self) -> list[JobBoardRow]:
+        """Every job board, alphabetically: there are a handful, so no pagination."""
+        rows = await self._session.scalars(
+            select(JobBoardRow).order_by(func.lower(JobBoardRow.name), JobBoardRow.id)
+        )
+        return list(rows)
+
     async def _flush_checking_name(self, job_board: JobBoardRow) -> None:
         detail = f"A job board named {job_board.name} already exists"
         await flush_checking_unique(self._session, UNIQUE_JOB_BOARD_NAME_INDEX, detail)

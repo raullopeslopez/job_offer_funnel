@@ -8,10 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from funnel.core.db import get_session
 from funnel.core.errors import ProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
+from funnel.modules.discovery.domain import WorkMode
 from funnel.modules.discovery.repository import JobBoardRepository, SearchProfileRepository
 from funnel.modules.discovery.schemas import (
+    GeneratedSearchRead,
     JobBoardCreate,
     JobBoardRead,
+    JobBoardSearchesRead,
     JobBoardUpdate,
     ProfileSearchesRead,
     SearchProfileCreate,
@@ -109,7 +112,22 @@ async def generate_searches(
 
     Computed on every request: editing the profile or a job board updates the searches.
     """
-    raise NotImplementedError
+    profile, job_boards = await service.generate(profile_id)
+    return ProfileSearchesRead(
+        profile_id=profile.id,
+        work_modes=[WorkMode(mode) for mode in profile.work_modes],
+        job_boards=[
+            JobBoardSearchesRead(
+                job_board_id=job_board.id,
+                job_board_name=job_board.name,
+                syntax=job_board.syntax,
+                searches=[
+                    GeneratedSearchRead(query=search.query, url=search.url) for search in searches
+                ],
+            )
+            for job_board, searches in job_boards
+        ],
+    )
 
 
 # --- Job boards ---

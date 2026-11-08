@@ -20,6 +20,7 @@
 | 3 | Búsquedas generadas | Para cada perfil y portal: la query con la sintaxis del portal y la URL lista para abrir |
 | 4 | Bandeja | Alta manual de ofertas (URL, empresa, puesto, portal, perfil), deduplicación por empresa + título normalizado, descartar, pasar a candidatura en `evaluated` |
 | 5 | ATS de empresas | Empresas vigiladas con su ATS (Greenhouse, Lever, Ashby): consulta a demanda de sus ofertas públicas, filtradas por perfil, a la bandeja. Primera integración externa: un adaptador por ATS |
+| 6 | Feeds públicos | Portales remotos con API o RSS (RemoteOK, We Work Remotely, Remotive, Himalayas, Jobicy): consulta a demanda, filtrada por perfil, a la bandeja. Mismo patrón de adaptador que los ATS; antes, verificar las condiciones de cada feed |
 
 ## Specs, en orden
 
@@ -28,6 +29,7 @@
 3. `specs/discovery/generated_searches.feature`: query y URL por perfil y portal, según la sintaxis.
 4. `specs/inbox/inbox.feature`: alta manual, deduplicación, descarte y paso a candidatura.
 5. `specs/inbox/ats_companies.feature`: empresas vigiladas y consulta de su ATS.
+6. `specs/inbox/public_feeds.feature`: ingesta a demanda de los feeds públicos.
 
 ## Portales
 
@@ -47,10 +49,10 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 
 | Portal | Vía automática | Notas |
 |--------|----------------|-------|
-| We Work Remotely | RSS por categoría | El tablero remoto más grande según varias fuentes |
+| We Work Remotely | RSS por categoría | El tablero remoto más grande según varias fuentes. Plantilla confirmada: `https://weworkremotely.com/remote-jobs/search?term={query}` (`keywords`) |
 | Remotive | RSS público (24 h de retraso) | Pide no republicar sus ofertas en otros portales |
-| Himalayas | API pública | Exige atribución y enlace a la fuente |
-| Jobicy | API pública | Filtro por región APAC y zona horaria |
+| Himalayas | API pública | Exige atribución y enlace a la fuente. Plantilla de la web sin confirmar (`?search=` o `?q=`): copiarla de una búsqueda real |
+| Jobicy | API pública | Filtro por región APAC y zona horaria. Plantilla probable: `https://jobicy.com/jobs?search_keywords={query}` (`keywords`) |
 | Remote Rocketship | No (de pago) | Ofertas que no salen en LinkedIn; filtro por Asia |
 | Jobgether | No | Ofertas remotas por región (Asia) |
 | Working Nomads | Feed JSON sin documentar | Términos restrictivos: evitar la ingesta automática |
@@ -62,7 +64,6 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 |-------|-----------------|
 | Consulta periódica de los ATS (jobs, procrastinate) | Lanzarla a mano se haga pesado |
 | Lectura de alertas por email | Dar de alta ofertas a mano sea el cuello de botella |
-| Ingesta automática de feeds públicos (RemoteOK, We Work Remotely, Remotive, Himalayas, Jobicy) | Tras la bandeja: mismo patrón de adaptador que los ATS, verificando antes las condiciones de cada feed |
 | Scoring de encaje | La bandeja tenga más ofertas de las que se revisan |
 | Seniority y salario mínimo en el perfil | La seniority va hoy en los títulos ("Senior Backend Engineer"); el salario, con la fase de salarios |
 | Salarios (bandas de mercado desde webs externas) | Fase propia, revisando antes las condiciones de cada web |

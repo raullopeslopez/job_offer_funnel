@@ -3,6 +3,12 @@ from uuid import UUID
 
 from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
+from funnel.modules.discovery.domain import (
+    GeneratedSearch,
+    SearchTerms,
+    build_queries,
+    build_url,
+)
 from funnel.modules.discovery.models import JobBoardRow, SearchProfileRow
 from funnel.modules.discovery.repository import JobBoardRepository, SearchProfileRepository
 from funnel.modules.discovery.schemas import JobBoardCreate, SearchProfileCreate
@@ -68,3 +74,28 @@ class SearchGenerationService:
     def __init__(self, profiles: SearchProfileRepository, job_boards: JobBoardRepository) -> None:
         self._profiles = profiles
         self._job_boards = job_boards
+
+    async def generate(
+        self, profile_id: UUID
+    ) -> tuple[SearchProfileRow, list[tuple[JobBoardRow, list[GeneratedSearch]]]]:
+        profile = await self._profiles.get(profile_id)
+        if profile is None:
+            raise NotFoundError(f"Search profile {profile_id} does not exist")
+        terms = SearchTerms(
+            titles=profile.titles,
+            keywords=profile.keywords,
+            excluded_keywords=profile.excluded_keywords,
+        )
+        job_boards = await self._job_boards.list_all()
+        return profile, [
+            (job_board, _searches(job_board, terms, profile.location)) for job_board in job_boards
+        ]
+
+
+def _searches(
+    job_board: JobBoardRow, terms: SearchTerms, location: str | None
+) -> list[GeneratedSearch]:
+    return [
+        GeneratedSearch(query, build_url(job_board.search_url_template, query, location))
+        for query in build_queries(terms, job_board.syntax)
+    ]
