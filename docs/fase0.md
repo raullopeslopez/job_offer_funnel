@@ -33,7 +33,7 @@
 
 ## Portales
 
-Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una búsqueda real y cambiar el texto por `{query}`.
+Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una búsqueda real y cambiar el texto por `{query}`. Los de plantilla comprobada están en `backend/seeds/job_boards.json` y se registran con `just seed-job-boards` (no duplica: salta los que ya existen); para añadir uno, se añade al JSON y se vuelve a ejecutar.
 
 **Del usuario** (sintaxis prevista, a confirmar al darlos de alta):
 

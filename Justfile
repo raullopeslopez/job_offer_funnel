@@ -26,6 +26,10 @@ up:
 down:
     {{compose}} --profile app down
 
+# Register the job boards of backend/seeds/job_boards.json in the API of `just up` (skips existing ones)
+seed-job-boards:
+    uv run python scripts/seed_job_boards.py seeds/job_boards.json
+
 # Follow the API logs
 logs:
     {{compose}} --profile app logs -f api

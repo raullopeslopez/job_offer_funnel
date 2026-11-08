@@ -1,0 +1,22 @@
+[
+  {
+    "name": "LinkedIn",
+    "search_url_template": "https://www.linkedin.com/jobs/search/?keywords={query}&location={location}",
+    "syntax": "boolean"
+  },
+  {
+    "name": "Indeed",
+    "search_url_template": "https://www.indeed.com/jobs?q={query}&l={location}",
+    "syntax": "minus"
+  },
+  {
+    "name": "We Work Remotely",
+    "search_url_template": "https://weworkremotely.com/remote-jobs/search?term={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Jobicy",
+    "search_url_template": "https://jobicy.com/jobs?search_keywords={query}",
+    "syntax": "keywords"
+  }
+]
