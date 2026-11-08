@@ -8,9 +8,19 @@ from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
+
+
+class ProblemRead(BaseModel):
+    """RFC 9457 problem details, as returned by every error response (for OpenAPI docs)."""
+
+    type: str
+    title: str
+    status: int
+    detail: str | None = None
 
 
 class AppError(Exception):
