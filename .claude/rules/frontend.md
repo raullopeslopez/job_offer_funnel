@@ -27,7 +27,7 @@ frontend/src/
 ## Reglas
 
 - **La API, solo a través de `api` (`src/api/client.ts`)**, con las rutas y tipos de `schema.d.ts`. Nada de `fetch` directo ni tipos de la API escritos a mano.
-- Si cambia la API: `just openapi` regenera `openapi.json` y los tipos. `just fe-check` falla si `schema.d.ts` no está al día.
+- Si cambia la API: `just openapi` regenera `openapi.json` y los tipos. `just frontend-check` falla si `schema.d.ts` no está al día.
 - **Sin reglas de negocio en el cliente**: validan la API y sus 422; el formulario los muestra en su campo (`setError`).
 - Estilos con el tema y `sx`; ningún color ni tamaño suelto fuera de `theme.ts`.
 - Textos de la app en inglés, como el resto del producto.
@@ -42,6 +42,7 @@ frontend/src/
 
 ## Herramientas
 
-- `just fe-dev` (con `just dev` para la API) · `just fe-fmt` · `just fe-check` (Biome, `tsc`, deriva de tipos) · `just fe-test` · `just ci-frontend`.
+- `just frontend-dev` (con `just dev` para la API) · `just frontend-fmt` · `just frontend-check` (Biome, `tsc`, deriva de tipos) · `just frontend-test`.
+- **Cambios solo de frontend: `just frontend-ci`** (lo mismo que su job de CI, sin Docker ni tests del backend). `just ci` solo cuando también cambia `backend/`.
 - Con RTK, `pnpm lint` se reescribe a eslint: usar las recetas de `just` o `pnpm run lint`.
 - TypeScript fijado en 5.x: openapi-typescript aún no funciona con TypeScript 7 (sin API de JS). Se sube cuando lo soporte.

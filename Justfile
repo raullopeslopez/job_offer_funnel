@@ -14,7 +14,7 @@ default:
 # Install dependencies and git hooks, start the database and migrate
 setup:
     uv sync
-    just fe-install
+    just frontend-install
     uv run pre-commit install
     just db-up
     just migrate
@@ -135,48 +135,55 @@ cov:
 # Export the OpenAPI contract to backend/openapi.json and regenerate the frontend types
 openapi:
     uv run python -m funnel.openapi
-    just fe-types
+    just frontend-types
 
 # Install the frontend dependencies
+[group("frontend")]
 [working-directory("../frontend")]
-fe-install:
+frontend-install:
     pnpm install --frozen-lockfile
 
 # Run the frontend with hot reload (http://localhost:5173, /api proxied to `just dev`)
+[group("frontend")]
 [working-directory("../frontend")]
-fe-dev:
+frontend-dev:
     pnpm dev
 
 # Regenerate the frontend API types from backend/openapi.json (`just openapi` runs it)
+[group("frontend")]
 [working-directory("../frontend")]
-fe-types:
+frontend-types:
     pnpm run api:types
 
 # Format and auto-fix the frontend
+[group("frontend")]
 [working-directory("../frontend")]
-fe-fmt:
+frontend-fmt:
     pnpm run fmt
 
 # Frontend lint + type check + API types in sync with openapi.json
+[group("frontend")]
 [working-directory("../frontend")]
-fe-check:
+frontend-check:
     pnpm run lint
     pnpm run typecheck
     pnpm run api:check
 
 # Frontend component tests (extra args go to vitest)
+[group("frontend")]
 [working-directory("../frontend")]
-fe-test *args:
+frontend-test *args:
     pnpm run test {{args}}
 
-# Everything the backend CI job runs
-ci-backend: check test
+# Backend only: everything its CI job runs (lint, types, architecture, all tests)
+backend-ci: check test
 
-# Everything the frontend CI job runs
-ci-frontend: fe-check fe-test
+# Frontend only: everything its CI job runs (lint, types, API types drift, tests). No Docker
+[group("frontend")]
+frontend-ci: frontend-check frontend-test
 
-# Everything CI runs
-ci: ci-backend ci-frontend
+# Backend and frontend: everything CI runs
+ci: backend-ci frontend-ci
 
 # Start Claude Code with Remote Control (controllable from the Claude mobile app)
 [no-cd]

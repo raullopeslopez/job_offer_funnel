@@ -37,4 +37,4 @@ jobs:
         run: uv sync --locked
         working-directory: backend
       - name: Run CI
-        run: just ci-backend
+        run: just backend-ci

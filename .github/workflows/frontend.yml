@@ -37,6 +37,6 @@ jobs:
       - name: Install just
         run: uv tool install rust-just
       - name: Install dependencies
-        run: just fe-install
+        run: just frontend-install
       - name: Run CI
-        run: just ci-frontend
+        run: just frontend-ci

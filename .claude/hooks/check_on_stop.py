@@ -1,6 +1,6 @@
 """Stop hook: the checks of each area with uncommitted changes must pass before the turn ends.
 
-backend/ runs `just check`; frontend/ runs `just fe-check`.
+backend/ runs `just check`; frontend/ runs `just frontend-check`.
 
 Exit code 2 blocks the stop and shows stderr to Claude.
 """
@@ -12,7 +12,7 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[2]
 OUTPUT_TAIL_LINES = 40
-CHECKS = {"backend": "check", "frontend": "fe-check"}
+CHECKS = {"backend": "check", "frontend": "frontend-check"}
 
 
 def _has_changes(area: str) -> bool:
