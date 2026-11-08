@@ -29,12 +29,40 @@
 4. `specs/inbox/inbox.feature`: alta manual, deduplicación, descarte y paso a candidatura.
 5. `specs/inbox/ats_companies.feature`: empresas vigiladas y consulta de su ATS.
 
+## Portales
+
+Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una búsqueda real y cambiar el texto por `{query}`.
+
+**Del usuario** (sintaxis prevista, a confirmar al darlos de alta):
+
+| Portal | Sintaxis | Notas |
+|--------|----------|-------|
+| LinkedIn | `boolean` | Sin scraping (términos de uso) |
+| Indeed | `minus` | |
+| Glints, Kalibrr, Dealls, Tech in Asia, Glassdoor, Snaphunt, Welcome to the Jungle | `keywords` | Sudeste asiático la mayoría |
+| Wellfound | `keywords` | Filtra más por rol que por texto: puede no admitir bien `{query}` |
+| RemoteOK | `keywords` | API JSON pública (`remoteok.com/api`): candidata a ingesta automática, con atribución |
+
+**Candidatos encontrados** (búsqueda del 2026-11-08; condiciones de uso sin verificar):
+
+| Portal | Vía automática | Notas |
+|--------|----------------|-------|
+| We Work Remotely | RSS por categoría | El tablero remoto más grande según varias fuentes |
+| Remotive | RSS público (24 h de retraso) | Pide no republicar sus ofertas en otros portales |
+| Himalayas | API pública | Exige atribución y enlace a la fuente |
+| Jobicy | API pública | Filtro por región APAC y zona horaria |
+| Remote Rocketship | No (de pago) | Ofertas que no salen en LinkedIn; filtro por Asia |
+| Jobgether | No | Ofertas remotas por región (Asia) |
+| Working Nomads | Feed JSON sin documentar | Términos restrictivos: evitar la ingesta automática |
+| Remote.co, NoDesk, Jobspresso, Arc.dev | Sin comprobar | Citados en listas de portales remotos |
+
 ## Fuera (con disparador)
 
 | Fuera | Entra cuando... |
 |-------|-----------------|
 | Consulta periódica de los ATS (jobs, procrastinate) | Lanzarla a mano se haga pesado |
 | Lectura de alertas por email | Dar de alta ofertas a mano sea el cuello de botella |
+| Ingesta automática de feeds públicos (RemoteOK, We Work Remotely, Remotive, Himalayas, Jobicy) | Tras la bandeja: mismo patrón de adaptador que los ATS, verificando antes las condiciones de cada feed |
 | Scoring de encaje | La bandeja tenga más ofertas de las que se revisan |
 | Seniority y salario mínimo en el perfil | La seniority va hoy en los títulos ("Senior Backend Engineer"); el salario, con la fase de salarios |
 | Salarios (bandas de mercado desde webs externas) | Fase propia, revisando antes las condiciones de cada web |
