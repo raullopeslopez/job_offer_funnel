@@ -36,6 +36,12 @@ class NotFoundError(AppError):
     status = HTTPStatus.NOT_FOUND
 
 
+class AlreadyExistsError(AppError):
+    slug = "already-exists"
+    title = "Resource already exists"
+    status = HTTPStatus.CONFLICT
+
+
 class UnauthorizedError(AppError):
     slug = "unauthorized"
     title = "Missing or invalid credentials"

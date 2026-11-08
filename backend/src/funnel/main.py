@@ -11,6 +11,7 @@ from funnel.core.config import Settings
 from funnel.core.errors import ProblemRead, ValidationProblemRead, register_error_handlers
 from funnel.core.logging import configure_logging
 from funnel.modules.applications import router as applications
+from funnel.modules.companies import router as companies
 
 
 @asynccontextmanager
@@ -46,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         },
     )
     api.include_router(applications.router)
+    api.include_router(companies.router)
 
     app.include_router(health.router)
     app.include_router(api)

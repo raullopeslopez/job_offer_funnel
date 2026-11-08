@@ -35,7 +35,7 @@ backend/src/funnel/
 - **CRUD**: sin reglas. Sin `domain.py`; el service usa los modelos ORM. Hoy: `companies`, `contacts`, `documents`, `events`, `tasks`, `questions`.
 - Las capas externas son idénticas en ambos.
 - **Promoción**: la primera regla de negocio de un CRUD lo convierte en dominio en ese mismo cambio. La regla nunca va al service ni al router.
-- Referencia: copiar la estructura de `applications` (dominio) o del primer CRUD.
+- Referencia: copiar la estructura de `applications` (dominio) o de `companies` (CRUD).
 
 ## Transacciones
 
@@ -67,7 +67,7 @@ Un patrón entra cuando aparece el problema concreto que resuelve.
 - **Recursos**: REST, `/api/v1`, sustantivos en plural y en inglés. Sub-recursos solo con dependencia real. Una acción que no encaja se modela como un recurso que se crea (p. ej. `POST /applications/{id}/transitions {to_stage | outcome, occurred_on, note}`). Nunca `PATCH` sobre la fase.
 - **Métodos**: `GET` lee · `POST` crea (201) · `PATCH` modifica parcialmente (nunca `PUT`) · `DELETE` borra (204).
 - **Datos**: JSON en `snake_case`; enums en minúscula; IDs UUIDv7; fechas ISO 8601 (`occurred_on` para días, `*_at` para instantes UTC).
-- **Colecciones**: paginación offset (`limit`/`offset`), filtros por query y `sort` (`-campo` = descendente).
+- **Colecciones**: paginación offset con `Depends(get_page_params)` (`limit` 1-100, por defecto 20; `offset` ≥ 0) y respuesta `Page[XRead]` = `{items, total, limit, offset}` (`core/pagination.py`). Filtros por query y `sort` (`-campo` = descendente). Orden siempre determinista (desempate por `id`).
 - **Versionado**: cambio compatible (añadir) → sin más; cambio que rompe (quitar o renombrar un campo o un slug de error, cambiar un tipo) → `/v2`. El test de contrato detecta cualquier cambio.
 - Schemas `XCreate`/`XUpdate`/`XRead`; nunca exponer modelos ORM.
 
@@ -77,7 +77,7 @@ Un patrón entra cuando aparece el problema concreto que resuelve.
 - **Controlados**: cada subclase de `AppError` es un `type` estable (`/problems/<slug>`); renombrar un slug rompe el contrato. Las reglas de dominio lanzan subclases de `DomainError` con un slug específico (p. ej. `invalid-transition`). Nunca se lanza `HTTPException` desde un módulo.
 - **Inesperados**: cualquier otra excepción → `500 /problems/internal-error` con `detail` genérico; el traceback va al log. Nunca se expone el mensaje real.
 - **Códigos**: 401 token (con `WWW-Authenticate: Bearer`) · 404 no existe · 409 conflicto con el estado actual · 422 datos inválidos (`validation-error` con `errors: [{field, message}]`, o un slug de regla de valor) · 500 inesperado.
-- Los errores de BD suben como 500, salvo los que tienen significado de negocio (p. ej. unicidad → 409), que el repository traduce a un error de dominio.
+- Los errores de BD suben como 500, salvo los que tienen significado de negocio: la unicidad la garantiza un índice `UNIQUE` en la BD (nunca un "¿existe ya?" en Python) y el repository traduce su `IntegrityError` a `AlreadyExistsError` (409 `already-exists`) haciendo `flush`.
 - `title`/`detail` en inglés, para humanos; el cliente decide por `type` (también para la futura i18n).
 - Cada endpoint declara en `responses=` los errores que puede devolver (401 y 422 vienen del router `/api/v1`).
 - Aplazados: request/correlation id (disparador: deploy con logs concurrentes), URIs absolutas en `type`, campo `instance`.

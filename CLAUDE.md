@@ -8,14 +8,14 @@ Responder siempre en español, aunque el código, las specs y la salida de las h
 
 ## Estado actual
 
-Backend con `core` completo (config, sesión por request, contrato de errores, auth por token, logging, `Clock`) y el primer módulo de dominio, `applications` (transiciones de fase), que es la **referencia** para los siguientes. Actualizar esta sección al cerrar cada hito.
+Backend con `core` completo (config, sesión por request, contrato de errores, auth por token, logging, `Clock`) y dos módulos de **referencia**: `applications` (dominio: transiciones de fase) y `companies` (CRUD: alta, detalle, listado paginado). Actualizar esta sección al cerrar cada hito.
 
 - [x] Concepto, stack, convenciones, harness
 - [x] Alcance del MVP: `docs/mvp.md` (solo API; las features fuera del MVP no se implementan)
 - [x] Esqueleto del backend + hooks de Claude Code. Descartado un subagent test-runner (pytest ya da salida escueta; solo se reconsidera si `/usage` lo justifica)
 - [x] Spec + implementación: `applications/stage_transitions`
+- [x] Spec + implementación: `companies/manage_companies` (primer módulo CRUD: referencia para los demás)
 - [ ] Spec + implementación: `applications/manage_applications`
-- [ ] Spec + implementación: `companies/manage_companies`
 - [ ] Spec + implementación: `metrics/funnel_metrics`
 
 ## Criterio: evitar la sobreingeniería
