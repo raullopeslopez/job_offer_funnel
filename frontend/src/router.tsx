@@ -6,6 +6,7 @@ import { Home } from "./pages/Home";
 import { InboxPage } from "./pages/inbox/InboxPage";
 import { MetricsPage } from "./pages/metrics/MetricsPage";
 import { SearchesPage } from "./pages/searches/SearchesPage";
+import { SettingsPage } from "./pages/settings/SettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
       { path: "applications", element: <ApplicationsPage /> },
       { path: "applications/:applicationId", element: <ApplicationDetailPage /> },
       { path: "metrics", element: <MetricsPage /> },
+      { path: "settings", element: <SettingsPage /> },
     ],
   },
 ]);

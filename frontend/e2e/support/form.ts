@@ -17,6 +17,9 @@ const FIELD_LABELS: Record<string, string> = {
   priority: "Priority",
   stage: "Stage",
   occurred_on: "Start date",
+  website: "Website",
+  search_url_template: "Search URL template",
+  syntax: "Syntax",
 };
 
 export const fieldLabel = (field: string) => FIELD_LABELS[field] ?? field;

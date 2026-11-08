@@ -45,6 +45,10 @@ While the version is `0.x`, the API may change without a major version bump.
   one, overall and for each channel with applications, and the applications in progress
   in each stage with their total. Each one comes as a table and a chart; a step no
   application reached shows its rate as "—", and with no applications the screen says so.
+- Settings screen in the web app (`/settings`): the companies and the job boards,
+  alphabetically, each in its own tab. Create, edit and delete them; invalid fields and
+  duplicate names are shown in the form, and a company with applications says it cannot
+  be deleted. Clearing the website of a company removes it.
 
 ### Fixed
 
