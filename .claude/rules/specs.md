@@ -5,12 +5,13 @@ paths:
 
 # Specs (Gherkin)
 
-- Antes de escribir una spec, leer `docs/funnel.md` (comportamiento de cada fase) y `docs/glossary.md` (términos).
-- `# language: es` en la primera línea. Palabras clave en español: `Característica`, `Escenario`, `Esquema del escenario`, `Ejemplos`, `Dado`, `Cuando`, `Entonces`, `Y`.
-- Ruta: `specs/<modulo>/<nombre>.feature`, con el módulo en inglés y en snake_case.
-- Describir comportamiento observable desde fuera (qué pasa), nunca la implementación (tablas, clases, endpoints).
-- Un `Cuando` por escenario.
-- Casos que solo cambian en los datos: `Esquema del escenario` + `Ejemplos`, no escenarios copiados.
-- Usar los términos del glosario (columna ES). Si falta un término, añadirlo antes al glosario.
-- Incluir los caminos de error (transición inválida, recurso inexistente), no solo el camino feliz.
-- Una spec nueva o modificada siempre pasa por revisión del usuario antes de implementar.
+- **Specs are written entirely in English**, like the code and the app. Internationalisation is a future feature, not a reason to write specs in another language.
+- Before writing a spec, read `docs/funnel.md` (behaviour of each stage) and `docs/glossary.md` (use the EN column: `applied`, `offer_declined`...).
+- English Gherkin keywords, with no `# language:` header: `Feature`, `Background`, `Scenario`, `Scenario Outline`, `Examples`, `Given`, `When`, `Then`, `And`.
+- Path: `specs/<module>/<name>.feature`, with the module name in snake_case.
+- Describe behaviour observable from the outside (what happens), never the implementation (tables, classes, endpoints).
+- One `When` per scenario.
+- Cases that differ only in data: `Scenario Outline` + `Examples`, not copied scenarios.
+- If a term is missing from the glossary, add it there first.
+- Include the error paths (invalid transition, missing resource), not just the happy path.
+- A new or changed spec always goes through the user's review before implementation.

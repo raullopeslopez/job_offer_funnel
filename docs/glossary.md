@@ -1,6 +1,6 @@
 # Glosario de dominio (ES → EN)
 
-Fuente única de nombres. Las specs usan la columna ES; el código, la API y la BD usan la columna EN. Un concepto nuevo se añade aquí **antes** de usarlo.
+Fuente única de nombres. El producto (specs, código, API, BD) usa solo la columna EN; la columna ES es para la documentación interna. Un concepto nuevo se añade aquí **antes** de usarlo.
 
 ## Fases (`Stage`)
 

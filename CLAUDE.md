@@ -31,7 +31,7 @@ Python 3.13 · uv · FastAPI (async) · Pydantic v2 · PostgreSQL · SQLAlchemy 
 
 ## Idioma
 
-Español: specs (`# language: es`), `docs/`, `CLAUDE.md`. Inglés: código, tests, commits y API.
+**Inglés**: todo lo que forma parte del producto: código, tests, specs Gherkin, commits, API y textos de la app. El soporte de otros idiomas (i18n) será una feature futura. **Español**: solo la documentación interna (`docs/`, `CLAUDE.md`, `.claude/`).
 
 ## Desarrollo
 
