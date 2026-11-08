@@ -3,7 +3,24 @@ name: backend
 on:
   push:
     branches: [main]
+    paths:
+      - "backend/**"
+      - "specs/**"
+      - "Justfile"
+      - "docker-compose.yml"
+      - ".github/workflows/backend.yml"
   pull_request:
+    paths:
+      - "backend/**"
+      - "specs/**"
+      - "Justfile"
+      - "docker-compose.yml"
+      - ".github/workflows/backend.yml"
+
+# A new push to the same branch cancels the run it supersedes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
@@ -13,6 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - name: Install just
         run: uv tool install rust-just
       - name: Install dependencies
