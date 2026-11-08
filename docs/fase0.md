@@ -58,6 +58,20 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 | Working Nomads | Feed JSON sin documentar | Términos restrictivos: evitar la ingesta automática |
 | Remote.co, NoDesk, Jobspresso, Arc.dev | Sin comprobar | Citados en listas de portales remotos |
 
+## Condiciones de los feeds (spec 6)
+
+Verificadas el 2026-11-08 en las páginas oficiales. Para uso privado de una persona; ninguno lo prohíbe.
+
+| Feed | Condiciones | Cómo se cumplen |
+|------|-------------|-----------------|
+| RemoteOK (`remoteok.com/api`) | Enlazar a la oferta en RemoteOK y citarlo como fuente; sin su logo ([legal](https://www.remoteok.com/legal)) | Cada oferta guarda su enlace y su feed |
+| Remotive (`remotive.com/api/remote-jobs`) | Máx. 4 consultas al día y 2 por minuto; enlazar y citar a Remotive; 24 h de retraso; no reenviar a otros portales ([README](https://github.com/remotive-com/remote-jobs-api)) | Una importación cada 6 h por feed; enlace y feed guardados |
+| Himalayas (`himalayas.app/jobs/api/search`) | Citar y enlazar a Himalayas; postular solo por `applicationLink`; retirar las caducadas; no recopilar en masa; no reenviar (cláusula 113 de sus [términos](https://himalayas.app/terms), [docs](https://himalayas.app/docs/remote-jobs-api)) | Se guarda `applicationLink`; búsqueda por títulos, no el feed entero; las caducadas se descartan |
+| Jobicy (`jobicy.com/api/v2/remote-jobs`) | Citar la fuente; pocas consultas al día; no reenviar ([repo](https://github.com/Jobicy/remote-jobs-api)) | Una importación cada 6 h; feed guardado |
+| We Work Remotely | Fuera de la primera versión: sus condiciones de API prohíben guardar datos | Sigue como portal con búsqueda asistida |
+
+Común a todos: la app se identifica con el User-Agent `job-offer-funnel`, sin datos personales, y nada se publica ni se reenvía.
+
 ## Fuera (con disparador)
 
 | Fuera | Entra cuando... |

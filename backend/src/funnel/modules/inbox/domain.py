@@ -4,17 +4,61 @@ Source of truth: specs/inbox/inbox.feature.
 """
 
 from collections.abc import Mapping
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import StrEnum
 from http import HTTPStatus
 from typing import Final
 
 from funnel.core.exceptions import AppError, DomainError
+from funnel.modules.discovery.domain import SearchTerms
 
 
 class OfferStatus(StrEnum):
     PENDING = "pending"
     DISCARDED = "discarded"
     PROMOTED = "promoted"
+
+
+class Feed(StrEnum):
+    """Remote job boards with a public JSON API (see docs/fase0.md for their terms)."""
+
+    HIMALAYAS = "himalayas"
+    JOBICY = "jobicy"
+    REMOTEOK = "remoteok"
+    REMOTIVE = "remotive"
+
+
+# The strictest feed terms (Remotive: at most 4 reads a day) apply to every feed.
+FEED_COOLDOWN: Final = timedelta(hours=6)
+EXPIRED_REASON: Final = "expired"
+
+
+@dataclass(frozen=True)
+class FeedOffer:
+    """An offer as a feed publishes it; `url` is the link its terms ask to keep."""
+
+    title: str
+    company: str
+    description: str
+    url: str
+
+
+def matches(terms: SearchTerms, offer: FeedOffer) -> bool:
+    """A title in the offer's title, every keyword in title or description, no exclusion
+    in the title; ignoring case. Exclusions skip the description: a passing mention of an
+    excluded word there would drop good offers."""
+    title = offer.title.casefold()
+    text = f"{title} {offer.description.casefold()}"
+    return (
+        any(wanted.casefold() in title for wanted in terms.titles)
+        and all(keyword.casefold() in text for keyword in terms.keywords)
+        and not any(excluded.casefold() in title for excluded in terms.excluded_keywords)
+    )
+
+
+def next_import_at(last_imported_at: datetime) -> datetime:
+    return last_imported_at + FEED_COOLDOWN
 
 
 class OfferAction(StrEnum):
@@ -47,6 +91,35 @@ class InvalidOfferStatusError(DomainError):
     slug = "invalid-offer-status"
     title = "Invalid offer status"
     status = HTTPStatus.CONFLICT
+
+
+class UnknownSearchProfileError(AppError):
+    """The search profile referenced in the request does not exist."""
+
+    slug = "unknown-search-profile"
+    title = "Unknown search profile"
+    status = HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+class FeedCooldownError(AppError):
+    """The feed was imported too recently: its terms limit how often it may be read."""
+
+    slug = "feed-cooldown"
+    title = "Feed imported too recently"
+    status = HTTPStatus.TOO_MANY_REQUESTS
+
+    def __init__(self, feed: Feed, allowed_at: datetime, now: datetime) -> None:
+        wait = int((allowed_at - now).total_seconds())
+        super().__init__(
+            f"{feed} can be imported again at {allowed_at.isoformat()}",
+            headers={"Retry-After": str(wait)},
+        )
+
+
+class FeedUnavailableError(AppError):
+    slug = "feed-unavailable"
+    title = "Feed not available"
+    status = HTTPStatus.BAD_GATEWAY
 
 
 class UnknownJobBoardError(AppError):

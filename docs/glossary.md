@@ -99,3 +99,5 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Motivo de descarte | `discard_reason` |
 | Pasar a candidatura | `promote` |
 | Devolver a pendiente | `restore` |
+| Feed público (API o RSS de un portal) | `feed`: `remoteok` · `remotive` · `himalayas` · `jobicy` |
+| Importación de un feed | `import` |

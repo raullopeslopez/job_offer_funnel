@@ -1,6 +1,8 @@
 from collections.abc import Mapping
 from uuid import UUID
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import (
@@ -99,3 +101,8 @@ def _searches(
         GeneratedSearch(query, build_url(job_board.search_url_template, query, location))
         for query in build_queries(terms, job_board.syntax)
     ]
+
+
+def build_search_profile_service(session: AsyncSession) -> SearchProfileService:
+    """For other modules: the service on their request session, without its repository."""
+    return SearchProfileService(SearchProfileRepository(session))

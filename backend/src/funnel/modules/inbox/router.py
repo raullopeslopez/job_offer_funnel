@@ -1,7 +1,9 @@
+from collections.abc import AsyncIterator
 from http import HTTPStatus
 from typing import Annotated, Any
 from uuid import UUID
 
+import httpx2
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,12 +13,22 @@ from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.service import build_application_service
 from funnel.modules.companies.service import build_company_service
-from funnel.modules.inbox.domain import OfferStatus
-from funnel.modules.inbox.repository import OfferRepository
-from funnel.modules.inbox.schemas import DiscardCreate, OfferCreate, OfferRead, PromotionCreate
-from funnel.modules.inbox.service import OfferService
+from funnel.modules.discovery.service import build_search_profile_service
+from funnel.modules.inbox.domain import OfferStatus, next_import_at
+from funnel.modules.inbox.feeds import FeedReader
+from funnel.modules.inbox.repository import FeedImportRepository, OfferRepository
+from funnel.modules.inbox.schemas import (
+    DiscardCreate,
+    FeedRead,
+    ImportCreate,
+    ImportRead,
+    OfferCreate,
+    OfferRead,
+    PromotionCreate,
+)
+from funnel.modules.inbox.service import FeedImportService, OfferService
 
-router = APIRouter(prefix="/offers", tags=["inbox"])
+offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
 
 def get_offer_service(
@@ -44,7 +56,7 @@ _WRONG_STATUS: dict[int | str, dict[str, Any]] = {
 }
 
 
-@router.post(
+@offers_router.post(
     "",
     status_code=HTTPStatus.CREATED,
     responses={
@@ -66,7 +78,7 @@ async def create_offer(offer: OfferCreate, service: Service) -> OfferRead:
     return OfferRead.model_validate(created, from_attributes=True)
 
 
-@router.get("")
+@offers_router.get("")
 async def list_offers(
     page: Annotated[PageParams, Depends(get_page_params)],
     service: Service,
@@ -82,13 +94,13 @@ async def list_offers(
     )
 
 
-@router.get("/{offer_id}", responses=_NOT_FOUND)
+@offers_router.get("/{offer_id}", responses=_NOT_FOUND)
 async def read_offer(offer_id: UUID, service: Service) -> OfferRead:
     offer = await service.get(offer_id)
     return OfferRead.model_validate(offer, from_attributes=True)
 
 
-@router.post(
+@offers_router.post(
     "/{offer_id}/discard",
     status_code=HTTPStatus.CREATED,
     responses={**_NOT_FOUND, **_WRONG_STATUS},
@@ -99,7 +111,7 @@ async def discard_offer(offer_id: UUID, discard: DiscardCreate, service: Service
     return OfferRead.model_validate(discarded, from_attributes=True)
 
 
-@router.delete(
+@offers_router.delete(
     "/{offer_id}/discard",
     status_code=HTTPStatus.NO_CONTENT,
     responses={**_NOT_FOUND, **_WRONG_STATUS},
@@ -109,7 +121,7 @@ async def restore_offer(offer_id: UUID, service: Service) -> None:
     await service.restore(offer_id)
 
 
-@router.post(
+@offers_router.post(
     "/{offer_id}/promotion",
     status_code=HTTPStatus.CREATED,
     responses={**_NOT_FOUND, **_WRONG_STATUS},
@@ -122,3 +134,94 @@ async def promote_offer(offer_id: UUID, promotion: PromotionCreate, service: Ser
     """
     promoted = await service.promote(offer_id, promotion.channel)
     return OfferRead.model_validate(promoted, from_attributes=True)
+
+
+# --- Public feeds ---
+
+feeds_router = APIRouter(prefix="/feeds", tags=["inbox"])
+
+# Identifies the app to the feeds, as their terms expect; no personal data.
+USER_AGENT = "job-offer-funnel"
+FEED_TIMEOUT_SECONDS = 20
+
+
+async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
+    """HTTP client for the public feeds; tests replace it so they never reach the internet."""
+    async with httpx2.AsyncClient(
+        timeout=FEED_TIMEOUT_SECONDS, headers={"User-Agent": USER_AGENT}
+    ) as client:
+        yield client
+
+
+def get_feed_import_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)],
+) -> FeedImportService:
+    return FeedImportService(
+        FeedImportRepository(session), build_search_profile_service(session), FeedReader(client)
+    )
+
+
+FeedService = Annotated[FeedImportService, Depends(get_feed_import_service)]
+
+
+@feeds_router.get("")
+async def list_feeds(service: FeedService) -> list[FeedRead]:
+    """Every public feed, with its last import and the earliest next one."""
+    return [
+        FeedRead(
+            feed=feed,
+            last_imported_at=last,
+            next_import_at=None if last is None else next_import_at(last),
+        )
+        for feed, last in await service.last_imports()
+    ]
+
+
+@feeds_router.post(
+    "/{feed}/imports",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Feed does not exist"},
+        HTTPStatus.UNPROCESSABLE_CONTENT: {
+            "model": ValidationProblemRead | ProblemRead,
+            "description": "Invalid body (`validation-error`), or the search profile does "
+            "not exist (`unknown-search-profile`)",
+        },
+        HTTPStatus.TOO_MANY_REQUESTS: {
+            "model": ProblemRead,
+            "description": "Imported less than 6 hours ago (`feed-cooldown`); "
+            "`Retry-After` gives the seconds to wait",
+        },
+        HTTPStatus.BAD_GATEWAY: {
+            "model": ProblemRead,
+            "description": "The feed did not answer (`feed-unavailable`); nothing changed",
+        },
+    },
+)
+async def import_feed(  # noqa: PLR0913, PLR0917  # FastAPI injects each input as a parameter
+    feed: str,
+    body: ImportCreate,
+    service: FeedService,
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> ImportRead:
+    """Add the feed's offers that match the profile to the inbox, as pending.
+
+    Duplicates are skipped; pending offers of this feed that left it are discarded as
+    expired. A feed can be imported at most once every 6 hours (each feed's terms).
+    """
+    result = await service.import_feed(feed, body.profile_id, clock.now())
+    return ImportRead(
+        feed=result.feed,
+        found=result.found,
+        matching=result.matching,
+        added=result.added,
+        already_in_inbox=result.matching - result.added,
+        expired=result.expired,
+        imported_at=result.imported_at,
+    )
+
+
+router = APIRouter()
+router.include_router(offers_router)
+router.include_router(feeds_router)

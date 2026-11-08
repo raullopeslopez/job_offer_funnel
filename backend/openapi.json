@@ -587,6 +587,56 @@
         "title": "DiscardCreate",
         "type": "object"
       },
+      "Feed": {
+        "description": "Remote job boards with a public JSON API (see docs/fase0.md for their terms).",
+        "enum": [
+          "himalayas",
+          "jobicy",
+          "remoteok",
+          "remotive"
+        ],
+        "title": "Feed",
+        "type": "string"
+      },
+      "FeedRead": {
+        "properties": {
+          "feed": {
+            "$ref": "#/components/schemas/Feed"
+          },
+          "last_imported_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Imported At"
+          },
+          "next_import_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Earliest next import (6 hours later); null if never imported.",
+            "title": "Next Import At"
+          }
+        },
+        "required": [
+          "feed",
+          "last_imported_at",
+          "next_import_at"
+        ],
+        "title": "FeedRead",
+        "type": "object"
+      },
       "FieldErrorRead": {
         "properties": {
           "field": {
@@ -636,6 +686,69 @@
           "status"
         ],
         "title": "HealthRead",
+        "type": "object"
+      },
+      "ImportCreate": {
+        "properties": {
+          "profile_id": {
+            "description": "The search profile the feed's offers must match.",
+            "format": "uuid",
+            "title": "Profile Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile_id"
+        ],
+        "title": "ImportCreate",
+        "type": "object"
+      },
+      "ImportRead": {
+        "properties": {
+          "added": {
+            "description": "Matching offers added to the inbox as pending.",
+            "title": "Added",
+            "type": "integer"
+          },
+          "already_in_inbox": {
+            "description": "Matching offers skipped as duplicates.",
+            "title": "Already In Inbox",
+            "type": "integer"
+          },
+          "expired": {
+            "description": "Pending offers of this feed discarded as expired.",
+            "title": "Expired",
+            "type": "integer"
+          },
+          "feed": {
+            "$ref": "#/components/schemas/Feed"
+          },
+          "found": {
+            "description": "Offers the feed returned.",
+            "title": "Found",
+            "type": "integer"
+          },
+          "imported_at": {
+            "format": "date-time",
+            "title": "Imported At",
+            "type": "string"
+          },
+          "matching": {
+            "description": "Offers that match the profile.",
+            "title": "Matching",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "feed",
+          "found",
+          "matching",
+          "added",
+          "already_in_inbox",
+          "expired",
+          "imported_at"
+        ],
+        "title": "ImportRead",
         "type": "object"
       },
       "JobBoardCreate": {
@@ -866,6 +979,17 @@
             "description": "Set while the offer is discarded.",
             "title": "Discard Reason"
           },
+          "feed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Feed"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The public feed it was imported from, if any."
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -928,6 +1052,7 @@
           "status",
           "discard_reason",
           "application_id",
+          "feed",
           "created_at"
         ],
         "title": "OfferRead",
@@ -2687,6 +2812,163 @@
         "summary": "Update Company",
         "tags": [
           "companies"
+        ]
+      }
+    },
+    "/api/v1/feeds": {
+      "get": {
+        "description": "Every public feed, with its last import and the earliest next one.",
+        "operationId": "list_feeds_api_v1_feeds_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FeedRead"
+                  },
+                  "title": "Response List Feeds Api V1 Feeds Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Feeds",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/feeds/{feed}/imports": {
+      "post": {
+        "description": "Add the feed's offers that match the profile to the inbox, as pending.\n\nDuplicates are skipped; pending offers of this feed that left it are discarded as\nexpired. A feed can be imported at most once every 6 hours (each feed's terms).",
+        "operationId": "import_feed_api_v1_feeds__feed__imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feed",
+            "required": true,
+            "schema": {
+              "title": "Feed",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Feed does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationProblemRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemRead"
+                    }
+                  ],
+                  "title": "Response 422 Import Feed Api V1 Feeds  Feed  Imports Post"
+                }
+              }
+            },
+            "description": "Invalid body (`validation-error`), or the search profile does not exist (`unknown-search-profile`)"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Imported less than 6 hours ago (`feed-cooldown`); `Retry-After` gives the seconds to wait"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "The feed did not answer (`feed-unavailable`); nothing changed"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import Feed",
+        "tags": [
+          "inbox"
         ]
       }
     },

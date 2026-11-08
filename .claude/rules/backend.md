@@ -60,7 +60,7 @@ Un patrón entra cuando aparece el problema concreto que resuelve.
   - procrastinate: con el primer job real.
   - Encolar jobs en la misma transacción: con el primer job, verificando antes que procrastinate comparte conexión con SQLAlchemy async/asyncpg.
   - Domain events: cuando una acción dispare 2 o más efectos.
-  - Adapters por portal: con la fase 0.
+  - Adapters por portal: **adoptado** con los feeds (`inbox/feeds.py`): una función por feed que traduce su JSON a `FeedOffer`, en la capa del repository. Las llamadas externas usan `httpx2` con un cliente inyectado (`get_feed_client`); los tests lo sustituyen por `MockTransport` y nunca salen a internet. Antes de añadir un feed, verificar sus condiciones y anotarlas en `docs/fase0.md`.
   - `user_id` en las tablas: solo si el producto pasa a ser multiusuario. Hoy hay un único usuario y la columna no aportaría nada.
 - **Descartados**: `BaseRepository[T]` genérico, god services, Mediator o bus de comandos, DDD completo, Specification, `Protocol` con una sola implementación.
 

@@ -15,11 +15,13 @@ class AppError(Exception):
     slug: ClassVar[str] = "internal-error"
     title: ClassVar[str] = "Internal error"
     status: ClassVar[HTTPStatus] = HTTPStatus.INTERNAL_SERVER_ERROR
-    headers: ClassVar[Mapping[str, str]] = {}
+    default_headers: ClassVar[Mapping[str, str]] = {}
 
-    def __init__(self, detail: str | None = None) -> None:
+    def __init__(self, detail: str | None = None, headers: Mapping[str, str] | None = None) -> None:
         super().__init__(detail or self.title)
         self.detail = detail
+        # Per-error headers (e.g. Retry-After) on top of the class's fixed ones.
+        self.headers: Mapping[str, str] = {**self.default_headers, **(headers or {})}
 
 
 class DomainError(AppError):
@@ -54,4 +56,4 @@ class UnauthorizedError(AppError):
     slug = "unauthorized"
     title = "Missing or invalid credentials"
     status = HTTPStatus.UNAUTHORIZED
-    headers = {"WWW-Authenticate": "Bearer"}
+    default_headers = {"WWW-Authenticate": "Bearer"}

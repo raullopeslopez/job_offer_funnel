@@ -10,6 +10,14 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Public feeds (`/api/v1/feeds`): import into the inbox the offers of RemoteOK,
+  Remotive, Himalayas and Jobicy that match a search profile
+  (`POST /feeds/{feed}/imports`), skipping duplicates and discarding as `expired` the
+  pending ones a feed no longer publishes. Each offer keeps the original link and its
+  `feed`. Following each feed's terms, a feed can be imported once every 6 hours
+  (`429 feed-cooldown` with `Retry-After`); a feed that does not answer returns
+  `502 feed-unavailable` and changes nothing. `GET /feeds` shows the last and next import.
+
 - Inbox (`/api/v1/offers`): add the offers found in the job boards (URL, company, title,
   optional job board and notes) and list them by status. The same company and title,
   ignoring case and extra spaces, is rejected as a duplicate even if it was discarded.
