@@ -8,6 +8,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
+Phase 0, assisted discovery: offers arrive from search profiles, job boards and public
+feeds into an inbox before becoming applications. Also corrections (edit, delete, undo)
+and database backups.
+
 ### Added
 
 - Public feeds (`/api/v1/feeds`): import into the inbox the offers of RemoteOK,
@@ -27,7 +33,8 @@ While the version is `0.x`, the API may change without a major version bump.
 - A job board with offers cannot be deleted (`409 in-use`).
 
 - `just seed-job-boards` registers the job boards of `backend/seeds/job_boards.json`
-  (LinkedIn, Indeed, We Work Remotely, Jobicy) in the API run by `just up`, skipping the
+  (LinkedIn, Indeed, We Work Remotely, Jobicy, Welcome to the Jungle, Glassdoor and
+  Himalayas) in the API run by `just up`, skipping the
   ones that already exist.
 
 - Generated searches (`GET /api/v1/search-profiles/{id}/searches`): for every job board,
@@ -106,5 +113,6 @@ where applications are lost and what is in progress.
 - The backend runs on Python 3.14.
 - CI only runs for backend-related changes and cancels superseded runs.
 
-[Unreleased]: https://github.com/raullopeslopez/job_offer_funnel/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/raullopeslopez/job_offer_funnel/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/raullopeslopez/job_offer_funnel/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/raullopeslopez/job_offer_funnel/releases/tag/v0.1.0
