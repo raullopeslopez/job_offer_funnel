@@ -8,7 +8,7 @@ Responder siempre en español, aunque el código, las specs y la salida de las h
 
 ## Estado actual
 
-Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidaturas (con las transiciones en el detalle) y métricas, y E2E con Playwright sobre `specs/ui/` (reglas en `.claude/rules/frontend.md`). Backend con `core` completo (config, sesión por request, contrato de errores, auth por token, logging, `Clock`) y tres módulos de **referencia**: `applications` (dominio: transiciones de fase, más alta, edición, detalle con historial y listado filtrado), `companies` (CRUD: alta, detalle, listado paginado) y `metrics` (solo lectura, SQL directo: conversión por fase y por canal, pipeline activo). Actualizar esta sección al cerrar cada hito.
+Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidaturas (con las transiciones en el detalle), métricas y ajustes (empresas y portales), y E2E con Playwright sobre `specs/ui/` (reglas en `.claude/rules/frontend.md`). Backend con `core` completo (config, sesión por request, contrato de errores, auth por token, logging, `Clock`) y tres módulos de **referencia**: `applications` (dominio: transiciones de fase, más alta, edición, detalle con historial y listado filtrado), `companies` (CRUD: alta, detalle, listado paginado) y `metrics` (solo lectura, SQL directo: conversión por fase y por canal, pipeline activo). Actualizar esta sección al cerrar cada hito.
 
 - [x] Concepto, stack, convenciones, harness
 - [x] Alcance del MVP: `docs/mvp.md` (solo API; las features fuera del MVP no se implementan)
@@ -31,6 +31,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Pantalla 3: `specs/ui/applications.feature` (Candidaturas)
 - [x] Pantalla 4: `specs/ui/stage_transitions.feature` (Transiciones en el detalle)
 - [x] Pantalla 5: `specs/ui/metrics.feature` (Métricas; entra MUI X Charts)
+- [x] Pantalla 6: `specs/ui/settings.feature` (Ajustes: empresas y portales)
 
 ## Criterio: evitar la sobreingeniería
 
