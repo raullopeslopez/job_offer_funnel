@@ -40,7 +40,10 @@ def main() -> int:
         return 0
     output = (result.stdout + result.stderr).strip().splitlines()
     tail = "\n".join(output[-OUTPUT_TAIL_LINES:])
-    print(f"`just check` failed with uncommitted backend changes. Fix it:\n{tail}", file=sys.stderr)
+    print(
+        f"`just check` failed with uncommitted backend changes. Fix it:\n{tail}",
+        file=sys.stderr,
+    )
     return 2
 
 
