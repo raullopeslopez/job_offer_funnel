@@ -1,13 +1,22 @@
-from uuid import UUID
+from collections.abc import Collection, Sequence
+from datetime import datetime
+from typing import Any, cast
+from uuid import UUID, uuid7
 
-from sqlalchemy import func, select
+from sqlalchemy import CursorResult, func, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
-from funnel.modules.inbox.domain import OfferStatus, UnknownJobBoardError
-from funnel.modules.inbox.models import JOB_BOARD_FOREIGN_KEY, UNIQUE_DUPLICATE_KEY, OfferRow
+from funnel.modules.inbox.domain import EXPIRED_REASON, Feed, OfferStatus, UnknownJobBoardError
+from funnel.modules.inbox.models import (
+    JOB_BOARD_FOREIGN_KEY,
+    UNIQUE_DUPLICATE_KEY,
+    FeedImportRow,
+    OfferRow,
+)
 
 
 class OfferRepository:
@@ -55,3 +64,64 @@ class OfferRepository:
             select(func.count()).select_from(OfferRow).where(*conditions)
         )
         return list(rows), total or 0
+
+
+class FeedImportRepository:
+    """Offers coming from feeds, and when each feed was last imported.
+
+    Never commits: the request session does.
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add_new(self, offers: Sequence[OfferRow]) -> int:
+        """Insert the offers that are not duplicates; return how many were inserted.
+
+        ON CONFLICT DO NOTHING keeps the UNIQUE constraint as the judge of duplicates
+        without aborting the transaction, as a failed flush would.
+        """
+        if not offers:
+            return 0
+        values = [
+            {
+                column.key: getattr(offer, column.key)
+                for column in OfferRow.__table__.columns
+                if getattr(offer, column.key) is not None
+            }
+            | {"id": offer.id or uuid7()}
+            for offer in offers
+        ]
+        inserted = await self._session.scalars(
+            insert(OfferRow)
+            .values(values)
+            .on_conflict_do_nothing(constraint=UNIQUE_DUPLICATE_KEY)
+            .returning(OfferRow.id)
+        )
+        return len(inserted.all())
+
+    async def expire_missing(self, feed: Feed, published_urls: Collection[str]) -> int:
+        """Discard as expired the pending offers of `feed` that it no longer publishes."""
+        result = await self._session.execute(
+            update(OfferRow)
+            .where(
+                OfferRow.feed == feed,
+                OfferRow.status == OfferStatus.PENDING,
+                OfferRow.url.not_in(published_urls),
+            )
+            .values(status=OfferStatus.DISCARDED, discard_reason=EXPIRED_REASON)
+        )
+        return cast(CursorResult[Any], result).rowcount
+
+    async def last_imports(self) -> dict[Feed, datetime]:
+        rows = await self._session.scalars(select(FeedImportRow))
+        return {row.feed: row.last_imported_at for row in rows}
+
+    async def record(self, feed: Feed, imported_at: datetime) -> None:
+        await self._session.execute(
+            insert(FeedImportRow)
+            .values(feed=feed, last_imported_at=imported_at)
+            .on_conflict_do_update(
+                index_elements=[FeedImportRow.feed], set_={"last_imported_at": imported_at}
+            )
+        )

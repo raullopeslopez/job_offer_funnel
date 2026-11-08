@@ -1,10 +1,9 @@
 from collections.abc import AsyncIterator
 from http import HTTPStatus
-
-import httpx2
 from typing import Annotated, Any
 from uuid import UUID
 
+import httpx2
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,8 +13,10 @@ from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.service import build_application_service
 from funnel.modules.companies.service import build_company_service
-from funnel.modules.inbox.domain import OfferStatus
-from funnel.modules.inbox.repository import OfferRepository
+from funnel.modules.discovery.service import build_search_profile_service
+from funnel.modules.inbox.domain import OfferStatus, next_import_at
+from funnel.modules.inbox.feeds import FeedReader
+from funnel.modules.inbox.repository import FeedImportRepository, OfferRepository
 from funnel.modules.inbox.schemas import (
     DiscardCreate,
     FeedRead,
@@ -25,7 +26,7 @@ from funnel.modules.inbox.schemas import (
     OfferRead,
     PromotionCreate,
 )
-from funnel.modules.inbox.service import OfferService
+from funnel.modules.inbox.service import FeedImportService, OfferService
 
 offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
@@ -152,10 +153,29 @@ async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
         yield client
 
 
+def get_feed_import_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)],
+) -> FeedImportService:
+    return FeedImportService(
+        FeedImportRepository(session), build_search_profile_service(session), FeedReader(client)
+    )
+
+
+FeedService = Annotated[FeedImportService, Depends(get_feed_import_service)]
+
+
 @feeds_router.get("")
-async def list_feeds(service: Service) -> list[FeedRead]:
+async def list_feeds(service: FeedService) -> list[FeedRead]:
     """Every public feed, with its last import and the earliest next one."""
-    raise NotImplementedError
+    return [
+        FeedRead(
+            feed=feed,
+            last_imported_at=last,
+            next_import_at=None if last is None else next_import_at(last),
+        )
+        for feed, last in await service.last_imports()
+    ]
 
 
 @feeds_router.post(
@@ -179,13 +199,27 @@ async def list_feeds(service: Service) -> list[FeedRead]:
         },
     },
 )
-async def import_feed(feed: str, body: ImportCreate, service: Service) -> ImportRead:
+async def import_feed(  # noqa: PLR0913, PLR0917  # FastAPI injects each input as a parameter
+    feed: str,
+    body: ImportCreate,
+    service: FeedService,
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> ImportRead:
     """Add the feed's offers that match the profile to the inbox, as pending.
 
     Duplicates are skipped; pending offers of this feed that left it are discarded as
     expired. A feed can be imported at most once every 6 hours (each feed's terms).
     """
-    raise NotImplementedError
+    result = await service.import_feed(feed, body.profile_id, clock.now())
+    return ImportRead(
+        feed=result.feed,
+        found=result.found,
+        matching=result.matching,
+        added=result.added,
+        already_in_inbox=result.matching - result.added,
+        expired=result.expired,
+        imported_at=result.imported_at,
+    )
 
 
 router = APIRouter()

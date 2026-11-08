@@ -10,7 +10,7 @@ class FixedClock:
         self._moment = moment
 
     @classmethod
-    def on(cls, day: date) -> "FixedClock":
+    def on(cls, day: date) -> FixedClock:
         """A clock at noon of `day`, for steps that only care about the date."""
         return cls(datetime.combine(day, time(12), ZONE))
 

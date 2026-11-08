@@ -47,7 +47,7 @@ Feature: Public feeds
       | Backend Engineer         | Go services         | 0        |
       | Data Engineer            | Python pipelines    | 0        |
       | Senior Backend Engineer  | Python services     | 0        |
-      | Backend Engineer         | Mentor senior staff | 1        |
+      | Backend Engineer         | Python, mentor senior staff | 1        |
 
   Scenario: Offers already in the inbox are skipped, even if discarded
     Given an offer for "Acme" as "Backend Engineer" that was discarded

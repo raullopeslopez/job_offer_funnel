@@ -108,7 +108,7 @@ layers = ["router", "service", "repository", "models", "domain"]
 name = "inbox layers"
 type = "layers"
 containers = ["funnel.modules.inbox"]
-layers = ["router", "service", "repository", "models", "domain"]
+layers = ["router", "service", "repository | feeds", "models", "domain"]
 
 [[tool.importlinter.contracts]]
 name = "metrics layers"
@@ -135,6 +135,9 @@ ignore_imports = [
     "funnel.modules.inbox.** -> funnel.modules.companies.service",
     "funnel.modules.inbox.** -> funnel.modules.applications.service",
     "funnel.modules.inbox.** -> funnel.modules.applications.schemas",
+    # Importing a feed filters it with a search profile.
+    "funnel.modules.inbox.** -> funnel.modules.discovery.service",
+    "funnel.modules.inbox.** -> funnel.modules.discovery.domain",
 ]
 
 [dependency-groups]
