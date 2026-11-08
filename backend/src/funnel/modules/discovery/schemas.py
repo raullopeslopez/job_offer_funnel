@@ -124,6 +124,30 @@ class JobBoardRead(BaseModel):
     syntax: Syntax
 
 
+class GeneratedSearchRead(BaseModel):
+    query: str = Field(description="The search, in the job board's syntax.")
+    url: str = Field(description="The job board's search URL, ready to open.")
+
+
+class JobBoardSearchesRead(BaseModel):
+    job_board_id: UUID
+    job_board_name: str
+    syntax: Syntax
+    searches: list[GeneratedSearchRead] = Field(
+        description="One search, or one per job title for `keywords` job boards."
+    )
+
+
+class ProfileSearchesRead(BaseModel):
+    profile_id: UUID
+    work_modes: list[WorkMode] = Field(
+        description="Not part of the URLs: set them with each job board's own filter."
+    )
+    job_boards: list[JobBoardSearchesRead] = Field(
+        description="Every job board, in alphabetical order."
+    )
+
+
 class SearchProfileRead(BaseModel):
     id: UUID
     name: str

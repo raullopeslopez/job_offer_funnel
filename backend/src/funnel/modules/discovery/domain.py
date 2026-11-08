@@ -17,6 +17,7 @@ class Syntax(StrEnum):
     """How a job board reads a search."""
 
     BOOLEAN = "boolean"  # AND, OR, NOT, "quotes" and (parentheses)
+    MINUS = "minus"  # OR, "quotes" and -word to exclude
     KEYWORDS = "keywords"  # plain words
 
 

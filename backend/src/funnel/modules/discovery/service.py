@@ -60,3 +60,11 @@ class JobBoardService:
 
     async def list_page(self, page: PageParams) -> tuple[list[JobBoardRow], int]:
         return await self._repository.list_page(page)
+
+
+class SearchGenerationService:
+    """Builds a profile's searches for every job board; nothing is stored."""
+
+    def __init__(self, profiles: SearchProfileRepository, job_boards: JobBoardRepository) -> None:
+        self._profiles = profiles
+        self._job_boards = job_boards

@@ -13,11 +13,16 @@ from funnel.modules.discovery.schemas import (
     JobBoardCreate,
     JobBoardRead,
     JobBoardUpdate,
+    ProfileSearchesRead,
     SearchProfileCreate,
     SearchProfileRead,
     SearchProfileUpdate,
 )
-from funnel.modules.discovery.service import JobBoardService, SearchProfileService
+from funnel.modules.discovery.service import (
+    JobBoardService,
+    SearchGenerationService,
+    SearchProfileService,
+)
 
 profiles_router = APIRouter(prefix="/search-profiles", tags=["discovery"])
 
@@ -87,6 +92,24 @@ async def update_search_profile(
 )
 async def delete_search_profile(profile_id: UUID, service: ProfileServiceDependency) -> None:
     await service.delete(profile_id)
+
+
+def get_search_generation_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> SearchGenerationService:
+    return SearchGenerationService(SearchProfileRepository(session), JobBoardRepository(session))
+
+
+@profiles_router.get("/{profile_id}/searches", responses=_PROFILE_NOT_FOUND)
+async def generate_searches(
+    profile_id: UUID,
+    service: Annotated[SearchGenerationService, Depends(get_search_generation_service)],
+) -> ProfileSearchesRead:
+    """The profile's search for every job board, in its syntax, with a URL ready to open.
+
+    Computed on every request: editing the profile or a job board updates the searches.
+    """
+    raise NotImplementedError
 
 
 # --- Job boards ---

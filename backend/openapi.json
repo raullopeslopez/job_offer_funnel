@@ -583,6 +583,26 @@
         "title": "FieldErrorRead",
         "type": "object"
       },
+      "GeneratedSearchRead": {
+        "properties": {
+          "query": {
+            "description": "The search, in the job board's syntax.",
+            "title": "Query",
+            "type": "string"
+          },
+          "url": {
+            "description": "The job board's search URL, ready to open.",
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "url"
+        ],
+        "title": "GeneratedSearchRead",
+        "type": "object"
+      },
       "HealthRead": {
         "properties": {
           "status": {
@@ -651,6 +671,38 @@
           "syntax"
         ],
         "title": "JobBoardRead",
+        "type": "object"
+      },
+      "JobBoardSearchesRead": {
+        "properties": {
+          "job_board_id": {
+            "format": "uuid",
+            "title": "Job Board Id",
+            "type": "string"
+          },
+          "job_board_name": {
+            "title": "Job Board Name",
+            "type": "string"
+          },
+          "searches": {
+            "description": "One search, or one per job title for `keywords` job boards.",
+            "items": {
+              "$ref": "#/components/schemas/GeneratedSearchRead"
+            },
+            "title": "Searches",
+            "type": "array"
+          },
+          "syntax": {
+            "$ref": "#/components/schemas/Syntax"
+          }
+        },
+        "required": [
+          "job_board_id",
+          "job_board_name",
+          "syntax",
+          "searches"
+        ],
+        "title": "JobBoardSearchesRead",
         "type": "object"
       },
       "JobBoardUpdate": {
@@ -917,6 +969,38 @@
         "title": "ProblemRead",
         "type": "object"
       },
+      "ProfileSearchesRead": {
+        "properties": {
+          "job_boards": {
+            "description": "Every job board, in alphabetical order.",
+            "items": {
+              "$ref": "#/components/schemas/JobBoardSearchesRead"
+            },
+            "title": "Job Boards",
+            "type": "array"
+          },
+          "profile_id": {
+            "format": "uuid",
+            "title": "Profile Id",
+            "type": "string"
+          },
+          "work_modes": {
+            "description": "Not part of the URLs: set them with each job board's own filter.",
+            "items": {
+              "$ref": "#/components/schemas/WorkMode"
+            },
+            "title": "Work Modes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "profile_id",
+          "work_modes",
+          "job_boards"
+        ],
+        "title": "ProfileSearchesRead",
+        "type": "object"
+      },
       "SearchProfileCreate": {
         "properties": {
           "excluded_keywords": {
@@ -1177,6 +1261,7 @@
         "description": "How a job board reads a search.",
         "enum": [
           "boolean",
+          "minus",
           "keywords"
         ],
         "title": "Syntax",
@@ -3210,6 +3295,75 @@
           }
         ],
         "summary": "Update Search Profile",
+        "tags": [
+          "discovery"
+        ]
+      }
+    },
+    "/api/v1/search-profiles/{profile_id}/searches": {
+      "get": {
+        "description": "The profile's search for every job board, in its syntax, with a URL ready to open.\n\nComputed on every request: editing the profile or a job board updates the searches.",
+        "operationId": "generate_searches_api_v1_search_profiles__profile_id__searches_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Profile Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSearchesRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Search profile does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Generate Searches",
         "tags": [
           "discovery"
         ]
