@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Watched companies (`/api/v1/watched-companies`): watch a company through the public
+  job board of its ATS (Greenhouse, Lever or Ashby), list them by name and stop watching
+  one. Importing a watched company for a search profile adds its open offers that match
+  the profile to the inbox as pending, skipping duplicates and discarding as expired the
+  pending ones that left its board. It can be imported again at any time.
+- Offers show the watched company they were imported from (`watched_company_id`,
+  `watched_company_name`); offers of a company no longer watched stay in the inbox.
 - Web app at `http://localhost:8081`, started by `just up` together with the API. It asks
   for the API token the first time, keeps it in the browser and asks again if the API
   rejects it.

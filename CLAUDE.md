@@ -23,7 +23,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Spec + implementación: `discovery/generated_searches`
 - [x] Spec + implementación: `inbox/inbox`
 - [x] Spec + implementación: `inbox/public_feeds` (primera integración externa)
-- [ ] Spec 5 de la fase 0: `ats_companies` (aplazable: el flujo ya está completo sin ella)
+- [x] Spec + implementación: `inbox/ats_companies` (solo API; sin pantalla todavía)
 - [x] Alcance del frontend: `docs/frontend.md` (stack, tooling, una pantalla por PR)
 - [x] `chore/frontend-setup`: `frontend/` (React + Vite + MUI), pantalla del token, layout, tipos generados, servicio `web`, CI
 - [x] Pantalla 1: `specs/ui/inbox.feature` (Bandeja; entran MUI X DataGrid y Playwright + playwright-bdd)
