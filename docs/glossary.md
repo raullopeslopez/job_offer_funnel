@@ -70,3 +70,11 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | A | `high` |
 | B | `medium` |
 | C | `low` |
+
+## Métricas
+
+| ES | EN |
+|----|----|
+| Conversión (de una fase a la siguiente) | `conversion` |
+| Tasa de conversión | `rate` |
+| Pipeline activo | `active pipeline` / `pipeline` |

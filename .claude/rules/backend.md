@@ -34,7 +34,8 @@ backend/src/funnel/
 
 - **Dominio**: tiene al menos uno de estos elementos: invariantes entre campos, transiciones de estado, o reglas que dependen del tiempo o de otras entidades. `domain.py` con dataclasses con comportamiento; el repository mapea ORM ↔ dominio. Hoy: `applications`.
 - **CRUD**: sin reglas. Sin `domain.py`; el service usa los modelos ORM. Hoy: `companies`, `contacts`, `documents`, `events`, `tasks`, `questions`.
-- Las capas externas son idénticas en ambos.
+- **Métricas** (`metrics`): solo lectura, capas `router → queries`. SQL directo sobre las tablas por nombre, sin entidades, service ni repository. Única excepción a la independencia entre módulos: importa los enums de `applications.domain` (declarada en `ignore_imports`).
+- Las capas externas son idénticas en dominio y CRUD.
 - **Promoción**: la primera regla de negocio de un CRUD lo convierte en dominio en ese mismo cambio. La regla nunca va al service ni al router.
 - Referencia: copiar la estructura de `applications` (dominio) o de `companies` (CRUD).
 

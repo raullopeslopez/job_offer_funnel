@@ -94,9 +94,17 @@ containers = ["funnel.modules.companies"]
 layers = ["router", "service", "repository", "models"]
 
 [[tool.importlinter.contracts]]
+name = "metrics layers"
+type = "layers"
+containers = ["funnel.modules.metrics"]
+layers = ["router", "queries", "schemas"]
+
+[[tool.importlinter.contracts]]
 name = "modules are independent (relax to service-only access when one needs another)"
 type = "independence"
-modules = ["funnel.modules.applications", "funnel.modules.companies"]
+modules = ["funnel.modules.applications", "funnel.modules.companies", "funnel.modules.metrics"]
+# The stage and channel enums are the vocabulary metrics reports in.
+ignore_imports = ["funnel.modules.metrics.** -> funnel.modules.applications.domain"]
 
 [dependency-groups]
 dev = [
