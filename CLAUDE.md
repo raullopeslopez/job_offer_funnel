@@ -8,11 +8,11 @@ Las respuestas que no sean breves terminan con una última línea `**Resumen:** 
 
 ## Estado actual
 
-Greenfield: existen `CLAUDE.md`, `docs/` y `.claude/` (rules y skill). Todavía no existen `backend/`, `specs/`, `Justfile` ni CI, así que los comandos `just` fallarán hasta crear el esqueleto. Actualizar esta sección al cerrar cada hito.
+Esqueleto del backend listo: `core` (config, sesión por request, errores problem+json, auth por token, logging), `GET /health`, Alembic sin migraciones, tests con xdist y CI. Todavía no hay módulos de dominio ni `specs/`. Actualizar esta sección al cerrar cada hito.
 
 - [x] Concepto, stack, convenciones, harness
 - [x] Alcance del MVP: `docs/mvp.md` (solo API; las features fuera del MVP no se implementan)
-- [ ] Esqueleto del backend (pyproject, core, Justfile, docker-compose, conftest con xdist, CI) + hooks de Claude Code (ruff tras editar, `just check` al terminar). Tests en el Justfile con `pytest -q --tb=short -rfE` (salida escueta; descartado un subagent test-runner, solo se reconsidera si `/usage` lo justifica)
+- [x] Esqueleto del backend + hooks de Claude Code. Descartado un subagent test-runner (pytest ya da salida escueta; solo se reconsidera si `/usage` lo justifica)
 - [ ] Spec + implementación: `applications/stage_transitions`
 - [ ] Spec + implementación: `applications/manage_applications`
 - [ ] Spec + implementación: `companies/manage_companies`
@@ -38,9 +38,13 @@ Español: specs (`# language: es`), `docs/`, `CLAUDE.md`. Inglés: código, test
 - Toda feature sigue el ciclo SDD de la skill `sdd-feature`: spec aprobada → contrato aprobado → rojo → verde → `just ci`.
 - Las reglas de cada zona se cargan solas desde `.claude/rules/` (backend, tests, specs, entorno).
 - **Definition of Done**: escenarios en verde · `just ci` en verde · migración reversible · `openapi.json` coherente · tests parametrizados y en AAA · sin TODOs sin issue.
-- Comandos clave: `just setup` · `just dev` · `just check` · `just test` · `just test-one "expr"` (sin xdist) · `just ci`. Requieren Docker Desktop arrancado.
+- Primera vez: copiar `.env.example` a `.env` y ejecutar `just setup`. Comandos clave: `just dev` (Swagger en `/docs`) · `just check` · `just test` · `just test-one "expr"` (sin xdist) · `just ci`. Requieren Docker Desktop arrancado.
+- Sesiones con Remote Control (para controlarlas desde Claude mobile): arrancar con `just claude`.
 
-## Git
+## Git y PRs
 
-- Ramas `feat/<slug>` y `fix/<slug>`, de vida corta. Commits por paso del ciclo, en Conventional Commits y en inglés. Merge a `main` con `just ci` en verde.
+- Remoto: `github.com/raullopeslopez/job_offer_funnel` (privado). Nunca se hace commit directo en `main`.
+- Ramas `feat/`, `fix/` y `chore/<slug>`, de vida corta. Commits por paso del ciclo, en Conventional Commits y en inglés.
+- Al terminar: `just ci` en verde → push de la rama → `gh pr create` hacia `main`, con un resumen y la evidencia de los tests → comprobar el CI con `gh pr checks`.
+- **El merge lo hace el usuario.** Claude nunca mergea PRs ni hace push a `main`.
 - Sin líneas de autoría de Claude en commits ni PRs (`Co-Authored-By`, `Claude-Session`, "Generated with"). Lo garantiza `attribution` en `.claude/settings.json`.

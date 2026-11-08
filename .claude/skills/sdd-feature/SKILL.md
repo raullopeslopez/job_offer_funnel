@@ -10,7 +10,7 @@ No se escribe código de producción sin una spec aprobada. Si cambia el comport
 ## 1. Spec
 1. Crear la rama `feat/<slug>` (o `fix/<slug>`).
 2. Leer `docs/funnel.md` y `docs/glossary.md`.
-3. Escribir `specs/<modulo>/<nombre>.feature` (`just spec <modulo> <nombre>` si existe la receta).
+3. Escribir `specs/<modulo>/<nombre>.feature` (reglas en `.claude/rules/specs.md`).
 4. Commit: `test(spec): <descripción>`.
 5. **Parar.** Presentar la spec al usuario y esperar su aprobación. No continuar sin ella.
 
@@ -26,8 +26,9 @@ No se escribe código de producción sin una spec aprobada. Si cambia el comport
 ## 4. Verde
 11. Implementar en este orden, lo mínimo para pasar:
     - `domain.py` + tests unit (solo módulos de dominio).
-    - `models.py` + migración (`just migration "msg"`).
-    - `repository.py` → `service.py` → `router.py`, registrado en `main.py`.
+    - `models.py`, importado en `migrations/env.py` (si no, autogenerate no ve las tablas) + migración (`just migration "msg"`, revisar el fichero generado).
+    - `repository.py` → `service.py` → `router.py`, incluido en el router `api` de `main.py` (prefijo `/api/v1`, protegido con token).
+    - Si el módulo es nuevo: añadir su contrato de capas en `[tool.importlinter]` de `backend/pyproject.toml`.
 12. Refactorizar con los tests en verde.
 13. `just ci` en verde. Mostrar el comando y su salida como evidencia.
 14. Commit: `feat(<modulo>): <descripción>`.

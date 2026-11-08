@@ -9,9 +9,9 @@ paths:
 
 | Tipo | Marker | Qué prueba | BD | xdist | Ubicación |
 |------|--------|------------|----|-------|-----------|
-| Unit | `unit` | Dominio puro | No | No | `tests/unit/` |
-| Integration | `integration` | Repositories, queries no triviales, jobs | Sí | Sí | `tests/integration/` |
-| BDD | `bdd` | Escenarios Gherkin end-to-end por HTTP (httpx ASGI) | Sí | Sí | `tests/bdd/` + `specs/` |
+| Unit | `unit` | Lógica sin BD ni red: dominio y `core` (con la app de prueba de `support/probe.py`) | No | No | `tests/unit/` |
+| Integration | `integration` | Repositories, queries no triviales, jobs, `/health` | Sí | Sí | `tests/integration/` |
+| BDD | `bdd` | Escenarios Gherkin end-to-end por HTTP (fixture `client`) | Sí | Sí | `tests/bdd/` + `specs/` |
 | Migraciones | `migrations` | `upgrade → downgrade base → upgrade`; ORM == esquema migrado | Sí | Sí | `tests/migrations/` |
 | Contrato | `contract` | OpenAPI generado == `openapi.json` versionado | No | Sí | `tests/contract/` |
 
@@ -21,7 +21,10 @@ paths:
 
 ## Datos
 
-- Fixtures base: `db_session`, `client`, `clock` (reloj fijo), factories.
+- Fixtures existentes (`tests/conftest.py`): `client` (TestClient autenticado contra la BD del worker; trunca las tablas al terminar), `settings`, `database_url`, `empty_database_url` (sin migrar), `postgres_server_url`. En `tests/unit/`: `probe_client`.
+- Helpers importables en `tests/support/` (`from support.postgres import ...`); un conftest no se importa.
+- Se añaden cuando haga falta el primero que las use: `db_session` (sesión async con rollback para los tests de repositories) y `clock` (reloj fijo).
+- `filterwarnings = error`: un aviso de deprecación rompe el test. Se arregla la causa; no se silencia el aviso.
 - **Factories** (`make_application(stage=...)`) con defaults válidos. Prohibidas las fixtures gigantes compartidas.
 
 ## Parametrización
@@ -61,7 +64,8 @@ def test_rejects_transition_when_skipping_stages(current: Stage, target: Stage) 
 
 ## Paralelo (xdist)
 
-- `pytest -n auto`. Un único contenedor Postgres compartido (testcontainers + `filelock`).
-- BD template migrada una vez; cada worker crea `test_<worker>` con `CREATE DATABASE ... TEMPLATE funnel_template` (`PYTEST_XDIST_WORKER`).
-- Aislamiento: transacción + rollback; `TRUNCATE` en los BDD que hacen commit.
-- Para depurar con pdb: `just test-one` (sin xdist).
+- Un único contenedor Postgres por ejecución. Con xdist lo arranca el proceso controlador (`pytest_configure`) y pasa la URL a los workers (`pytest_configure_node`). En serie arranca de forma perezosa en la primera fixture que lo pide, así que `just test-unit` no necesita Docker.
+- BD template migrada una vez; cada worker clona `test_<worker_id>` (clonación serializada con `filelock`).
+- Aislamiento: los tests HTTP hacen commit real, y `client` hace `TRUNCATE` de todas las tablas al terminar. Los de repository usarán rollback (`db_session`, cuando exista).
+- Para depurar con pdb: `just test-one "expr"` (sin xdist).
+- `just test-bdd` sale con código 5 ("no tests") hasta que exista la primera feature. Es esperado.

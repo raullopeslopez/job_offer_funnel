@@ -2,28 +2,20 @@
 paths:
   - "Justfile"
   - "docker-compose.yml"
+  - ".env.example"
   - ".github/**"
   - ".pre-commit-config.yaml"
+  - ".claude/hooks/**"
   - "backend/pyproject.toml"
 ---
 
 # Entorno de desarrollo
 
-## Windows
-
-- Docker Desktop debe estar arrancado para la BD y los tests con testcontainers.
-- La ruta del home lleva tilde (`C:\Users\Raúl`): si fallan volúmenes, testcontainers o herramientas con rutas, sospechar de esto primero (usar `UV_CACHE_DIR`/`TMP` con rutas ASCII).
-- Justfile: `set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]`.
-
-## Recetas del Justfile (objetivo)
-
-Cuando exista el Justfile, `just --list` es la fuente de verdad y esta lista se elimina.
-
-- **Setup**: `setup` (uv sync + pre-commit install + db-up + migrate).
-- **BD**: `db-up`, `db-down`, `db-reset` (volumen + migrate), `db-shell` (psql).
-- **Migraciones**: `migrate`, `migration "msg"` (autogenerate), `downgrade` (-1).
-- **Ejecutar**: `dev` (uvicorn --reload), `worker` (cuando exista el primer job).
-- **Calidad**: `fmt` (ruff format + fix), `lint` (sin modificar), `typecheck` (mypy), `check` (lint + typecheck + import-linter).
-- **Tests**: `test *args` (-n auto), `test-unit` (en serie), `test-integration`, `test-bdd`, `test-migrations`, `test-contract`, `test-one "expr"` (sin xdist), `cov`.
-- **SDD**: `spec modulo nombre` (plantilla .feature), `openapi` (exporta openapi.json).
-- **CI**: `ci` (lint + typecheck + test). GitHub Actions solo llama a `just ci`.
+- Recetas: `just --list` es la fuente de verdad. El Justfile carga `.env` de la raíz (`dotenv-load`) y ejecuta en `backend/` (`working-directory`); compose se invoca con `-f ../docker-compose.yml`.
+- Recetas compatibles con sh (CI) y PowerShell 5.1 (Windows): un comando por línea y sin `&&`. Cada línea se ejecuta aparte, y just para en el primer fallo.
+- Postgres local en el puerto `5434` (configurable con `POSTGRES_PORT`), para no chocar con otros proyectos (ya hay uno en `5433`).
+- Docker Desktop debe estar arrancado para `just db-up` y para los tests con BD.
+- La ruta del home lleva tilde (`C:\Users\Raúl`): los scripts que lean stdin o rutas deben decodificar en UTF-8 de forma explícita (ver `.claude/hooks/`). Si algo falla con rutas, sospechar de esto primero.
+- CI (`.github/workflows/backend.yml`): instala just con `uv tool install rust-just` y ejecuta `just ci`. No duplicar pasos del Justfile en el workflow.
+- Hooks de Claude Code (`.claude/hooks/`): `format_python.py` (PostToolUse, solo `ruff format`) y `check_on_stop.py` (Stop: `just check` si hay cambios en `backend/`, bloquea si falla).
+- pre-commit: ruff y mypy vía `uv run`; ruff con `--project backend`, porque recibe rutas relativas a la raíz.
