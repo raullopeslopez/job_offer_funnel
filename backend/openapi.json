@@ -565,6 +565,28 @@
         "title": "ConversionStepRead",
         "type": "object"
       },
+      "DiscardCreate": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Not remote"
+            ],
+            "title": "Reason"
+          }
+        },
+        "title": "DiscardCreate",
+        "type": "object"
+      },
       "FieldErrorRead": {
         "properties": {
           "field": {
@@ -751,6 +773,175 @@
         "title": "JobBoardUpdate",
         "type": "object"
       },
+      "OfferCreate": {
+        "properties": {
+          "company": {
+            "description": "Company name, as the posting shows it.",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Company",
+            "type": "string"
+          },
+          "job_board_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where it was found.",
+            "title": "Job Board Id"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "title": {
+            "description": "Job title; becomes the role when promoted.",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "examples": [
+              "https://jobs.example/1"
+            ],
+            "format": "uri",
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "company",
+          "title"
+        ],
+        "title": "OfferCreate",
+        "type": "object"
+      },
+      "OfferRead": {
+        "properties": {
+          "application_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set once the offer is promoted.",
+            "title": "Application Id"
+          },
+          "company": {
+            "title": "Company",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "discard_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set while the offer is discarded.",
+            "title": "Discard Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_board_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Board Id"
+          },
+          "job_board_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Board Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfferStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "company",
+          "title",
+          "job_board_id",
+          "job_board_name",
+          "notes",
+          "status",
+          "discard_reason",
+          "application_id",
+          "created_at"
+        ],
+        "title": "OfferRead",
+        "type": "object"
+      },
+      "OfferStatus": {
+        "enum": [
+          "pending",
+          "discarded",
+          "promoted"
+        ],
+        "title": "OfferStatus",
+        "type": "string"
+      },
       "Outcome": {
         "description": "How a closed application ended. A closed application keeps the stage it reached.",
         "enum": [
@@ -853,6 +1044,37 @@
           "offset"
         ],
         "title": "Page[JobBoardRead]",
+        "type": "object"
+      },
+      "Page_OfferRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OfferRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[OfferRead]",
         "type": "object"
       },
       "Page_SearchProfileRead_": {
@@ -999,6 +1221,17 @@
           "job_boards"
         ],
         "title": "ProfileSearchesRead",
+        "type": "object"
+      },
+      "PromotionCreate": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel",
+            "default": "portal",
+            "description": "The application's channel."
+          }
+        },
+        "title": "PromotionCreate",
         "type": "object"
       },
       "SearchProfileCreate": {
@@ -2633,6 +2866,16 @@
             },
             "description": "Job board does not exist"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Offers in the inbox come from this job board (`in-use`)"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2946,6 +3189,483 @@
         "summary": "Read Pipeline",
         "tags": [
           "metrics"
+        ]
+      }
+    },
+    "/api/v1/offers": {
+      "get": {
+        "description": "Offers from the most recently added.",
+        "operationId": "list_offers_api_v1_offers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OfferStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_OfferRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Offers",
+        "tags": [
+          "inbox"
+        ]
+      },
+      "post": {
+        "description": "Add an offer to the inbox, as pending. Company and title identify it.",
+        "operationId": "create_offer_api_v1_offers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "An offer with the same company and title already exists, even if discarded (`already-exists`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationProblemRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemRead"
+                    }
+                  ],
+                  "title": "Response 422 Create Offer Api V1 Offers Post"
+                }
+              }
+            },
+            "description": "Invalid body (`validation-error`), or the job board does not exist (`unknown-job-board`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Offer",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/{offer_id}": {
+      "get": {
+        "operationId": "read_offer_api_v1_offers__offer_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Offer does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Offer",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/{offer_id}/discard": {
+      "delete": {
+        "description": "Undo the discard: the offer is pending again.",
+        "operationId": "restore_offer_api_v1_offers__offer_id__discard_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Offer does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Not allowed in the offer's current status (`invalid-offer-status`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Restore Offer",
+        "tags": [
+          "inbox"
+        ]
+      },
+      "post": {
+        "description": "Discard a pending offer, with an optional reason.",
+        "operationId": "discard_offer_api_v1_offers__offer_id__discard_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscardCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Offer does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Not allowed in the offer's current status (`invalid-offer-status`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Discard Offer",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/{offer_id}/promotion": {
+      "post": {
+        "description": "Turn a pending offer into an application in `evaluated`.\n\nThe application uses the company with the offer's company name, ignoring case,\nor a new one; the title becomes the role and the offer's URL is kept.",
+        "operationId": "promote_offer_api_v1_offers__offer_id__promotion_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromotionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Offer does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Not allowed in the offer's current status (`invalid-offer-status`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Promote Offer",
+        "tags": [
+          "inbox"
         ]
       }
     },
