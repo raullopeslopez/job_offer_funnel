@@ -35,10 +35,10 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Tarea / recordatorio | `Task` |
 | Transición (cambio de fase) | `Transition` |
 | Banco de preguntas / pregunta | `Question` |
-| Portal (fuente) | `Source` |
+| Portal de empleo | `JobBoard` |
 | Perfil de búsqueda | `SearchProfile` |
-| Búsqueda guardada | `SavedSearch` |
-| Oferta descubierta (bandeja) | `DiscoveredOffer` |
+| Búsqueda generada (perfil + portal) | `GeneratedSearch` |
+| Oferta descubierta | `DiscoveredOffer` |
 
 ## Atributos
 
@@ -78,3 +78,15 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Conversión (de una fase a la siguiente) | `conversion` |
 | Tasa de conversión | `rate` |
 | Pipeline activo | `active pipeline` / `pipeline` |
+
+## Descubrimiento
+
+| ES | EN |
+|----|----|
+| Título del puesto (en un perfil) | `titles` |
+| Palabras clave obligatorias | `keywords` |
+| Palabras excluidas | `excluded_keywords` |
+| Ubicación | `location` |
+| Modalidad | `work_mode`: `remote` · `hybrid` · `onsite` |
+| Sintaxis de búsqueda | `syntax`: `boolean` · `keywords` |
+| Plantilla de URL de búsqueda | `search_url_template` |

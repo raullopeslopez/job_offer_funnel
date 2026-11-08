@@ -17,6 +17,9 @@ Backend con `core` completo (config, sesión por request, contrato de errores, a
 - [x] Spec + implementación: `companies/manage_companies` (primer módulo CRUD: referencia para los demás)
 - [x] Spec + implementación: `applications/manage_applications`
 - [x] Spec + implementación: `metrics/funnel_metrics` (MVP completo)
+- [x] Alcance de la fase 0: `docs/fase0.md` (búsqueda asistida, portales como datos)
+- [x] Spec + implementación: `discovery/search_profiles`
+- [ ] Specs 2-5 de la fase 0: `job_boards`, `generated_searches`, `inbox`, `ats_companies`
 
 ## Criterio: evitar la sobreingeniería
 

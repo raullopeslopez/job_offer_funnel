@@ -82,9 +82,9 @@ containers = ["funnel.modules.applications"]
 layers = ["router", "service", "repository", "models", "domain"]
 
 [[tool.importlinter.contracts]]
-name = "applications domain is framework-free"
+name = "domains are framework-free"
 type = "forbidden"
-source_modules = ["funnel.modules.applications.domain"]
+source_modules = ["funnel.modules.applications.domain", "funnel.modules.discovery.domain"]
 forbidden_modules = ["fastapi", "starlette", "pydantic", "sqlalchemy"]
 
 [[tool.importlinter.contracts]]
@@ -92,6 +92,12 @@ name = "companies layers"
 type = "layers"
 containers = ["funnel.modules.companies"]
 layers = ["router", "service", "repository", "models"]
+
+[[tool.importlinter.contracts]]
+name = "discovery layers"
+type = "layers"
+containers = ["funnel.modules.discovery"]
+layers = ["router", "service", "repository", "models", "domain"]
 
 [[tool.importlinter.contracts]]
 name = "metrics layers"
@@ -102,7 +108,12 @@ layers = ["router", "queries", "schemas"]
 [[tool.importlinter.contracts]]
 name = "modules are independent (relax to service-only access when one needs another)"
 type = "independence"
-modules = ["funnel.modules.applications", "funnel.modules.companies", "funnel.modules.metrics"]
+modules = [
+    "funnel.modules.applications",
+    "funnel.modules.companies",
+    "funnel.modules.discovery",
+    "funnel.modules.metrics",
+]
 # The stage and channel enums are the vocabulary metrics reports in.
 ignore_imports = ["funnel.modules.metrics.** -> funnel.modules.applications.domain"]
 

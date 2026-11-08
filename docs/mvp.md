@@ -30,7 +30,7 @@ Fases incluidas: de `evaluated` a `accepted`. Una candidatura se crea en `evalua
 |-------|-----------------|
 | Frontend / dashboard | La API del MVP esté estable |
 | i18n (otros idiomas además del inglés) | Exista el frontend y se quiera la app en otro idioma |
-| Fase 0 (descubrimiento, portales, búsquedas) | Meter ofertas a mano sea el cuello de botella |
+| Fase 0 (descubrimiento, portales, búsquedas) | En curso: ver `docs/fase0.md` |
 | Contactos, documentos y versiones de CV | Se quiera medir la conversión por versión de CV o por referido |
 | Eventos y rondas de entrevista | Las notas no basten para preparar entrevistas |
 | Tareas y follow-ups | Se olviden los seguimientos |

@@ -10,6 +10,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Search profiles (`/api/v1/search-profiles`): create, view, list, edit and delete what
+  you look for, with job titles, required and excluded keywords, location and work modes
+  (`remote`, `hybrid`, `onsite`). Names are unique ignoring case; texts are trimmed and
+  repeated words kept once.
+
 - Undo the latest transition of an application
   (`DELETE /api/v1/applications/{id}/transitions/latest`): it returns to its previous
   stage and outcome. The first stage cannot be undone.
