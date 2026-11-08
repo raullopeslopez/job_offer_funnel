@@ -13,5 +13,5 @@ from funnel.core.clock import get_clock
 
 @given(parsers.parse("today is {day}"))
 def given_today_is(client: TestClient, day: str) -> None:
-    clock = FixedClock(date.fromisoformat(day))
+    clock = FixedClock.on(date.fromisoformat(day))
     cast(FastAPI, client.app).dependency_overrides[get_clock] = lambda: clock

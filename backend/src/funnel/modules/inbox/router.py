@@ -1,4 +1,7 @@
+from collections.abc import AsyncIterator
 from http import HTTPStatus
+
+import httpx2
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -135,6 +138,18 @@ async def promote_offer(offer_id: UUID, promotion: PromotionCreate, service: Ser
 # --- Public feeds ---
 
 feeds_router = APIRouter(prefix="/feeds", tags=["inbox"])
+
+# Identifies the app to the feeds, as their terms expect; no personal data.
+USER_AGENT = "job-offer-funnel"
+FEED_TIMEOUT_SECONDS = 20
+
+
+async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
+    """HTTP client for the public feeds; tests replace it so they never reach the internet."""
+    async with httpx2.AsyncClient(
+        timeout=FEED_TIMEOUT_SECONDS, headers={"User-Agent": USER_AGENT}
+    ) as client:
+        yield client
 
 
 @feeds_router.get("")

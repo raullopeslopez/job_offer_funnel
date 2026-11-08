@@ -12,15 +12,20 @@ from funnel.core.config import Settings
 class Clock(Protocol):
     def today(self) -> date: ...
 
+    def now(self) -> datetime: ...
+
 
 class SystemClock:
-    """Today's date in the user's time zone, so day boundaries match theirs."""
+    """Time in the user's time zone, so day boundaries match theirs."""
 
     def __init__(self, timezone: str) -> None:
         self._zone = ZoneInfo(timezone)
 
     def today(self) -> date:
-        return datetime.now(self._zone).date()
+        return self.now().date()
+
+    def now(self) -> datetime:
+        return datetime.now(self._zone)
 
 
 def get_clock(request: Request) -> Clock:
