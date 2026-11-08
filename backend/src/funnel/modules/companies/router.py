@@ -9,7 +9,7 @@ from funnel.core.db import get_session
 from funnel.core.errors import ProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.companies.repository import CompanyRepository
-from funnel.modules.companies.schemas import CompanyCreate, CompanyRead
+from funnel.modules.companies.schemas import CompanyCreate, CompanyRead, CompanyUpdate
 from funnel.modules.companies.service import CompanyService
 
 router = APIRouter(prefix="/companies", tags=["companies"])
@@ -49,6 +49,37 @@ async def create_company(company: CompanyCreate, service: Service) -> CompanyRea
 async def read_company(company_id: UUID, service: Service) -> CompanyRead:
     company = await service.get(company_id)
     return CompanyRead.model_validate(company, from_attributes=True)
+
+
+@router.patch(
+    "/{company_id}",
+    responses={
+        **_NOT_FOUND,
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "Another company already has that name (`already-exists`)",
+        },
+    },
+)
+async def update_company(company_id: UUID, changes: CompanyUpdate, service: Service) -> CompanyRead:
+    """Change only the fields sent. Names stay unique ignoring case and surrounding spaces."""
+    raise NotImplementedError
+
+
+@router.delete(
+    "/{company_id}",
+    status_code=HTTPStatus.NO_CONTENT,
+    responses={
+        **_NOT_FOUND,
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "The company still has applications (`in-use`)",
+        },
+    },
+)
+async def delete_company(company_id: UUID, service: Service) -> None:
+    """Delete a company that has no applications."""
+    raise NotImplementedError
 
 
 @router.get("")

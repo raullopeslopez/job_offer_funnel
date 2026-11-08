@@ -42,6 +42,14 @@ class AlreadyExistsError(AppError):
     status = HTTPStatus.CONFLICT
 
 
+class InUseError(AppError):
+    """Other resources still reference this one, so it cannot be deleted."""
+
+    slug = "in-use"
+    title = "Resource in use"
+    status = HTTPStatus.CONFLICT
+
+
 class UnauthorizedError(AppError):
     slug = "unauthorized"
     title = "Missing or invalid credentials"

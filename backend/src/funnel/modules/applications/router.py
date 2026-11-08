@@ -104,6 +104,15 @@ async def update_application(
     return ApplicationRead.model_validate(updated, from_attributes=True)
 
 
+@router.delete("/{application_id}", status_code=HTTPStatus.NO_CONTENT, responses=_NOT_FOUND)
+async def delete_application(application_id: UUID, service: Service) -> None:
+    """Delete an application created by mistake, with its history.
+
+    To archive one instead, close it with an outcome: it still counts in the metrics.
+    """
+    raise NotImplementedError
+
+
 @router.post(
     "/{application_id}/transitions",
     status_code=HTTPStatus.CREATED,
@@ -134,3 +143,20 @@ async def list_transitions(application_id: UUID, service: Service) -> list[Trans
     """Transition history, oldest first."""
     transitions = await service.list_transitions(application_id)
     return [TransitionRead.model_validate(item, from_attributes=True) for item in transitions]
+
+
+@router.delete(
+    "/{application_id}/transitions/latest",
+    status_code=HTTPStatus.NO_CONTENT,
+    responses={
+        **_NOT_FOUND,
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "Only the first stage is left, which cannot be undone "
+            "(`invalid-transition`)",
+        },
+    },
+)
+async def undo_latest_transition(application_id: UUID, service: Service) -> None:
+    """Undo the most recent transition: the application returns to its previous state."""
+    raise NotImplementedError
