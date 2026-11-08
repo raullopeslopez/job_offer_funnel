@@ -358,6 +358,66 @@
         "title": "ApplicationUpdate",
         "type": "object"
       },
+      "Ats": {
+        "description": "Applicant tracking systems whose public job boards can be read (no limits stated).",
+        "enum": [
+          "ashby",
+          "greenhouse",
+          "lever"
+        ],
+        "title": "Ats",
+        "type": "string"
+      },
+      "BoardImportRead": {
+        "properties": {
+          "added": {
+            "description": "Matching offers added to the inbox as pending.",
+            "title": "Added",
+            "type": "integer"
+          },
+          "already_in_inbox": {
+            "description": "Matching offers skipped as duplicates.",
+            "title": "Already In Inbox",
+            "type": "integer"
+          },
+          "expired": {
+            "description": "Pending offers of this company discarded as expired.",
+            "title": "Expired",
+            "type": "integer"
+          },
+          "found": {
+            "description": "Open offers the company's board returned.",
+            "title": "Found",
+            "type": "integer"
+          },
+          "imported_at": {
+            "format": "date-time",
+            "title": "Imported At",
+            "type": "string"
+          },
+          "matching": {
+            "description": "Offers that match the profile.",
+            "title": "Matching",
+            "type": "integer"
+          },
+          "watched_company_id": {
+            "format": "uuid",
+            "title": "Watched Company Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "watched_company_id",
+          "found",
+          "matching",
+          "added",
+          "already_in_inbox",
+          "expired",
+          "imported_at"
+        ],
+        "title": "BoardImportRead",
+        "type": "object"
+      },
       "Channel": {
         "description": "Where the application came from; used to measure conversion per channel.",
         "enum": [
@@ -1039,6 +1099,30 @@
           "url": {
             "title": "Url",
             "type": "string"
+          },
+          "watched_company_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The watched company it was imported from, if still watched.",
+            "title": "Watched Company Id"
+          },
+          "watched_company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watched Company Name"
           }
         },
         "required": [
@@ -1053,6 +1137,8 @@
           "discard_reason",
           "application_id",
           "feed",
+          "watched_company_id",
+          "watched_company_name",
           "created_at"
         ],
         "title": "OfferRead",
@@ -1771,6 +1857,71 @@
           "errors"
         ],
         "title": "ValidationProblemRead",
+        "type": "object"
+      },
+      "WatchedCompanyCreate": {
+        "properties": {
+          "ats": {
+            "$ref": "#/components/schemas/Ats"
+          },
+          "board": {
+            "description": "The company's name in its public careers URL on the ATS (boards.greenhouse.io/<board>, jobs.lever.co/<board>, jobs.ashbyhq.com/<board>).",
+            "examples": [
+              "acme"
+            ],
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Board",
+            "type": "string"
+          },
+          "name": {
+            "description": "Unique ignoring case; the company of its imported offers.",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "ats",
+          "board"
+        ],
+        "title": "WatchedCompanyCreate",
+        "type": "object"
+      },
+      "WatchedCompanyRead": {
+        "properties": {
+          "ats": {
+            "$ref": "#/components/schemas/Ats"
+          },
+          "board": {
+            "title": "Board",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "ats",
+          "board",
+          "created_at"
+        ],
+        "title": "WatchedCompanyRead",
         "type": "object"
       },
       "WorkMode": {
@@ -4368,6 +4519,281 @@
         "summary": "Generate Searches",
         "tags": [
           "discovery"
+        ]
+      }
+    },
+    "/api/v1/watched-companies": {
+      "get": {
+        "description": "Every watched company, by name.",
+        "operationId": "list_watched_companies_api_v1_watched_companies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WatchedCompanyRead"
+                  },
+                  "title": "Response List Watched Companies Api V1 Watched Companies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Watched Companies",
+        "tags": [
+          "inbox"
+        ]
+      },
+      "post": {
+        "description": "Watch a company through the public job board of its ATS.",
+        "operationId": "watch_company_api_v1_watched_companies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchedCompanyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchedCompanyRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "A company with that name, ignoring case, is already watched (`already-exists`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Watch Company",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/watched-companies/{watched_company_id}": {
+      "delete": {
+        "description": "Stop watching a company. Its offers stay in the inbox, with no watched company.",
+        "operationId": "unwatch_company_api_v1_watched_companies__watched_company_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "watched_company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Watched Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Watched company does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unwatch Company",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/watched-companies/{watched_company_id}/imports": {
+      "post": {
+        "description": "Add the company's open offers that match the profile to the inbox, as pending.\n\nDuplicates are skipped; pending offers of this company that left its board are\ndiscarded as expired. No limit on how often: the ATS boards state none.",
+        "operationId": "import_watched_company_api_v1_watched_companies__watched_company_id__imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "watched_company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Watched Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardImportRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Watched company does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationProblemRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemRead"
+                    }
+                  ],
+                  "title": "Response 422 Import Watched Company Api V1 Watched Companies  Watched Company Id  Imports Post"
+                }
+              }
+            },
+            "description": "Invalid body (`validation-error`), or the search profile does not exist (`unknown-search-profile`)"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "The ATS did not answer or does not know the board (`board-unavailable`); nothing changed"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import Watched Company",
+        "tags": [
+          "inbox"
         ]
       }
     },

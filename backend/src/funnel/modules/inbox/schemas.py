@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
-from funnel.modules.inbox.domain import Feed, OfferStatus
+from funnel.modules.inbox.domain import Ats, Feed, OfferStatus
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -49,6 +49,34 @@ class FeedRead(BaseModel):
     )
 
 
+class WatchedCompanyCreate(BaseModel):
+    name: Text = Field(description="Unique ignoring case; the company of its imported offers.")
+    ats: Ats
+    board: Text = Field(
+        description="The company's name in its public careers URL on the ATS "
+        "(boards.greenhouse.io/<board>, jobs.lever.co/<board>, jobs.ashbyhq.com/<board>).",
+        examples=["acme"],
+    )
+
+
+class WatchedCompanyRead(BaseModel):
+    id: UUID
+    name: str
+    ats: Ats
+    board: str
+    created_at: datetime
+
+
+class BoardImportRead(BaseModel):
+    watched_company_id: UUID
+    found: int = Field(description="Open offers the company's board returned.")
+    matching: int = Field(description="Offers that match the profile.")
+    added: int = Field(description="Matching offers added to the inbox as pending.")
+    already_in_inbox: int = Field(description="Matching offers skipped as duplicates.")
+    expired: int = Field(description="Pending offers of this company discarded as expired.")
+    imported_at: datetime
+
+
 class OfferRead(BaseModel):
     id: UUID
     url: str
@@ -61,4 +89,8 @@ class OfferRead(BaseModel):
     discard_reason: str | None = Field(description="Set while the offer is discarded.")
     application_id: UUID | None = Field(description="Set once the offer is promoted.")
     feed: Feed | None = Field(description="The public feed it was imported from, if any.")
+    watched_company_id: UUID | None = Field(
+        description="The watched company it was imported from, if still watched."
+    )
+    watched_company_name: str | None
     created_at: datetime

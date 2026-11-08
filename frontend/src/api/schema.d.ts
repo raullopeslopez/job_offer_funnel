@@ -462,6 +462,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/watched-companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Watched Companies
+         * @description Every watched company, by name.
+         */
+        get: operations["list_watched_companies_api_v1_watched_companies_get"];
+        put?: never;
+        /**
+         * Watch Company
+         * @description Watch a company through the public job board of its ATS.
+         */
+        post: operations["watch_company_api_v1_watched_companies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/watched-companies/{watched_company_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unwatch Company
+         * @description Stop watching a company. Its offers stay in the inbox, with no watched company.
+         */
+        delete: operations["unwatch_company_api_v1_watched_companies__watched_company_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/watched-companies/{watched_company_id}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Watched Company
+         * @description Add the company's open offers that match the profile to the inbox, as pending.
+         *
+         *     Duplicates are skipped; pending offers of this company that left its board are
+         *     discarded as expired. No limit on how often: the ATS boards state none.
+         */
+        post: operations["import_watched_company_api_v1_watched_companies__watched_company_id__imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -604,6 +671,50 @@ export interface components {
             role?: string | null;
             /** Url */
             url?: string | null;
+        };
+        /**
+         * Ats
+         * @description Applicant tracking systems whose public job boards can be read (no limits stated).
+         * @enum {string}
+         */
+        Ats: "ashby" | "greenhouse" | "lever";
+        /** BoardImportRead */
+        BoardImportRead: {
+            /**
+             * Added
+             * @description Matching offers added to the inbox as pending.
+             */
+            added: number;
+            /**
+             * Already In Inbox
+             * @description Matching offers skipped as duplicates.
+             */
+            already_in_inbox: number;
+            /**
+             * Expired
+             * @description Pending offers of this company discarded as expired.
+             */
+            expired: number;
+            /**
+             * Found
+             * @description Open offers the company's board returned.
+             */
+            found: number;
+            /**
+             * Imported At
+             * Format: date-time
+             */
+            imported_at: string;
+            /**
+             * Matching
+             * @description Offers that match the profile.
+             */
+            matching: number;
+            /**
+             * Watched Company Id
+             * Format: uuid
+             */
+            watched_company_id: string;
         };
         /**
          * Channel
@@ -892,6 +1003,13 @@ export interface components {
             title: string;
             /** Url */
             url: string;
+            /**
+             * Watched Company Id
+             * @description The watched company it was imported from, if still watched.
+             */
+            watched_company_id: string | null;
+            /** Watched Company Name */
+            watched_company_name: string | null;
         };
         /**
          * OfferStatus
@@ -1149,6 +1267,39 @@ export interface components {
             title: string;
             /** Type */
             type: string;
+        };
+        /** WatchedCompanyCreate */
+        WatchedCompanyCreate: {
+            ats: components["schemas"]["Ats"];
+            /**
+             * Board
+             * @description The company's name in its public careers URL on the ATS (boards.greenhouse.io/<board>, jobs.lever.co/<board>, jobs.ashbyhq.com/<board>).
+             * @example acme
+             */
+            board: string;
+            /**
+             * Name
+             * @description Unique ignoring case; the company of its imported offers.
+             */
+            name: string;
+        };
+        /** WatchedCompanyRead */
+        WatchedCompanyRead: {
+            ats: components["schemas"]["Ats"];
+            /** Board */
+            board: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /**
          * WorkMode
@@ -2927,6 +3078,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    list_watched_companies_api_v1_watched_companies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedCompanyRead"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    watch_company_api_v1_watched_companies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchedCompanyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedCompanyRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description A company with that name, ignoring case, is already watched (`already-exists`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    unwatch_company_api_v1_watched_companies__watched_company_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watched_company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Watched company does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    import_watched_company_api_v1_watched_companies__watched_company_id__imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watched_company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardImportRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Watched company does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid body (`validation-error`), or the search profile does not exist (`unknown-search-profile`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"] | components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description The ATS did not answer or does not know the board (`board-unavailable`); nothing changed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
                 };
             };
         };

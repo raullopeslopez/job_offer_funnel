@@ -17,6 +17,7 @@ from funnel.modules.inbox.domain import OfferStatus, next_import_at
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.repository import FeedImportRepository, OfferRepository
 from funnel.modules.inbox.schemas import (
+    BoardImportRead,
     DiscardCreate,
     FeedRead,
     ImportCreate,
@@ -24,6 +25,8 @@ from funnel.modules.inbox.schemas import (
     OfferCreate,
     OfferRead,
     PromotionCreate,
+    WatchedCompanyCreate,
+    WatchedCompanyRead,
 )
 from funnel.modules.inbox.service import FeedImportService, OfferService
 
@@ -221,6 +224,72 @@ async def import_feed(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
     )
 
 
+# --- ATS companies ---
+
+watched_companies_router = APIRouter(prefix="/watched-companies", tags=["inbox"])
+
+_WATCHED_NOT_FOUND: dict[int | str, dict[str, Any]] = {
+    HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Watched company does not exist"}
+}
+
+
+@watched_companies_router.post(
+    "",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "A company with that name, ignoring case, is already watched "
+            "(`already-exists`)",
+        },
+    },
+)
+async def watch_company(company: WatchedCompanyCreate) -> WatchedCompanyRead:
+    """Watch a company through the public job board of its ATS."""
+    raise NotImplementedError
+
+
+@watched_companies_router.get("")
+async def list_watched_companies() -> list[WatchedCompanyRead]:
+    """Every watched company, by name."""
+    raise NotImplementedError
+
+
+@watched_companies_router.delete(
+    "/{watched_company_id}", status_code=HTTPStatus.NO_CONTENT, responses=_WATCHED_NOT_FOUND
+)
+async def unwatch_company(watched_company_id: UUID) -> None:
+    """Stop watching a company. Its offers stay in the inbox, with no watched company."""
+    raise NotImplementedError
+
+
+@watched_companies_router.post(
+    "/{watched_company_id}/imports",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        **_WATCHED_NOT_FOUND,
+        HTTPStatus.UNPROCESSABLE_CONTENT: {
+            "model": ValidationProblemRead | ProblemRead,
+            "description": "Invalid body (`validation-error`), or the search profile does "
+            "not exist (`unknown-search-profile`)",
+        },
+        HTTPStatus.BAD_GATEWAY: {
+            "model": ProblemRead,
+            "description": "The ATS did not answer or does not know the board "
+            "(`board-unavailable`); nothing changed",
+        },
+    },
+)
+async def import_watched_company(watched_company_id: UUID, body: ImportCreate) -> BoardImportRead:
+    """Add the company's open offers that match the profile to the inbox, as pending.
+
+    Duplicates are skipped; pending offers of this company that left its board are
+    discarded as expired. No limit on how often: the ATS boards state none.
+    """
+    raise NotImplementedError
+
+
 router = APIRouter()
 router.include_router(offers_router)
 router.include_router(feeds_router)
+router.include_router(watched_companies_router)
