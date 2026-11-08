@@ -30,6 +30,10 @@ While the version is `0.x`, the API may change without a major version bump.
   company, optionally starting it as applied on a past date, with invalid fields shown
   in the form. Each application opens its detail with its history, where it can be
   edited (including clearing the optional fields) or deleted after confirming.
+- Stage transitions on the application detail: move an application to a stage or close
+  it with an outcome, optionally with a past date and a note, and undo its last transition
+  after confirming. Transitions the funnel does not allow are shown with the API's message,
+  and the history shows the note of each transition.
 
 ### Fixed
 
