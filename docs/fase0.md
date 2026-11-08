@@ -42,8 +42,6 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 | LinkedIn | `boolean` | Sin scraping (términos de uso) |
 | Indeed | `minus` | |
 | Welcome to the Jungle, Glassdoor | `keywords` | En el seed. Plantillas sacadas de URLs indexadas (`?query=`, `?sc.keyword=`) |
-| Glints, Kalibrr, Tech in Asia, Snaphunt | `keywords` | Sudeste asiático. Sin plantilla: su búsqueda no deja el texto en una URL indexada |
-| Dealls | `keywords` | Solo filtra por categoría y ubicación en la URL (`?loker=`, `?location=`): sin búsqueda por texto conocida |
 | Wellfound | — | La búsqueda va en la ruta como slug (`/role/r/software-engineer`), no como texto libre: no encaja en `{query}` |
 | RemoteOK | — | Busca por etiquetas en la ruta (`/remote-python-jobs`), sin parámetro de texto fiable. API JSON pública (`remoteok.com/api`): mejor por la spec 6 |
 
@@ -64,6 +62,7 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 
 | Fuera | Entra cuando... |
 |-------|-----------------|
+| Portales asiáticos: Glints, Kalibrr, Tech in Asia, Snaphunt, Dealls | La búsqueda se centre en Asia; se añaden pegando la URL de una búsqueda real (su plantilla no se puede sacar de URLs indexadas) |
 | Consulta periódica de los ATS (jobs, procrastinate) | Lanzarla a mano se haga pesado |
 | Lectura de alertas por email | Dar de alta ofertas a mano sea el cuello de botella |
 | Scoring de encaje | La bandeja tenga más ofertas de las que se revisan |
