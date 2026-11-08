@@ -172,7 +172,7 @@ Reglas:
 
 ### Dominio
 - `StrEnum` para fases y estados; nunca strings sueltos.
-- Value objects inmutables (`@dataclass(frozen=True)`).
+- Value objects inmutables (`@dataclass(frozen=True)`), p. ej. `Salary(amount, currency)` en lugar de dos campos sueltos.
 - **Reloj inyectado** (`Clock`): prohibido `datetime.now()` en el dominio y en los services.
 - Sin números mágicos: constantes con nombre o config (p. ej. los días de ghosting).
 
@@ -182,7 +182,7 @@ Reglas:
 - Prohibidos el `except` desnudo, tragarse excepciones y devolver `None` para indicar un error.
 
 ### Comentarios
-- Explican el porqué, no el qué. Sin código comentado. Docstrings solo en la API pública que no sea obvia.
+- Explican el porqué, no el qué. Si hace falta explicar el qué, renombra o extrae una función. Sin código comentado. Docstrings solo en la API pública que no sea obvia.
 
 ### Principios
 - YAGNI: sin abstracciones especulativas (nada de `Protocol` para una sola implementación).
@@ -209,6 +209,7 @@ Reglas:
 - Markers declarados en `pyproject.toml` con `--strict-markers`. Todo test lleva su marker; `just test-*` filtra por él.
 - pytest-bdd: `bdd_features_base_dir` apunta a `../specs`. Steps reutilizables en `tests/bdd/conftest.py`; los propios de una feature, en `tests/bdd/test_<modulo>_<nombre>.py`.
 - Fixtures base (en `tests/conftest.py`): `db_session`, `client` (httpx ASGI), `clock` (reloj fijo), factories de datos.
+- **Factories, no fixtures gigantes**: los datos se crean con factories (`make_application(stage=...)`) que reciben solo lo que el test necesita y ponen defaults válidos en el resto. Prohibidas las fixtures compartidas que montan un escenario grande que cada test usa a medias.
 
 ### Parametrización (obligatoria cuando aplique)
 
@@ -222,6 +223,7 @@ Reglas:
 
 - Todo test tiene tres bloques marcados con `# Arrange`, `# Act`, `# Assert` (se omite `# Arrange` si no hay preparación).
 - **Un solo Act por test.** Un segundo Act significa un segundo test.
+- **Un comportamiento por test**: los asserts comprueban una única consecuencia del Act. Si comprueban cosas independientes (p. ej. el estado devuelto y el email enviado), son dos tests.
 - Sin lógica en los tests (`if`, bucles, `try`): la variación va en la parametrización.
 - En BDD, Given/When/Then es el AAA: los steps `Dado` preparan, `Cuando` actúa (uno solo) y `Entonces` comprueba.
 - Nombres que describen el comportamiento: `test_rejects_transition_when_skipping_stages`.
