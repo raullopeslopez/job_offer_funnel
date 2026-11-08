@@ -38,7 +38,21 @@ db-up:
 db-down:
     {{compose}} down
 
-# Drop the local database volume, start again and migrate
+# Back up the database to backups/ (custom pg_dump format, restorable with db-restore)
+db-backup:
+    {{compose}} exec -T db pg_dump -Fc -U {{db_user}} -d {{db_name}} -f /tmp/backup.dump
+    {{compose}} cp db:/tmp/backup.dump ../backups/{{db_name}}-{{datetime("%Y%m%d-%H%M%S")}}.dump
+    {{compose}} exec -T db rm /tmp/backup.dump
+
+# Replace the database contents with a backup made by db-backup
+[confirm("This replaces all current data with the backup. Continue?")]
+db-restore file:
+    {{compose}} cp "{{join(invocation_directory(), file)}}" db:/tmp/restore.dump
+    {{compose}} exec -T db pg_restore --clean --if-exists --no-owner -U {{db_user}} -d {{db_name}} /tmp/restore.dump
+    {{compose}} exec -T db rm /tmp/restore.dump
+
+# Drop the local database volume (ALL DATA), start again and migrate
+[confirm("This deletes ALL the data in the local database. Run `just db-backup` first. Continue?")]
 db-reset:
     {{compose}} down -v
     just db-up

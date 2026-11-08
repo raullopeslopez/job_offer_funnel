@@ -8,6 +8,15 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ## [Unreleased]
 
+### Added
+
+- `just db-backup` saves the database to `backups/`, and `just db-restore <file>` brings
+  a backup back.
+
+### Changed
+
+- `just db-reset` and `just db-restore` ask for confirmation before touching data.
+
 ## [0.1.0] - 2026-11-08
 
 First release: the MVP. The API tracks applications through the funnel and answers
