@@ -39,6 +39,7 @@ While the version is `0.x`, the API may change without a major version bump.
   invalid field; unexpected errors return a generic 500 without internal details.
 - Bearer token authentication for every `/api/v1` endpoint.
 - `GET /health`, which also checks the database connection.
+- just up runs the API and its database with Docker Compose (port 8080), migrating on start.
 - Development setup: Justfile, Docker Compose Postgres, pre-commit, GitHub Actions CI,
   and a parallel test suite (unit, integration, BDD, migrations and API contract).
 
