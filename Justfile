@@ -107,3 +107,8 @@ openapi:
 
 # Everything CI runs
 ci: check test
+
+# Start Claude Code with Remote Control (controllable from the Claude mobile app)
+[no-cd]
+claude:
+    claude --remote-control "job_offer_funnel"

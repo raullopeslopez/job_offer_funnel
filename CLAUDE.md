@@ -39,8 +39,12 @@ Español: specs (`# language: es`), `docs/`, `CLAUDE.md`. Inglés: código, test
 - Las reglas de cada zona se cargan solas desde `.claude/rules/` (backend, tests, specs, entorno).
 - **Definition of Done**: escenarios en verde · `just ci` en verde · migración reversible · `openapi.json` coherente · tests parametrizados y en AAA · sin TODOs sin issue.
 - Primera vez: copiar `.env.example` a `.env` y ejecutar `just setup`. Comandos clave: `just dev` (Swagger en `/docs`) · `just check` · `just test` · `just test-one "expr"` (sin xdist) · `just ci`. Requieren Docker Desktop arrancado.
+- Sesiones con Remote Control (para controlarlas desde Claude mobile): arrancar con `just claude`.
 
-## Git
+## Git y PRs
 
-- Ramas `feat/<slug>` y `fix/<slug>`, de vida corta. Commits por paso del ciclo, en Conventional Commits y en inglés. Merge a `main` con `just ci` en verde.
+- Remoto: `github.com/raullopeslopez/job_offer_funnel` (privado). Nunca se hace commit directo en `main`.
+- Ramas `feat/`, `fix/` y `chore/<slug>`, de vida corta. Commits por paso del ciclo, en Conventional Commits y en inglés.
+- Al terminar: `just ci` en verde → push de la rama → `gh pr create` hacia `main`, con un resumen y la evidencia de los tests → comprobar el CI con `gh pr checks`.
+- **El merge lo hace el usuario.** Claude nunca mergea PRs ni hace push a `main`.
 - Sin líneas de autoría de Claude en commits ni PRs (`Co-Authored-By`, `Claude-Session`, "Generated with"). Lo garantiza `attribution` en `.claude/settings.json`.
