@@ -52,6 +52,7 @@ Una pantalla por PR, en orden de uso:
 | 4 | `specs/ui/stage_transitions.feature` | **Transiciones** en el detalle: avanzar de fase, salidas y deshacer la última | `transitions` |
 | 5 | `specs/ui/metrics.feature` | **Métricas**: conversión por fase y por canal, pipeline activo | `metrics` |
 | 6 | `specs/ui/settings.feature` | **Ajustes**: empresas y portales (CRUD) | `companies`, `job-boards` |
+| 7 | `specs/ui/watched_companies.feature` | **Empresas vigiladas**: alta, listado, dejar de vigilar e importar para un perfil | `watched-companies`, `search-profiles` |
 
 ## Fuera (con disparador)
 
@@ -65,4 +66,3 @@ Una pantalla por PR, en orden de uso:
 | Tema oscuro | Se pida; el tema único lo deja a un cambio de paleta |
 | Móvil / responsive | Se quiera usar la app desde el móvil |
 | i18n | Se quiera la app en otro idioma (ver `docs/mvp.md`) |
-| Spec 5 de la fase 0 (`ats_companies`) en la UI | Exista en la API |
