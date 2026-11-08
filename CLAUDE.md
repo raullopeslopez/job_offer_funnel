@@ -43,7 +43,7 @@ Python 3.14 (fijado en `backend/.python-version`) · uv · FastAPI (async) · Py
 - Toda feature sigue el ciclo SDD de la skill `sdd-feature`: spec aprobada → contrato aprobado → rojo → verde → `just ci`.
 - Las reglas de cada zona se cargan solas desde `.claude/rules/` (backend, tests, specs, entorno).
 - **Definition of Done**: escenarios en verde · `just ci` en verde · migración reversible · `openapi.json` coherente · tests parametrizados y en AAA · `CHANGELOG.md` actualizado · sin TODOs sin issue.
-- Primera vez: copiar `.env.example` a `.env` y ejecutar `just setup`. Comandos clave: `just up` (API + BD en Docker, para el uso diario; Swagger en `localhost:8080/docs`) · `just dev` (desarrollo con recarga, `localhost:8000/docs`) · `just db-backup` / `just db-restore <fichero>` · `just check` · `just test` · `just test-one "expr"` (sin xdist) · `just ci`. Requieren Docker Desktop arrancado.
+- Primera vez: copiar `.env.example` a `.env` y ejecutar `just setup`. Comandos clave: `just up` (API + BD en Docker, para el uso diario; Swagger en `localhost:8080/docs`) · `just dev` (desarrollo con recarga, `localhost:8000/docs`) · `just seed-job-boards` (portales de `backend/seeds/job_boards.json`) · `just db-backup` / `just db-restore <fichero>` · `just check` · `just test` · `just test-one "expr"` (sin xdist) · `just ci`. Requieren Docker Desktop arrancado.
 - Sesiones con Remote Control (para controlarlas desde Claude mobile): arrancar con `just claude`.
 
 ## Git y PRs

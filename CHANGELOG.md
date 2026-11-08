@@ -10,6 +10,10 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- `just seed-job-boards` registers the job boards of `backend/seeds/job_boards.json`
+  (LinkedIn, Indeed, We Work Remotely, Jobicy) in the API run by `just up`, skipping the
+  ones that already exist.
+
 - Generated searches (`GET /api/v1/search-profiles/{id}/searches`): for every job board,
   the profile's search in that board's syntax and a URL ready to open. `boolean` joins
   titles with OR, keywords with AND and exclusions with NOT; `minus` uses -word for
