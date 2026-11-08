@@ -36,7 +36,7 @@
 2. **Contrato**: ruta, componentes principales y endpoints que usa la pantalla. Aquí se detecta si falta algo en la API.
 3. **Rojo**: los escenarios de playwright-bdd fallan.
 4. **Verde**: implementación y tests de componente.
-5. **`just ci`**: Biome, tsc, Vitest, check de deriva de tipos y Playwright, más todo lo del backend.
+5. **`just frontend-ci` + `just frontend-e2e`** (o `just ci` si también cambia el backend): Biome, tsc, Vitest, check de deriva de tipos y Playwright.
 
 ## PRs, en orden
 
@@ -57,6 +57,7 @@ Una pantalla por PR, en orden de uso:
 
 | Fuera | Entra cuando... |
 |-------|-----------------|
+| E2E en paralelo (una BD y una API por worker) | La suite E2E pase de ~3 minutos |
 | Storybook | Haya 3 o más componentes propios reutilizados entre pantallas |
 | zod (validación en el cliente) | Aparezca una validación que el backend no cubre |
 | dependency-cruiser (el import-linter del frontend) | `frontend/src` tenga varias features con fronteras que proteger |

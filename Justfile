@@ -175,6 +175,12 @@ frontend-check:
 frontend-test *args:
     pnpm run test {{args}}
 
+# Frontend E2E: specs/ui scenarios in Chromium against a real API with a throwaway database (needs Docker)
+[group("frontend")]
+[working-directory("../frontend")]
+frontend-e2e *args:
+    pnpm run e2e {{args}}
+
 # Backend only: everything its CI job runs (lint, types, architecture, all tests)
 backend-ci: check test
 
@@ -183,7 +189,7 @@ backend-ci: check test
 frontend-ci: frontend-check frontend-test
 
 # Backend and frontend: everything CI runs
-ci: backend-ci frontend-ci
+ci: backend-ci frontend-ci frontend-e2e
 
 # Start Claude Code with Remote Control (controllable from the Claude mobile app)
 [no-cd]
