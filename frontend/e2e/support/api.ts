@@ -58,8 +58,8 @@ export class Api {
     return this.post(`/offers/${offerId}/promotion`, {});
   }
 
-  async addCompany(name: string): Promise<Schemas["CompanyRead"]> {
-    const company = await this.post<Schemas["CompanyRead"]>("/companies", { name });
+  async addCompany(name: string, website?: string): Promise<Schemas["CompanyRead"]> {
+    const company = await this.post<Schemas["CompanyRead"]>("/companies", { name, website });
     this.companyIds.set(name, company.id);
     return company;
   }
