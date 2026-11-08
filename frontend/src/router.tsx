@@ -4,6 +4,7 @@ import { ApplicationDetailPage } from "./pages/applications/ApplicationDetailPag
 import { ApplicationsPage } from "./pages/applications/ApplicationsPage";
 import { Home } from "./pages/Home";
 import { InboxPage } from "./pages/inbox/InboxPage";
+import { MetricsPage } from "./pages/metrics/MetricsPage";
 import { SearchesPage } from "./pages/searches/SearchesPage";
 
 export const router = createBrowserRouter([
@@ -15,6 +16,7 @@ export const router = createBrowserRouter([
       { path: "searches", element: <SearchesPage /> },
       { path: "applications", element: <ApplicationsPage /> },
       { path: "applications/:applicationId", element: <ApplicationDetailPage /> },
+      { path: "metrics", element: <MetricsPage /> },
     ],
   },
 ]);

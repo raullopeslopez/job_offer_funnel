@@ -34,6 +34,10 @@ While the version is `0.x`, the API may change without a major version bump.
   it with an outcome, optionally with a past date and a note, and undo its last transition
   after confirming. Transitions the funnel does not allow are shown with the API's message,
   and the history shows the note of each transition.
+- Metrics screen in the web app (`/metrics`): the conversion from each stage to the next
+  one, overall and for each channel with applications, and the applications in progress
+  in each stage with their total. Each one comes as a table and a chart; a step no
+  application reached shows its rate as "—", and with no applications the screen says so.
 
 ### Fixed
 
