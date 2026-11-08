@@ -56,12 +56,9 @@ async function remove(page: Page, name: string, answer: "Delete" | "Cancel") {
 
 // --- Given ---
 
-Given(
-  "companies named {string} and {string}",
-  async ({ api }, first: string, second: string) => {
-    for (const name of [first, second]) await api.addCompany(name);
-  },
-);
+Given("companies named {string} and {string}", async ({ api }, first: string, second: string) => {
+  for (const name of [first, second]) await api.addCompany(name);
+});
 
 Given(
   "companies named {string}, {string} and {string}",
@@ -81,12 +78,9 @@ Given("the company {string} has an application", async ({ api }, company: string
   await api.addApplication(company, "Backend Engineer");
 });
 
-Given(
-  "job boards named {string} and {string}",
-  async ({ api }, first: string, second: string) => {
-    for (const name of [first, second]) await api.addJobBoard(name);
-  },
-);
+Given("job boards named {string} and {string}", async ({ api }, first: string, second: string) => {
+  for (const name of [first, second]) await api.addJobBoard(name);
+});
 
 Given(
   "job boards named {string}, {string} and {string}",
@@ -138,9 +132,12 @@ When(
   },
 );
 
-When("I clear the {string} of the company {string}", async ({ page }, field: string, name: string) => {
-  await edit(page, name, { [field]: "" });
-});
+When(
+  "I clear the {string} of the company {string}",
+  async ({ page }, field: string, name: string) => {
+    await edit(page, name, { [field]: "" });
+  },
+);
 
 When(/^I delete the (?:company|job board) "(.*)" and confirm$/, async ({ page }, name: string) => {
   await remove(page, name, "Delete");

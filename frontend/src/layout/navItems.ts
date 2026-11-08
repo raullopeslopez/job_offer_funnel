@@ -5,4 +5,5 @@ export const navItems: { path: string; label: string }[] = [
   { path: "/searches", label: "Searches" },
   { path: "/applications", label: "Applications" },
   { path: "/metrics", label: "Metrics" },
+  { path: "/settings", label: "Settings" },
 ];
