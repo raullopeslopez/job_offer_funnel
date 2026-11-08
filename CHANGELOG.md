@@ -10,6 +10,14 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Inbox (`/api/v1/offers`): add the offers found in the job boards (URL, company, title,
+  optional job board and notes) and list them by status. The same company and title,
+  ignoring case and extra spaces, is rejected as a duplicate even if it was discarded.
+  Discard an offer with an optional reason (`POST /offers/{id}/discard`), restore it
+  (`DELETE /offers/{id}/discard`), or promote it to an application in `evaluated`
+  (`POST /offers/{id}/promotion`), which reuses or creates the company.
+- A job board with offers cannot be deleted (`409 in-use`).
+
 - `just seed-job-boards` registers the job boards of `backend/seeds/job_boards.json`
   (LinkedIn, Indeed, We Work Remotely, Jobicy) in the API run by `just up`, skipping the
   ones that already exist.

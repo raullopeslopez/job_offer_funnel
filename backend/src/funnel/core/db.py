@@ -6,7 +6,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
-from funnel.core.exceptions import AlreadyExistsError
+from funnel.core.exceptions import AlreadyExistsError, InUseError
+
+# Postgres error code for a row still referenced by a foreign key.
+_FOREIGN_KEY_VIOLATION = "23503"
 
 # Deterministic constraint names keep Alembic migrations reversible.
 NAMING_CONVENTION = {
@@ -48,4 +51,17 @@ async def flush_checking_unique(session: AsyncSession, unique_index: str, detail
     except IntegrityError as error:
         if unique_index in str(error.orig):
             raise AlreadyExistsError(detail) from error
+        raise
+
+
+async def flush_checking_references(session: AsyncSession, detail: str) -> None:
+    """Flush a delete now, so a row still referenced (ON DELETE RESTRICT) is `in-use`.
+
+    Build `detail` before calling: after a failed flush the rows cannot be loaded.
+    """
+    try:
+        await session.flush()
+    except IntegrityError as error:
+        if getattr(error.orig, "sqlstate", None) == _FOREIGN_KEY_VIOLATION:
+            raise InUseError(detail) from error
         raise

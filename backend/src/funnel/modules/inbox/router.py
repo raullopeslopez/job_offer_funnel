@@ -5,9 +5,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from funnel.core.clock import Clock, get_clock
 from funnel.core.db import get_session
 from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
+from funnel.modules.applications.service import build_application_service
+from funnel.modules.companies.service import build_company_service
 from funnel.modules.inbox.domain import OfferStatus
 from funnel.modules.inbox.repository import OfferRepository
 from funnel.modules.inbox.schemas import DiscardCreate, OfferCreate, OfferRead, PromotionCreate
@@ -16,9 +19,16 @@ from funnel.modules.inbox.service import OfferService
 router = APIRouter(prefix="/offers", tags=["inbox"])
 
 
-def get_offer_service(session: Annotated[AsyncSession, Depends(get_session)]) -> OfferService:
-    # Composition root: the only place in the router that knows about the repository.
-    return OfferService(OfferRepository(session))
+def get_offer_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> OfferService:
+    # Composition root. One session for all three services: promoting is all or nothing.
+    return OfferService(
+        OfferRepository(session),
+        build_company_service(session),
+        build_application_service(session, clock),
+    )
 
 
 Service = Annotated[OfferService, Depends(get_offer_service)]
@@ -52,7 +62,8 @@ _WRONG_STATUS: dict[int | str, dict[str, Any]] = {
 )
 async def create_offer(offer: OfferCreate, service: Service) -> OfferRead:
     """Add an offer to the inbox, as pending. Company and title identify it."""
-    raise NotImplementedError
+    created = await service.create(offer)
+    return OfferRead.model_validate(created, from_attributes=True)
 
 
 @router.get("")
@@ -62,12 +73,19 @@ async def list_offers(
     status: Annotated[OfferStatus | None, Query()] = None,
 ) -> Page[OfferRead]:
     """Offers from the most recently added."""
-    raise NotImplementedError
+    offers, total = await service.list_page(status, page)
+    return Page(
+        items=[OfferRead.model_validate(row, from_attributes=True) for row in offers],
+        total=total,
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.get("/{offer_id}", responses=_NOT_FOUND)
 async def read_offer(offer_id: UUID, service: Service) -> OfferRead:
-    raise NotImplementedError
+    offer = await service.get(offer_id)
+    return OfferRead.model_validate(offer, from_attributes=True)
 
 
 @router.post(
@@ -77,7 +95,8 @@ async def read_offer(offer_id: UUID, service: Service) -> OfferRead:
 )
 async def discard_offer(offer_id: UUID, discard: DiscardCreate, service: Service) -> OfferRead:
     """Discard a pending offer, with an optional reason."""
-    raise NotImplementedError
+    discarded = await service.discard(offer_id, discard.reason)
+    return OfferRead.model_validate(discarded, from_attributes=True)
 
 
 @router.delete(
@@ -87,7 +106,7 @@ async def discard_offer(offer_id: UUID, discard: DiscardCreate, service: Service
 )
 async def restore_offer(offer_id: UUID, service: Service) -> None:
     """Undo the discard: the offer is pending again."""
-    raise NotImplementedError
+    await service.restore(offer_id)
 
 
 @router.post(
@@ -101,4 +120,5 @@ async def promote_offer(offer_id: UUID, promotion: PromotionCreate, service: Ser
     The application uses the company with the offer's company name, ignoring case,
     or a new one; the title becomes the role and the offer's URL is kept.
     """
-    raise NotImplementedError
+    promoted = await service.promote(offer_id, promotion.channel)
+    return OfferRead.model_validate(promoted, from_attributes=True)

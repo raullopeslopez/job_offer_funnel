@@ -1,6 +1,8 @@
 from collections.abc import Mapping
 from uuid import UUID
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from funnel.core.clock import Clock
 from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
@@ -73,3 +75,8 @@ class ApplicationService:
 
 def _not_found(application_id: UUID) -> NotFoundError:
     return NotFoundError(f"Application {application_id} does not exist")
+
+
+def build_application_service(session: AsyncSession, clock: Clock) -> ApplicationService:
+    """For other modules: the service on their request session, without its repository."""
+    return ApplicationService(ApplicationRepository(session), clock)

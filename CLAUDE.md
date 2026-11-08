@@ -21,7 +21,8 @@ Backend con `core` completo (config, sesión por request, contrato de errores, a
 - [x] Spec + implementación: `discovery/search_profiles`
 - [x] Spec + implementación: `discovery/job_boards`
 - [x] Spec + implementación: `discovery/generated_searches`
-- [ ] Specs 4-6 de la fase 0: `inbox`, `ats_companies`, `public_feeds`
+- [x] Spec + implementación: `inbox/inbox`
+- [ ] Specs 5-6 de la fase 0: `ats_companies`, `public_feeds`
 
 ## Criterio: evitar la sobreingeniería
 

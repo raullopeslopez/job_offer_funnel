@@ -2,16 +2,11 @@ from collections.abc import Mapping
 from uuid import UUID
 
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from funnel.core.db import flush_checking_unique
-from funnel.core.exceptions import InUseError
+from funnel.core.db import flush_checking_references, flush_checking_unique
 from funnel.core.pagination import PageParams
 from funnel.modules.companies.models import UNIQUE_NAME_INDEX, CompanyRow
-
-# Postgres error code for a row still referenced by a foreign key.
-_FOREIGN_KEY_VIOLATION = "23503"
 
 
 class CompanyRepository:
@@ -28,6 +23,12 @@ class CompanyRepository:
     async def get(self, company_id: UUID) -> CompanyRow | None:
         return await self._session.get(CompanyRow, company_id)
 
+    async def find_by_name(self, name: str) -> CompanyRow | None:
+        # Same comparison as the unique index: lower(name), surrounding spaces ignored.
+        return await self._session.scalar(
+            select(CompanyRow).where(func.lower(CompanyRow.name) == name.strip().lower())
+        )
+
     async def update(self, company: CompanyRow, changes: Mapping[str, object]) -> CompanyRow:
         for name, value in changes.items():
             setattr(company, name, value)
@@ -35,16 +36,10 @@ class CompanyRepository:
         return company
 
     async def delete(self, company: CompanyRow) -> None:
-        # Read before flushing: after a failed flush the row cannot be loaded any more.
+        # Applications reference companies with ON DELETE RESTRICT.
         detail = f"Company {company.id} still has applications"
         await self._session.delete(company)
-        try:
-            await self._session.flush()
-        except IntegrityError as error:
-            # Applications reference companies with ON DELETE RESTRICT.
-            if getattr(error.orig, "sqlstate", None) == _FOREIGN_KEY_VIOLATION:
-                raise InUseError(detail) from error
-            raise
+        await flush_checking_references(self._session, detail)
 
     async def list_page(self, page: PageParams) -> tuple[list[CompanyRow], int]:
         rows = await self._session.scalars(

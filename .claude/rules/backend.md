@@ -26,7 +26,7 @@ backend/src/funnel/
 ## Dependencias (las verifica import-linter)
 
 - Capas `router → service → repository`. Nunca al revés ni saltándose una capa.
-- Un módulo solo usa el `service` de otro módulo, nunca su `repository` ni sus `models`.
+- Un módulo solo usa el `service` de otro módulo, nunca su `repository` ni sus `models`. El módulo que se deja usar expone `build_<x>_service(session, ...)` en su `service.py`; el que lo usa lo compone en su router con la misma sesión (todo o nada) y declara la excepción en `ignore_imports` del contrato de independencia (hoy: `inbox` → services de `companies` y `applications`).
 - Para referenciar a otro módulo basta una FK por nombre de tabla (`ForeignKey("companies.id")`): la existencia la garantiza la BD y el repository traduce la violación a un error 422 (p. ej. `unknown-company`). Sin imports entre módulos.
 - `core` no importa nada de `modules`. `domain.py` no importa FastAPI ni SQLAlchemy.
 

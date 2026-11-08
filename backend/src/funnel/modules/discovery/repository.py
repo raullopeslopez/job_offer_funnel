@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from funnel.core.db import flush_checking_unique
+from funnel.core.db import flush_checking_references, flush_checking_unique
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.models import (
     UNIQUE_JOB_BOARD_NAME_INDEX,
@@ -76,8 +76,10 @@ class JobBoardRepository:
         return job_board
 
     async def delete(self, job_board: JobBoardRow) -> None:
+        # Offers in the inbox reference job boards with ON DELETE RESTRICT.
+        detail = f"Job board {job_board.id} still has offers"
         await self._session.delete(job_board)
-        await self._session.flush()
+        await flush_checking_references(self._session, detail)
 
     async def list_page(self, page: PageParams) -> tuple[list[JobBoardRow], int]:
         rows = await self._session.scalars(
