@@ -12,6 +12,11 @@ const FIELD_LABELS: Record<string, string> = {
   excluded_keywords: "Excluded keywords",
   location: "Location",
   work_modes: "Work modes",
+  role: "Role",
+  channel: "Channel",
+  priority: "Priority",
+  stage: "Stage",
+  occurred_on: "Start date",
 };
 
 export const fieldLabel = (field: string) => FIELD_LABELS[field] ?? field;
