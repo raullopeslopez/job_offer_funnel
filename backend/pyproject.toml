@@ -10,6 +10,8 @@ dependencies = [
     "pydantic-settings>=2.16.2",
     "sqlalchemy[asyncio]>=2.1.8",
     "structlog>=26.1.0",
+    "tzdata>=2026.6",
+    "uuid6>=2025.0.1",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -38,7 +40,7 @@ max-args = 3
 ban-relative-imports = "all"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "PLR0913"]
+"tests/**" = ["PLR2004", "PLR0913", "PLR0917"]  # pytest injects fixtures by name
 
 [tool.mypy]
 strict = true

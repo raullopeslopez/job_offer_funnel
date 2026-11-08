@@ -7,6 +7,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import funnel.modules.applications.models  # noqa: F401  # registers tables on Base.metadata
 from funnel.core.db import Base
 
 # Every module's models.py must be imported here so autogenerate sees its tables.
