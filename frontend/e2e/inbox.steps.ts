@@ -1,17 +1,10 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import type { DataTable } from "playwright-bdd";
-import { E2E_TOKEN } from "./support/env";
 import { Given, Then, When } from "./support/fixtures";
+import { fieldLabel, quoted } from "./support/form";
 
 const STATUS_TABS = { pending: "Pending", discarded: "Discarded", promoted: "Promoted" } as const;
 type Status = keyof typeof STATUS_TABS;
-
-const FIELD_LABELS: Record<string, string> = {
-  url: "URL",
-  company: "Company",
-  title: "Title",
-  notes: "Notes",
-};
 
 const grid = (page: Page) => page.getByRole("grid");
 const titles = (page: Page) => grid(page).getByRole("link");
@@ -19,7 +12,6 @@ const row = (page: Page, title: string): Locator =>
   grid(page)
     .getByRole("row")
     .filter({ has: page.getByRole("link", { name: title, exact: true }) });
-const quoted = (list: string) => [...list.matchAll(/"([^"]*)"/g)].map((match) => match[1] ?? "");
 
 async function openInbox(page: Page, status: Status = "pending") {
   await page.goto("/inbox");
@@ -34,7 +26,7 @@ async function addOffer(page: Page, fields: Record<string, string>) {
       await dialog.getByRole("combobox", { name: "Job board" }).click();
       await page.getByRole("option", { name: value }).click();
     } else {
-      await dialog.getByLabel(FIELD_LABELS[field] ?? field).fill(value);
+      await dialog.getByLabel(fieldLabel(field), { exact: true }).fill(value);
     }
   }
   await dialog.getByRole("button", { name: "Add" }).click();
@@ -48,15 +40,6 @@ async function discard(page: Page, title: string, reason?: string) {
 }
 
 // --- Given ---
-
-Given("I am signed in with a valid token", async ({ page, api }) => {
-  expect(api).toBeDefined(); // requesting `api` resets the database
-  await page.addInitScript((token) => localStorage.setItem("funnel.authToken", token), E2E_TOKEN);
-});
-
-Given("a job board named {string}", async ({ api }, name: string) => {
-  await api.addJobBoard(name);
-});
 
 Given(
   "offers for {string} as {string}, {string} and {string}, added in that order",
@@ -187,18 +170,9 @@ Then(
   },
 );
 
-Then("I see an error on the field {string}", async ({ page }, field: string) => {
-  const input = page.getByRole("dialog").getByLabel(FIELD_LABELS[field] ?? field);
-  await expect(input).toHaveAttribute("aria-invalid", "true");
-});
-
 Then("the offer is not added", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByText("0 offers", { exact: true })).toBeVisible();
-});
-
-Then("I see the message {string}", async ({ page }, message: string) => {
-  await expect(page.getByText(message)).toBeVisible();
 });
 
 Then(

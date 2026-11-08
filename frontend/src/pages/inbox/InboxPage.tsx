@@ -1,5 +1,5 @@
 import { Box, Button, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
-import { type GridPaginationModel } from "@mui/x-data-grid";
+import type { GridPaginationModel } from "@mui/x-data-grid";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router";

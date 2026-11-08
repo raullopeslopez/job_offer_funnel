@@ -22,12 +22,19 @@ export class Api {
     return (await response.json()) as T;
   }
 
-  addJobBoard(name: string): Promise<Schemas["JobBoardRead"]> {
-    return this.post("/job-boards", {
-      name,
-      search_url_template: "https://jobs.example/search?q={query}",
-      syntax: "keywords",
-    });
+  addJobBoard(
+    name: string,
+    syntax: Schemas["Syntax"] = "keywords",
+    template = "https://jobs.example/search?q={query}",
+  ): Promise<Schemas["JobBoardRead"]> {
+    return this.post("/job-boards", { name, search_url_template: template, syntax });
+  }
+
+  addSearchProfile(
+    name: string,
+    fields: Partial<Schemas["SearchProfileCreate"]> = {},
+  ): Promise<Schemas["SearchProfileRead"]> {
+    return this.post("/search-profiles", { name, titles: ["Backend Engineer"], ...fields });
   }
 
   addOffer(
