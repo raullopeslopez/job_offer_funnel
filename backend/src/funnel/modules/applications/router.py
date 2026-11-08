@@ -110,7 +110,7 @@ async def delete_application(application_id: UUID, service: Service) -> None:
 
     To archive one instead, close it with an outcome: it still counts in the metrics.
     """
-    raise NotImplementedError
+    await service.delete(application_id)
 
 
 @router.post(
@@ -159,4 +159,4 @@ async def list_transitions(application_id: UUID, service: Service) -> list[Trans
 )
 async def undo_latest_transition(application_id: UUID, service: Service) -> None:
     """Undo the most recent transition: the application returns to its previous state."""
-    raise NotImplementedError
+    await service.undo_latest_transition(application_id)

@@ -256,3 +256,51 @@ def test_first_transition_rejects_a_future_date() -> None:
     # Act / Assert
     with pytest.raises(InvalidTransitionDateError):
         first_transition(Stage.APPLIED, date(2026, 3, 11), TODAY)
+
+
+# --- Undoing ---
+
+
+def _transition(
+    to_stage: Stage, outcome: Outcome | None = None, occurred_on: date = ENTERED_ON
+) -> Transition:
+    return Transition(
+        from_stage=None, to_stage=to_stage, outcome=outcome, occurred_on=occurred_on, note=None
+    )
+
+
+@pytest.mark.parametrize(
+    ("previous", "expected"),
+    [
+        pytest.param(_transition(Stage.APPLIED), (Stage.APPLIED, None), id="move-back"),
+        pytest.param(
+            _transition(Stage.SCREENING, Outcome.GHOSTED),
+            (Stage.SCREENING, Outcome.GHOSTED),
+            id="ghosted-again",
+        ),
+    ],
+)
+def test_undo_returns_to_the_state_before_the_latest_transition(
+    previous: Transition, expected: tuple[Stage, Outcome | None]
+) -> None:
+    # Arrange
+    application = make_application(Stage.INTERVIEWING, last_transition_on=TODAY)
+    history = [_transition(Stage.EVALUATED), previous, _transition(Stage.INTERVIEWING, None, TODAY)]
+
+    # Act
+    application.undo_latest(history)
+
+    # Assert
+    assert (application.stage, application.outcome, application.last_transition_on) == (
+        *expected,
+        ENTERED_ON,
+    )
+
+
+def test_undo_rejects_the_first_stage() -> None:
+    # Arrange
+    application = make_application(Stage.APPLIED)
+
+    # Act / Assert
+    with pytest.raises(InvalidTransitionError):
+        application.undo_latest([_transition(Stage.APPLIED)])

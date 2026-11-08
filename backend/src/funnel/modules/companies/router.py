@@ -63,7 +63,8 @@ async def read_company(company_id: UUID, service: Service) -> CompanyRead:
 )
 async def update_company(company_id: UUID, changes: CompanyUpdate, service: Service) -> CompanyRead:
     """Change only the fields sent. Names stay unique ignoring case and surrounding spaces."""
-    raise NotImplementedError
+    updated = await service.update(company_id, changes.model_dump(exclude_unset=True))
+    return CompanyRead.model_validate(updated, from_attributes=True)
 
 
 @router.delete(
@@ -79,7 +80,7 @@ async def update_company(company_id: UUID, changes: CompanyUpdate, service: Serv
 )
 async def delete_company(company_id: UUID, service: Service) -> None:
     """Delete a company that has no applications."""
-    raise NotImplementedError
+    await service.delete(company_id)
 
 
 @router.get("")

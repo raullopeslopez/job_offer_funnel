@@ -3,7 +3,7 @@
 Source of truth: specs/applications/stage_transitions.feature.
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -149,6 +149,16 @@ class Application:
         self.outcome = transition.outcome
         self.last_transition_on = occurred_on
         return transition
+
+    def undo_latest(self, history: Sequence[Transition]) -> None:
+        """Return to the state the history had before its latest transition (oldest first)."""
+        if len(history) <= 1:
+            msg = "The first stage cannot be undone; delete the application instead"
+            raise InvalidTransitionError(msg)
+        previous = history[-2]
+        self.stage = previous.to_stage
+        self.outcome = previous.outcome
+        self.last_transition_on = previous.occurred_on
 
     def _check_can_move(self, target: Stage) -> None:
         if self.outcome is not None and self.outcome not in REACTIVATABLE_OUTCOMES:

@@ -46,7 +46,26 @@ class ApplicationRepository:
         for name, value in changes.items():
             setattr(row, name, value)
         await self._flush_checking_company()
+        await self._session.refresh(row)  # company_name follows a changed company_id
         return row
+
+    async def delete(self, row: ApplicationRow) -> None:
+        # Its transitions go with it: the foreign key cascades on delete.
+        await self._session.delete(row)
+        await self._session.flush()
+
+    async def undo_latest_transition(self, application: Application) -> None:
+        latest = await self._session.scalar(
+            select(TransitionRow)
+            .where(TransitionRow.application_id == application.id)
+            .order_by(TransitionRow.occurred_on.desc(), TransitionRow.id.desc())
+            .limit(1)
+        )
+        if latest is not None:
+            await self._session.delete(latest)
+        row = await self._session.get_one(ApplicationRow, application.id)
+        row.stage = application.stage
+        row.outcome = application.outcome
 
     async def list_page(
         self, filters: ApplicationFilters, page: PageParams

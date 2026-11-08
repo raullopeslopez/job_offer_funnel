@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from uuid import UUID
 
 from funnel.core.exceptions import NotFoundError
@@ -20,6 +21,14 @@ class CompanyService:
         if company is None:
             raise NotFoundError(f"Company {company_id} does not exist")
         return company
+
+    async def update(self, company_id: UUID, changes: Mapping[str, object]) -> CompanyRow:
+        company = await self.get(company_id)
+        return await self._repository.update(company, changes)
+
+    async def delete(self, company_id: UUID) -> None:
+        company = await self.get(company_id)
+        await self._repository.delete(company)
 
     async def list_page(self, page: PageParams) -> tuple[list[CompanyRow], int]:
         return await self._repository.list_page(page)

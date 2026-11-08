@@ -45,6 +45,16 @@ class ApplicationService:
         row = await self.get_row(application_id)
         return await self._repository.update(row, changes)
 
+    async def delete(self, application_id: UUID) -> None:
+        row = await self.get_row(application_id)
+        await self._repository.delete(row)
+
+    async def undo_latest_transition(self, application_id: UUID) -> None:
+        application = await self.get(application_id)
+        history = await self._repository.list_transitions(application_id)
+        application.undo_latest(history)
+        await self._repository.undo_latest_transition(application)
+
     async def list_page(
         self, filters: ApplicationFilters, page: PageParams
     ) -> tuple[list[ApplicationRow], int]:
