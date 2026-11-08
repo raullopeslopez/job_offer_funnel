@@ -36,7 +36,7 @@ No se escribe código de producción sin una spec aprobada. Si cambia el comport
 ## 5. Cierre
 15. Comprobar la Definition of Done del `CLAUDE.md`.
 16. Si se cierra un hito, actualizar "Estado actual" en el `CLAUDE.md`.
-17. Merge a `main` (PR + squash si hay remoto; si no, merge local).
+17. Push de la rama, `gh pr create` hacia `main` (resumen + evidencia) y `gh pr checks`. **El merge lo hace el usuario**: no mergear nunca.
 
 ## Reglas durante el ciclo
 - Ante la duda sobre el comportamiento: preguntar, no inventar. La spec manda.
