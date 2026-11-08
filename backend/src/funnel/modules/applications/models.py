@@ -22,13 +22,17 @@ def _enum_column_type(enum: type[StrEnum], column: str) -> Enum:
     )
 
 
+# Its violation means "the company does not exist": the repository translates it.
+COMPANY_FOREIGN_KEY = "fk_applications_company_id_companies"
+
+
 class ApplicationRow(Base):
     __tablename__ = "applications"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
     # Referenced by table name only: modules never import each other's models.
     company_id: Mapped[UUID] = mapped_column(
-        ForeignKey("companies.id", ondelete="RESTRICT"), index=True
+        ForeignKey("companies.id", ondelete="RESTRICT", name=COMPANY_FOREIGN_KEY), index=True
     )
     role: Mapped[str] = mapped_column(String(200))
     channel: Mapped[Channel] = mapped_column(_enum_column_type(Channel, "channel"))

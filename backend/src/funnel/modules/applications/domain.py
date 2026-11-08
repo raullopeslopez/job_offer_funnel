@@ -109,6 +109,18 @@ class Transition:
     note: str | None
 
 
+def first_transition(stage: Stage, occurred_on: date | None, today: date) -> Transition:
+    """The transition that brings a new application into the funnel; the date defaults to today."""
+    if stage not in STARTING_STAGES:
+        raise InvalidTransitionError(f"An application cannot start in {stage}")
+    occurred_on = occurred_on or today
+    if occurred_on > today:
+        raise InvalidTransitionDateError(f"{occurred_on} is in the future")
+    return Transition(
+        from_stage=None, to_stage=stage, outcome=None, occurred_on=occurred_on, note=None
+    )
+
+
 @dataclass
 class Application:
     id: UUID

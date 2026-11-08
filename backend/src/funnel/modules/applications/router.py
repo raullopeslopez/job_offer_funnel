@@ -62,7 +62,8 @@ _INVALID_DATA: dict[int | str, dict[str, Any]] = {
 )
 async def create_application(application: ApplicationCreate, service: Service) -> ApplicationRead:
     """Create an application in `evaluated` (default) or `applied`; that is its first transition."""
-    raise NotImplementedError
+    created = await service.create(application)
+    return ApplicationRead.model_validate(created, from_attributes=True)
 
 
 @router.get("")
@@ -72,13 +73,26 @@ async def list_applications(
     service: Service,
 ) -> Page[ApplicationRead]:
     """Applications from the most recently created. Filters combine with AND."""
-    raise NotImplementedError
+    applications, total = await service.list_page(filters, page)
+    return Page(
+        items=[ApplicationRead.model_validate(row, from_attributes=True) for row in applications],
+        total=total,
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.get("/{application_id}", responses=_NOT_FOUND)
 async def read_application(application_id: UUID, service: Service) -> ApplicationDetailRead:
     """The application with its transition history."""
-    raise NotImplementedError
+    application = await service.get_row(application_id)
+    transitions = await service.list_transitions(application_id)
+    return ApplicationDetailRead(
+        **ApplicationRead.model_validate(application, from_attributes=True).model_dump(),
+        transitions=[
+            TransitionRead.model_validate(item, from_attributes=True) for item in transitions
+        ],
+    )
 
 
 @router.patch("/{application_id}", responses={**_NOT_FOUND, **_INVALID_DATA})
@@ -86,7 +100,8 @@ async def update_application(
     application_id: UUID, changes: ApplicationUpdate, service: Service
 ) -> ApplicationRead:
     """Change only the fields sent. The stage changes only through transitions."""
-    raise NotImplementedError
+    updated = await service.update(application_id, changes.model_dump(exclude_unset=True))
+    return ApplicationRead.model_validate(updated, from_attributes=True)
 
 
 @router.post(

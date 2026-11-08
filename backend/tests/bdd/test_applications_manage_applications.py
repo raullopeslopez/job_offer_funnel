@@ -60,7 +60,7 @@ def _api_field(state: ScenarioState, name: str, value: str) -> tuple[str, str]:
 
 def _create(client: TestClient, state: ScenarioState, body: dict[str, Any]) -> None:
     state.response = client.post("/api/v1/applications", json=body)
-    if state.response.status_code == 201:  # noqa: PLR2004
+    if state.response.status_code == 201:
         state.application_id = state.response.json()["id"]
 
 
