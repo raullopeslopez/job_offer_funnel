@@ -358,6 +358,26 @@
         "title": "Channel",
         "type": "string"
       },
+      "ChannelConversionRead": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ConversionStepRead"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "channel",
+          "steps"
+        ],
+        "title": "ChannelConversionRead",
+        "type": "object"
+      },
       "CompanyCreate": {
         "properties": {
           "name": {
@@ -417,6 +437,85 @@
           "website"
         ],
         "title": "CompanyRead",
+        "type": "object"
+      },
+      "ConversionByChannelRead": {
+        "properties": {
+          "channels": {
+            "description": "Only channels with applications, in the order of the `Channel` enum.",
+            "items": {
+              "$ref": "#/components/schemas/ChannelConversionRead"
+            },
+            "title": "Channels",
+            "type": "array"
+          }
+        },
+        "required": [
+          "channels"
+        ],
+        "title": "ConversionByChannelRead",
+        "type": "object"
+      },
+      "ConversionRead": {
+        "properties": {
+          "steps": {
+            "description": "One per pair of consecutive stages.",
+            "items": {
+              "$ref": "#/components/schemas/ConversionStepRead"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "steps"
+        ],
+        "title": "ConversionRead",
+        "type": "object"
+      },
+      "ConversionStepRead": {
+        "properties": {
+          "from_stage": {
+            "$ref": "#/components/schemas/Stage"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`reached_to` as a percentage of `reached_from`, with one decimal. Null when `reached_from` is 0.",
+            "examples": [
+              66.7
+            ],
+            "title": "Rate"
+          },
+          "reached_from": {
+            "description": "Applications that reached `from_stage` or later.",
+            "title": "Reached From",
+            "type": "integer"
+          },
+          "reached_to": {
+            "description": "Applications that reached `to_stage` or later.",
+            "title": "Reached To",
+            "type": "integer"
+          },
+          "to_stage": {
+            "$ref": "#/components/schemas/Stage",
+            "description": "The stage right after `from_stage`."
+          }
+        },
+        "required": [
+          "from_stage",
+          "to_stage",
+          "reached_from",
+          "reached_to",
+          "rate"
+        ],
+        "title": "ConversionStepRead",
         "type": "object"
       },
       "FieldErrorRead": {
@@ -521,6 +620,45 @@
           "offset"
         ],
         "title": "Page[CompanyRead]",
+        "type": "object"
+      },
+      "PipelineRead": {
+        "properties": {
+          "stages": {
+            "description": "Every stage from `evaluated` to `offer`, including those with 0.",
+            "items": {
+              "$ref": "#/components/schemas/PipelineStageRead"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stages",
+          "total"
+        ],
+        "title": "PipelineRead",
+        "type": "object"
+      },
+      "PipelineStageRead": {
+        "properties": {
+          "applications": {
+            "title": "Applications",
+            "type": "integer"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/Stage"
+          }
+        },
+        "required": [
+          "stage",
+          "applications"
+        ],
+        "title": "PipelineStageRead",
         "type": "object"
       },
       "Priority": {
@@ -1469,6 +1607,147 @@
         "summary": "Read Company",
         "tags": [
           "companies"
+        ]
+      }
+    },
+    "/api/v1/metrics/conversion": {
+      "get": {
+        "description": "Conversion from each stage to the next one, over every application.\n\nAn application reached a stage when its stage is that one or a later one; closed\napplications count up to the stage they reached, and open ones count too.",
+        "operationId": "read_conversion_api_v1_metrics_conversion_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Conversion",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/v1/metrics/conversion-by-channel": {
+      "get": {
+        "description": "The same conversion, for each channel with applications.",
+        "operationId": "read_conversion_by_channel_api_v1_metrics_conversion_by_channel_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionByChannelRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Conversion By Channel",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/v1/metrics/pipeline": {
+      "get": {
+        "description": "Applications in progress per stage: no outcome and not accepted.\n\nUnlike the `active` filter of the application list (no outcome), it leaves out\naccepted applications, whose process is over.",
+        "operationId": "read_pipeline_api_v1_metrics_pipeline_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Pipeline",
+        "tags": [
+          "metrics"
         ]
       }
     },
