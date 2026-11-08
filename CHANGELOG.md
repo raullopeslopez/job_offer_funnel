@@ -24,6 +24,12 @@ While the version is `0.x`, the API may change without a major version bump.
   invalid fields and duplicate names shown in the form. Each profile opens its searches,
   grouped by job board, each one linking to the job board with its query, together with
   the work modes to set in each job board's own filter.
+- Applications screen in the web app (`/applications`): the applications, most recent
+  first, with their company, stage, outcome and channel, filtered by stage, outcome,
+  channel or whether they are still active. Create an application for an existing
+  company, optionally starting it as applied on a past date, with invalid fields shown
+  in the form. Each application opens its detail with its history, where it can be
+  edited (including clearing the optional fields) or deleted after confirming.
 
 ### Fixed
 

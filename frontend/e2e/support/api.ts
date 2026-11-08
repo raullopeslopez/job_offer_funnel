@@ -6,6 +6,11 @@ type Schemas = components["schemas"];
 
 // Given steps prepare the data through the real API, as a client would.
 export class Api {
+  // Ids of what the scenario created, by the name the spec gives it.
+  private readonly companyIds = new Map<string, string>();
+  readonly applicationIds = new Map<string, string>();
+  lastApplicationId = "";
+
   constructor(private readonly request: APIRequestContext) {}
 
   async reset(): Promise<void> {
@@ -51,5 +56,34 @@ export class Api {
 
   promote(offerId: string): Promise<Schemas["OfferRead"]> {
     return this.post(`/offers/${offerId}/promotion`, {});
+  }
+
+  async addCompany(name: string): Promise<Schemas["CompanyRead"]> {
+    const company = await this.post<Schemas["CompanyRead"]>("/companies", { name });
+    this.companyIds.set(name, company.id);
+    return company;
+  }
+
+  async addApplication(
+    company: string,
+    role: string,
+    fields: Partial<Schemas["ApplicationCreate"]> = {},
+  ): Promise<Schemas["ApplicationRead"]> {
+    const application = await this.post<Schemas["ApplicationRead"]>("/applications", {
+      company_id: this.companyIds.get(company),
+      role,
+      channel: "portal",
+      ...fields,
+    });
+    this.applicationIds.set(role, application.id);
+    this.lastApplicationId = application.id;
+    return application;
+  }
+
+  transition(
+    applicationId: string,
+    body: Schemas["TransitionCreate"],
+  ): Promise<Schemas["TransitionRead"]> {
+    return this.post(`/applications/${applicationId}/transitions`, body);
   }
 }
