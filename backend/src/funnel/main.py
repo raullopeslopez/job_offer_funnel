@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from http import HTTPStatus
+from importlib.metadata import version
 
 from fastapi import APIRouter, Depends, FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -28,7 +29,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()  # type: ignore[call-arg]  # filled from env vars
     configure_logging(settings.log_level)
 
-    app = FastAPI(title="Job Offer Funnel", version="0.1.0", lifespan=_lifespan)
+    # Single source of the version: backend/pyproject.toml.
+    app = FastAPI(title="Job Offer Funnel", version=version("funnel"), lifespan=_lifespan)
     app.state.settings = settings
     register_error_handlers(app)
 

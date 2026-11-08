@@ -1,12 +1,120 @@
 {
   "components": {
     "schemas": {
-      "ApplicationRead": {
+      "ApplicationCreate": {
         "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "company_id": {
+            "format": "uuid",
+            "title": "Company Id",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "occurred_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it entered the first stage. Defaults to today.",
+            "title": "Occurred On"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Role",
+            "type": "string"
+          },
+          "stage": {
+            "default": "evaluated",
+            "description": "The first stage.",
+            "enum": [
+              "evaluated",
+              "applied"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "examples": [
+                  "https://acme.example/jobs/1"
+                ],
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "company_id",
+          "role",
+          "channel"
+        ],
+        "title": "ApplicationCreate",
+        "type": "object"
+      },
+      "ApplicationDetailRead": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "company_id": {
+            "format": "uuid",
+            "title": "Company Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
           "outcome": {
             "anyOf": [
@@ -19,18 +127,236 @@
             ],
             "description": "Set when the application is closed."
           },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
           "stage": {
             "$ref": "#/components/schemas/Stage",
             "description": "Current stage; for a closed application, the stage reached."
+          },
+          "transitions": {
+            "description": "Transition history, oldest first.",
+            "items": {
+              "$ref": "#/components/schemas/TransitionRead"
+            },
+            "title": "Transitions",
+            "type": "array"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
           }
         },
         "required": [
           "id",
+          "company_id",
+          "role",
+          "channel",
+          "priority",
+          "url",
+          "notes",
           "stage",
-          "outcome"
+          "outcome",
+          "created_at",
+          "transitions"
+        ],
+        "title": "ApplicationDetailRead",
+        "type": "object"
+      },
+      "ApplicationRead": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "company_id": {
+            "format": "uuid",
+            "title": "Company Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Outcome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when the application is closed."
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/Stage",
+            "description": "Current stage; for a closed application, the stage reached."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "company_id",
+          "role",
+          "channel",
+          "priority",
+          "url",
+          "notes",
+          "stage",
+          "outcome",
+          "created_at"
         ],
         "title": "ApplicationRead",
         "type": "object"
+      },
+      "ApplicationUpdate": {
+        "description": "Partial update: only the fields sent change. `null` clears an optional field.",
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Channel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "examples": [
+                  "https://acme.example/jobs/1"
+                ],
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "ApplicationUpdate",
+        "type": "object"
+      },
+      "Channel": {
+        "description": "Where the application came from; used to measure conversion per channel.",
+        "enum": [
+          "portal",
+          "referral",
+          "recruiter_inbound",
+          "direct",
+          "networking"
+        ],
+        "title": "Channel",
+        "type": "string"
       },
       "CompanyCreate": {
         "properties": {
@@ -135,6 +461,37 @@
         "title": "Outcome",
         "type": "string"
       },
+      "Page_ApplicationRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[ApplicationRead]",
+        "type": "object"
+      },
       "Page_CompanyRead_": {
         "properties": {
           "items": {
@@ -165,6 +522,15 @@
         ],
         "title": "Page[CompanyRead]",
         "type": "object"
+      },
+      "Priority": {
+        "enum": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "title": "Priority",
+        "type": "string"
       },
       "ProblemRead": {
         "description": "Problem details returned by every error response.",
@@ -376,8 +742,212 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/applications": {
+      "get": {
+        "description": "Applications from the most recently created. Filters combine with AND.",
+        "operationId": "list_applications_api_v1_applications_get",
+        "parameters": [
+          {
+            "description": "Current stage; for a closed application, the stage reached.",
+            "in": "query",
+            "name": "stage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Stage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current stage; for a closed application, the stage reached.",
+              "title": "Stage"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Outcome"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channel",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Channel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel"
+            }
+          },
+          {
+            "description": "`true`: still open (no outcome). `false`: closed.",
+            "in": "query",
+            "name": "active",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`true`: still open (no outcome). `false`: closed.",
+              "title": "Active"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ApplicationRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Applications",
+        "tags": [
+          "applications"
+        ]
+      },
+      "post": {
+        "description": "Create an application in `evaluated` (default) or `applied`; that is its first transition.",
+        "operationId": "create_application_api_v1_applications_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationProblemRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemRead"
+                    }
+                  ],
+                  "title": "Response 422 Create Application Api V1 Applications Post"
+                }
+              }
+            },
+            "description": "Invalid body (`validation-error`), the company does not exist (`unknown-company`), or the date is in the future (`invalid-transition-date`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Application",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
     "/api/v1/applications/{application_id}": {
       "get": {
+        "description": "The application with its transition history.",
         "operationId": "read_application_api_v1_applications__application_id__get",
         "parameters": [
           {
@@ -396,7 +966,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApplicationRead"
+                  "$ref": "#/components/schemas/ApplicationDetailRead"
                 }
               }
             },
@@ -439,6 +1009,91 @@
           }
         ],
         "summary": "Read Application",
+        "tags": [
+          "applications"
+        ]
+      },
+      "patch": {
+        "description": "Change only the fields sent. The stage changes only through transitions.",
+        "operationId": "update_application_api_v1_applications__application_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Application does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationProblemRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemRead"
+                    }
+                  ],
+                  "title": "Response 422 Update Application Api V1 Applications  Application Id  Patch"
+                }
+              }
+            },
+            "description": "Invalid body (`validation-error`), or the company does not exist (`unknown-company`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Application",
         "tags": [
           "applications"
         ]

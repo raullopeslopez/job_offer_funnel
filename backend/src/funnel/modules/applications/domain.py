@@ -11,7 +11,7 @@ from http import HTTPStatus
 from typing import Final
 from uuid import UUID
 
-from funnel.core.exceptions import DomainError
+from funnel.core.exceptions import AppError, DomainError
 
 
 class Stage(StrEnum):
@@ -33,6 +33,25 @@ class Outcome(StrEnum):
     WITHDRAWN = "withdrawn"
     OFFER_DECLINED = "offer_declined"
 
+
+class Channel(StrEnum):
+    """Where the application came from; used to measure conversion per channel."""
+
+    PORTAL = "portal"
+    REFERRAL = "referral"
+    RECRUITER_INBOUND = "recruiter_inbound"
+    DIRECT = "direct"
+    NETWORKING = "networking"
+
+
+class Priority(StrEnum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+# An application enters the funnel before or right when applying.
+STARTING_STAGES: Final = frozenset({Stage.EVALUATED, Stage.APPLIED})
 
 _POSITION: Final[Mapping[Stage, int]] = {stage: index for index, stage in enumerate(Stage)}
 
@@ -63,6 +82,14 @@ class InvalidTransitionDateError(DomainError):
     status = HTTPStatus.UNPROCESSABLE_CONTENT
 
 
+class UnknownCompanyError(AppError):
+    """The company referenced in the request does not exist (422: the path itself is valid)."""
+
+    slug = "unknown-company"
+    title = "Unknown company"
+    status = HTTPStatus.UNPROCESSABLE_CONTENT
+
+
 @dataclass(frozen=True)
 class StageChange:
     """A requested change: exactly one of `to_stage` (move) or `outcome` (close)."""
@@ -80,6 +107,18 @@ class Transition:
     outcome: Outcome | None
     occurred_on: date
     note: str | None
+
+
+def first_transition(stage: Stage, occurred_on: date | None, today: date) -> Transition:
+    """The transition that brings a new application into the funnel; the date defaults to today."""
+    if stage not in STARTING_STAGES:
+        raise InvalidTransitionError(f"An application cannot start in {stage}")
+    occurred_on = occurred_on or today
+    if occurred_on > today:
+        raise InvalidTransitionDateError(f"{occurred_on} is in the future")
+    return Transition(
+        from_stage=None, to_stage=stage, outcome=None, occurred_on=occurred_on, note=None
+    )
 
 
 @dataclass

@@ -2,15 +2,24 @@ from http import HTTPStatus
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from funnel.core.clock import Clock, get_clock
 from funnel.core.db import get_session
 from funnel.core.errors import ProblemRead, ValidationProblemRead
+from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.domain import StageChange
 from funnel.modules.applications.repository import ApplicationRepository
-from funnel.modules.applications.schemas import ApplicationRead, TransitionCreate, TransitionRead
+from funnel.modules.applications.schemas import (
+    ApplicationCreate,
+    ApplicationDetailRead,
+    ApplicationFilters,
+    ApplicationRead,
+    ApplicationUpdate,
+    TransitionCreate,
+    TransitionRead,
+)
 from funnel.modules.applications.service import ApplicationService
 
 router = APIRouter(prefix="/applications", tags=["applications"])
@@ -31,10 +40,68 @@ _NOT_FOUND: dict[int | str, dict[str, Any]] = {
 }
 
 
+_INVALID_DATA: dict[int | str, dict[str, Any]] = {
+    HTTPStatus.UNPROCESSABLE_CONTENT: {
+        "model": ValidationProblemRead | ProblemRead,
+        "description": "Invalid body (`validation-error`), or the company does not exist "
+        "(`unknown-company`)",
+    }
+}
+
+
+@router.post(
+    "",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.UNPROCESSABLE_CONTENT: {
+            "model": ValidationProblemRead | ProblemRead,
+            "description": "Invalid body (`validation-error`), the company does not exist "
+            "(`unknown-company`), or the date is in the future (`invalid-transition-date`)",
+        }
+    },
+)
+async def create_application(application: ApplicationCreate, service: Service) -> ApplicationRead:
+    """Create an application in `evaluated` (default) or `applied`; that is its first transition."""
+    created = await service.create(application)
+    return ApplicationRead.model_validate(created, from_attributes=True)
+
+
+@router.get("")
+async def list_applications(
+    filters: Annotated[ApplicationFilters, Query()],
+    page: Annotated[PageParams, Depends(get_page_params)],
+    service: Service,
+) -> Page[ApplicationRead]:
+    """Applications from the most recently created. Filters combine with AND."""
+    applications, total = await service.list_page(filters, page)
+    return Page(
+        items=[ApplicationRead.model_validate(row, from_attributes=True) for row in applications],
+        total=total,
+        limit=page.limit,
+        offset=page.offset,
+    )
+
+
 @router.get("/{application_id}", responses=_NOT_FOUND)
-async def read_application(application_id: UUID, service: Service) -> ApplicationRead:
-    application = await service.get(application_id)
-    return ApplicationRead.model_validate(application, from_attributes=True)
+async def read_application(application_id: UUID, service: Service) -> ApplicationDetailRead:
+    """The application with its transition history."""
+    application = await service.get_row(application_id)
+    transitions = await service.list_transitions(application_id)
+    return ApplicationDetailRead(
+        **ApplicationRead.model_validate(application, from_attributes=True).model_dump(),
+        transitions=[
+            TransitionRead.model_validate(item, from_attributes=True) for item in transitions
+        ],
+    )
+
+
+@router.patch("/{application_id}", responses={**_NOT_FOUND, **_INVALID_DATA})
+async def update_application(
+    application_id: UUID, changes: ApplicationUpdate, service: Service
+) -> ApplicationRead:
+    """Change only the fields sent. The stage changes only through transitions."""
+    updated = await service.update(application_id, changes.model_dump(exclude_unset=True))
+    return ApplicationRead.model_validate(updated, from_attributes=True)
 
 
 @router.post(

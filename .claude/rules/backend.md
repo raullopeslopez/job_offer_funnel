@@ -27,6 +27,7 @@ backend/src/funnel/
 
 - Capas `router → service → repository`. Nunca al revés ni saltándose una capa.
 - Un módulo solo usa el `service` de otro módulo, nunca su `repository` ni sus `models`.
+- Para referenciar a otro módulo basta una FK por nombre de tabla (`ForeignKey("companies.id")`): la existencia la garantiza la BD y el repository traduce la violación a un error 422 (p. ej. `unknown-company`). Sin imports entre módulos.
 - `core` no importa nada de `modules`. `domain.py` no importa FastAPI ni SQLAlchemy.
 
 ## Tipos de módulo (conviven)

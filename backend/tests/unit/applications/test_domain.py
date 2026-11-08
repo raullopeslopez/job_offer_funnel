@@ -12,6 +12,7 @@ from funnel.modules.applications.domain import (
     Stage,
     StageChange,
     Transition,
+    first_transition,
 )
 
 pytestmark = pytest.mark.unit
@@ -217,3 +218,41 @@ def test_invalid_transition_date_is_rejected(requested: date) -> None:
     # Act / Assert
     with pytest.raises(InvalidTransitionDateError):
         application.apply(StageChange(to_stage=Stage.SCREENING, occurred_on=requested), TODAY)
+
+
+# --- Entering the funnel ---
+
+
+@pytest.mark.parametrize("stage", [Stage.EVALUATED, Stage.APPLIED], ids=str)
+@pytest.mark.parametrize(
+    ("requested", "expected"),
+    [
+        pytest.param(None, TODAY, id="defaults-to-today"),
+        pytest.param(date(2026, 3, 4), date(2026, 3, 4), id="past-date"),
+    ],
+)
+def test_first_transition_enters_the_starting_stage(
+    stage: Stage, requested: date | None, expected: date
+) -> None:
+    # Act
+    transition = first_transition(stage, requested, TODAY)
+
+    # Assert
+    assert transition == Transition(
+        from_stage=None, to_stage=stage, outcome=None, occurred_on=expected, note=None
+    )
+
+
+@pytest.mark.parametrize(
+    "stage", [Stage.SCREENING, Stage.INTERVIEWING, Stage.OFFER, Stage.ACCEPTED], ids=str
+)
+def test_first_transition_rejects_later_stages(stage: Stage) -> None:
+    # Act / Assert
+    with pytest.raises(InvalidTransitionError):
+        first_transition(stage, None, TODAY)
+
+
+def test_first_transition_rejects_a_future_date() -> None:
+    # Act / Assert
+    with pytest.raises(InvalidTransitionDateError):
+        first_transition(Stage.APPLIED, date(2026, 3, 11), TODAY)

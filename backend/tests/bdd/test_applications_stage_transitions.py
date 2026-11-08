@@ -5,13 +5,10 @@ from uuid import UUID, uuid7
 
 import httpx2
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pytest_bdd import given, parsers, scenarios, then, when
-from support.clock import FixedClock
 from support.factories import make_application
 
-from funnel.core.clock import get_clock
 from funnel.core.config import Settings
 from funnel.modules.applications.domain import Outcome, Stage
 
@@ -60,12 +57,6 @@ def _assert_problem(state: ScenarioState, status: int, slug: str) -> None:
 
 
 # --- Given ---
-
-
-@given(parsers.parse("today is {day}"))
-def given_today_is(client: TestClient, day: str) -> None:
-    clock = FixedClock(date.fromisoformat(day))
-    cast(FastAPI, client.app).dependency_overrides[get_clock] = lambda: clock
 
 
 @given(parsers.parse('an application in stage "{stage}"'))

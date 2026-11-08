@@ -45,7 +45,28 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | ES | EN |
 |----|----|
 | Canal de origen | `channel` |
+| Puesto | `role` |
+| URL de la oferta | `url` |
+| Notas | `notes` |
 | Fase alcanzada | `reached_stage` |
 | Estado final | `outcome` |
 | Prioridad | `priority` |
 | Encaje (score) | `fit_score` |
+
+## Canales de origen (`Channel`)
+
+| ES | EN (`Channel`) |
+|----|------------------|
+| Portal | `portal` |
+| Referido | `referral` |
+| Recruiter inbound | `recruiter_inbound` |
+| Candidatura directa en la web | `direct` |
+| Networking | `networking` |
+
+## Prioridad (`Priority`)
+
+| ES | EN (`Priority`) |
+|----|-------------------|
+| A | `high` |
+| B | `medium` |
+| C | `low` |
