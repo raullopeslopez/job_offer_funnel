@@ -67,10 +67,7 @@ Then(
   },
 );
 
-Then(
-  "its history ends with stage {string} dated today",
-  async ({ page }, stage: string) => {
-    const last = page.getByRole("table", { name: "History" }).locator("tbody tr").last();
-    await expect(last).toHaveText(`${stage}${shownDate(isoDate("today"))}`);
-  },
-);
+Then("its history ends with stage {string} dated today", async ({ page }, stage: string) => {
+  const last = page.getByRole("table", { name: "History" }).locator("tbody tr").last();
+  await expect(last).toHaveText(`${stage}${shownDate(isoDate("today"))}`);
+});

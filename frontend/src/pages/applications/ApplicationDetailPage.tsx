@@ -19,6 +19,8 @@ import type { components } from "../../api/schema";
 import { ApplicationDialog } from "./ApplicationDialog";
 import { DeleteApplicationDialog } from "./DeleteApplicationDialog";
 import { formatDate } from "./options";
+import { TransitionDialog } from "./TransitionDialog";
+import { UndoTransitionDialog } from "./UndoTransitionDialog";
 
 type Detail = components["schemas"]["ApplicationDetailRead"];
 
@@ -26,7 +28,11 @@ export function ApplicationDetailPage() {
   const { applicationId = "" } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [dialog, setDialog] = useState<"edit" | "delete" | null>(null);
+  const [dialog, setDialog] = useState<"edit" | "delete" | "move" | "close" | "undo" | null>(null);
+  const refresh = async () => {
+    setDialog(null);
+    await queryClient.invalidateQueries({ queryKey: ["applications"] });
+  };
 
   const detail = useQuery({
     queryKey: ["applications", applicationId],
@@ -74,11 +80,20 @@ export function ApplicationDetailPage() {
       <Typography variant="h6" component="p">
         at {application.company_name}
       </Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        {application.outcome
-          ? `Closed as ${application.outcome} in stage ${application.stage}`
-          : `In stage ${application.stage}`}
-      </Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 3 }}>
+        <Typography color="text.secondary" sx={{ flexGrow: 1 }}>
+          {application.outcome
+            ? `Closed as ${application.outcome} in stage ${application.stage}`
+            : `In stage ${application.stage}`}
+        </Typography>
+        <Button variant="contained" onClick={() => setDialog("move")}>
+          Move
+        </Button>
+        <Button variant="outlined" onClick={() => setDialog("close")}>
+          Close
+        </Button>
+        <Button onClick={() => setDialog("undo")}>Undo last transition</Button>
+      </Stack>
 
       <Box
         component="dl"
@@ -106,6 +121,7 @@ export function ApplicationDetailPage() {
             <TableCell>Stage</TableCell>
             <TableCell>Outcome</TableCell>
             <TableCell>Date</TableCell>
+            <TableCell>Note</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -116,6 +132,7 @@ export function ApplicationDetailPage() {
               <TableCell>{transition.to_stage}</TableCell>
               <TableCell>{transition.outcome}</TableCell>
               <TableCell>{formatDate(transition.occurred_on)}</TableCell>
+              <TableCell>{transition.note}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -125,10 +142,22 @@ export function ApplicationDetailPage() {
         <ApplicationDialog
           application={application}
           onClose={() => setDialog(null)}
-          onSaved={async () => {
-            setDialog(null);
-            await queryClient.invalidateQueries({ queryKey: ["applications"] });
-          }}
+          onSaved={refresh}
+        />
+      )}
+      {(dialog === "move" || dialog === "close") && (
+        <TransitionDialog
+          application={application}
+          mode={dialog}
+          onClose={() => setDialog(null)}
+          onSaved={refresh}
+        />
+      )}
+      {dialog === "undo" && (
+        <UndoTransitionDialog
+          application={application}
+          onClose={() => setDialog(null)}
+          onUndone={refresh}
         />
       )}
       {dialog === "delete" && (
