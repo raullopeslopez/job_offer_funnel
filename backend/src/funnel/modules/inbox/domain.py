@@ -29,6 +29,14 @@ class Feed(StrEnum):
     REMOTIVE = "remotive"
 
 
+class Ats(StrEnum):
+    """Applicant tracking systems whose public job boards can be read (no limits stated)."""
+
+    ASHBY = "ashby"
+    GREENHOUSE = "greenhouse"
+    LEVER = "lever"
+
+
 # The strictest feed terms (Remotive: at most 4 reads a day) apply to every feed.
 FEED_COOLDOWN: Final = timedelta(hours=6)
 EXPIRED_REASON: Final = "expired"
@@ -119,6 +127,14 @@ class FeedCooldownError(AppError):
 class FeedUnavailableError(AppError):
     slug = "feed-unavailable"
     title = "Feed not available"
+    status = HTTPStatus.BAD_GATEWAY
+
+
+class BoardUnavailableError(AppError):
+    """The watched company's ATS did not answer, or does not know its board."""
+
+    slug = "board-unavailable"
+    title = "Board not available"
     status = HTTPStatus.BAD_GATEWAY
 
 

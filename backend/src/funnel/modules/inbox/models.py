@@ -2,13 +2,14 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid7
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, column, func, select, table
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, column, func, select, table
 from sqlalchemy.orm import Mapped, column_property, mapped_column
 
 from funnel.core.db import Base
-from funnel.modules.inbox.domain import Feed, OfferStatus
+from funnel.modules.inbox.domain import Ats, Feed, OfferStatus
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
+UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
 # Their violation means "the job board does not exist": the repository translates it.
 JOB_BOARD_FOREIGN_KEY = "fk_offers_job_board_id_job_boards"
 
@@ -37,6 +38,22 @@ class FeedImportRow(Base):
     last_imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class WatchedCompanyRow(Base):
+    """A company whose ATS job board is read on demand."""
+
+    __tablename__ = "watched_companies"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
+    name: Mapped[str] = mapped_column(String(200))
+    ats: Mapped[Ats] = mapped_column(_enum_column_type(Ats, "ats"))
+    board: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# Unique ignoring case, enforced by the database (see companies/models.py).
+Index(UNIQUE_WATCHED_NAME_INDEX, func.lower(WatchedCompanyRow.name), unique=True)
+
+
 class OfferRow(Base):
     __tablename__ = "offers"
 
@@ -56,7 +73,16 @@ class OfferRow(Base):
         ForeignKey("applications.id", ondelete="SET NULL"), index=True
     )
     feed: Mapped[Feed | None] = mapped_column(_enum_column_type(Feed, "feed"))
+    # Stopping watching a company keeps its offers, without a source.
+    watched_company_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    watched_company_name: Mapped[str | None] = column_property(
+        select(WatchedCompanyRow.name)
+        .where(WatchedCompanyRow.id == watched_company_id)
+        .scalar_subquery()
+    )
     job_board_name: Mapped[str | None] = column_property(
         select(_job_boards.c.name).where(_job_boards.c.id == job_board_id).scalar_subquery()
     )

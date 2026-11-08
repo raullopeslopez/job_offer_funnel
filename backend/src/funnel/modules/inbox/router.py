@@ -13,10 +13,16 @@ from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.service import build_application_service
 from funnel.modules.companies.service import build_company_service
 from funnel.modules.discovery.service import build_search_profile_service
+from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import OfferStatus, next_import_at
 from funnel.modules.inbox.feeds import FeedReader
-from funnel.modules.inbox.repository import FeedImportRepository, OfferRepository
+from funnel.modules.inbox.repository import (
+    FeedImportRepository,
+    OfferRepository,
+    WatchedCompanyRepository,
+)
 from funnel.modules.inbox.schemas import (
+    BoardImportRead,
     DiscardCreate,
     FeedRead,
     ImportCreate,
@@ -24,8 +30,10 @@ from funnel.modules.inbox.schemas import (
     OfferCreate,
     OfferRead,
     PromotionCreate,
+    WatchedCompanyCreate,
+    WatchedCompanyRead,
 )
-from funnel.modules.inbox.service import FeedImportService, OfferService
+from funnel.modules.inbox.service import FeedImportService, OfferService, WatchedCompanyService
 
 offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
@@ -221,6 +229,107 @@ async def import_feed(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
     )
 
 
+# --- ATS companies ---
+
+watched_companies_router = APIRouter(prefix="/watched-companies", tags=["inbox"])
+
+
+def get_watched_company_service(
+    session: SessionDep,
+    client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)],
+) -> WatchedCompanyService:
+    # The ATS boards are read with the feeds' client: same User-Agent and timeout.
+    return WatchedCompanyService(
+        WatchedCompanyRepository(session),
+        build_search_profile_service(session),
+        BoardReader(client),
+    )
+
+
+WatchedService = Annotated[WatchedCompanyService, Depends(get_watched_company_service)]
+
+_WATCHED_NOT_FOUND: dict[int | str, dict[str, Any]] = {
+    HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Watched company does not exist"}
+}
+
+
+@watched_companies_router.post(
+    "",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "A company with that name, ignoring case, is already watched "
+            "(`already-exists`)",
+        },
+    },
+)
+async def watch_company(
+    company: WatchedCompanyCreate, service: WatchedService
+) -> WatchedCompanyRead:
+    """Watch a company through the public job board of its ATS."""
+    created = await service.create(company)
+    return WatchedCompanyRead.model_validate(created, from_attributes=True)
+
+
+@watched_companies_router.get("")
+async def list_watched_companies(service: WatchedService) -> list[WatchedCompanyRead]:
+    """Every watched company, by name."""
+    return [
+        WatchedCompanyRead.model_validate(row, from_attributes=True)
+        for row in await service.list_all()
+    ]
+
+
+@watched_companies_router.delete(
+    "/{watched_company_id}", status_code=HTTPStatus.NO_CONTENT, responses=_WATCHED_NOT_FOUND
+)
+async def unwatch_company(watched_company_id: UUID, service: WatchedService) -> None:
+    """Stop watching a company. Its offers stay in the inbox, with no watched company."""
+    await service.delete(watched_company_id)
+
+
+@watched_companies_router.post(
+    "/{watched_company_id}/imports",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        **_WATCHED_NOT_FOUND,
+        HTTPStatus.UNPROCESSABLE_CONTENT: {
+            "model": ValidationProblemRead | ProblemRead,
+            "description": "Invalid body (`validation-error`), or the search profile does "
+            "not exist (`unknown-search-profile`)",
+        },
+        HTTPStatus.BAD_GATEWAY: {
+            "model": ProblemRead,
+            "description": "The ATS did not answer or does not know the board "
+            "(`board-unavailable`); nothing changed",
+        },
+    },
+)
+async def import_watched_company(  # noqa: PLR0913, PLR0917  # FastAPI injects each input
+    watched_company_id: UUID,
+    body: ImportCreate,
+    service: WatchedService,
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> BoardImportRead:
+    """Add the company's open offers that match the profile to the inbox, as pending.
+
+    Duplicates are skipped; pending offers of this company that left its board are
+    discarded as expired. No limit on how often: the ATS boards state none.
+    """
+    result = await service.import_board(watched_company_id, body.profile_id, clock.now())
+    return BoardImportRead(
+        watched_company_id=result.watched_company_id,
+        found=result.found,
+        matching=result.matching,
+        added=result.added,
+        already_in_inbox=result.matching - result.added,
+        expired=result.expired,
+        imported_at=result.imported_at,
+    )
+
+
 router = APIRouter()
 router.include_router(offers_router)
 router.include_router(feeds_router)
+router.include_router(watched_companies_router)

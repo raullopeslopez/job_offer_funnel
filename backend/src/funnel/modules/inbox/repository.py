@@ -3,19 +3,22 @@ from datetime import datetime
 from typing import Any, cast
 from uuid import UUID, uuid7
 
-from sqlalchemy import CursorResult, func, select, update
+from sqlalchemy import ColumnElement, CursorResult, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from funnel.core.db import flush_checking_unique
 from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
 from funnel.modules.inbox.domain import EXPIRED_REASON, Feed, OfferStatus, UnknownJobBoardError
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
     UNIQUE_DUPLICATE_KEY,
+    UNIQUE_WATCHED_NAME_INDEX,
     FeedImportRow,
     OfferRow,
+    WatchedCompanyRow,
 )
 
 
@@ -102,10 +105,19 @@ class FeedImportRepository:
 
     async def expire_missing(self, feed: Feed, published_urls: Collection[str]) -> int:
         """Discard as expired the pending offers of `feed` that it no longer publishes."""
+        return await self._expire(OfferRow.feed == feed, published_urls)
+
+    async def expire_missing_from_board(
+        self, watched_company_id: UUID, published_urls: Collection[str]
+    ) -> int:
+        """Discard as expired the pending offers of a watched company that left its board."""
+        return await self._expire(OfferRow.watched_company_id == watched_company_id, published_urls)
+
+    async def _expire(self, source: ColumnElement[bool], published_urls: Collection[str]) -> int:
         result = await self._session.execute(
             update(OfferRow)
             .where(
-                OfferRow.feed == feed,
+                source,
                 OfferRow.status == OfferStatus.PENDING,
                 OfferRow.url.not_in(published_urls),
             )
@@ -125,3 +137,43 @@ class FeedImportRepository:
                 index_elements=[FeedImportRow.feed], set_={"last_imported_at": imported_at}
             )
         )
+
+
+class WatchedCompanyRepository:
+    """Watched companies and the offers imported from their boards.
+
+    Never commits: the request session does.
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        # Offers from a board are stored like those from a feed.
+        self._offers = FeedImportRepository(session)
+
+    async def add_new_offers(self, offers: Sequence[OfferRow]) -> int:
+        return await self._offers.add_new(offers)
+
+    async def expire_missing_offers(self, company_id: UUID, published_urls: Collection[str]) -> int:
+        return await self._offers.expire_missing_from_board(company_id, published_urls)
+
+    async def add(self, company: WatchedCompanyRow) -> WatchedCompanyRow:
+        detail = f"The company {company.name} is already watched"
+        self._session.add(company)
+        await flush_checking_unique(self._session, UNIQUE_WATCHED_NAME_INDEX, detail)
+        await self._session.refresh(company)  # loads created_at
+        return company
+
+    async def get(self, company_id: UUID) -> WatchedCompanyRow | None:
+        return await self._session.get(WatchedCompanyRow, company_id)
+
+    async def list_all(self) -> list[WatchedCompanyRow]:
+        rows = await self._session.scalars(
+            select(WatchedCompanyRow).order_by(
+                func.lower(WatchedCompanyRow.name), WatchedCompanyRow.id
+            )
+        )
+        return list(rows)
+
+    async def delete(self, company: WatchedCompanyRow) -> None:
+        await self._session.delete(company)
+        await self._session.flush()
