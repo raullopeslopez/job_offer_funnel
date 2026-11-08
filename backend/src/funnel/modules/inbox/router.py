@@ -13,10 +13,18 @@ from funnel.modules.applications.service import build_application_service
 from funnel.modules.companies.service import build_company_service
 from funnel.modules.inbox.domain import OfferStatus
 from funnel.modules.inbox.repository import OfferRepository
-from funnel.modules.inbox.schemas import DiscardCreate, OfferCreate, OfferRead, PromotionCreate
+from funnel.modules.inbox.schemas import (
+    DiscardCreate,
+    FeedRead,
+    ImportCreate,
+    ImportRead,
+    OfferCreate,
+    OfferRead,
+    PromotionCreate,
+)
 from funnel.modules.inbox.service import OfferService
 
-router = APIRouter(prefix="/offers", tags=["inbox"])
+offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
 
 def get_offer_service(
@@ -44,7 +52,7 @@ _WRONG_STATUS: dict[int | str, dict[str, Any]] = {
 }
 
 
-@router.post(
+@offers_router.post(
     "",
     status_code=HTTPStatus.CREATED,
     responses={
@@ -66,7 +74,7 @@ async def create_offer(offer: OfferCreate, service: Service) -> OfferRead:
     return OfferRead.model_validate(created, from_attributes=True)
 
 
-@router.get("")
+@offers_router.get("")
 async def list_offers(
     page: Annotated[PageParams, Depends(get_page_params)],
     service: Service,
@@ -82,13 +90,13 @@ async def list_offers(
     )
 
 
-@router.get("/{offer_id}", responses=_NOT_FOUND)
+@offers_router.get("/{offer_id}", responses=_NOT_FOUND)
 async def read_offer(offer_id: UUID, service: Service) -> OfferRead:
     offer = await service.get(offer_id)
     return OfferRead.model_validate(offer, from_attributes=True)
 
 
-@router.post(
+@offers_router.post(
     "/{offer_id}/discard",
     status_code=HTTPStatus.CREATED,
     responses={**_NOT_FOUND, **_WRONG_STATUS},
@@ -99,7 +107,7 @@ async def discard_offer(offer_id: UUID, discard: DiscardCreate, service: Service
     return OfferRead.model_validate(discarded, from_attributes=True)
 
 
-@router.delete(
+@offers_router.delete(
     "/{offer_id}/discard",
     status_code=HTTPStatus.NO_CONTENT,
     responses={**_NOT_FOUND, **_WRONG_STATUS},
@@ -109,7 +117,7 @@ async def restore_offer(offer_id: UUID, service: Service) -> None:
     await service.restore(offer_id)
 
 
-@router.post(
+@offers_router.post(
     "/{offer_id}/promotion",
     status_code=HTTPStatus.CREATED,
     responses={**_NOT_FOUND, **_WRONG_STATUS},
@@ -122,3 +130,49 @@ async def promote_offer(offer_id: UUID, promotion: PromotionCreate, service: Ser
     """
     promoted = await service.promote(offer_id, promotion.channel)
     return OfferRead.model_validate(promoted, from_attributes=True)
+
+
+# --- Public feeds ---
+
+feeds_router = APIRouter(prefix="/feeds", tags=["inbox"])
+
+
+@feeds_router.get("")
+async def list_feeds(service: Service) -> list[FeedRead]:
+    """Every public feed, with its last import and the earliest next one."""
+    raise NotImplementedError
+
+
+@feeds_router.post(
+    "/{feed}/imports",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Feed does not exist"},
+        HTTPStatus.UNPROCESSABLE_CONTENT: {
+            "model": ValidationProblemRead | ProblemRead,
+            "description": "Invalid body (`validation-error`), or the search profile does "
+            "not exist (`unknown-search-profile`)",
+        },
+        HTTPStatus.TOO_MANY_REQUESTS: {
+            "model": ProblemRead,
+            "description": "Imported less than 6 hours ago (`feed-cooldown`); "
+            "`Retry-After` gives the seconds to wait",
+        },
+        HTTPStatus.BAD_GATEWAY: {
+            "model": ProblemRead,
+            "description": "The feed did not answer (`feed-unavailable`); nothing changed",
+        },
+    },
+)
+async def import_feed(feed: str, body: ImportCreate, service: Service) -> ImportRead:
+    """Add the feed's offers that match the profile to the inbox, as pending.
+
+    Duplicates are skipped; pending offers of this feed that left it are discarded as
+    expired. A feed can be imported at most once every 6 hours (each feed's terms).
+    """
+    raise NotImplementedError
+
+
+router = APIRouter()
+router.include_router(offers_router)
+router.include_router(feeds_router)

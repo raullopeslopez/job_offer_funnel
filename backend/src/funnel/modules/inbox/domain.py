@@ -17,6 +17,15 @@ class OfferStatus(StrEnum):
     PROMOTED = "promoted"
 
 
+class Feed(StrEnum):
+    """Remote job boards with a public JSON API (see docs/fase0.md for their terms)."""
+
+    HIMALAYAS = "himalayas"
+    JOBICY = "jobicy"
+    REMOTEOK = "remoteok"
+    REMOTIVE = "remotive"
+
+
 class OfferAction(StrEnum):
     DISCARD = "discard"
     RESTORE = "restore"
@@ -47,6 +56,28 @@ class InvalidOfferStatusError(DomainError):
     slug = "invalid-offer-status"
     title = "Invalid offer status"
     status = HTTPStatus.CONFLICT
+
+
+class UnknownSearchProfileError(AppError):
+    """The search profile referenced in the request does not exist."""
+
+    slug = "unknown-search-profile"
+    title = "Unknown search profile"
+    status = HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+class FeedCooldownError(AppError):
+    """The feed was imported too recently: its terms limit how often it may be read."""
+
+    slug = "feed-cooldown"
+    title = "Feed imported too recently"
+    status = HTTPStatus.TOO_MANY_REQUESTS
+
+
+class FeedUnavailableError(AppError):
+    slug = "feed-unavailable"
+    title = "Feed not available"
+    status = HTTPStatus.BAD_GATEWAY
 
 
 class UnknownJobBoardError(AppError):
