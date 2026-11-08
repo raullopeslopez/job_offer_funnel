@@ -44,7 +44,8 @@ async def create_search_profile(
     profile: SearchProfileCreate, service: Service
 ) -> SearchProfileRead:
     """Describe what you look for. Lists are trimmed and repeated words kept once."""
-    raise NotImplementedError
+    created = await service.create(profile)
+    return SearchProfileRead.model_validate(created, from_attributes=True)
 
 
 @router.get("")
@@ -52,12 +53,19 @@ async def list_search_profiles(
     page: Annotated[PageParams, Depends(get_page_params)], service: Service
 ) -> Page[SearchProfileRead]:
     """Search profiles in alphabetical order, ignoring case."""
-    raise NotImplementedError
+    profiles, total = await service.list_page(page)
+    return Page(
+        items=[SearchProfileRead.model_validate(row, from_attributes=True) for row in profiles],
+        total=total,
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.get("/{profile_id}", responses=_NOT_FOUND)
 async def read_search_profile(profile_id: UUID, service: Service) -> SearchProfileRead:
-    raise NotImplementedError
+    profile = await service.get(profile_id)
+    return SearchProfileRead.model_validate(profile, from_attributes=True)
 
 
 @router.patch("/{profile_id}", responses={**_NOT_FOUND, **_NAME_TAKEN})
@@ -65,9 +73,10 @@ async def update_search_profile(
     profile_id: UUID, changes: SearchProfileUpdate, service: Service
 ) -> SearchProfileRead:
     """Change only the fields sent."""
-    raise NotImplementedError
+    updated = await service.update(profile_id, changes.model_dump(exclude_unset=True))
+    return SearchProfileRead.model_validate(updated, from_attributes=True)
 
 
 @router.delete("/{profile_id}", status_code=HTTPStatus.NO_CONTENT, responses=_NOT_FOUND)
 async def delete_search_profile(profile_id: UUID, service: Service) -> None:
-    raise NotImplementedError
+    await service.delete(profile_id)
