@@ -88,5 +88,5 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Palabras excluidas | `excluded_keywords` |
 | Ubicación | `location` |
 | Modalidad | `work_mode`: `remote` · `hybrid` · `onsite` |
-| Sintaxis de búsqueda | `syntax`: `boolean` · `keywords` |
+| Sintaxis de búsqueda | `syntax`: `boolean` · `minus` · `keywords` |
 | Plantilla de URL de búsqueda | `search_url_template` |

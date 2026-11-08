@@ -7,7 +7,7 @@
 ## Decisiones
 
 - **Búsqueda asistida**: la app genera la query y la URL de cada portal; tú abres la búsqueda y das de alta en la bandeja las ofertas que te interesan. Sin scraping de portales: lo prohíben sus términos de uso (LinkedIn bloquea cuentas).
-- **Portales como datos**: cada portal es un registro (nombre, plantilla de URL con `{query}`, sintaxis `boolean` o `keywords`). Añadir un portal no requiere código. Solo la ingesta automática de un portal concreto llevaría código propio.
+- **Portales como datos**: cada portal es un registro (nombre, plantilla de URL con `{query}`, sintaxis `boolean`, `minus` o `keywords`). Añadir un portal no requiere código. Solo la ingesta automática de un portal concreto llevaría código propio.
 - **Perfil definido por el usuario** a partir de su CV (sin extracción con IA).
 - **Bandeja separada del funnel**: lo descubierto no cuenta en las métricas hasta que pasa a candidatura (`evaluated`).
 
@@ -16,7 +16,7 @@
 | # | Capacidad | Detalle mínimo |
 |---|-----------|----------------|
 | 1 | Perfiles de búsqueda | Nombre, títulos de puesto (al menos uno), palabras clave obligatorias, palabras excluidas, ubicación y modalidades (`remote`, `hybrid`, `onsite`). Varios perfiles. CRUD |
-| 2 | Portales | Nombre, plantilla de URL con `{query}` (y `{location}` opcional) y sintaxis (`boolean` · `keywords`). CRUD |
+| 2 | Portales | Nombre, plantilla de URL con `{query}` (y `{location}` opcional) y sintaxis (`boolean` · `minus` · `keywords`). CRUD |
 | 3 | Búsquedas generadas | Para cada perfil y portal: la query con la sintaxis del portal y la URL lista para abrir |
 | 4 | Bandeja | Alta manual de ofertas (URL, empresa, puesto, portal, perfil), deduplicación por empresa + título normalizado, descartar, pasar a candidatura en `evaluated` |
 | 5 | ATS de empresas | Empresas vigiladas con su ATS (Greenhouse, Lever, Ashby): consulta a demanda de sus ofertas públicas, filtradas por perfil, a la bandeja. Primera integración externa: un adaptador por ATS |

@@ -4,8 +4,8 @@ Feature: Job boards
   So that the app can build a ready-to-open search for each of them
 
   A job board has a name (required, unique ignoring case and surrounding spaces),
-  a search URL template and a syntax: "boolean" (AND, OR, NOT, quotes and parentheses)
-  or "keywords" (plain words). The template is an http(s) URL with the placeholder
+  a search URL template and a syntax: "boolean" (AND, OR, NOT, quotes and parentheses),
+  "minus" (OR, quotes and -word to exclude) or "keywords" (plain words). The template is an http(s) URL with the placeholder
   {query}, where the search goes, and optionally {location}; no other placeholder
   is allowed.
 
