@@ -1,0 +1,43 @@
+---
+name: sdd-feature
+description: Ciclo Spec-Driven Development para implementar una feature del backend de job_offer_funnel, desde la spec Gherkin hasta el merge. Usar cuando el usuario pida implementar, añadir o cambiar una funcionalidad o comportamiento.
+---
+
+# Ciclo SDD por feature
+
+No se escribe código de producción sin una spec aprobada. Si cambia el comportamiento, primero cambia la spec.
+
+## 1. Spec
+1. Crear la rama `feat/<slug>` (o `fix/<slug>`).
+2. Leer `docs/funnel.md` y `docs/glossary.md`.
+3. Escribir `specs/<modulo>/<nombre>.feature` (`just spec <modulo> <nombre>` si existe la receta).
+4. Commit: `test(spec): <descripción>`.
+5. **Parar.** Presentar la spec al usuario y esperar su aprobación. No continuar sin ella.
+
+## 2. Contrato
+6. Schemas Pydantic (`XCreate`/`XUpdate`/`XRead`) y firmas del router, sin lógica.
+7. `just openapi` y mostrar el diff de `openapi.json`.
+8. **Parar.** Esperar la aprobación del contrato.
+
+## 3. Rojo
+9. Steps BDD en `backend/tests/bdd/`. Ejecutar `just test-bdd` y confirmar que **fallan por el motivo esperado** (no por errores de import o de setup).
+10. Commit: `test(<modulo>): add failing steps for <feature>`.
+
+## 4. Verde
+11. Implementar en este orden, lo mínimo para pasar:
+    - `domain.py` + tests unit (solo módulos de dominio).
+    - `models.py` + migración (`just migration "msg"`).
+    - `repository.py` → `service.py` → `router.py`, registrado en `main.py`.
+12. Refactorizar con los tests en verde.
+13. `just ci` en verde. Mostrar el comando y su salida como evidencia.
+14. Commit: `feat(<modulo>): <descripción>`.
+
+## 5. Cierre
+15. Comprobar la Definition of Done del `CLAUDE.md`.
+16. Si se cierra un hito, actualizar "Estado actual" en el `CLAUDE.md`.
+17. Merge a `main` (PR + squash si hay remoto; si no, merge local).
+
+## Reglas durante el ciclo
+- Ante la duda sobre el comportamiento: preguntar, no inventar. La spec manda.
+- La solución más simple que cumpla la spec. Nada que la spec no pida.
+- Si tras dos intentos algo sigue fallando, parar y explicar el bloqueo en vez de un tercer intento a ciegas.
