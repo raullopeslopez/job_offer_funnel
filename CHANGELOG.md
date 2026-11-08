@@ -19,6 +19,11 @@ While the version is `0.x`, the API may change without a major version bump.
   see its summary (or when it can be imported again), discard an offer with an optional
   reason and undo it, restore discarded offers, and promote an offer to an application
   through a chosen channel.
+- Searches screen in the web app (`/searches`): the search profiles, alphabetically.
+  Create, edit (including clearing the optional fields) and delete a profile, with
+  invalid fields and duplicate names shown in the form. Each profile opens its searches,
+  grouped by job board, each one linking to the job board with its query, together with
+  the work modes to set in each job board's own filter.
 
 ### Fixed
 
