@@ -2,12 +2,16 @@ from collections.abc import Mapping
 from uuid import UUID
 
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from funnel.core.exceptions import AlreadyExistsError
+from funnel.core.db import flush_checking_unique
 from funnel.core.pagination import PageParams
-from funnel.modules.discovery.models import UNIQUE_PROFILE_NAME_INDEX, SearchProfileRow
+from funnel.modules.discovery.models import (
+    UNIQUE_JOB_BOARD_NAME_INDEX,
+    UNIQUE_PROFILE_NAME_INDEX,
+    JobBoardRow,
+    SearchProfileRow,
+)
 
 
 class SearchProfileRepository:
@@ -47,12 +51,44 @@ class SearchProfileRepository:
         return list(rows), total or 0
 
     async def _flush_checking_name(self, profile: SearchProfileRow) -> None:
-        # Read before flushing: after a failed flush the row cannot be loaded any more.
         detail = f"A search profile named {profile.name} already exists"
-        try:
-            # Flush now so a duplicate name surfaces here as a business error, not at commit.
-            await self._session.flush()
-        except IntegrityError as error:
-            if UNIQUE_PROFILE_NAME_INDEX in str(error.orig):
-                raise AlreadyExistsError(detail) from error
-            raise
+        await flush_checking_unique(self._session, UNIQUE_PROFILE_NAME_INDEX, detail)
+
+
+class JobBoardRepository:
+    """Never commits: the request session does."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, job_board: JobBoardRow) -> JobBoardRow:
+        self._session.add(job_board)
+        await self._flush_checking_name(job_board)
+        return job_board
+
+    async def get(self, job_board_id: UUID) -> JobBoardRow | None:
+        return await self._session.get(JobBoardRow, job_board_id)
+
+    async def update(self, job_board: JobBoardRow, changes: Mapping[str, object]) -> JobBoardRow:
+        for name, value in changes.items():
+            setattr(job_board, name, value)
+        await self._flush_checking_name(job_board)
+        return job_board
+
+    async def delete(self, job_board: JobBoardRow) -> None:
+        await self._session.delete(job_board)
+        await self._session.flush()
+
+    async def list_page(self, page: PageParams) -> tuple[list[JobBoardRow], int]:
+        rows = await self._session.scalars(
+            select(JobBoardRow)
+            .order_by(func.lower(JobBoardRow.name), JobBoardRow.id)
+            .limit(page.limit)
+            .offset(page.offset)
+        )
+        total = await self._session.scalar(select(func.count()).select_from(JobBoardRow))
+        return list(rows), total or 0
+
+    async def _flush_checking_name(self, job_board: JobBoardRow) -> None:
+        detail = f"A job board named {job_board.name} already exists"
+        await flush_checking_unique(self._session, UNIQUE_JOB_BOARD_NAME_INDEX, detail)

@@ -2,8 +2,11 @@ from collections.abc import AsyncIterator
 
 from fastapi import Request
 from sqlalchemy import MetaData
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+
+from funnel.core.exceptions import AlreadyExistsError
 
 # Deterministic constraint names keep Alembic migrations reversible.
 NAMING_CONVENTION = {
@@ -32,3 +35,17 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
+
+
+async def flush_checking_unique(session: AsyncSession, unique_index: str, detail: str) -> None:
+    """Flush now, so a duplicate surfaces here as `already-exists` and not at commit.
+
+    Uniqueness is enforced by a UNIQUE index, never by an "exists?" check in Python.
+    Build `detail` before calling: after a failed flush the rows cannot be loaded.
+    """
+    try:
+        await session.flush()
+    except IntegrityError as error:
+        if unique_index in str(error.orig):
+            raise AlreadyExistsError(detail) from error
+        raise

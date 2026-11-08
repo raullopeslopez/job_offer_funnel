@@ -19,7 +19,8 @@ Backend con `core` completo (config, sesión por request, contrato de errores, a
 - [x] Spec + implementación: `metrics/funnel_metrics` (MVP completo)
 - [x] Alcance de la fase 0: `docs/fase0.md` (búsqueda asistida, portales como datos)
 - [x] Spec + implementación: `discovery/search_profiles`
-- [ ] Specs 2-5 de la fase 0: `job_boards`, `generated_searches`, `inbox`, `ats_companies`
+- [x] Spec + implementación: `discovery/job_boards`
+- [ ] Specs 3-5 de la fase 0: `generated_searches`, `inbox`, `ats_companies`
 
 ## Criterio: evitar la sobreingeniería
 

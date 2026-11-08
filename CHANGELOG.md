@@ -10,6 +10,10 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Job boards (`/api/v1/job-boards`): create, view, list, edit and delete the job boards
+  you search in, each with a search URL template (an http(s) URL with `{query}` and
+  optionally `{location}`) and a search syntax (`boolean` or `keywords`).
+
 - Search profiles (`/api/v1/search-profiles`): create, view, list, edit and delete what
   you look for, with job titles, required and excluded keywords, location and work modes
   (`remote`, `hybrid`, `onsite`). Names are unique ignoring case; texts are trimmed and

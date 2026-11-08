@@ -1,9 +1,18 @@
+import re
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import AfterValidator, BaseModel, Field, StringConstraints, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    Field,
+    StringConstraints,
+    TypeAdapter,
+    field_validator,
+)
 
-from funnel.modules.discovery.domain import WorkMode
+from funnel.core.fields import HttpUrlText
+from funnel.modules.discovery.domain import PLACEHOLDERS, QUERY_PLACEHOLDER, Syntax, WorkMode
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -55,6 +64,64 @@ class SearchProfileUpdate(BaseModel):
             msg = "cannot be null"
             raise ValueError(msg)
         return value
+
+
+_PLACEHOLDER = re.compile(r"\{(\w*)\}")
+_http_url_text = TypeAdapter(HttpUrlText)
+
+
+def _validate_search_url_template(template: str) -> str:
+    found = set(_PLACEHOLDER.findall(template))
+    if QUERY_PLACEHOLDER not in found:
+        msg = f"must contain {{{QUERY_PLACEHOLDER}}}"
+        raise ValueError(msg)
+    if unknown := found - PLACEHOLDERS:
+        msg = f"unknown placeholders: {', '.join(sorted(unknown))}"
+        raise ValueError(msg)
+    # Validate the URL as it will be opened, with the placeholders filled in.
+    _http_url_text.validate_python(_PLACEHOLDER.sub("x", template))
+    return template
+
+
+SearchUrlTemplate = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, max_length=2048),
+    AfterValidator(_validate_search_url_template),
+    Field(
+        description="http(s) URL with {query} where the search goes, and optionally {location}.",
+        examples=["https://www.linkedin.com/jobs/search/?keywords={query}&location={location}"],
+    ),
+]
+
+
+class JobBoardCreate(BaseModel):
+    name: Text
+    search_url_template: SearchUrlTemplate
+    syntax: Syntax
+
+
+class JobBoardUpdate(BaseModel):
+    """Partial update: only the fields sent change. Every field is required."""
+
+    name: Text | None = None
+    search_url_template: SearchUrlTemplate | None = None
+    syntax: Syntax | None = None
+
+    @field_validator("name", "search_url_template", "syntax")
+    @classmethod
+    def _reject_null(cls, value: object) -> object:
+        # Runs only for fields sent in the body, so omitting one stays valid.
+        if value is None:
+            msg = "is required and cannot be cleared"
+            raise ValueError(msg)
+        return value
+
+
+class JobBoardRead(BaseModel):
+    id: UUID
+    name: str
+    search_url_template: str
+    syntax: Syntax
 
 
 class SearchProfileRead(BaseModel):
