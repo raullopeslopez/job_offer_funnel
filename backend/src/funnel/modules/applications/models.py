@@ -2,11 +2,11 @@ from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID, uuid7
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, Text, func
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from funnel.core.db import Base
-from funnel.modules.applications.domain import Outcome, Stage
+from funnel.modules.applications.domain import Channel, Outcome, Priority, Stage
 
 
 def _enum_column_type(enum: type[StrEnum], column: str) -> Enum:
@@ -26,6 +26,15 @@ class ApplicationRow(Base):
     __tablename__ = "applications"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
+    # Referenced by table name only: modules never import each other's models.
+    company_id: Mapped[UUID] = mapped_column(
+        ForeignKey("companies.id", ondelete="RESTRICT"), index=True
+    )
+    role: Mapped[str] = mapped_column(String(200))
+    channel: Mapped[Channel] = mapped_column(_enum_column_type(Channel, "channel"))
+    priority: Mapped[Priority | None] = mapped_column(_enum_column_type(Priority, "priority"))
+    url: Mapped[str | None] = mapped_column(String(2048))
+    notes: Mapped[str | None] = mapped_column(Text)
     stage: Mapped[Stage] = mapped_column(_enum_column_type(Stage, "stage"))
     outcome: Mapped[Outcome | None] = mapped_column(_enum_column_type(Outcome, "outcome"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
