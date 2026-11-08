@@ -35,7 +35,7 @@ No se escribe código de producción sin una spec aprobada. Si cambia el comport
 14. Commit: `feat(<modulo>): <descripción>`.
 
 ## 5. Cierre
-15. Comprobar la Definition of Done del `CLAUDE.md`.
+15. Añadir los cambios de la feature a `[Unreleased]` en `CHANGELOG.md`. Comprobar la Definition of Done del `CLAUDE.md`.
 16. Si se cierra un hito, actualizar "Estado actual" en el `CLAUDE.md`.
 17. Push de la rama, `gh pr create` hacia `main` (resumen + evidencia) y `gh pr checks`. **El merge lo hace el usuario**: no mergear nunca.
 
