@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import type { DataTable } from "playwright-bdd";
 import type { components } from "../src/api/schema";
+import { isoDate, shownDate } from "./support/dates";
 import { Given, Then, When } from "./support/fixtures";
 import { fieldLabel, quoted } from "./support/form";
 
@@ -25,20 +26,6 @@ const row = (page: Page, role: string): Locator =>
     .getByRole("row")
     .filter({ has: page.getByRole("link", { name: role, exact: true }) });
 const detailField = (page: Page, label: string) => page.locator(`dt:text-is("${label}") + dd`);
-
-// `YYYY-MM-DD` of a spec date: an ISO date, "tomorrow" or "<n> days ago".
-function isoDate(value: string): string {
-  const daysAgo = value === "tomorrow" ? -1 : Number(/^(\d+) days ago$/.exec(value)?.[1]);
-  if (Number.isNaN(daysAgo)) return value;
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-// The app shows dates in this format (the history of the detail).
-const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
-const shownDate = (iso: string) => (iso ? dateFormat.format(new Date(iso)) : "");
 
 async function openApplications(page: Page) {
   await page.goto("/applications");
@@ -122,10 +109,15 @@ Given(
 Given(
   "an application for {string} as {string} in stage {string} since {word}",
   async ({ api }, company: string, role: string, stage: Stage, since: string) => {
-    await api.addApplication(company, role, {
-      stage: stage as "evaluated" | "applied",
+    // An application starts as evaluated or applied; later stages are reached by moving it.
+    const first = stage === "evaluated" ? "evaluated" : "applied";
+    const application = await api.addApplication(company, role, {
+      stage: first,
       occurred_on: since,
     });
+    if (stage !== first) {
+      await api.transition(application.id, { to_stage: stage, occurred_on: since });
+    }
   },
 );
 
@@ -267,8 +259,8 @@ Then("I see its history:", async ({ page }, table: DataTable) => {
   const rows = page.getByRole("table", { name: "History" }).locator("tbody tr");
   const expected = table
     .hashes()
-    .map(({ stage = "", outcome = "", occurred_on = "" }) =>
-      [stage, outcome, shownDate(occurred_on)].join(""),
+    .map(({ stage = "", outcome = "", occurred_on = "", note = "" }) =>
+      [stage, outcome, shownDate(occurred_on), note].join(""),
     );
   await expect(rows).toHaveText(expected);
 });
