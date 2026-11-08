@@ -38,7 +38,7 @@ Detalle de cada fase (datos, flujo, matices, métricas): `docs/funnel.md`. Leerl
 | Base de datos | PostgreSQL |
 | Acceso a datos | SQLAlchemy 2 (async) + asyncpg |
 | Migraciones | Alembic |
-| Jobs en segundo plano | procrastinate (cola sobre Postgres) |
+| Jobs en segundo plano | procrastinate (cola sobre Postgres); se instala con el primer job real |
 | Auth | Un solo usuario, auth simple; las tablas llevan `user_id` |
 | Lint / formato | ruff (reglas ampliadas, ver "Clean code") |
 | Arquitectura | import-linter (contratos de capas y módulos) |
@@ -140,14 +140,50 @@ Reglas:
 - `core` no importa nada de `modules`.
 - `domain.py` no importa FastAPI ni SQLAlchemy.
 - src layout (`src/funnel/`).
-- Cuando exista `modules/applications/`, es **el módulo de referencia**: copiar su estructura y patrones para los nuevos módulos.
+- Módulos de referencia: `modules/applications/` para los de modelo de dominio; el primer módulo CRUD que se cree será la referencia de los CRUD. Copiar su estructura y patrones.
+
+### Tipos de módulo: dominio y CRUD (conviven)
+
+Cada módulo declara su tipo en el docstring de su `__init__.py`.
+
+- **Modelo de dominio**: si tiene al menos uno de estos elementos: invariantes entre campos, transiciones de estado, o reglas que dependen del tiempo o de otras entidades. Tiene `domain.py` con entidades propias (dataclasses con comportamiento, sin ORM); el repository mapea ORM ↔ dominio. Hoy: `applications`.
+- **CRUD**: sin reglas de negocio. Sin `domain.py`; el service trabaja directamente con los modelos ORM. Hoy: `companies`, `contacts`, `documents`, `events`, `tasks`, `questions`.
+- **Las capas externas son idénticas en ambos**: `router → service → repository`, los mismos schemas, los mismos errores, las mismas reglas de import-linter.
+- **Regla de promoción**: en cuanto un módulo CRUD necesita su primera regla de negocio, se promueve a modelo de dominio en ese mismo cambio. Nunca se mete la regla en el service ni en el router.
+
+## Patrones
+
+**Regla general: un patrón entra cuando aparece el problema concreto que resuelve, no antes.** Cada patrón aplazado lleva escrito su disparador.
+
+### Adoptados
+- Repository, Service Layer, inyección de dependencias (`Depends`), Value Objects, sesión por request como unidad de trabajo.
+- **Máquina de estados declarativa**: las transiciones permitidas son datos (`ALLOWED_TRANSITIONS: Mapping[Stage, frozenset[Stage]]` en `applications/domain.py`), no `if` dispersos ni una clase por estado. Los `Outcome` se permiten desde cualquier fase no terminal. La tabla alimenta directamente los tests parametrizados.
+- **Métricas con SQL directo**: el módulo `metrics` hace queries dedicadas (CTEs, window functions) sobre `transitions`. No carga entidades de dominio ni usa repositories CRUD.
+- `Clock` inyectado.
+
+### Aplazados (con disparador)
+
+| Patrón | Disparador |
+|--------|-----------|
+| procrastinate (dependencia y worker) | El primer job real (ghosting, follow-up). Hasta entonces no se instala |
+| Encolar jobs en la misma transacción | El primer job. **Verificar antes** que procrastinate puede compartir la conexión con SQLAlchemy async/asyncpg; no darlo por hecho |
+| Domain events | Cuando una acción de dominio dispare 2 o más efectos secundarios. Hasta entonces, el service encola el job directamente |
+| Ports & Adapters / Strategy por portal | Implementar la fase 0 (ingesta de ofertas) |
+
+### Descartados / antipatrones
+- `BaseRepository[T]` genérico: repositories explícitos por módulo.
+- God services: partir por caso de uso cuando un service crezca demasiado.
+- Mediator o bus de comandos.
+- DDD completo (aggregates estrictos, bounded contexts formales): se toman las ideas, no el ritual.
+- Specification pattern.
+- Interfaces (`Protocol`) con una sola implementación.
 
 ### Transacciones
 
 - **Una sesión por request**, inyectada como dependency de FastAPI (`get_session` en `core/db.py`).
 - La dependency hace `commit` al terminar la request sin errores y `rollback` si hay una excepción.
 - **Los services y los repositories nunca hacen `commit`**; como mucho `flush` si necesitan IDs generados.
-- Los jobs de procrastinate abren su propia sesión con el mismo patrón.
+- Los jobs (cuando existan) abren su propia sesión con el mismo patrón.
 
 ## Clean code
 
@@ -291,7 +327,7 @@ just downgrade          # alembic downgrade -1
 
 # Ejecutar
 just dev                # uvicorn --reload
-just worker             # worker de procrastinate
+just worker             # worker de procrastinate (cuando exista el primer job)
 
 # Calidad
 just fmt                # ruff format + ruff check --fix
