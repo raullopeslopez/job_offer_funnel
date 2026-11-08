@@ -11,11 +11,8 @@ import {
 } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 import { api } from "../../api/client";
-import type { components } from "../../api/schema";
+import { CHANNELS, type Channel } from "../applications/options";
 import type { Offer } from "./OffersGrid";
-
-type Channel = components["schemas"]["Channel"];
-const CHANNELS: Channel[] = ["portal", "referral", "recruiter_inbound", "direct", "networking"];
 
 type Props = { offer: Offer | null; onClose: () => void; onPromoted: () => void };
 

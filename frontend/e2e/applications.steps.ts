@@ -24,8 +24,7 @@ const row = (page: Page, role: string): Locator =>
   grid(page)
     .getByRole("row")
     .filter({ has: page.getByRole("link", { name: role, exact: true }) });
-const detailField = (page: Page, label: string) =>
-  page.locator(`dt:text-is("${label}") + dd`);
+const detailField = (page: Page, label: string) => page.locator(`dt:text-is("${label}") + dd`);
 
 // `YYYY-MM-DD` of a spec date: an ISO date, "tomorrow" or "<n> days ago".
 function isoDate(value: string): string {
@@ -107,7 +106,8 @@ Given(
 Given(
   "an application for {string} as {string} closed as {string}",
   async ({ api }, company: string, role: string, outcome: Outcome) => {
-    const application = await api.addApplication(company, role);
+    // Not every outcome closes an evaluated application: start it as applied.
+    const application = await api.addApplication(company, role, { stage: "applied" });
     await api.transition(application.id, { outcome });
   },
 );
