@@ -8,8 +8,9 @@ type Syntax = components["schemas"]["Syntax"];
 type WorkMode = components["schemas"]["WorkMode"];
 
 const grid = (page: Page) => page.getByRole("grid");
-// DataGrid marks each cell with its column; no role tells the name cells apart.
-const nameCells = (page: Page) => grid(page).locator('[role="gridcell"][data-field="name"]');
+// DataGrid marks each cell with its column; no role tells the name cells apart. Not under
+// getByRole("grid"): an open dialog hides the grid from the accessibility tree.
+const nameCells = (page: Page) => page.locator('[role="gridcell"][data-field="name"]');
 const row = (page: Page, name: string): Locator =>
   grid(page)
     .getByRole("row")
