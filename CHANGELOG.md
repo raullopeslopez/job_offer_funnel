@@ -10,6 +10,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Funnel metrics: `GET /api/v1/metrics/conversion` (conversion from each stage to the
+  next one), `GET /api/v1/metrics/conversion-by-channel` (the same, for each channel with
+  applications) and `GET /api/v1/metrics/pipeline` (applications in progress per stage:
+  no outcome and not accepted). An application counts as having reached its stage and
+  every earlier one; rates are percentages with one decimal, or `null` with no data.
 - Applications: create, edit, view and list them. An application belongs to a company
   and has a role and a channel (`portal`, `referral`, `recruiter_inbound`, `direct`,
   `networking`), plus an optional priority (`high`, `medium`, `low`), job posting URL and
