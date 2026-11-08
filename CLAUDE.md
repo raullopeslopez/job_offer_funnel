@@ -40,7 +40,8 @@ Detalle de cada fase (datos, flujo, matices, métricas): `docs/funnel.md`. Leerl
 | Migraciones | Alembic |
 | Jobs en segundo plano | procrastinate (cola sobre Postgres) |
 | Auth | Un solo usuario, auth simple; las tablas llevan `user_id` |
-| Lint / formato | ruff |
+| Lint / formato | ruff (reglas ampliadas, ver "Clean code") |
+| Arquitectura | import-linter (contratos de capas y módulos) |
 | Tipos | mypy (strict) |
 | Tests | pytest + pytest-asyncio + pytest-bdd + pytest-xdist + pytest-cov + testcontainers + httpx + filelock |
 | Task runner | just (Justfile en la raíz) |
@@ -79,8 +80,9 @@ Principios:
 
 - Todos los escenarios de la spec pasan.
 - `just ci` en verde (ruff, mypy strict, tests con xdist).
-- Migración incluida y reversible (`downgrade` funciona).
-- `openapi.json` actualizado y coherente con la spec.
+- Migración incluida y reversible (lo verifican los tests `migrations`).
+- `openapi.json` actualizado y coherente con la spec (lo verifican los tests `contract`).
+- Tests parametrizados donde aplique y siguiendo AAA.
 - Sin TODOs sin issue asociado.
 
 ## Diseño de la API
@@ -147,11 +149,103 @@ Reglas:
 - **Los services y los repositories nunca hacen `commit`**; como mucho `flush` si necesitan IDs generados.
 - Los jobs de procrastinate abren su propia sesión con el mismo patrón.
 
+## Clean code
+
+### Naming
+- Términos de dominio según el glosario `docs/glossary.md` (ES → EN). Un concepto nuevo se añade primero al glosario.
+- Nombres que revelan intención, sin abreviaturas (`application`, no `app`).
+- Prohibidos los nombres genéricos: `utils`, `helpers`, `manager`, `data`, `info`, `common`.
+- Booleanos con `is_`/`has_`/`can_`; funciones con verbo; clases con sustantivo.
+- Un concepto, una palabra (si es `create`, nunca mezclar con `add` o `new`).
+
+### Responsabilidades
+- **Routers finos**: solo HTTP (parsear → llamar al service → devolver). Cero lógica.
+- **Services**: orquestan (cargar → aplicar la regla de dominio → persistir). Sin SQL ni HTTP.
+- **Domain**: reglas y decisiones. Sin I/O.
+- Dependencias por constructor (los services reciben sus repositories), compuestas con `Depends`. Nada de parchear en los tests.
+- Command-query separation: una función o cambia estado o devuelve datos.
+
+### Funciones
+- Pequeñas y con un solo nivel de abstracción. Máximo 3 argumentos; si hacen falta más, un objeto.
+- Sin flags booleanos como parámetro: dos funciones.
+- Sin efectos secundarios ocultos.
+
+### Dominio
+- `StrEnum` para fases y estados; nunca strings sueltos.
+- Value objects inmutables (`@dataclass(frozen=True)`).
+- **Reloj inyectado** (`Clock`): prohibido `datetime.now()` en el dominio y en los services.
+- Sin números mágicos: constantes con nombre o config (p. ej. los días de ghosting).
+
+### Errores
+- Jerarquía de excepciones de dominio (`DomainError` → `InvalidTransitionError`, ...).
+- El mapeo a problem+json se hace en un único sitio: el exception handler de `core/errors.py`.
+- Prohibidos el `except` desnudo, tragarse excepciones y devolver `None` para indicar un error.
+
+### Comentarios
+- Explican el porqué, no el qué. Sin código comentado. Docstrings solo en la API pública que no sea obvia.
+
+### Principios
+- YAGNI: sin abstracciones especulativas (nada de `Protocol` para una sola implementación).
+- DRY con regla de tres. Boy scout: deja el código que tocas un poco mejor de lo que estaba.
+
+### Automatización
+- **ruff**: `E, F, I, N, B, UP, SIM, RET, ARG, ERA, DTZ, PT, TID, C90 (max-complexity 10), PL`.
+- **import-linter** (`just check`): capas `router → service → repository`; `domain` sin FastAPI ni SQLAlchemy; `core` sin `modules`; módulos independientes entre sí (solo vía `service`).
+- **mypy strict**: sin `Any` explícito salvo justificado con un comentario.
+
 ## Tests
 
-- Markers de pytest (declarados en `pyproject.toml`, con `--strict-markers`): `unit`, `integration`, `bdd`. Todo test lleva su marker; los comandos `just test-*` filtran por él.
-- pytest-bdd: `bdd_features_base_dir` apunta a `../specs`. Steps reutilizables en `tests/bdd/conftest.py`; los steps propios de una feature, en `tests/bdd/test_<modulo>_<nombre>.py`.
-- Fixtures base (en `tests/conftest.py`): `db_session`, `client` (httpx ASGI), factories de datos.
+### Tipos
+
+| Tipo | Marker | Qué prueba | BD | xdist | Ubicación |
+|------|--------|------------|----|-------|-----------|
+| Unit | `unit` | Dominio puro: máquina de estados, reglas, cálculos | No | No | `tests/unit/` |
+| Integration | `integration` | Repositories, queries no triviales, jobs (llamando a la función con sesión de test) | Sí | Sí | `tests/integration/` |
+| BDD | `bdd` | Escenarios Gherkin end-to-end por HTTP | Sí | Sí | `tests/bdd/` + `specs/` |
+| Migraciones | `migrations` | `upgrade head → downgrade base → upgrade head`; modelos ORM == esquema migrado (autogenerate sin diff) | Sí | Sí | `tests/migrations/` |
+| Contrato | `contract` | OpenAPI generado == `openapi.json` versionado | No | Sí | `tests/contract/` |
+
+- Pirámide: muchos unit, uno o varios BDD por escenario, pocos integration (solo lo que el SQL hace distinto).
+- Markers declarados en `pyproject.toml` con `--strict-markers`. Todo test lleva su marker; `just test-*` filtra por él.
+- pytest-bdd: `bdd_features_base_dir` apunta a `../specs`. Steps reutilizables en `tests/bdd/conftest.py`; los propios de una feature, en `tests/bdd/test_<modulo>_<nombre>.py`.
+- Fixtures base (en `tests/conftest.py`): `db_session`, `client` (httpx ASGI), `clock` (reloj fijo), factories de datos.
+
+### Parametrización (obligatoria cuando aplique)
+
+- **Prohibidos los micro-tests que solo se diferencian en los datos de entrada o en el resultado esperado.** Se agrupan con `@pytest.mark.parametrize`.
+- Cada caso lleva un `id` legible: `pytest.param(Stage.APPLIED, Stage.OFFER, id="applied-to-offer-skips-stages")`.
+- En Gherkin, lo equivalente es `Esquema del escenario` + `Ejemplos`, no escenarios copiados.
+- Casos típicos: tablas de transiciones válidas e inválidas, validaciones de schemas, cálculos de métricas.
+- **No** se parametriza cuando el Arrange o el Assert cambian de estructura: si hace falta un `if` dentro del test, son tests distintos.
+
+### Arrange-Act-Assert (obligatorio)
+
+- Todo test tiene tres bloques marcados con `# Arrange`, `# Act`, `# Assert` (se omite `# Arrange` si no hay preparación).
+- **Un solo Act por test.** Un segundo Act significa un segundo test.
+- Sin lógica en los tests (`if`, bucles, `try`): la variación va en la parametrización.
+- En BDD, Given/When/Then es el AAA: los steps `Dado` preparan, `Cuando` actúa (uno solo) y `Entonces` comprueba.
+- Nombres que describen el comportamiento: `test_rejects_transition_when_skipping_stages`.
+
+```python
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("current", "target"),
+    [
+        pytest.param(Stage.APPLIED, Stage.OFFER, id="applied-to-offer"),
+        pytest.param(Stage.DISCOVERED, Stage.INTERVIEWING, id="discovered-to-interviewing"),
+    ],
+)
+def test_rejects_transition_when_skipping_stages(current: Stage, target: Stage) -> None:
+    # Arrange
+    application = make_application(stage=current)
+
+    # Act
+    with pytest.raises(InvalidTransitionError) as exc_info:
+        application.transition_to(target)
+
+    # Assert
+    assert exc_info.value.target == target
+```
 
 ### En paralelo (pytest-xdist)
 
@@ -201,13 +295,15 @@ just worker             # worker de procrastinate
 just fmt                # ruff format + ruff check --fix
 just lint               # ruff check + ruff format --check
 just typecheck          # mypy
-just check              # lint + typecheck
+just check              # lint + typecheck + import-linter
 
 # Tests
 just test *args         # pytest -n auto (args extra pasan a pytest)
 just test-unit          # -m unit, en serie
 just test-integration   # -m integration
 just test-bdd           # -m bdd
+just test-migrations    # -m migrations
+just test-contract      # -m contract
 just test-one "expr"    # pytest -k "expr" sin xdist (depuración)
 just cov                # pytest -n auto --cov + informe
 
