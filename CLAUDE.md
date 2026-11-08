@@ -14,8 +14,8 @@ Backend con `core` completo (config, sesión por request, contrato de errores, a
 - [x] Alcance del MVP: `docs/mvp.md` (solo API; las features fuera del MVP no se implementan)
 - [x] Esqueleto del backend + hooks de Claude Code. Descartado un subagent test-runner (pytest ya da salida escueta; solo se reconsidera si `/usage` lo justifica)
 - [x] Spec + implementación: `applications/stage_transitions`
+- [ ] Spec + implementación: `companies/manage_companies` (primer módulo CRUD: referencia para los demás)
 - [ ] Spec + implementación: `applications/manage_applications`
-- [ ] Spec + implementación: `companies/manage_companies`
 - [ ] Spec + implementación: `metrics/funnel_metrics`
 
 ## Criterio: evitar la sobreingeniería

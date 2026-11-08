@@ -20,8 +20,8 @@ Fases incluidas: de `evaluated` a `accepted`. Una candidatura se crea en `evalua
 ## Specs, en orden
 
 1. `specs/applications/stage_transitions.feature`: transiciones válidas e inválidas, y salidas. Aquí se decide si se pueden saltar fases.
-2. `specs/applications/manage_applications.feature`: alta, edición, detalle con historial, listado con filtros.
-3. `specs/companies/manage_companies.feature`: alta y listado.
+2. `specs/companies/manage_companies.feature`: alta, detalle y listado (va antes porque una candidatura necesita su empresa).
+3. `specs/applications/manage_applications.feature`: alta, edición, detalle con historial, listado con filtros.
 4. `specs/metrics/funnel_metrics.feature`: conversión por fase y por canal, pipeline activo.
 
 ## Fuera (con disparador)
