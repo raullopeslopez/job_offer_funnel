@@ -49,6 +49,11 @@ While the version is `0.x`, the API may change without a major version bump.
   alphabetically, each in its own tab. Create, edit and delete them; invalid fields and
   duplicate names are shown in the form, and a company with applications says it cannot
   be deleted. Clearing the website of a company removes it.
+- Watched companies screen in the web app (`/watched-companies`): the watched companies by
+  name, with their ATS and board. Watch a company (invalid fields and duplicates are shown
+  in the form), stop watching one after confirming, and import one for a search profile to
+  see how many offers were found, matched, added, already in the inbox and expired. A board
+  the ATS does not answer for says so.
 
 ### Fixed
 

@@ -20,6 +20,9 @@ const FIELD_LABELS: Record<string, string> = {
   website: "Website",
   search_url_template: "Search URL template",
   syntax: "Syntax",
+  ats: "ATS",
+  board: "Board",
+  profile_id: "Search profile",
 };
 
 export const fieldLabel = (field: string) => FIELD_LABELS[field] ?? field;

@@ -3,6 +3,7 @@ export const navItems: { path: string; label: string }[] = [
   { path: "/", label: "Home" },
   { path: "/inbox", label: "Inbox" },
   { path: "/searches", label: "Searches" },
+  { path: "/watched-companies", label: "Watched companies" },
   { path: "/applications", label: "Applications" },
   { path: "/metrics", label: "Metrics" },
   { path: "/settings", label: "Settings" },

@@ -23,7 +23,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Spec + implementación: `discovery/generated_searches`
 - [x] Spec + implementación: `inbox/inbox`
 - [x] Spec + implementación: `inbox/public_feeds` (primera integración externa)
-- [x] Spec + implementación: `inbox/ats_companies` (solo API; sin pantalla todavía)
+- [x] Spec + implementación: `inbox/ats_companies`
 - [x] Alcance del frontend: `docs/frontend.md` (stack, tooling, una pantalla por PR)
 - [x] `chore/frontend-setup`: `frontend/` (React + Vite + MUI), pantalla del token, layout, tipos generados, servicio `web`, CI
 - [x] Pantalla 1: `specs/ui/inbox.feature` (Bandeja; entran MUI X DataGrid y Playwright + playwright-bdd)
@@ -32,6 +32,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Pantalla 4: `specs/ui/stage_transitions.feature` (Transiciones en el detalle)
 - [x] Pantalla 5: `specs/ui/metrics.feature` (Métricas; entra MUI X Charts)
 - [x] Pantalla 6: `specs/ui/settings.feature` (Ajustes: empresas y portales)
+- [x] Pantalla 7: `specs/ui/watched_companies.feature` (Empresas vigiladas)
 
 ## Criterio: evitar la sobreingeniería
 
