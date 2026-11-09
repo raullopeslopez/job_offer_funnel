@@ -11,6 +11,11 @@ While the version is `0.x`, the API may change without a major version bump.
 ### Added
 
 - Web app navigation with an icon per screen, a light/dark theme toggle that remembers your choice, and a mobile layout below 900px with a top bar and a slide-in menu.
+- `just seed-job-boards` now registers 43 more job boards with a checked search URL:
+  remote boards (Remote OK, Remotive, Remote.co, FlexJobs, RemoteJobs.io, EuRemoteJobs…),
+  UK and European boards (Reed, Totaljobs, CWJobs, CV-Library, Adzuna, Indeed UK, jobtensor,
+  Landing.jobs…), tech and startup boards (Levels.fyi, Built In, Startup Jobs, Hiring Cafe…)
+  and diversity boards (Women in Tech Jobs, Evenbreak…).
 - New look for the web app: serif titles, a refreshed palette and status colors, and a
   dark theme that follows the system setting.
 - Watched companies (`/api/v1/watched-companies`): watch a company through the public
