@@ -28,7 +28,7 @@
 - **Tipos generados, nunca escritos a mano**: `just ci` regenera los tipos desde `openapi.json` y falla si cambian. Un cambio en la API no puede romper el frontend en silencio.
 - **Specs Gherkin por pantalla** en `specs/ui/<pantalla>.feature`, con las mismas reglas que las del backend (`.claude/rules/specs.md`): comportamiento visible para el usuario, nunca componentes ni endpoints.
 - **E2E contra la API real** con su base de datos de test; los `Given` preparan los datos llamando a la API. Los tests de componente usan MSW para los casos difíciles de reproducir (errores, estados vacíos).
-- **Solo escritorio, en inglés y con tema claro**, como el resto del producto.
+- **En inglés; tema claro y oscuro (según el sistema, con toggle); responsive por debajo de 900px**.
 
 ## Ciclo SDD en el frontend
 
@@ -63,6 +63,4 @@ Una pantalla por PR, en orden de uso:
 | zod (validación en el cliente) | Aparezca una validación que el backend no cubre |
 | dependency-cruiser (el import-linter del frontend) | `frontend/src` tenga varias features con fronteras que proteger |
 | Tests visuales de regresión | Los cambios de tema empiecen a romper pantallas |
-| Tema oscuro | Se pida; el tema único lo deja a un cambio de paleta |
-| Móvil / responsive | Se quiera usar la app desde el móvil |
 | i18n | Se quiera la app en otro idioma (ver `docs/mvp.md`) |
