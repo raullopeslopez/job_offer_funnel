@@ -1,0 +1,38 @@
+/* MUI default type scale on Roboto (theme.ts sets only the family). */
+:root {
+  --font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  --h4-size: 2.125rem; --h4-weight: 400; --h4-line: 1.235; --h4-tracking: 0.00735em;
+  --h5-size: 1.5rem;   --h5-weight: 400; --h5-line: 1.334; --h5-tracking: 0em;
+  --h6-size: 1.25rem;  --h6-weight: 500; --h6-line: 1.6;   --h6-tracking: 0.0075em;
+  --body1-size: 1rem;      --body1-line: 1.5;  --body1-tracking: 0.00938em;
+  --body2-size: 0.875rem;  --body2-line: 1.43; --body2-tracking: 0.01071em;
+  --button-size: 0.875rem; --button-line: 1.75; --button-tracking: 0.02857em;
+  --button-small-size: 0.8125rem;
+  --caption-size: 0.75rem; --caption-line: 1.66; --caption-tracking: 0.03333em;
+
+  --font-heading: var(--font-family);
+  --font-mono: var(--font-family);
+  --heading-weight: 400;
+  --button-transform: uppercase;
+  --button-weight: 500;
+  --tab-transform: uppercase;
+  --tab-tracking: var(--button-tracking);
+  --nav-font-size: 1rem;
+  --wordmark-font: var(--font-family);
+  --wordmark-weight: 500;
+  --table-head-size: var(--body2-size);
+  --table-head-weight: 500;
+  --table-head-color: var(--text-primary);
+  --table-head-transform: none;
+  --table-head-tracking: var(--body2-tracking);
+  --link-underline: underline;
+
+  /* Semantic aliases */
+  --text-page-title: var(--h4-size);
+  --text-section-title: var(--h5-size);
+  --text-dialog-title: var(--h6-size);
+}

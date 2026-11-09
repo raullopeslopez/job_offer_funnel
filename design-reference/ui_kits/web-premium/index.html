@@ -1,0 +1,27 @@
+<!-- @dsCard group="Web app" viewport="1280x800" name="Job Offer Funnel — premium (v2)" -->
+<!doctype html><html lang="en" data-theme="premium"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Job Offer Funnel — Premium UI kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  /* Secondary row actions fade in on hover / keyboard focus; always visible on touch screens. */
+  @media (hover: hover) {
+    .ds-grid-row .row-actions { opacity: 0; transition: opacity 150ms cubic-bezier(.4,0,.2,1); }
+    .ds-grid-row:hover .row-actions, .ds-grid-row:focus-within .row-actions { opacity: 1; }
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../guidelines/ds-ns.js"></script>
+<script src="data.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="TokenScreen.jsx"></script>
+<script type="text/babel" src="InboxScreen.jsx"></script>
+<script type="text/babel" src="SearchesScreen.jsx"></script>
+<script type="text/babel" src="WatchedScreen.jsx"></script>
+<script type="text/babel" src="ApplicationsScreen.jsx"></script>
+<script type="text/babel" src="ApplicationDetailScreen.jsx"></script>
+<script type="text/babel" src="MetricsScreen.jsx"></script>
+<script type="text/babel" src="SettingsScreen.jsx"></script>
+<script type="text/babel" src="App.jsx"></script>
+</body></html>

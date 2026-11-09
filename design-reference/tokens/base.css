@@ -1,0 +1,16 @@
+/* Equivalent of MUI <CssBaseline /> with this theme. */
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0;
+  background: var(--bg-default);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  transition: background-color 200ms var(--ease-standard), color 200ms var(--ease-standard);
+  font-size: var(--body1-size);
+  line-height: var(--body1-line);
+  letter-spacing: var(--body1-tracking);
+}
+a { color: var(--primary-main); text-decoration: underline; text-decoration-color: var(--primary-a40); }
+a:hover { text-decoration-color: inherit; }
+.material-icons-outlined { font-size: 22px; line-height: 1; }

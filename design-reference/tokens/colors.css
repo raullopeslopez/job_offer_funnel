@@ -1,0 +1,84 @@
+/* Source: frontend/src/theme.ts (primary, secondary, background.default) + MUI light-mode defaults for everything else. */
+:root {
+  /* Brand */
+  --primary-main: #3949ab;
+  --primary-light: #616dbc;
+  --primary-dark: #283378;
+  --primary-contrast: #ffffff;
+  --primary-a04: rgba(57, 73, 171, 0.04);
+  --primary-a12: rgba(57, 73, 171, 0.12);
+  --primary-a40: rgba(57, 73, 171, 0.4);
+  --primary-a50: rgba(57, 73, 171, 0.5);
+
+  --secondary-main: #00897b;
+  --secondary-light: #33a195;
+  --secondary-dark: #006056;
+  --secondary-contrast: #ffffff;
+
+  /* Semantic (MUI defaults) */
+  --error-main: #d32f2f;
+  --error-dark: #c62828;
+  --error-a04: rgba(211, 47, 47, 0.04);
+  --error-a50: rgba(211, 47, 47, 0.5);
+  --warning-main: #ed6c02;
+  --info-main: #0288d1;
+  --success-main: #2e7d32;
+
+  /* Alert (standard variant) surfaces */
+  --alert-error-bg: rgb(253, 237, 237);
+  --alert-error-fg: rgb(95, 33, 32);
+  --alert-info-bg: rgb(229, 246, 253);
+  --alert-info-fg: rgb(1, 67, 97);
+  --alert-success-bg: rgb(237, 247, 237);
+  --alert-success-fg: rgb(30, 70, 32);
+  --alert-warning-bg: rgb(255, 244, 229);
+  --alert-warning-fg: rgb(102, 60, 0);
+
+  /* Neutrals */
+  --bg-default: #f5f6fa;
+  --bg-paper: #ffffff;
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-disabled: rgba(0, 0, 0, 0.38);
+  --divider: rgba(0, 0, 0, 0.12);
+  --table-border: rgba(224, 224, 224, 1);
+  --input-border: rgba(0, 0, 0, 0.23);
+  --action-active: rgba(0, 0, 0, 0.54);
+  --action-hover: rgba(0, 0, 0, 0.04);
+  --action-selected: rgba(0, 0, 0, 0.08);
+  --action-focus: rgba(0, 0, 0, 0.12);
+  --action-disabled-bg: rgba(0, 0, 0, 0.12);
+  --backdrop: rgba(0, 0, 0, 0.5);
+  --snackbar-bg: #313132;
+
+  /* Charts — MUI X Charts series color (not set by theme.ts; see readme) */
+  --chart-series-1: #02b2af;
+
+  --primary-a08: rgba(57, 73, 171, 0.08);
+  --snackbar-fg: #ffffff;
+  --grid-header-bg: transparent;
+  --grid-separator: var(--table-border);
+  --nav-active-fg: inherit;
+  --appbar-bg: var(--bg-paper);
+  --input-bg: transparent;
+
+  /* Status tones (StageChip) */
+  --tone-neutral-bg: #eeeff2; --tone-neutral-fg: #4a4c57;
+  --tone-blue-bg: oklch(0.95 0.03 250); --tone-blue-fg: oklch(0.45 0.1 250);
+  --tone-indigo-bg: oklch(0.95 0.03 275); --tone-indigo-fg: oklch(0.45 0.1 275);
+  --tone-teal-bg: oklch(0.95 0.03 195); --tone-teal-fg: oklch(0.45 0.08 195);
+  --tone-amber-bg: oklch(0.95 0.04 80); --tone-amber-fg: oklch(0.47 0.09 70);
+  --tone-green-bg: oklch(0.95 0.04 150); --tone-green-fg: oklch(0.45 0.1 150);
+  --tone-red-bg: oklch(0.95 0.03 25); --tone-red-fg: oklch(0.5 0.14 25);
+  --tone-orange-bg: oklch(0.95 0.04 50); --tone-orange-fg: oklch(0.5 0.12 50);
+
+  /* Semantic aliases */
+  --surface-page: var(--bg-default);
+  --surface-card: var(--bg-paper);
+  --surface-nav: var(--bg-paper);
+  --text-body: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-link: var(--primary-main);
+  --border-subtle: var(--divider);
+  --nav-active-bg: var(--action-selected);
+}
