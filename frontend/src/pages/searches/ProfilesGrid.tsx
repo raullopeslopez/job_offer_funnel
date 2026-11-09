@@ -1,6 +1,15 @@
+import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
+import EditOutlined from "@mui/icons-material/EditOutlined";
+import ManageSearchOutlined from "@mui/icons-material/ManageSearchOutlined";
+import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import { Button, Stack } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
 import type { components } from "../../api/schema";
+import { EmptyState } from "../../components/EmptyState";
+import { IconTile } from "../../components/IconTile";
+import { RowAction, RowActions, rowActionsSx } from "../../components/RowActions";
+import { Meta, Sep, TwoLineCell } from "../../components/TwoLineCell";
+import { Tokens } from "./Tokens";
 
 export type Profile = components["schemas"]["SearchProfileRead"];
 
@@ -19,40 +28,66 @@ const joined = (values: string[]) => values.join(", ");
 
 export function ProfilesGrid({ profiles, total, loading, pagination, ...props }: Props) {
   const columns: GridColDef<Profile>[] = [
-    { field: "name", headerName: "Name", flex: 1, sortable: false },
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1.6,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <TwoLineCell
+          lead={<IconTile icon={ManageSearchOutlined} />}
+          primary={<span data-profile-name>{row.name}</span>}
+          secondary={
+            <>
+              <Meta icon={PlaceOutlined}>{row.location || "—"}</Meta>
+              {row.work_modes.length > 0 && (
+                <>
+                  <Sep />
+                  <Meta>{joined(row.work_modes)}</Meta>
+                </>
+              )}
+            </>
+          }
+        />
+      ),
+    },
     { field: "titles", headerName: "Titles", flex: 2, sortable: false, valueFormatter: joined },
-    { field: "keywords", headerName: "Keywords", flex: 1, sortable: false, valueFormatter: joined },
+    {
+      field: "keywords",
+      headerName: "Keywords",
+      flex: 1,
+      sortable: false,
+      renderCell: ({ row }) => <Tokens items={row.keywords} />,
+    },
     {
       field: "excluded_keywords",
       headerName: "Excluded",
       flex: 1,
       sortable: false,
-      valueFormatter: joined,
-    },
-    { field: "location", headerName: "Location", flex: 1, sortable: false },
-    {
-      field: "work_modes",
-      headerName: "Work modes",
-      flex: 1,
-      sortable: false,
-      valueFormatter: joined,
+      renderCell: ({ row }) => <Tokens items={row.excluded_keywords} excluded />,
     },
     {
       field: "actions",
       headerName: "",
-      width: 260,
+      width: 200,
       sortable: false,
       renderCell: ({ row }) => (
-        <Stack direction="row" spacing={1} sx={{ height: "100%", alignItems: "center" }}>
+        <Stack direction="row" spacing={0.5} sx={{ height: "100%", alignItems: "center" }}>
           <Button size="small" onClick={() => props.onSearches(row)}>
             Searches
           </Button>
-          <Button size="small" color="inherit" onClick={() => props.onEdit(row)}>
-            Edit
-          </Button>
-          <Button size="small" color="inherit" onClick={() => props.onDelete(row)}>
-            Delete
-          </Button>
+          <RowActions>
+            <RowAction
+              icon={EditOutlined}
+              label={`Edit “${row.name}”`}
+              onClick={() => props.onEdit(row)}
+            />
+            <RowAction
+              icon={DeleteOutlineOutlined}
+              label={`Delete “${row.name}”`}
+              onClick={() => props.onDelete(row)}
+            />
+          </RowActions>
         </Stack>
       ),
     },
@@ -71,7 +106,17 @@ export function ProfilesGrid({ profiles, total, loading, pagination, ...props }:
       disableColumnMenu
       disableRowSelectionOnClick
       autoHeight
-      localeText={{ noRowsLabel: "No profiles" }}
+      rowHeight={64}
+      sx={rowActionsSx}
+      slots={{
+        noRowsOverlay: () => (
+          <EmptyState
+            icon={ManageSearchOutlined}
+            title="No profiles"
+            text="A profile turns titles and keywords into a search for every job board."
+          />
+        ),
+      }}
     />
   );
 }
