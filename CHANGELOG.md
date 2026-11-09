@@ -10,6 +10,8 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- New look for the web app: serif titles, a refreshed palette and status colors, and a
+  dark theme that follows the system setting.
 - Watched companies (`/api/v1/watched-companies`): watch a company through the public
   job board of its ATS (Greenhouse, Lever or Ashby), list them by name and stop watching
   one. Importing a watched company for a search profile adds its open offers that match
