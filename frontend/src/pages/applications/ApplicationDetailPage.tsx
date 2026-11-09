@@ -1,21 +1,22 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Link,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Typography,
-} from "@mui/material";
+import type { SvgIconComponent } from "@mui/icons-material";
+import AltRouteOutlined from "@mui/icons-material/AltRouteOutlined";
+import EventOutlined from "@mui/icons-material/EventOutlined";
+import FlagOutlined from "@mui/icons-material/FlagOutlined";
+import LinkOutlined from "@mui/icons-material/LinkOutlined";
+import NotesOutlined from "@mui/icons-material/NotesOutlined";
+import { Alert, Box, Button, Link, Paper, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
+import { CompanyAvatar } from "../../components/CompanyAvatar";
+import { channelIcons, outcomeIcons, stageIcons } from "../../components/icons";
+import { PriorityBars } from "../../components/PriorityBars";
+import { StageProgress } from "../../components/StageProgress";
+import { StatusChip } from "../../components/StatusChip";
+import { mono } from "../../theme";
 import { ApplicationDialog } from "./ApplicationDialog";
 import { DeleteApplicationDialog } from "./DeleteApplicationDialog";
 import { formatDate } from "./options";
@@ -77,66 +78,105 @@ export function ApplicationDetailPage() {
           Delete
         </Button>
       </Stack>
-      <Typography variant="h6" component="p">
-        at {application.company_name}
-      </Typography>
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 3 }}>
-        <Typography color="text.secondary" sx={{ flexGrow: 1 }}>
-          {application.outcome
-            ? `Closed as ${application.outcome} in stage ${application.stage}`
-            : `In stage ${application.stage}`}
+      <Stack direction="row" spacing={1.25} sx={{ alignItems: "center", mb: 3 }}>
+        <CompanyAvatar name={application.company_name} size={28} />
+        <Typography variant="h6" component="p" color="text.secondary" sx={{ fontWeight: 400 }}>
+          at {application.company_name}
         </Typography>
-        <Button variant="contained" onClick={() => setDialog("move")}>
-          Move
-        </Button>
-        <Button variant="outlined" onClick={() => setDialog("close")}>
-          Close
-        </Button>
-        <Button onClick={() => setDialog("undo")}>Undo last transition</Button>
       </Stack>
+      <Paper sx={{ p: { xs: 2, md: 2.5 }, mb: 3.5 }}>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+          <Stack spacing={1.25} sx={{ flex: "1 1 260px" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                flexWrap: "wrap",
+                color: "text.secondary",
+              }}
+            >
+              {application.outcome ? (
+                <>
+                  Closed as <StatusChip value={application.outcome} /> in stage{" "}
+                  <StatusChip value={application.stage} />
+                </>
+              ) : (
+                <>
+                  In stage <StatusChip value={application.stage} size="medium" />
+                </>
+              )}
+            </Box>
+            <StageProgress stage={application.stage} outcome={application.outcome} size="large" />
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+            <Button variant="contained" onClick={() => setDialog("move")}>
+              Move
+            </Button>
+            <Button variant="outlined" onClick={() => setDialog("close")}>
+              Close
+            </Button>
+            <Button onClick={() => setDialog("undo")}>Undo last transition</Button>
+          </Stack>
+        </Stack>
+      </Paper>
 
       <Box
-        component="dl"
-        sx={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: 1, columnGap: 3 }}
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(280px, 1fr) minmax(0, 1.6fr)" },
+          gap: 3.5,
+          alignItems: "start",
+        }}
       >
-        <Field label="Channel">{application.channel}</Field>
-        <Field label="Priority">{application.priority}</Field>
-        <Field label="URL">
-          {application.url && (
-            <Link href={application.url} target="_blank" rel="noopener noreferrer">
-              {application.url}
-            </Link>
-          )}
-        </Field>
-        <Field label="Notes">{application.notes}</Field>
-        <Field label="Added">{formatDate(application.created_at)}</Field>
-      </Box>
-
-      <Typography variant="h5" component="h2" sx={{ mt: 3, mb: 1 }}>
-        History
-      </Typography>
-      <Table size="small" aria-label="History">
-        <TableHead>
-          <TableRow>
-            <TableCell>Stage</TableCell>
-            <TableCell>Outcome</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Note</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {application.transitions.map((transition) => (
-            <TableRow
-              key={`${transition.to_stage}-${transition.outcome}-${transition.occurred_on}`}
+        <Box component="section" sx={{ minWidth: 0 }}>
+          <Typography variant="h5" component="h2" sx={{ mb: 1 }}>
+            Details
+          </Typography>
+          <Paper sx={{ p: { xs: 2, md: 2.5 } }}>
+            <Box
+              component="dl"
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "max-content 1fr",
+                rowGap: 1.5,
+                columnGap: 3,
+                m: 0,
+                alignItems: "center",
+              }}
             >
-              <TableCell>{transition.to_stage}</TableCell>
-              <TableCell>{transition.outcome}</TableCell>
-              <TableCell>{formatDate(transition.occurred_on)}</TableCell>
-              <TableCell>{transition.note}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              <Field label="Channel" icon={AltRouteOutlined}>
+                {application.channel && <ChannelValue channel={application.channel} />}
+              </Field>
+              <Field label="Priority" icon={FlagOutlined}>
+                {application.priority && <PriorityBars value={application.priority} />}
+              </Field>
+              <Field label="URL" icon={LinkOutlined}>
+                {application.url && (
+                  <Link href={application.url} target="_blank" rel="noopener noreferrer">
+                    {application.url}
+                  </Link>
+                )}
+              </Field>
+              <Field label="Notes" icon={NotesOutlined}>
+                {application.notes}
+              </Field>
+              <Field label="Added" icon={EventOutlined}>
+                {formatDate(application.created_at)}
+              </Field>
+            </Box>
+          </Paper>
+        </Box>
+
+        <Box component="section" sx={{ minWidth: 0 }}>
+          <Typography variant="h5" component="h2" sx={{ mb: 1 }}>
+            History
+          </Typography>
+          <Paper sx={{ p: { xs: 2, md: 2.5 } }}>
+            <Timeline transitions={application.transitions} />
+          </Paper>
+        </Box>
+      </Box>
 
       {dialog === "edit" && (
         <ApplicationDialog
@@ -175,15 +215,109 @@ export function ApplicationDetailPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon: SvgIconComponent;
+  children: ReactNode;
+}) {
   return (
     <>
-      <Typography component="dt" color="text.secondary">
+      <Typography
+        component="dt"
+        color="text.secondary"
+        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+      >
+        <Icon aria-hidden sx={{ fontSize: 18, color: "text.secondary" }} />
         {label}
       </Typography>
-      <Typography component="dd" sx={{ m: 0 }}>
+      <Typography component="dd" sx={{ m: 0, minWidth: 0, overflowWrap: "anywhere" }}>
         {children || "—"}
       </Typography>
     </>
+  );
+}
+
+function ChannelValue({ channel }: { channel: string }) {
+  const Icon = channelIcons[channel];
+  return (
+    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+      {Icon && <Icon aria-hidden sx={{ fontSize: 14 }} />}
+      {channel}
+    </Box>
+  );
+}
+
+// Vertical timeline, newest first; the first dot is highlighted as the current state.
+function Timeline({ transitions }: { transitions: Detail["transitions"] }) {
+  const items = [...transitions].reverse();
+  return (
+    <Box component="ol" aria-label="History" sx={{ listStyle: "none", m: 0, p: 0 }}>
+      {items.map((transition, i) => {
+        const last = i === items.length - 1;
+        const Icon = outcomeIcons[transition.outcome ?? ""] ?? stageIcons[transition.to_stage];
+        return (
+          <Box
+            component="li"
+            key={`${transition.to_stage}-${transition.outcome}-${transition.occurred_on}`}
+            sx={{ display: "grid", gridTemplateColumns: "28px 1fr", columnGap: 1.75 }}
+          >
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Box
+                aria-hidden
+                sx={(theme) => ({
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  display: "grid",
+                  placeItems: "center",
+                  bgcolor:
+                    i === 0
+                      ? theme.vars
+                        ? `rgba(${theme.vars.palette.primary.mainChannel} / 0.12)`
+                        : alpha(theme.palette.primary.main, 0.12)
+                      : (theme.vars ?? theme).palette.tone.neutral.bg,
+                  color: i === 0 ? "primary.main" : "text.secondary",
+                })}
+              >
+                {Icon && <Icon sx={{ fontSize: 15 }} />}
+              </Box>
+              {!last && (
+                <Box sx={{ flex: 1, width: "1px", minHeight: 16, my: 0.5, bgcolor: "divider" }} />
+              )}
+            </Box>
+            <Box sx={{ pb: last ? 0 : 2.5, minWidth: 0 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  minHeight: 28,
+                }}
+              >
+                <StatusChip value={transition.to_stage} icon={false} />
+                {transition.outcome && <StatusChip value={transition.outcome} icon={false} />}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ ml: "auto", fontFamily: mono }}
+                >
+                  {formatDate(transition.occurred_on)}
+                </Typography>
+              </Box>
+              {transition.note && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                  {transition.note}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        );
+      })}
+    </Box>
   );
 }

@@ -68,6 +68,7 @@ Then(
 );
 
 Then("its history ends with stage {string} dated today", async ({ page }, stage: string) => {
-  const last = page.getByRole("table", { name: "History" }).locator("tbody tr").last();
-  await expect(last).toHaveText(`${stage}${shownDate(isoDate("today"))}`);
+  // Newest transition first in the timeline.
+  const latest = page.getByRole("list", { name: "History" }).getByRole("listitem").first();
+  await expect(latest).toHaveText(`${stage}${shownDate(isoDate("today"))}`);
 });
