@@ -5,7 +5,6 @@ import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
 import InboxOutlined from "@mui/icons-material/InboxOutlined";
 import { Box, Button, Link, Stack } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
-import { useEffect, useRef, useState } from "react";
 import type { components } from "../../api/schema";
 import { CompanyAvatar } from "../../components/CompanyAvatar";
 import { EmptyState } from "../../components/EmptyState";
@@ -13,6 +12,7 @@ import { offerSourceIcon } from "../../components/icons";
 import { RelativeDate } from "../../components/RelativeDate";
 import { RowAction, RowActions, rowActionsSx } from "../../components/RowActions";
 import { Meta, Sep, TwoLineCell } from "../../components/TwoLineCell";
+import { useNarrowGrid } from "../../components/useNarrowGrid";
 
 export type Offer = components["schemas"]["OfferRead"];
 export type OfferStatus = components["schemas"]["OfferStatus"];
@@ -29,8 +29,6 @@ type Props = {
   onRestore: (offer: Offer) => void;
 };
 
-const NARROW_GRID_PX = 640;
-
 const EMPTY: Record<OfferStatus, { icon: SvgIconComponent; text: string }> = {
   pending: { icon: InboxOutlined, text: "Import a feed or add an offer to fill the inbox." },
   discarded: {
@@ -40,23 +38,8 @@ const EMPTY: Record<OfferStatus, { icon: SvgIconComponent; text: string }> = {
   promoted: { icon: ArrowUpwardOutlined, text: "Promoted offers become applications." },
 };
 
-function useIsNarrow(ref: React.RefObject<HTMLElement | null>) {
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setNarrow(entry.contentRect.width < NARROW_GRID_PX);
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [ref]);
-  return narrow;
-}
-
 export function OffersGrid({ status, offers, total, loading, pagination, ...props }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const narrow = useIsNarrow(containerRef);
+  const [containerRef, narrow] = useNarrowGrid();
   const empty = EMPTY[status];
 
   const columns: GridColDef<Offer>[] = [

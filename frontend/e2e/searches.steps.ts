@@ -8,9 +8,13 @@ type Syntax = components["schemas"]["Syntax"];
 type WorkMode = components["schemas"]["WorkMode"];
 
 const grid = (page: Page) => page.getByRole("grid");
-// The name cell also holds location and work modes, so the profile name has its own marker. Not
-// under getByRole("grid"): an open dialog hides the grid from the accessibility tree.
-const nameCells = (page: Page) => page.locator("[data-profile-name]");
+// One Edit button per profile, labelled with its name. A CSS locator and not getByRole: an open
+// dialog hides the grid from the accessibility tree.
+const editButtons = (page: Page) => page.locator('[role="grid"] button[aria-label^="Edit “"]');
+const profileNames = (page: Page) =>
+  editButtons(page).evaluateAll((buttons) =>
+    buttons.map((button) => button.getAttribute("aria-label")?.slice("Edit “".length, -1)),
+  );
 const row = (page: Page, name: string): Locator =>
   grid(page)
     .getByRole("row")
@@ -165,17 +169,17 @@ When("I open the searches of the profile {string}", async ({ page }, name: strin
 // --- Then ---
 
 Then(/^I see the profiles, in order: (".*")$/, async ({ page }, list: string) => {
-  await expect(nameCells(page)).toHaveText(quoted(list));
+  await expect.poll(() => profileNames(page)).toEqual(quoted(list));
 });
 
 Then("I see that there are no profiles", async ({ page }) => {
   await expect(page.getByText("No profiles", { exact: true })).toBeVisible();
-  await expect(nameCells(page)).toHaveCount(0);
+  await expect(editButtons(page)).toHaveCount(0);
 });
 
 Then("the profile is not created", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(nameCells(page)).toHaveCount(0);
+  await expect(editButtons(page)).toHaveCount(0);
 });
 
 Then("the profile {string} shows {string}", async ({ page }, name: string, text: string) => {
