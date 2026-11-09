@@ -62,6 +62,18 @@ While the version is `0.x`, the API may change without a major version bump.
 
 - Metrics screen shows four key figures on top (active, interviewing, response rate and
   offers) and a rate bar next to each conversion rate.
+- Lists are easier to scan: two-line rows with the company avatar (its logo in Settings),
+  status chips with icons, relative dates ("today", "3d ago") with the full date on hover,
+  and an icon and a short hint when a list is empty. Secondary row actions (discard, edit,
+  delete, stop watching) appear on hover or keyboard focus, and are always visible on
+  touch screens.
+- Inbox and Settings tabs show how many items each one holds.
+- Applications list shows each application's progress through the stages and its
+  priority as bars.
+- Application detail shows the history as a timeline, newest first, with an icon per
+  stage, and icons next to each detail.
+- Searches show keywords as tokens, with excluded ones in red.
+- On narrow screens, lists hide their secondary columns.
 
 ### Fixed
 
