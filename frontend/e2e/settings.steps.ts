@@ -14,11 +14,14 @@ const SELECTS = new Set(["syntax"]);
 
 // See searches.steps.ts: the name cells are found by their column, outside getByRole("grid").
 const nameCells = (page: Page) => page.locator('[role="gridcell"][data-field="name"]');
+// The name cell has two lines (name, then website or syntax): the name is its first line.
 const row = (page: Page, name: string): Locator =>
   page
     .getByRole("grid")
     .getByRole("row")
-    .filter({ has: page.getByRole("gridcell", { name, exact: true }) });
+    .filter({ has: page.locator('[data-field="name"]').getByText(name, { exact: true }) });
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^$()|[\]\\{}]/gu, "\\$&");
 
 async function openSection(page: Page, section: Section) {
   await page.goto("/settings");
@@ -44,13 +47,17 @@ async function create(page: Page, section: Section, fields: Record<string, strin
 }
 
 async function edit(page: Page, name: string, fields: Record<string, string>) {
-  await row(page, name).getByRole("button", { name: "Edit" }).click();
+  await row(page, name)
+    .getByRole("button", { name: /^Edit /u })
+    .click();
   await fill(page, fields);
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
 }
 
 async function remove(page: Page, name: string, answer: "Delete" | "Cancel") {
-  await row(page, name).getByRole("button", { name: "Delete" }).click();
+  await row(page, name)
+    .getByRole("button", { name: /^Delete /u })
+    .click();
   await page.getByRole("dialog").getByRole("button", { name: answer }).click();
 }
 
@@ -150,7 +157,11 @@ When(/^I delete the (?:company|job board) "(.*)" and cancel$/, async ({ page }, 
 // --- Then ---
 
 Then(/^I see the (?:companies|job boards), in order: (".*")$/, async ({ page }, list: string) => {
-  await expect(nameCells(page)).toHaveText(quoted(list));
+  // innerText puts the second line (website or syntax) after a newline.
+  await expect(nameCells(page)).toHaveText(
+    quoted(list).map((name) => new RegExp(`^${escapeRegExp(name)}(\\n|$)`, "u")),
+    { useInnerText: true },
+  );
 });
 
 Then("I see that there are no companies", async ({ page }) => {
@@ -178,5 +189,7 @@ Then(
 
 Then("the company {string} shows no website", async ({ page }, name: string) => {
   await expect(page.getByRole("dialog")).toBeHidden();
-  await expect(row(page, name).locator('[data-field="website"]')).toHaveText("");
+  await expect(row(page, name).locator('[data-field="name"]')).toHaveText(/\n—$/u, {
+    useInnerText: true,
+  });
 });

@@ -1,9 +1,17 @@
+import CodeOutlined from "@mui/icons-material/CodeOutlined";
+import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
+import EditOutlined from "@mui/icons-material/EditOutlined";
+import TravelExploreOutlined from "@mui/icons-material/TravelExploreOutlined";
 import { Button, Stack } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
+import { EmptyState } from "../../components/EmptyState";
+import { IconTile } from "../../components/IconTile";
+import { RowAction, RowActions, rowActionsSx } from "../../components/RowActions";
+import { Meta, TwoLineCell } from "../../components/TwoLineCell";
 import { DeleteJobBoardDialog } from "./DeleteJobBoardDialog";
 import { JobBoardDialog } from "./JobBoardDialog";
 
@@ -42,23 +50,43 @@ export function JobBoardsSection() {
   };
 
   const columns: GridColDef<JobBoard>[] = [
-    { field: "name", headerName: "Name", flex: 1, sortable: false },
-    { field: "search_url_template", headerName: "Search URL template", flex: 3, sortable: false },
-    { field: "syntax", headerName: "Syntax", flex: 1, sortable: false },
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <TwoLineCell
+          lead={<IconTile icon={TravelExploreOutlined} />}
+          primary={row.name}
+          secondary={
+            <Meta icon={CodeOutlined} mono>
+              {row.syntax}
+            </Meta>
+          }
+        />
+      ),
+    },
+    { field: "search_url_template", headerName: "Search URL template", flex: 2, sortable: false },
     {
       field: "actions",
       headerName: "",
-      width: 180,
+      width: 100,
       sortable: false,
+      align: "right",
       renderCell: ({ row }) => (
-        <Stack direction="row" spacing={1} sx={{ height: "100%", alignItems: "center" }}>
-          <Button size="small" color="inherit" onClick={() => setEditing(row)}>
-            Edit
-          </Button>
-          <Button size="small" color="inherit" onClick={() => setDeleting(row)}>
-            Delete
-          </Button>
-        </Stack>
+        <RowActions>
+          <RowAction
+            icon={EditOutlined}
+            label={`Edit “${row.name}”`}
+            onClick={() => setEditing(row)}
+          />
+          <RowAction
+            icon={DeleteOutlineOutlined}
+            label={`Delete “${row.name}”`}
+            onClick={() => setDeleting(row)}
+          />
+        </RowActions>
       ),
     },
   ];
@@ -83,7 +111,11 @@ export function JobBoardsSection() {
         disableColumnMenu
         disableRowSelectionOnClick
         autoHeight
-        localeText={{ noRowsLabel: "No job boards" }}
+        rowHeight={64}
+        sx={rowActionsSx}
+        slots={{
+          noRowsOverlay: () => <EmptyState icon={TravelExploreOutlined} title="No job boards" />,
+        }}
       />
 
       {editing && (

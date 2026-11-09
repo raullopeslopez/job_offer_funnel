@@ -1,9 +1,17 @@
+import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
+import DomainOutlined from "@mui/icons-material/DomainOutlined";
+import EditOutlined from "@mui/icons-material/EditOutlined";
+import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
 import { Button, Stack } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
+import { CompanyAvatar, domainOf } from "../../components/CompanyAvatar";
+import { EmptyState } from "../../components/EmptyState";
+import { RowAction, RowActions, rowActionsSx } from "../../components/RowActions";
+import { Meta, TwoLineCell } from "../../components/TwoLineCell";
 import { CompanyDialog } from "./CompanyDialog";
 import { DeleteCompanyDialog } from "./DeleteCompanyDialog";
 
@@ -39,22 +47,38 @@ export function CompaniesSection() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["companies"] });
 
   const columns: GridColDef<Company>[] = [
-    { field: "name", headerName: "Name", flex: 1, sortable: false },
-    { field: "website", headerName: "Website", flex: 2, sortable: false },
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <TwoLineCell
+          lead={<CompanyAvatar name={row.name} domain={domainOf(row.website)} />}
+          primary={row.name}
+          secondary={row.website ? <Meta icon={LanguageOutlined}>{row.website}</Meta> : "—"}
+        />
+      ),
+    },
     {
       field: "actions",
       headerName: "",
-      width: 180,
+      width: 100,
       sortable: false,
+      align: "right",
       renderCell: ({ row }) => (
-        <Stack direction="row" spacing={1} sx={{ height: "100%", alignItems: "center" }}>
-          <Button size="small" color="inherit" onClick={() => setEditing(row)}>
-            Edit
-          </Button>
-          <Button size="small" color="inherit" onClick={() => setDeleting(row)}>
-            Delete
-          </Button>
-        </Stack>
+        <RowActions>
+          <RowAction
+            icon={EditOutlined}
+            label={`Edit “${row.name}”`}
+            onClick={() => setEditing(row)}
+          />
+          <RowAction
+            icon={DeleteOutlineOutlined}
+            label={`Delete “${row.name}”`}
+            onClick={() => setDeleting(row)}
+          />
+        </RowActions>
       ),
     },
   ];
@@ -79,7 +103,9 @@ export function CompaniesSection() {
         disableColumnMenu
         disableRowSelectionOnClick
         autoHeight
-        localeText={{ noRowsLabel: "No companies" }}
+        rowHeight={64}
+        sx={rowActionsSx}
+        slots={{ noRowsOverlay: () => <EmptyState icon={DomainOutlined} title="No companies" /> }}
       />
 
       {editing && (
