@@ -44,7 +44,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 
 ## Stack
 
-Backend: Python 3.14 (fijado en `backend/.python-version`) · uv · FastAPI (async) · Pydantic v2 · PostgreSQL · SQLAlchemy 2 async + asyncpg · Alembic · ruff · mypy strict · import-linter · pytest (asyncio, bdd, xdist, cov) + testcontainers + httpx2 · just · Docker Compose · pre-commit · structlog · GitHub Actions. Frontend: ver `docs/frontend.md`. Un solo usuario con auth simple; sin integraciones externas en el MVP; deploy local primero.
+Backend: Python 3.14 (fijado en `backend/.python-version`) · uv · FastAPI (async) · Pydantic v2 · PostgreSQL · SQLAlchemy 2 async + asyncpg · Alembic · ruff · mypy strict · import-linter · pytest (asyncio, bdd, xdist, cov) + testcontainers + httpx2 · just · Docker Compose · pre-commit · structlog · GitHub Actions. Frontend: ver `docs/frontend.md`. Un solo usuario con auth simple; sin integraciones externas en el MVP; deploy local (`just up`) y en Render + Neon (`render.yaml`).
 
 ## Idioma
 

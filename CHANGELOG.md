@@ -10,6 +10,7 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- The app can be deployed to Render (API and web app, `render.yaml`) with the database in Neon.
 - Web app navigation with an icon per screen, a light/dark theme toggle that remembers your choice, and a mobile layout below 900px with a top bar and a slide-in menu.
 - `just seed-job-boards` now registers 43 more job boards with a checked search URL:
   remote boards (Remote OK, Remotive, Remote.co, FlexJobs, RemoteJobs.io, EuRemoteJobs…),

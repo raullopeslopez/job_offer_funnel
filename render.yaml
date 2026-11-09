@@ -1,0 +1,45 @@
+# Render Blueprint: the API (Docker) and the web app (static site).
+# The database lives in Neon; its URL is set by hand in the dashboard (DATABASE_URL).
+services:
+  - type: web
+    name: job-offer-funnel-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_TOKEN
+        generateValue: true
+
+  - type: web
+    name: job-offer-funnel-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    staticPublishPath: dist
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - frontend/**
+    routes:
+      # Same origin as the app, like nginx in compose: no CORS.
+      # The host must match the API's onrender.com URL.
+      - type: rewrite
+        source: /api/*
+        destination: https://job-offer-funnel-api.onrender.com/api/*
+      # Client-side routes: every unknown path serves the SPA.
+      - type: rewrite
+        source: /*
+        destination: /index.html
