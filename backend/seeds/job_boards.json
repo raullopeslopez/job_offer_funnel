@@ -80,6 +80,31 @@
     "syntax": "keywords"
   },
   {
+    "name": "Client Server",
+    "search_url_template": "https://www.client-server.com/jobs?term={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Understanding Recruitment",
+    "search_url_template": "https://www.understandingrecruitment.com/job-search/?keyword={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Hunter Bond",
+    "search_url_template": "https://www.hunterbond.com/job-search/?keyword={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "3Search",
+    "search_url_template": "https://www.3searchgroup.com/job-search/?keyword={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Durlston Partners",
+    "search_url_template": "https://durlstonpartners.com/?s={query}",
+    "syntax": "keywords"
+  },
+  {
     "name": "Bright Network",
     "search_url_template": "https://www.brightnetwork.co.uk/search/?s={query}&content_types=jobs",
     "syntax": "keywords"

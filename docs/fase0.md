@@ -76,6 +76,16 @@ No encajan en `{query}` (no se añaden):
 | SynergisticIT | El enlace es una página de contacto, no de ofertas |
 | Otta, Honeypot, Talent.io, Cord, Hackajob, Haystack, HackerEarth | Marketplaces inversos: la empresa encuentra al candidato por su perfil (Otta es hoy Welcome to the Jungle) |
 
+**Agencias de selección (2026-11-09)**, de la tabla Notion del usuario, con el mismo método. Entran 5, todas `keywords`: Client Server (`?term=`, 147 → 60 con "python developer"), Understanding Recruitment, Hunter Bond y 3Search (el mismo motor, `/job-search/?keyword=`) y Durlston Partners (búsqueda de WordPress `?s=`, devuelve sus ofertas; "fpga" → 2). Hunter Bond filtra poco con varias palabras (287 → 197). No entran:
+
+| Agencia | Motivo |
+|---------|--------|
+| Formula Recruitment | El buscador filtra en la página sin cambiar la URL (`formularecruitment.co.uk`; `formularecruitment.com` es un dominio aparcado) |
+| Oliver Bernard | Sin bolsa de ofertas en su web: enlaza a LinkedIn |
+| The Tech Talent Co. | Solo su página de empleo propio (careers-page.com) |
+| Ad Hoc Minds | Lista de vacantes sin búsqueda |
+| Avanti Recruitment | Web oficial no localizada; sus ofertas salen en IT Jobs y otros portales del seed |
+
 ## Condiciones de los feeds (spec 6)
 
 Verificadas el 2026-11-08 en las páginas oficiales. Para uso privado de una persona; ninguno lo prohíbe.
