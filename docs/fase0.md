@@ -43,7 +43,7 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 | Indeed | `minus` | |
 | Welcome to the Jungle, Glassdoor | `keywords` | En el seed. Plantillas sacadas de URLs indexadas (`?query=`, `?sc.keyword=`) |
 | Wellfound | — | La búsqueda va en la ruta como slug (`/role/r/software-engineer`), no como texto libre: no encaja en `{query}` |
-| RemoteOK | — | Busca por etiquetas en la ruta (`/remote-python-jobs`), sin parámetro de texto fiable. API JSON pública (`remoteok.com/api`): mejor por la spec 6 |
+| RemoteOK | `keywords` | En el seed con `?search=` (comprobado el 2026-11-09; filtra por etiquetas y descripción, resultados poco precisos). API JSON pública (`remoteok.com/api`) por la spec 6 |
 
 **Candidatos encontrados** (búsqueda del 2026-11-08; condiciones de uso sin verificar):
 
@@ -56,7 +56,25 @@ Se dan de alta con la API (spec 2); la plantilla sale de copiar la URL de una b�
 | Remote Rocketship | No (de pago) | Ofertas que no salen en LinkedIn; filtro por Asia |
 | Jobgether | No | Ofertas remotas por región (Asia) |
 | Working Nomads | Feed JSON sin documentar | Términos restrictivos: evitar la ingesta automática |
-| Remote.co, NoDesk, Jobspresso, Arc.dev | Sin comprobar | Citados en listas de portales remotos |
+| Remote.co, NoDesk, Jobspresso, Arc.dev | Sin comprobar | Citados en listas de portales remotos (Remote.co ya está en el seed) |
+
+**Revisión del 2026-11-09** (listas del usuario y la tabla pública de Move, *Job boards, Marketplaces & Communities*). Cada plantilla se comprobó en el navegador: búsqueda real y la URL cargada directamente filtra (título, número de resultados o buscador relleno). La URL que se guarda en la lista de origen rara vez es la de búsqueda. 43 portales entran en el seed, todos `keywords` salvo Indeed UK (`minus`). Matices:
+
+- Por ruta: VanHack (`/jobs/{query}-jobs`) busca por habilidad: con una sola palabra funciona y con varias suele dar 0. IT Jobs, Totaljobs, CWJobs, EuroTechJobs y jobvector sí aceptan varias palabras en la ruta.
+- Resultados poco precisos: Remote OK y Dynamite Jobs. Para graduados: Bright Network. De nicho: Cryptocurrency Jobs, LGBT Jobs y BME Jobs (pocas ofertas).
+- Delante de Startup Jobs, ZipRecruiter, jobvector, jobtensor y Bright Network hay Cloudflare: al abrirlos desde el navegador del usuario pasa la comprobación.
+
+No encajan en `{query}` (no se añaden):
+
+| Portal | Motivo |
+|--------|--------|
+| We Are Distributed, Working Nomads, LaraJobs, web3.career, GermanTechJobs, get in IT | Solo categorías o etiquetas fijas, sin búsqueda por texto en la URL |
+| Wellfound, F6S | Roles o regiones predefinidos; el texto libre da 404 o no se refleja en la URL |
+| IT-Treff | Acepta `?posi=` pero apenas devuelve resultados |
+| Work In Startups | CAPTCHA; plantilla probable `https://workinstartups.com/search?q={query}`, por confirmar a mano |
+| Dev IT Jobs, Technojobs, Boolerang | Ya no existen (redirigen a un registro, dominio aparcado o no cargan) |
+| SynergisticIT | El enlace es una página de contacto, no de ofertas |
+| Otta, Honeypot, Talent.io, Cord, Hackajob, Haystack, HackerEarth | Marketplaces inversos: la empresa encuentra al candidato por su perfil (Otta es hoy Welcome to the Jungle) |
 
 ## Condiciones de los feeds (spec 6)
 

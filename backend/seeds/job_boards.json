@@ -33,5 +33,220 @@
     "name": "Himalayas",
     "search_url_template": "https://himalayas.app/jobs?search={query}",
     "syntax": "keywords"
+  },
+  {
+    "name": "EuRemoteJobs",
+    "search_url_template": "https://euremotejobs.com/?s={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Remote.co",
+    "search_url_template": "https://remote.co/remote-jobs/search?searchkeyword={query}&useclocation=true",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Levels.fyi",
+    "search_url_template": "https://www.levels.fyi/jobs?searchText={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Remote OK",
+    "search_url_template": "https://remoteok.com/?search={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "RemoteJobs.io",
+    "search_url_template": "https://www.remotejobs.io/search?searchkeyword={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Startup Jobs",
+    "search_url_template": "https://startup.jobs/?q={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "VanHack",
+    "search_url_template": "https://app.vanhack.com/jobs/{query}-jobs",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Signify Technology",
+    "search_url_template": "https://www.signifytechnology.com/jobs/?query={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Source Group International",
+    "search_url_template": "https://www.sourcegroupinternational.com/jobs/?query={query}&location={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Bright Network",
+    "search_url_template": "https://www.brightnetwork.co.uk/search/?s={query}&content_types=jobs",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Hiring Cafe",
+    "search_url_template": "https://hiringcafe.com/?searchState=%7B%22searchQuery%22%3A%22{query}%22%7D",
+    "syntax": "keywords"
+  },
+  {
+    "name": "EuroTechJobs",
+    "search_url_template": "https://www.eurotechjobs.com/job_search/keyword/{query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Indeed UK",
+    "search_url_template": "https://uk.indeed.com/jobs?q={query}&l={location}",
+    "syntax": "minus"
+  },
+  {
+    "name": "Cryptocurrency Jobs",
+    "search_url_template": "https://cryptocurrencyjobs.co/?query={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Reed",
+    "search_url_template": "https://www.reed.co.uk/jobs?keywords={query}&location={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Adzuna",
+    "search_url_template": "https://www.adzuna.co.uk/jobs/search?q={query}&w={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Remotive",
+    "search_url_template": "https://remotive.com/remote-jobs?query={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Totaljobs",
+    "search_url_template": "https://www.totaljobs.com/jobs/{query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "CWJobs",
+    "search_url_template": "https://www.cwjobs.co.uk/jobs/{query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "CV-Library",
+    "search_url_template": "https://www.cv-library.co.uk/search-jobs?q={query}&geo={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "ZipRecruiter UK",
+    "search_url_template": "https://www.ziprecruiter.co.uk/jobs/search?q={query}&l={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Monster",
+    "search_url_template": "https://www.monster.com/jobs/search?q={query}&where={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "CareerBuilder",
+    "search_url_template": "https://www.careerbuilder.com/job-listings/search?q={query}&where={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Talent.com UK",
+    "search_url_template": "https://uk.talent.com/jobs?k={query}&l={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Jobrapido UK",
+    "search_url_template": "https://uk.jobrapido.com/?w={query}&l={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Jobijoba UK",
+    "search_url_template": "https://www.jobijoba.co.uk/query/?what={query}&where={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "FlexJobs",
+    "search_url_template": "https://www.flexjobs.com/search?searchkeyword={query}&useclocation=true",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Dynamite Jobs",
+    "search_url_template": "https://dynamitejobs.com/remote-jobs?text={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Built In",
+    "search_url_template": "https://builtin.com/jobs?search={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "EuroJobs",
+    "search_url_template": "https://www.eurojobs.com/jobs?q={query}&location={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Workwise",
+    "search_url_template": "https://www.workwise.io/jobsuche?query={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "JobsInNetwork",
+    "search_url_template": "https://jobsinnetwork.com/?query={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Escape the City",
+    "search_url_template": "https://www.escapethecity.org/search/jobs?q=query%253D{query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "IT Jobs",
+    "search_url_template": "https://www.it-jobs.co.uk/{query}-jobs",
+    "syntax": "keywords"
+  },
+  {
+    "name": "ITJobBoard.net",
+    "search_url_template": "https://www.itjobboard.net/jobs/?keywords%5Ball_words%5D={query}&Location%5Blocation%5D%5Bvalue%5D={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "jobtensor",
+    "search_url_template": "https://jobtensor.com/search?q={query}&l={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Landing.jobs",
+    "search_url_template": "https://landing.jobs/jobs?query={query}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "jobvector",
+    "search_url_template": "https://www.jobvector.de/jobs/{query}/",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Women in Tech Jobs",
+    "search_url_template": "https://jobs.womenintech.co.uk/jobs/search?q={query}&l={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "DiverseJobsMatter",
+    "search_url_template": "https://diversejobsmatter.co.uk/jobs/?q={query}&l={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "LGBT Jobs",
+    "search_url_template": "https://www.lgbtjobs.co.uk/find-a-job?keyword={query}&location={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "BME Jobs",
+    "search_url_template": "https://www.bmejobs.co.uk/find-a-job?keyword={query}&location={location}",
+    "syntax": "keywords"
+  },
+  {
+    "name": "Evenbreak",
+    "search_url_template": "https://www.evenbreak.com/searchjobs/?Keywords={query}&radialtown={location}",
+    "syntax": "keywords"
   }
 ]
