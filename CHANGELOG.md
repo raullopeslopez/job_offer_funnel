@@ -16,6 +16,8 @@ While the version is `0.x`, the API may change without a major version bump.
   UK and European boards (Reed, Totaljobs, CWJobs, CV-Library, Adzuna, Indeed UK, jobtensor,
   Landing.jobs…), tech and startup boards (Levels.fyi, Built In, Startup Jobs, Hiring Cafe…)
   and diversity boards (Women in Tech Jobs, Evenbreak…).
+- `just seed-job-boards` also registers the job search of five tech recruitment agencies:
+  Client Server, Understanding Recruitment, Hunter Bond, 3Search and Durlston Partners.
 - New look for the web app: serif titles, a refreshed palette and status colors, and a
   dark theme that follows the system setting.
 - Watched companies (`/api/v1/watched-companies`): watch a company through the public
