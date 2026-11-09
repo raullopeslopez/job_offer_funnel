@@ -8,13 +8,13 @@ type Syntax = components["schemas"]["Syntax"];
 type WorkMode = components["schemas"]["WorkMode"];
 
 const grid = (page: Page) => page.getByRole("grid");
-// DataGrid marks each cell with its column; no role tells the name cells apart. Not under
-// getByRole("grid"): an open dialog hides the grid from the accessibility tree.
-const nameCells = (page: Page) => page.locator('[role="gridcell"][data-field="name"]');
+// The name cell also holds location and work modes, so the profile name has its own marker. Not
+// under getByRole("grid"): an open dialog hides the grid from the accessibility tree.
+const nameCells = (page: Page) => page.locator("[data-profile-name]");
 const row = (page: Page, name: string): Locator =>
   grid(page)
     .getByRole("row")
-    .filter({ has: page.getByRole("gridcell", { name, exact: true }) });
+    .filter({ has: page.getByText(name, { exact: true }) });
 const board = (page: Page, name: string) =>
   page.getByRole("dialog").getByRole("region", { name, exact: true });
 
@@ -44,7 +44,9 @@ async function createProfile(page: Page, fields: Record<string, string>) {
 }
 
 async function editProfile(page: Page, name: string, fields: Record<string, string>) {
-  await row(page, name).getByRole("button", { name: "Edit" }).click();
+  await row(page, name)
+    .getByRole("button", { name: `Edit “${name}”` })
+    .click();
   await fillProfile(page, fields);
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
 }
@@ -143,12 +145,16 @@ When(
 );
 
 When("I delete the profile {string} and confirm", async ({ page }, name: string) => {
-  await row(page, name).getByRole("button", { name: "Delete" }).click();
+  await row(page, name)
+    .getByRole("button", { name: `Delete “${name}”` })
+    .click();
   await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
 });
 
 When("I delete the profile {string} and cancel", async ({ page }, name: string) => {
-  await row(page, name).getByRole("button", { name: "Delete" }).click();
+  await row(page, name)
+    .getByRole("button", { name: `Delete “${name}”` })
+    .click();
   await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
 });
 
@@ -178,7 +184,7 @@ Then("the profile {string} shows {string}", async ({ page }, name: string, text:
 
 Then("the profile {string} shows no location", async ({ page }, name: string) => {
   await expect(page.getByRole("dialog")).toBeHidden();
-  await expect(row(page, name).locator('[data-field="location"]')).toHaveText("");
+  await expect(row(page, name).locator('[data-field="name"]')).toContainText("—");
 });
 
 Then(/^the job boards with searches are, in order: (".*")$/, async ({ page }, list: string) => {
