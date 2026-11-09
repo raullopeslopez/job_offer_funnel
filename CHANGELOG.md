@@ -58,6 +58,11 @@ While the version is `0.x`, the API may change without a major version bump.
   see how many offers were found, matched, added, already in the inbox and expired. A board
   the ATS does not answer for says so.
 
+### Changed
+
+- Metrics screen shows four key figures on top (active, interviewing, response rate and
+  offers) and a rate bar next to each conversion rate.
+
 ### Fixed
 
 - Every write is committed before the API answers. Before, the response could arrive
