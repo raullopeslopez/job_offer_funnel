@@ -1,0 +1,107 @@
+/* Premium theme — "MUI pulido". Same structure as the MUI theme; applied with <html data-theme="premium"> / "premium-dark".
+   Every value here maps 1:1 to handoff/theme.ts (createTheme colorSchemes + component overrides). */
+[data-theme="premium"] {
+  --label-bg: var(--bg-default);
+  --font-family: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Newsreader", Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --heading-weight: 500;
+  --h4-size: 2.375rem; --h4-weight: 500; --h4-line: 1.12; --h4-tracking: -0.015em;
+  --h5-size: 1.5rem;   --h5-weight: 500; --h5-line: 1.25; --h5-tracking: -0.01em;
+  --h6-size: 1.25rem;  --h6-weight: 500; --h6-line: 1.35; --h6-tracking: -0.005em;
+  --body1-size: 0.9375rem; --body1-line: 1.55; --body1-tracking: 0em;
+  --body2-size: 0.875rem;  --body2-line: 1.5;  --body2-tracking: 0em;
+  --button-size: 0.875rem; --button-line: 1.5; --button-tracking: 0.005em; --button-small-size: 0.8125rem;
+  --caption-size: 0.75rem; --caption-line: 1.5; --caption-tracking: 0.01em;
+  --button-transform: none; --button-weight: 500;
+  --tab-transform: none; --tab-tracking: 0em;
+  --nav-font-size: 0.9375rem;
+  --wordmark-font: var(--font-heading); --wordmark-weight: 600;
+  --table-head-size: 0.75rem; --table-head-weight: 500; --table-head-color: var(--text-secondary);
+  --table-head-transform: uppercase; --table-head-tracking: 0.06em;
+  --link-underline: none;
+
+  --primary-main: #3949ab; --primary-light: #6b77c9; --primary-dark: #2c3890; --primary-contrast: #ffffff;
+  --primary-a04: rgba(57,73,171,0.05); --primary-a08: rgba(57,73,171,0.08); --primary-a12: rgba(57,73,171,0.12);
+  --primary-a40: rgba(57,73,171,0.4); --primary-a50: rgba(57,73,171,0.35);
+  --bg-default: #f6f6f8; --bg-paper: #ffffff;
+  --text-primary: #17181c; --text-secondary: #5f6170; --text-disabled: #a3a5b0;
+  --divider: #e7e7ec; --table-border: #ececf0; --input-border: #d6d7de;
+  --action-active: #5f6170; --action-hover: rgba(23,24,28,0.04); --action-selected: rgba(57,73,171,0.08);
+  --action-focus: rgba(57,73,171,0.12); --action-disabled-bg: rgba(23,24,28,0.06);
+  --backdrop: rgba(15,16,20,0.4);
+  --snackbar-bg: #17181c; --snackbar-fg: #f6f6f8;
+  --grid-header-bg: #fafafb; --grid-separator: transparent;
+  --nav-active-bg: rgba(57,73,171,0.08); --nav-active-fg: var(--primary-main);
+  --chart-series-1: #3949ab;
+  --input-bg: var(--bg-paper);
+
+  --radius: 10px; --radius-lg: 14px; --icon-button-radius: 10px;
+  --nav-item-radius: 8px; --nav-item-inset: 8px;
+  --elevation-1: 0 1px 2px rgba(16,18,28,0.04), 0 0 0 1px rgba(16,18,28,0.06);
+  --elevation-2: 0 1px 2px rgba(16,18,28,0.14), inset 0 1px 0 rgba(255,255,255,0.14);
+  --elevation-4: 0 4px 12px rgba(57,73,171,0.28), inset 0 1px 0 rgba(255,255,255,0.14);
+  --elevation-6: 0 12px 32px rgba(16,18,28,0.22);
+  --elevation-8: 0 12px 32px rgba(16,18,28,0.12), 0 0 0 1px rgba(16,18,28,0.06);
+  --elevation-24: 0 24px 64px rgba(16,18,28,0.18), 0 0 0 1px rgba(16,18,28,0.06);
+  --grid-shadow: 0 1px 2px rgba(16,18,28,0.04);
+}
+[data-theme="premium-dark"] {
+  --label-bg: var(--bg-default);
+  --font-family: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Newsreader", Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --heading-weight: 500;
+  --h4-size: 2.375rem; --h4-weight: 500; --h4-line: 1.12; --h4-tracking: -0.015em;
+  --h5-size: 1.5rem;   --h5-weight: 500; --h5-line: 1.25; --h5-tracking: -0.01em;
+  --h6-size: 1.25rem;  --h6-weight: 500; --h6-line: 1.35; --h6-tracking: -0.005em;
+  --body1-size: 0.9375rem; --body1-line: 1.55; --body1-tracking: 0em;
+  --body2-size: 0.875rem;  --body2-line: 1.5;  --body2-tracking: 0em;
+  --button-size: 0.875rem; --button-line: 1.5; --button-tracking: 0.005em; --button-small-size: 0.8125rem;
+  --caption-size: 0.75rem; --caption-line: 1.5; --caption-tracking: 0.01em;
+  --button-transform: none; --button-weight: 500;
+  --tab-transform: none; --tab-tracking: 0em;
+  --nav-font-size: 0.9375rem;
+  --wordmark-font: var(--font-heading); --wordmark-weight: 600;
+  --table-head-size: 0.75rem; --table-head-weight: 500; --table-head-color: var(--text-secondary);
+  --table-head-transform: uppercase; --table-head-tracking: 0.06em;
+  --link-underline: none;
+
+  --primary-main: #8c97e6; --primary-light: #b3baf0; --primary-dark: #a7b0ef; --primary-contrast: #0e0f12;
+  --primary-a04: rgba(140,151,230,0.08); --primary-a08: rgba(140,151,230,0.12); --primary-a12: rgba(140,151,230,0.18);
+  --primary-a40: rgba(140,151,230,0.45); --primary-a50: rgba(140,151,230,0.4);
+  --error-main: #f2777a; --error-dark: #f59597; --error-a04: rgba(242,119,122,0.1); --error-a50: rgba(242,119,122,0.5);
+  --alert-error-bg: rgba(242,119,122,0.12); --alert-error-fg: #f6b3b4;
+  --alert-info-bg: rgba(91,180,240,0.12); --alert-info-fg: #a9d7f6;
+  --alert-success-bg: rgba(102,194,120,0.12); --alert-success-fg: #b2e0bb;
+  --alert-warning-bg: rgba(240,170,80,0.12); --alert-warning-fg: #f3cf9f;
+  --bg-default: #0e0f12; --bg-paper: #16171b;
+  --text-primary: #ececf0; --text-secondary: #9b9daa; --text-disabled: #5e606b;
+  --divider: #25262c; --table-border: #24252b; --input-border: #34353d;
+  --action-active: #9b9daa; --action-hover: rgba(255,255,255,0.05); --action-selected: rgba(140,151,230,0.14);
+  --action-focus: rgba(140,151,230,0.2); --action-disabled-bg: rgba(255,255,255,0.08);
+  --backdrop: rgba(0,0,0,0.6);
+  --snackbar-bg: #ececf0; --snackbar-fg: #16171b;
+  --grid-header-bg: #1a1b20; --grid-separator: transparent;
+  --nav-active-bg: rgba(140,151,230,0.14); --nav-active-fg: var(--primary-main);
+  --chart-series-1: #8c97e6;
+  --input-bg: #121317;
+  --tone-neutral-bg: #24252b; --tone-neutral-fg: #b4b6c2;
+  --tone-blue-bg: oklch(0.3 0.05 250); --tone-blue-fg: oklch(0.85 0.08 250);
+  --tone-indigo-bg: oklch(0.3 0.06 275); --tone-indigo-fg: oklch(0.85 0.08 275);
+  --tone-teal-bg: oklch(0.3 0.04 195); --tone-teal-fg: oklch(0.85 0.07 195);
+  --tone-amber-bg: oklch(0.32 0.05 75); --tone-amber-fg: oklch(0.87 0.09 80);
+  --tone-green-bg: oklch(0.3 0.05 150); --tone-green-fg: oklch(0.85 0.09 150);
+  --tone-red-bg: oklch(0.3 0.06 25); --tone-red-fg: oklch(0.83 0.09 25);
+  --tone-orange-bg: oklch(0.32 0.06 50); --tone-orange-fg: oklch(0.85 0.09 55);
+
+  --radius: 10px; --radius-lg: 14px; --icon-button-radius: 10px;
+  --nav-item-radius: 8px; --nav-item-inset: 8px;
+  --elevation-1: 0 0 0 1px rgba(255,255,255,0.05);
+  --elevation-2: inset 0 1px 0 rgba(255,255,255,0.2);
+  --elevation-4: 0 4px 16px rgba(140,151,230,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+  --elevation-6: 0 12px 32px rgba(0,0,0,0.5);
+  --elevation-8: 0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+  --elevation-24: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+  --grid-shadow: none;
+}
