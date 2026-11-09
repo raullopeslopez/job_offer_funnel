@@ -1,4 +1,12 @@
-import { Box, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+import {
+  Box,
+  LinearProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import type { components } from "../../api/schema";
 
@@ -28,7 +36,24 @@ export function ConversionSection({ name, steps }: { name: string; steps: Step[]
               <TableCell>{step.to_stage}</TableCell>
               <TableCell align="right">{step.reached_from}</TableCell>
               <TableCell align="right">{step.reached_to}</TableCell>
-              <TableCell align="right">{formatRate(step.rate)}</TableCell>
+              <TableCell align="right">
+                <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1.25 }}>
+                  {step.rate !== null && (
+                    <LinearProgress
+                      aria-hidden
+                      variant="determinate"
+                      value={step.rate}
+                      sx={{
+                        width: 64,
+                        height: 4,
+                        borderRadius: 1,
+                        display: { xs: "none", md: "block" },
+                      }}
+                    />
+                  )}
+                  {formatRate(step.rate)}
+                </Box>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

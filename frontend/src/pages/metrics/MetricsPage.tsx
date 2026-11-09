@@ -1,3 +1,7 @@
+import GroupsOutlined from "@mui/icons-material/GroupsOutlined";
+import MarkEmailReadOutlined from "@mui/icons-material/MarkEmailReadOutlined";
+import WorkOutlined from "@mui/icons-material/WorkOutlined";
+import WorkspacePremiumOutlined from "@mui/icons-material/WorkspacePremiumOutlined";
 import {
   Alert,
   Box,
@@ -13,7 +17,8 @@ import { BarChart } from "@mui/x-charts/BarChart";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { api } from "../../api/client";
-import { ConversionSection } from "./ConversionSection";
+import { ConversionSection, formatRate } from "./ConversionSection";
+import { StatTile } from "./StatTile";
 
 async function fetchMetrics() {
   const [conversion, byChannel, pipeline] = await Promise.all([
@@ -56,9 +61,50 @@ export function MetricsPage() {
     );
   }
 
+  const inStage = (name: string) =>
+    pipeline.stages.find(({ stage }) => stage === name)?.applications ?? 0;
+  const responseRate = conversion.steps.find(({ from_stage }) => from_stage === "applied")?.rate;
+
   return (
     <>
       {title}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
+          gap: { xs: 1.5, md: 2 },
+          mb: 4,
+        }}
+      >
+        <StatTile
+          icon={WorkOutlined}
+          tone="indigo"
+          label="Active"
+          value={pipeline.total}
+          hint="applications in the pipeline"
+        />
+        <StatTile
+          icon={GroupsOutlined}
+          tone="amber"
+          label="Interviewing"
+          value={inStage("interviewing")}
+          hint="applications"
+        />
+        <StatTile
+          icon={MarkEmailReadOutlined}
+          tone="teal"
+          label="Response rate"
+          value={formatRate(responseRate ?? null)}
+          hint="applied → screening"
+        />
+        <StatTile
+          icon={WorkspacePremiumOutlined}
+          tone="green"
+          label="Offers"
+          value={inStage("offer")}
+          hint="applications"
+        />
+      </Box>
       <Stack spacing={4}>
         <Section name="Conversion by stage">
           <ConversionSection name="Conversion by stage" steps={conversion.steps} />
