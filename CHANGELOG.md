@@ -10,6 +10,7 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Web app navigation with an icon per screen, a light/dark theme toggle that remembers your choice, and a mobile layout below 900px with a top bar and a slide-in menu.
 - New look for the web app: serif titles, a refreshed palette and status colors, and a
   dark theme that follows the system setting.
 - Watched companies (`/api/v1/watched-companies`): watch a company through the public
