@@ -19,6 +19,7 @@ frontend/src/
 │   ├── schema.d.ts  # GENERADO desde backend/openapi.json: nunca se edita a mano
 │   └── client.ts    # cliente openapi-fetch: token en cada petición, 401 → pedir token
 ├── auth/            # token en localStorage (token.ts) y pantalla del token
+├── components/      # componentes visuales compartidos entre pantallas
 ├── layout/          # navegación lateral; navItems.ts lleva una entrada por pantalla
 ├── pages/           # una carpeta o fichero por pantalla
 └── test/            # setup de Vitest y servidor MSW
