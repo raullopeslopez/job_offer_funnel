@@ -256,12 +256,14 @@ Then(
 );
 
 Then("I see its history:", async ({ page }, table: DataTable) => {
-  const rows = page.getByRole("table", { name: "History" }).locator("tbody tr");
+  const rows = page.getByRole("list", { name: "History" }).getByRole("listitem");
+  // The timeline shows the newest transition first; the spec lists them oldest first.
   const expected = table
     .hashes()
     .map(({ stage = "", outcome = "", occurred_on = "", note = "" }) =>
       [stage, outcome, shownDate(occurred_on), note].join(""),
-    );
+    )
+    .reverse();
   await expect(rows).toHaveText(expected);
 });
 
