@@ -1,7 +1,22 @@
-import { Link } from "@mui/material";
-import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
+import WorkOutlined from "@mui/icons-material/WorkOutlined";
+import { Box, Link } from "@mui/material";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridColumnVisibilityModel,
+  type GridPaginationModel,
+} from "@mui/x-data-grid";
+import { useEffect, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router";
-import { type Application, formatDate } from "./options";
+import { CompanyAvatar } from "../../components/CompanyAvatar";
+import { EmptyState } from "../../components/EmptyState";
+import { channelIcons } from "../../components/icons";
+import { PriorityBars } from "../../components/PriorityBars";
+import { RelativeDate } from "../../components/RelativeDate";
+import { StageProgress } from "../../components/StageProgress";
+import { StatusChip } from "../../components/StatusChip";
+import { Meta, Sep, TwoLineCell } from "../../components/TwoLineCell";
+import type { Application } from "./options";
 
 type Props = {
   applications: Application[];
@@ -11,47 +26,117 @@ type Props = {
   onPaginationChange: (model: GridPaginationModel) => void;
 };
 
+const NARROW_PX = 640;
+const hideSecondary: GridColumnVisibilityModel = {
+  outcome: false,
+  progress: false,
+  priority: false,
+  created_at: false,
+};
+
 const columns: GridColDef<Application>[] = [
   {
     field: "role",
     headerName: "Role",
     flex: 2,
+    minWidth: 220,
     sortable: false,
     renderCell: ({ row }) => (
-      <Link component={RouterLink} to={`/applications/${row.id}`}>
-        {row.role}
-      </Link>
+      <TwoLineCell
+        lead={<CompanyAvatar name={row.company_name} />}
+        primary={
+          <Link component={RouterLink} to={`/applications/${row.id}`}>
+            {row.role}
+          </Link>
+        }
+        secondary={
+          <>
+            <span>{row.company_name}</span>
+            <Sep />
+            <Meta icon={channelIcons[row.channel]}>{row.channel}</Meta>
+          </>
+        }
+      />
     ),
   },
-  { field: "company_name", headerName: "Company", flex: 1, sortable: false },
-  { field: "stage", headerName: "Stage", flex: 1, sortable: false },
-  { field: "outcome", headerName: "Outcome", flex: 1, sortable: false },
-  { field: "channel", headerName: "Channel", flex: 1, sortable: false },
-  { field: "priority", headerName: "Priority", width: 110, sortable: false },
+  {
+    field: "stage",
+    headerName: "Stage",
+    width: 150,
+    sortable: false,
+    renderCell: ({ row }) => <StatusChip value={row.stage} />,
+  },
+  {
+    field: "outcome",
+    headerName: "Outcome",
+    width: 150,
+    sortable: false,
+    renderCell: ({ row }) => <StatusChip value={row.outcome} />,
+  },
+  {
+    field: "progress",
+    headerName: "Progress",
+    width: 130,
+    sortable: false,
+    renderCell: ({ row }) => <StageProgress stage={row.stage} outcome={row.outcome} size="small" />,
+  },
+  {
+    field: "priority",
+    headerName: "Priority",
+    width: 110,
+    sortable: false,
+    renderCell: ({ row }) => <PriorityBars value={row.priority} />,
+  },
   {
     field: "created_at",
     headerName: "Added",
-    width: 130,
+    width: 120,
     sortable: false,
-    valueFormatter: (value: string) => formatDate(value),
+    renderCell: ({ row }) => <RelativeDate value={row.created_at} />,
   },
 ];
 
+const NoApplications = () => (
+  <EmptyState
+    icon={WorkOutlined}
+    title="No applications"
+    text="Promote an offer from the inbox, or add one with New application."
+  />
+);
+
 export function ApplicationsGrid({ applications, total, loading, pagination, ...props }: Props) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [narrow, setNarrow] = useState(false);
+
+  // Below NARROW_PX of grid width only role and stage are shown.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setNarrow(entry.contentRect.width < NARROW_PX);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <DataGrid
-      rows={applications}
-      columns={columns}
-      rowCount={total}
-      loading={loading}
-      paginationMode="server"
-      paginationModel={pagination}
-      onPaginationModelChange={props.onPaginationChange}
-      pageSizeOptions={[pagination.pageSize]}
-      disableColumnMenu
-      disableRowSelectionOnClick
-      autoHeight
-      localeText={{ noRowsLabel: "No applications" }}
-    />
+    <Box ref={ref}>
+      <DataGrid
+        rows={applications}
+        columns={columns}
+        columnVisibilityModel={narrow ? hideSecondary : {}}
+        rowHeight={64}
+        rowCount={total}
+        loading={loading}
+        paginationMode="server"
+        paginationModel={pagination}
+        onPaginationModelChange={props.onPaginationChange}
+        pageSizeOptions={[pagination.pageSize]}
+        disableColumnMenu
+        disableRowSelectionOnClick
+        autoHeight
+        slots={{ noRowsOverlay: NoApplications }}
+      />
+    </Box>
   );
 }
