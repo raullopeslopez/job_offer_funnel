@@ -7,16 +7,20 @@ import { fieldLabel, quoted } from "./support/form";
 
 type Ats = components["schemas"]["Ats"];
 
-// See searches.steps.ts: the name cells are found by their column, outside getByRole("grid").
-const nameCells = (page: Page) => page.locator('[role="gridcell"][data-field="name"]');
+// A row is identified by its "Stop watching" action, whose label carries the company name.
+const stopLabel = (name: string) => `Stop watching “${name}”`;
+const stopButtons = (page: Page) =>
+  page.getByRole("button", { name: /^Stop watching “/, includeHidden: true });
 const row = (page: Page, name: string): Locator =>
   page
     .getByRole("grid")
     .getByRole("row")
-    .filter({ has: page.getByRole("gridcell", { name, exact: true }) });
+    .filter({ has: page.getByRole("button", { name: stopLabel(name), exact: true }) });
 
 async function stopWatching(page: Page, name: string, answer: "Stop watching" | "Cancel") {
-  await row(page, name).getByRole("button", { name: "Stop watching" }).click();
+  await row(page, name)
+    .getByRole("button", { name: stopLabel(name), exact: true })
+    .click();
   await page.getByRole("dialog").getByRole("button", { name: answer }).click();
 }
 
@@ -70,24 +74,28 @@ When("I stop watching the company {string} and cancel", async ({ page }, name: s
 // --- Then ---
 
 Then(/^I see the watched companies, in order: (".*")$/, async ({ page }, list: string) => {
-  await expect(nameCells(page)).toHaveText(quoted(list));
+  await expect
+    .poll(() =>
+      stopButtons(page).evaluateAll((els) => els.map((el) => el.getAttribute("aria-label"))),
+    )
+    .toEqual(quoted(list).map(stopLabel));
 });
 
 Then("I see that there are no watched companies", async ({ page }) => {
   await expect(page.getByText("No watched companies", { exact: true })).toBeVisible();
-  await expect(nameCells(page)).toHaveCount(0);
+  await expect(stopButtons(page)).toHaveCount(0);
 });
 
 Then(
   "the watched company {string} shows {string} and {string}",
   async ({ page }, name: string, ats: string, board: string) => {
     await expect(page.getByRole("dialog")).toBeHidden();
-    await expect(row(page, name).locator('[data-field="ats"]')).toHaveText(ats);
-    await expect(row(page, name).locator('[data-field="board"]')).toHaveText(board);
+    await expect(row(page, name).getByText(ats, { exact: true })).toBeVisible();
+    await expect(row(page, name).getByText(board, { exact: true })).toBeVisible();
   },
 );
 
 Then("the company is not watched", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(nameCells(page)).toHaveCount(0);
+  await expect(stopButtons(page)).toHaveCount(0);
 });
