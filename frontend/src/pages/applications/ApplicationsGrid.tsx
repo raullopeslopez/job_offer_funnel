@@ -6,7 +6,6 @@ import {
   type GridColumnVisibilityModel,
   type GridPaginationModel,
 } from "@mui/x-data-grid";
-import { useEffect, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router";
 import { CompanyAvatar } from "../../components/CompanyAvatar";
 import { EmptyState } from "../../components/EmptyState";
@@ -16,6 +15,7 @@ import { RelativeDate } from "../../components/RelativeDate";
 import { StageProgress } from "../../components/StageProgress";
 import { StatusChip } from "../../components/StatusChip";
 import { Meta, Sep, TwoLineCell } from "../../components/TwoLineCell";
+import { useNarrowGrid } from "../../components/useNarrowGrid";
 import type { Application } from "./options";
 
 type Props = {
@@ -26,7 +26,6 @@ type Props = {
   onPaginationChange: (model: GridPaginationModel) => void;
 };
 
-const NARROW_PX = 640;
 const hideSecondary: GridColumnVisibilityModel = {
   outcome: false,
   progress: false,
@@ -105,19 +104,8 @@ const NoApplications = () => (
 );
 
 export function ApplicationsGrid({ applications, total, loading, pagination, ...props }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [narrow, setNarrow] = useState(false);
-
-  // Below NARROW_PX of grid width only role and stage are shown.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setNarrow(entry.contentRect.width < NARROW_PX);
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  // Below NARROW_GRID_PX of grid width only role and stage are shown.
+  const [ref, narrow] = useNarrowGrid();
 
   return (
     <Box ref={ref}>
