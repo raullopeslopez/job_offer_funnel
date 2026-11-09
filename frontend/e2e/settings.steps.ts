@@ -21,8 +21,6 @@ const row = (page: Page, name: string): Locator =>
     .getByRole("row")
     .filter({ has: page.locator('[data-field="name"]').getByText(name, { exact: true }) });
 
-const escapeRegExp = (text: string) => text.replace(/[.*+?^$()|[\]\\{}]/gu, "\\$&");
-
 async function openSection(page: Page, section: Section) {
   await page.goto("/settings");
   await page.getByRole("tab", { name: TABS[section] }).click();
@@ -157,11 +155,15 @@ When(/^I delete the (?:company|job board) "(.*)" and cancel$/, async ({ page }, 
 // --- Then ---
 
 Then(/^I see the (?:companies|job boards), in order: (".*")$/, async ({ page }, list: string) => {
-  // innerText puts the second line (website or syntax) after a newline.
-  await expect(nameCells(page)).toHaveText(
-    quoted(list).map((name) => new RegExp(`^${escapeRegExp(name)}(\\n|$)`, "u")),
-    { useInnerText: true },
-  );
+  // The name cell also holds the avatar initial and a second line: read the names from the
+  // Edit buttons, one per row, labelled with the name.
+  const names = () =>
+    page
+      .locator('[role="grid"] button[aria-label^="Edit “"]')
+      .evaluateAll((buttons) =>
+        buttons.map((button) => button.getAttribute("aria-label")?.slice("Edit “".length, -1)),
+      );
+  await expect.poll(names).toEqual(quoted(list));
 });
 
 Then("I see that there are no companies", async ({ page }) => {
