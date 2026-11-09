@@ -1,9 +1,16 @@
-import { Box, Button, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
+﻿import { Box, Button, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
 import type { GridPaginationModel } from "@mui/x-data-grid";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
+import { TabLabel } from "../../components/TabLabel";
 import { AddOfferDialog } from "./AddOfferDialog";
 import { DiscardDialog } from "./DiscardDialog";
 import { ImportFeedDialog } from "./ImportFeedDialog";
@@ -50,6 +57,19 @@ export function InboxPage() {
     placeholderData: keepPreviousData,
   });
 
+  const counts = useQueries({
+    queries: STATUSES.map(({ value }) => ({
+      queryKey: ["offers", "count", value],
+      queryFn: async () => {
+        const { data, error } = await api.GET("/api/v1/offers", {
+          params: { query: { status: value, limit: 1 } },
+        });
+        if (error) throw error;
+        return data.total;
+      },
+    })),
+  });
+
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["offers"] });
 
   const restore = useMutation({
@@ -87,8 +107,12 @@ export function InboxPage() {
       </Stack>
 
       <Tabs value={status} onChange={(_, next: OfferStatus) => changeStatus(next)} sx={{ mb: 2 }}>
-        {STATUSES.map(({ value, label }) => (
-          <Tab key={value} value={value} label={label} />
+        {STATUSES.map(({ value, label }, index) => (
+          <Tab
+            key={value}
+            value={value}
+            label={<TabLabel label={label} count={counts[index]?.data ?? 0} />}
+          />
         ))}
       </Tabs>
 
