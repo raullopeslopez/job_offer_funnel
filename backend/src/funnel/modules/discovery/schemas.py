@@ -1,5 +1,6 @@
 import re
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import (
@@ -9,10 +10,18 @@ from pydantic import (
     StringConstraints,
     TypeAdapter,
     field_validator,
+    model_validator,
 )
 
 from funnel.core.fields import HttpUrlText
-from funnel.modules.discovery.domain import PLACEHOLDERS, QUERY_PLACEHOLDER, Syntax, WorkMode
+from funnel.modules.discovery.domain import (
+    PLACEHOLDERS,
+    QUERY_PLACEHOLDER,
+    Feed,
+    ImportMethod,
+    Syntax,
+    WorkMode,
+)
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -94,20 +103,45 @@ SearchUrlTemplate = Annotated[
 ]
 
 
+_IMPORT_METHOD = Field(
+    description="How its offers reach the inbox: `none` (by hand, with its generated "
+    "searches) or `api` (imported from its `feed`)."
+)
+_FEED = Field(
+    description="The public feed it is imported from: required with `api`, null with "
+    "`none`. At most one job board imports each feed."
+)
+
+
 class JobBoardCreate(BaseModel):
     name: Text
     search_url_template: SearchUrlTemplate
     syntax: Syntax
+    import_method: Annotated[ImportMethod, _IMPORT_METHOD] = ImportMethod.NONE
+    feed: Annotated[Feed | None, _FEED] = None
+
+    @model_validator(mode="after")
+    def _feed_goes_with_api(self) -> Self:
+        if (self.import_method is ImportMethod.API) != (self.feed is not None):
+            msg = "feed is required with import_method api and not allowed with none"
+            raise ValueError(msg)
+        return self
 
 
 class JobBoardUpdate(BaseModel):
-    """Partial update: only the fields sent change. Every field is required."""
+    """Partial update: only the fields sent change. Only `feed` can be null.
+
+    The result must keep `feed` with `api` and only with it: to start importing send both
+    fields, to stop send `import_method: none` and `feed: null`.
+    """
 
     name: Text | None = None
     search_url_template: SearchUrlTemplate | None = None
     syntax: Syntax | None = None
+    import_method: Annotated[ImportMethod | None, _IMPORT_METHOD] = None
+    feed: Annotated[Feed | None, _FEED] = None
 
-    @field_validator("name", "search_url_template", "syntax")
+    @field_validator("name", "search_url_template", "syntax", "import_method")
     @classmethod
     def _reject_null(cls, value: object) -> object:
         # Runs only for fields sent in the body, so omitting one stays valid.
@@ -122,6 +156,12 @@ class JobBoardRead(BaseModel):
     name: str
     search_url_template: str
     syntax: Syntax
+    import_method: ImportMethod
+    feed: Feed | None
+    last_imported_at: datetime | None = Field(description="Null if never imported.")
+    next_import_at: datetime | None = Field(
+        description="Earliest next import (6 hours later); null if never imported."
+    )
 
 
 class GeneratedSearchRead(BaseModel):
@@ -144,7 +184,7 @@ class ProfileSearchesRead(BaseModel):
         description="Not part of the URLs: set them with each job board's own filter."
     )
     job_boards: list[JobBoardSearchesRead] = Field(
-        description="Every job board, in alphabetical order."
+        description="Every job board that is not imported, in alphabetical order."
     )
 
 

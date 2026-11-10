@@ -24,6 +24,22 @@ class Syntax(StrEnum):
     KEYWORDS = "keywords"  # plain words
 
 
+class ImportMethod(StrEnum):
+    """How the offers of a job board reach the inbox."""
+
+    NONE = "none"  # by hand, with its generated searches
+    API = "api"  # imported from its public feed
+
+
+class Feed(StrEnum):
+    """Public JSON APIs of remote job boards (see docs/fase0.md for their terms)."""
+
+    HIMALAYAS = "himalayas"
+    JOBICY = "jobicy"
+    REMOTEOK = "remoteok"
+    REMOTIVE = "remotive"
+
+
 # Placeholders of a job board's search URL template.
 QUERY_PLACEHOLDER: Final = "query"
 LOCATION_PLACEHOLDER: Final = "location"

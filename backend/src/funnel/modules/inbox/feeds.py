@@ -8,7 +8,8 @@ from typing import Any, Final
 
 import httpx2
 
-from funnel.modules.inbox.domain import Feed, FeedOffer
+from funnel.modules.discovery.domain import Feed
+from funnel.modules.inbox.domain import FeedOffer
 
 # Titles to search by, for the feeds whose terms rule out reading them whole.
 Reader = Callable[[httpx2.AsyncClient, Sequence[str]], Awaitable[list[FeedOffer]]]

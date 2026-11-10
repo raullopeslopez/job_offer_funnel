@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
-from funnel.modules.inbox.domain import Ats, Feed, OfferStatus
+from funnel.modules.inbox.domain import Ats, OfferStatus
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -28,21 +28,15 @@ class PromotionCreate(BaseModel):
 
 
 class ImportRead(BaseModel):
-    feed: Feed
-    found: int = Field(description="Offers the feed returned.")
+    job_board_id: UUID
+    found: int = Field(description="Offers the job board's feed returned.")
     added: int = Field(description="New offers added to the inbox as pending.")
     filtered: int = Field(description="Added offers that fit no search profile.")
     already_in_inbox: int = Field(description="Offers skipped as duplicates.")
-    expired: int = Field(description="Pending offers of this feed discarded as expired.")
-    imported_at: datetime
-
-
-class FeedRead(BaseModel):
-    feed: Feed
-    last_imported_at: datetime | None
-    next_import_at: datetime | None = Field(
-        description="Earliest next import (6 hours later); null if never imported."
+    expired: int = Field(
+        description="Pending imported offers of this job board discarded as expired."
     )
+    imported_at: datetime
 
 
 class WatchedCompanyCreate(BaseModel):
@@ -87,7 +81,6 @@ class OfferRead(BaseModel):
     )
     discard_reason: str | None = Field(description="Set while the offer is discarded.")
     application_id: UUID | None = Field(description="Set once the offer is promoted.")
-    feed: Feed | None = Field(description="The public feed it was imported from, if any.")
     watched_company_id: UUID | None = Field(
         description="The watched company it was imported from, if still watched."
     )

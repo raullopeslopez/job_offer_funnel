@@ -151,50 +151,6 @@ export interface paths {
         patch: operations["update_company_api_v1_companies__company_id__patch"];
         trace?: never;
     };
-    "/api/v1/feeds": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Feeds
-         * @description Every public feed, with its last import and the earliest next one.
-         */
-        get: operations["list_feeds_api_v1_feeds_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/feeds/{feed}/imports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import Feed
-         * @description Add every offer of the feed to the inbox, as pending; the ones that fit no search
-         *     profile are filtered. Himalayas is searched by the titles of every profile.
-         *
-         *     Duplicates are skipped; pending offers of this feed that left it are discarded as
-         *     expired. A feed can be imported at most once every 6 hours (each feed's terms).
-         */
-        post: operations["import_feed_api_v1_feeds__feed__imports_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/job-boards": {
         parameters: {
             query?: never;
@@ -239,6 +195,32 @@ export interface paths {
          * @description Change only the fields sent.
          */
         patch: operations["update_job_board_api_v1_job_boards__job_board_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/job-boards/{job_board_id}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Job Board
+         * @description Add every offer of the job board's feed to the inbox, as pending, with the job
+         *     board as their source; the ones that fit no search profile are filtered. Himalayas is
+         *     searched by the titles of every profile.
+         *
+         *     Duplicates are skipped; pending imported offers of this job board that left the feed
+         *     are discarded as expired. A job board can be imported at most once every 6 hours
+         *     (each feed's terms).
+         */
+        post: operations["import_job_board_api_v1_job_boards__job_board_id__imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/metrics/conversion": {
@@ -450,7 +432,8 @@ export interface paths {
         };
         /**
          * Generate Searches
-         * @description The profile's search for every job board, in its syntax, with a URL ready to open.
+         * @description The profile's search for every job board that is not imported, in its syntax, with
+         *     a URL ready to open.
          *
          *     Computed on every request: editing the profile or a job board updates the searches.
          */
@@ -807,21 +790,10 @@ export interface components {
         };
         /**
          * Feed
-         * @description Remote job boards with a public JSON API (see docs/fase0.md for their terms).
+         * @description Public JSON APIs of remote job boards (see docs/fase0.md for their terms).
          * @enum {string}
          */
         Feed: "himalayas" | "jobicy" | "remoteok" | "remotive";
-        /** FeedRead */
-        FeedRead: {
-            feed: components["schemas"]["Feed"];
-            /** Last Imported At */
-            last_imported_at: string | null;
-            /**
-             * Next Import At
-             * @description Earliest next import (6 hours later); null if never imported.
-             */
-            next_import_at: string | null;
-        };
         /** FieldErrorRead */
         FieldErrorRead: {
             /** Field */
@@ -847,6 +819,12 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * ImportMethod
+         * @description How the offers of a job board reach the inbox.
+         * @enum {string}
+         */
+        ImportMethod: "none" | "api";
         /** ImportRead */
         ImportRead: {
             /**
@@ -861,10 +839,9 @@ export interface components {
             already_in_inbox: number;
             /**
              * Expired
-             * @description Pending offers of this feed discarded as expired.
+             * @description Pending imported offers of this job board discarded as expired.
              */
             expired: number;
-            feed: components["schemas"]["Feed"];
             /**
              * Filtered
              * @description Added offers that fit no search profile.
@@ -872,7 +849,7 @@ export interface components {
             filtered: number;
             /**
              * Found
-             * @description Offers the feed returned.
+             * @description Offers the job board's feed returned.
              */
             found: number;
             /**
@@ -880,9 +857,21 @@ export interface components {
              * Format: date-time
              */
             imported_at: string;
+            /**
+             * Job Board Id
+             * Format: uuid
+             */
+            job_board_id: string;
         };
         /** JobBoardCreate */
         JobBoardCreate: {
+            /** @description The public feed it is imported from: required with `api`, null with `none`. At most one job board imports each feed. */
+            feed?: components["schemas"]["Feed"] | null;
+            /**
+             * @description How its offers reach the inbox: `none` (by hand, with its generated searches) or `api` (imported from its `feed`).
+             * @default none
+             */
+            import_method: components["schemas"]["ImportMethod"];
             /** Name */
             name: string;
             /**
@@ -895,13 +884,25 @@ export interface components {
         };
         /** JobBoardRead */
         JobBoardRead: {
+            feed: components["schemas"]["Feed"] | null;
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            import_method: components["schemas"]["ImportMethod"];
+            /**
+             * Last Imported At
+             * @description Null if never imported.
+             */
+            last_imported_at: string | null;
             /** Name */
             name: string;
+            /**
+             * Next Import At
+             * @description Earliest next import (6 hours later); null if never imported.
+             */
+            next_import_at: string | null;
             /** Search Url Template */
             search_url_template: string;
             syntax: components["schemas"]["Syntax"];
@@ -924,9 +925,16 @@ export interface components {
         };
         /**
          * JobBoardUpdate
-         * @description Partial update: only the fields sent change. Every field is required.
+         * @description Partial update: only the fields sent change. Only `feed` can be null.
+         *
+         *     The result must keep `feed` with `api` and only with it: to start importing send both
+         *     fields, to stop send `import_method: none` and `feed: null`.
          */
         JobBoardUpdate: {
+            /** @description The public feed it is imported from: required with `api`, null with `none`. At most one job board imports each feed. */
+            feed?: components["schemas"]["Feed"] | null;
+            /** @description How its offers reach the inbox: `none` (by hand, with its generated searches) or `api` (imported from its `feed`). */
+            import_method?: components["schemas"]["ImportMethod"] | null;
             /** Name */
             name?: string | null;
             /** Search Url Template */
@@ -978,8 +986,6 @@ export interface components {
              * @description Set while the offer is discarded.
              */
             discard_reason: string | null;
-            /** @description The public feed it was imported from, if any. */
-            feed: components["schemas"]["Feed"] | null;
             /**
              * Filtered
              * @description Pending, imported and fitting none of the current search profiles.
@@ -1114,7 +1120,7 @@ export interface components {
         ProfileSearchesRead: {
             /**
              * Job Boards
-             * @description Every job board, in alphabetical order.
+             * @description Every job board that is not imported, in alphabetical order.
              */
             job_boards: components["schemas"]["JobBoardSearchesRead"][];
             /**
@@ -1977,111 +1983,6 @@ export interface operations {
             };
         };
     };
-    list_feeds_api_v1_feeds_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FeedRead"][];
-                };
-            };
-            /** @description Missing or invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemRead"];
-                };
-            };
-            /** @description Invalid request (`validation-error`) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidationProblemRead"];
-                };
-            };
-        };
-    };
-    import_feed_api_v1_feeds__feed__imports_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                feed: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImportRead"];
-                };
-            };
-            /** @description Missing or invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemRead"];
-                };
-            };
-            /** @description Feed does not exist */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemRead"];
-                };
-            };
-            /** @description Invalid request (`validation-error`) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidationProblemRead"];
-                };
-            };
-            /** @description Imported less than 6 hours ago (`feed-cooldown`); `Retry-After` gives the seconds to wait */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemRead"];
-                };
-            };
-            /** @description The feed did not answer (`feed-unavailable`); nothing changed */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemRead"];
-                };
-            };
-        };
-    };
     list_job_boards_api_v1_job_boards_get: {
         parameters: {
             query?: {
@@ -2154,7 +2055,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description A job board with that name already exists (`already-exists`) */
+            /** @description A job board with that name already exists (`already-exists`), or another job board already imports that feed (`feed-taken`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2321,7 +2222,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description A job board with that name already exists (`already-exists`) */
+            /** @description A job board with that name already exists (`already-exists`), or another job board already imports that feed (`feed-taken`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2337,6 +2238,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    import_job_board_api_v1_job_boards__job_board_id__imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_board_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Job board does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description The job board's import method is `none` (`job-board-not-imported`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+            /** @description Imported less than 6 hours ago (`feed-cooldown`); `Retry-After` gives the seconds to wait */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description The feed did not answer (`feed-unavailable`); nothing changed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
                 };
             };
         };

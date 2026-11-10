@@ -23,8 +23,8 @@ from sqlalchemy.orm import with_expression
 from funnel.core.db import flush_checking_unique
 from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
-from funnel.modules.discovery.domain import SearchTerms
-from funnel.modules.inbox.domain import EXPIRED_REASON, Feed, OfferStatus, UnknownJobBoardError
+from funnel.modules.discovery.domain import Feed, SearchTerms
+from funnel.modules.inbox.domain import EXPIRED_REASON, OfferStatus, UnknownJobBoardError
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
     UNIQUE_DUPLICATE_KEY,

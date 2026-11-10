@@ -10,11 +10,11 @@ from funnel.modules.applications.domain import Channel
 from funnel.modules.applications.schemas import ApplicationCreate
 from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
+from funnel.modules.discovery.domain import Feed
 from funnel.modules.discovery.service import SearchProfileService
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
     BoardUnavailableError,
-    Feed,
     FeedCooldownError,
     FeedOffer,
     FeedUnavailableError,

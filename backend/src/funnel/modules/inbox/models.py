@@ -6,7 +6,8 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, column, 
 from sqlalchemy.orm import Mapped, column_property, mapped_column, query_expression
 
 from funnel.core.db import Base
-from funnel.modules.inbox.domain import Ats, Feed, OfferStatus
+from funnel.modules.discovery.domain import Feed
+from funnel.modules.inbox.domain import Ats, OfferStatus
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"

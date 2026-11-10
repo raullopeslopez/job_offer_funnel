@@ -11,21 +11,13 @@ from http import HTTPStatus
 from typing import Final
 
 from funnel.core.exceptions import AppError, DomainError
+from funnel.modules.discovery.domain import Feed
 
 
 class OfferStatus(StrEnum):
     PENDING = "pending"
     DISCARDED = "discarded"
     PROMOTED = "promoted"
-
-
-class Feed(StrEnum):
-    """Remote job boards with a public JSON API (see docs/fase0.md for their terms)."""
-
-    HIMALAYAS = "himalayas"
-    JOBICY = "jobicy"
-    REMOTEOK = "remoteok"
-    REMOTIVE = "remotive"
 
 
 class Ats(StrEnum):
