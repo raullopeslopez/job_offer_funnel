@@ -31,6 +31,10 @@ down:
 seed-job-boards:
     uv run python scripts/seed_job_boards.py seeds/job_boards.json
 
+# Import the offers of every feed and watched company (API of `just up`, or API_URL)
+import-offers:
+    uv run python scripts/import_offers.py
+
 # Follow the API logs
 logs:
     {{compose}} --profile app logs -f api
