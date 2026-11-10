@@ -27,16 +27,12 @@ class PromotionCreate(BaseModel):
     channel: Channel = Field(default=Channel.PORTAL, description="The application's channel.")
 
 
-class ImportCreate(BaseModel):
-    profile_id: UUID = Field(description="The search profile the feed's offers must match.")
-
-
 class ImportRead(BaseModel):
     feed: Feed
     found: int = Field(description="Offers the feed returned.")
-    matching: int = Field(description="Offers that match the profile.")
-    added: int = Field(description="Matching offers added to the inbox as pending.")
-    already_in_inbox: int = Field(description="Matching offers skipped as duplicates.")
+    added: int = Field(description="New offers added to the inbox as pending.")
+    filtered: int = Field(description="Added offers that fit no search profile.")
+    already_in_inbox: int = Field(description="Offers skipped as duplicates.")
     expired: int = Field(description="Pending offers of this feed discarded as expired.")
     imported_at: datetime
 
@@ -70,9 +66,9 @@ class WatchedCompanyRead(BaseModel):
 class BoardImportRead(BaseModel):
     watched_company_id: UUID
     found: int = Field(description="Open offers the company's board returned.")
-    matching: int = Field(description="Offers that match the profile.")
-    added: int = Field(description="Matching offers added to the inbox as pending.")
-    already_in_inbox: int = Field(description="Matching offers skipped as duplicates.")
+    added: int = Field(description="New offers added to the inbox as pending.")
+    filtered: int = Field(description="Added offers that fit no search profile.")
+    already_in_inbox: int = Field(description="Offers skipped as duplicates.")
     expired: int = Field(description="Pending offers of this company discarded as expired.")
     imported_at: datetime
 
@@ -86,6 +82,9 @@ class OfferRead(BaseModel):
     job_board_name: str | None
     notes: str | None
     status: OfferStatus
+    filtered: bool = Field(
+        description="Pending, imported and fitting none of the current search profiles."
+    )
     discard_reason: str | None = Field(description="Set while the offer is discarded.")
     application_id: UUID | None = Field(description="Set once the offer is promoted.")
     feed: Feed | None = Field(description="The public feed it was imported from, if any.")

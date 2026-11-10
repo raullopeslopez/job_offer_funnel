@@ -25,7 +25,6 @@ from funnel.modules.inbox.schemas import (
     BoardImportRead,
     DiscardCreate,
     FeedRead,
-    ImportCreate,
     ImportRead,
     OfferCreate,
     OfferRead,
@@ -90,9 +89,12 @@ async def list_offers(
     page: Annotated[PageParams, Depends(get_page_params)],
     service: Service,
     status: Annotated[OfferStatus | None, Query()] = None,
+    filtered: Annotated[
+        bool | None, Query(description="Only the filtered offers (true) or the others (false).")
+    ] = None,
 ) -> Page[OfferRead]:
     """Offers from the most recently added."""
-    offers, total = await service.list_page(status, page)
+    offers, total = await service.list_page(status, filtered, page)
     return Page(
         items=[OfferRead.model_validate(row, from_attributes=True) for row in offers],
         total=total,
@@ -190,11 +192,6 @@ async def list_feeds(service: FeedService) -> list[FeedRead]:
     status_code=HTTPStatus.CREATED,
     responses={
         HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Feed does not exist"},
-        HTTPStatus.UNPROCESSABLE_CONTENT: {
-            "model": ValidationProblemRead | ProblemRead,
-            "description": "Invalid body (`validation-error`), or the search profile does "
-            "not exist (`unknown-search-profile`)",
-        },
         HTTPStatus.TOO_MANY_REQUESTS: {
             "model": ProblemRead,
             "description": "Imported less than 6 hours ago (`feed-cooldown`); "
@@ -206,24 +203,22 @@ async def list_feeds(service: FeedService) -> list[FeedRead]:
         },
     },
 )
-async def import_feed(  # noqa: PLR0913, PLR0917  # FastAPI injects each input as a parameter
-    feed: str,
-    body: ImportCreate,
-    service: FeedService,
-    clock: Annotated[Clock, Depends(get_clock)],
+async def import_feed(
+    feed: str, service: FeedService, clock: Annotated[Clock, Depends(get_clock)]
 ) -> ImportRead:
-    """Add the feed's offers that match the profile to the inbox, as pending.
+    """Add every offer of the feed to the inbox, as pending; the ones that fit no search
+    profile are filtered. Himalayas is searched by the titles of every profile.
 
     Duplicates are skipped; pending offers of this feed that left it are discarded as
     expired. A feed can be imported at most once every 6 hours (each feed's terms).
     """
-    result = await service.import_feed(feed, body.profile_id, clock.now())
+    result = await service.import_feed(feed, clock.now())
     return ImportRead(
         feed=result.feed,
         found=result.found,
-        matching=result.matching,
         added=result.added,
-        already_in_inbox=result.matching - result.added,
+        filtered=result.filtered,
+        already_in_inbox=result.found - result.added,
         expired=result.expired,
         imported_at=result.imported_at,
     )
@@ -294,11 +289,6 @@ async def unwatch_company(watched_company_id: UUID, service: WatchedService) -> 
     status_code=HTTPStatus.CREATED,
     responses={
         **_WATCHED_NOT_FOUND,
-        HTTPStatus.UNPROCESSABLE_CONTENT: {
-            "model": ValidationProblemRead | ProblemRead,
-            "description": "Invalid body (`validation-error`), or the search profile does "
-            "not exist (`unknown-search-profile`)",
-        },
         HTTPStatus.BAD_GATEWAY: {
             "model": ProblemRead,
             "description": "The ATS did not answer or does not know the board "
@@ -306,24 +296,22 @@ async def unwatch_company(watched_company_id: UUID, service: WatchedService) -> 
         },
     },
 )
-async def import_watched_company(  # noqa: PLR0913, PLR0917  # FastAPI injects each input
-    watched_company_id: UUID,
-    body: ImportCreate,
-    service: WatchedService,
-    clock: Annotated[Clock, Depends(get_clock)],
+async def import_watched_company(
+    watched_company_id: UUID, service: WatchedService, clock: Annotated[Clock, Depends(get_clock)]
 ) -> BoardImportRead:
-    """Add the company's open offers that match the profile to the inbox, as pending.
+    """Add every open offer of the company to the inbox, as pending; the ones that fit no
+    search profile are filtered.
 
     Duplicates are skipped; pending offers of this company that left its board are
     discarded as expired. No limit on how often: the ATS boards state none.
     """
-    result = await service.import_board(watched_company_id, body.profile_id, clock.now())
+    result = await service.import_board(watched_company_id, clock.now())
     return BoardImportRead(
         watched_company_id=result.watched_company_id,
         found=result.found,
-        matching=result.matching,
         added=result.added,
-        already_in_inbox=result.matching - result.added,
+        filtered=result.filtered,
+        already_in_inbox=result.found - result.added,
         expired=result.expired,
         imported_at=result.imported_at,
     )
