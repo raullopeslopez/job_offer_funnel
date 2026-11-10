@@ -6,7 +6,6 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, column, 
 from sqlalchemy.orm import Mapped, column_property, mapped_column, query_expression
 
 from funnel.core.db import Base
-from funnel.modules.discovery.domain import Feed
 from funnel.modules.inbox.domain import Ats, OfferStatus
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
@@ -28,15 +27,6 @@ def _enum_column_type(enum: type[StrEnum], column: str) -> Enum:
         name=column,
         values_callable=lambda members: [member.value for member in members],
     )
-
-
-class FeedImportRow(Base):
-    """When each feed was last imported: the 6-hour limit is checked against it."""
-
-    __tablename__ = "feed_imports"
-
-    feed: Mapped[Feed] = mapped_column(_enum_column_type(Feed, "feed"), primary_key=True)
-    last_imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class WatchedCompanyRow(Base):
@@ -67,6 +57,7 @@ class OfferRow(Base):
     description: Mapped[str | None] = mapped_column(Text)
     # Company and title normalized: the database rejects the same offer twice.
     duplicate_key: Mapped[str] = mapped_column(String(401), unique=True)
+    # Where it was found by hand, or the job board it was imported from.
     job_board_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("job_boards.id", ondelete="RESTRICT", name=JOB_BOARD_FOREIGN_KEY), index=True
     )
@@ -76,7 +67,6 @@ class OfferRow(Base):
     application_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("applications.id", ondelete="SET NULL"), index=True
     )
-    feed: Mapped[Feed | None] = mapped_column(_enum_column_type(Feed, "feed"))
     # Stopping watching a company keeps its offers, without a source.
     watched_company_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True

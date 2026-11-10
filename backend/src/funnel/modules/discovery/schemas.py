@@ -131,8 +131,8 @@ class JobBoardCreate(BaseModel):
 class JobBoardUpdate(BaseModel):
     """Partial update: only the fields sent change. Only `feed` can be null.
 
-    The result must keep `feed` with `api` and only with it: to start importing send both
-    fields, to stop send `import_method: none` and `feed: null`.
+    `import_method` and `feed` change together: to start importing send `api` and a feed,
+    to stop send `import_method: none` and `feed: null`.
     """
 
     name: Text | None = None
@@ -149,6 +149,16 @@ class JobBoardUpdate(BaseModel):
             msg = "is required and cannot be cleared"
             raise ValueError(msg)
         return value
+
+    @model_validator(mode="after")
+    def _feed_goes_with_api(self) -> Self:
+        sent = self.model_fields_set & {"import_method", "feed"}
+        if sent and (
+            len(sent) == 1 or (self.import_method is ImportMethod.API) != (self.feed is not None)
+        ):
+            msg = "send import_method and feed together: a feed with api, null with none"
+            raise ValueError(msg)
+        return self
 
 
 class JobBoardRead(BaseModel):

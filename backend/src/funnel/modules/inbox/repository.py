@@ -1,5 +1,4 @@
 from collections.abc import Collection, Sequence
-from datetime import datetime
 from typing import Any, cast
 from uuid import UUID, uuid7
 
@@ -23,13 +22,12 @@ from sqlalchemy.orm import with_expression
 from funnel.core.db import flush_checking_unique
 from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
-from funnel.modules.discovery.domain import Feed, SearchTerms
+from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import EXPIRED_REASON, OfferStatus, UnknownJobBoardError
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
     UNIQUE_DUPLICATE_KEY,
     UNIQUE_WATCHED_NAME_INDEX,
-    FeedImportRow,
     OfferRow,
     WatchedCompanyRow,
 )
@@ -133,7 +131,7 @@ class OfferRepository:
 
 
 class FeedImportRepository:
-    """Offers coming from feeds, and when each feed was last imported.
+    """Offers coming from feeds.
 
     Never commits: the request session does.
     """
@@ -178,9 +176,11 @@ class FeedImportRepository:
         )
         return total or 0
 
-    async def expire_missing(self, feed: Feed, published_urls: Collection[str]) -> int:
-        """Discard as expired the pending offers of `feed` that it no longer publishes."""
-        return await self._expire(OfferRow.feed == feed, published_urls)
+    async def expire_missing(self, job_board_id: UUID, published_urls: Collection[str]) -> int:
+        """Discard as expired the pending offers imported from a job board that its feed no
+        longer publishes. Those added by hand (no description) stay."""
+        source = and_(OfferRow.job_board_id == job_board_id, OfferRow.description.is_not(None))
+        return await self._expire(source, published_urls)
 
     async def expire_missing_from_board(
         self, watched_company_id: UUID, published_urls: Collection[str]
@@ -199,19 +199,6 @@ class FeedImportRepository:
             .values(status=OfferStatus.DISCARDED, discard_reason=EXPIRED_REASON)
         )
         return cast(CursorResult[Any], result).rowcount
-
-    async def last_imports(self) -> dict[Feed, datetime]:
-        rows = await self._session.scalars(select(FeedImportRow))
-        return {row.feed: row.last_imported_at for row in rows}
-
-    async def record(self, feed: Feed, imported_at: datetime) -> None:
-        await self._session.execute(
-            insert(FeedImportRow)
-            .values(feed=feed, last_imported_at=imported_at)
-            .on_conflict_do_update(
-                index_elements=[FeedImportRow.feed], set_={"last_imported_at": imported_at}
-            )
-        )
 
 
 class WatchedCompanyRepository:

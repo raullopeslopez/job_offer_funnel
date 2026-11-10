@@ -917,7 +917,7 @@
         "type": "object"
       },
       "JobBoardUpdate": {
-        "description": "Partial update: only the fields sent change. Only `feed` can be null.\n\nThe result must keep `feed` with `api` and only with it: to start importing send both\nfields, to stop send `import_method: none` and `feed: null`.",
+        "description": "Partial update: only the fields sent change. Only `feed` can be null.\n\n`import_method` and `feed` change together: to start importing send `api` and a feed,\nto stop send `import_method: none` and `feed: null`.",
         "properties": {
           "feed": {
             "anyOf": [

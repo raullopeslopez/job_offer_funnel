@@ -12,7 +12,10 @@ from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.service import build_application_service
 from funnel.modules.companies.service import build_company_service
-from funnel.modules.discovery.service import build_search_profile_service
+from funnel.modules.discovery.service import (
+    build_job_board_service,
+    build_search_profile_service,
+)
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import OfferStatus
 from funnel.modules.inbox.feeds import FeedReader
@@ -166,8 +169,12 @@ def get_feed_import_service(
     session: SessionDep,
     client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)],
 ) -> FeedImportService:
+    # One session for both modules: the offers and the import date are all or nothing.
     return FeedImportService(
-        FeedImportRepository(session), build_search_profile_service(session), FeedReader(client)
+        FeedImportRepository(session),
+        build_search_profile_service(session),
+        build_job_board_service(session),
+        FeedReader(client),
     )
 
 
@@ -205,7 +212,16 @@ async def import_job_board(
     are discarded as expired. A job board can be imported at most once every 6 hours
     (each feed's terms).
     """
-    raise NotImplementedError
+    result = await service.import_job_board(job_board_id, clock.now())
+    return ImportRead(
+        job_board_id=result.job_board_id,
+        found=result.found,
+        added=result.added,
+        filtered=result.filtered,
+        already_in_inbox=result.found - result.added,
+        expired=result.expired,
+        imported_at=result.imported_at,
+    )
 
 
 # --- ATS companies ---

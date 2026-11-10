@@ -1,8 +1,8 @@
-"""Import the offers of every public feed and watched company through the API.
+"""Import the offers of every imported job board and watched company through the API.
 
 Run every 6 hours by `.github/workflows/import-offers.yml` against Render, or by hand with
 `just import-offers`. The API comes from API_URL (default: the one run by `just up`) and the
-token from AUTH_TOKEN, which is never printed. A feed still in its cooldown (429) is skipped,
+token from AUTH_TOKEN, which is never printed. A job board still in its cooldown (429) is skipped,
 not a failure. Any other error makes the script exit with 1 after trying every source.
 """
 
@@ -18,6 +18,8 @@ from urllib.request import Request, urlopen
 # Render's free plan sleeps the API: the first request can take a while to wake it up.
 TIMEOUT_SECONDS = 120
 WAKE_UP_ATTEMPTS = 3
+# The API's largest page: more job boards than this would need paging.
+PAGE_LIMIT = 100
 
 
 def call(method: str, url: str) -> Any:
@@ -39,7 +41,7 @@ def wake_up(api_url: str) -> None:
 
 
 def import_from(label: str, url: str) -> bool:
-    """Return whether the import worked or was skipped by the feed's cooldown."""
+    """Return whether the import worked or was skipped by the job board's cooldown."""
     try:
         result = call("POST", url)
     except HTTPError as error:
@@ -63,8 +65,9 @@ def main() -> int:
     api = f"{api_url}/api/v1"
     wake_up(api_url)
     results = [
-        import_from(f"feed {feed['feed']}", f"{api}/feeds/{feed['feed']}/imports")
-        for feed in call("GET", f"{api}/feeds")
+        import_from(f"job board {board['name']}", f"{api}/job-boards/{board['id']}/imports")
+        for board in call("GET", f"{api}/job-boards?limit={PAGE_LIMIT}")["items"]
+        if board["import_method"] != "none"
     ]
     results += [
         import_from(

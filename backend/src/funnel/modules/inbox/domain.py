@@ -5,7 +5,7 @@ Source of truth: specs/inbox/inbox.feature.
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import StrEnum
 from http import HTTPStatus
 from typing import Final
@@ -28,8 +28,6 @@ class Ats(StrEnum):
     LEVER = "lever"
 
 
-# The strictest feed terms (Remotive: at most 4 reads a day) apply to every feed.
-FEED_COOLDOWN: Final = timedelta(hours=6)
 EXPIRED_REASON: Final = "expired"
 
 
@@ -41,10 +39,6 @@ class FeedOffer:
     company: str
     description: str
     url: str
-
-
-def next_import_at(last_imported_at: datetime) -> datetime:
-    return last_imported_at + FEED_COOLDOWN
 
 
 class OfferAction(StrEnum):
@@ -76,6 +70,14 @@ def duplicate_key(company: str, title: str) -> str:
 class InvalidOfferStatusError(DomainError):
     slug = "invalid-offer-status"
     title = "Invalid offer status"
+    status = HTTPStatus.CONFLICT
+
+
+class JobBoardNotImportedError(DomainError):
+    """Only a job board with an import method can be imported."""
+
+    slug = "job-board-not-imported"
+    title = "Job board not imported"
     status = HTTPStatus.CONFLICT
 
 

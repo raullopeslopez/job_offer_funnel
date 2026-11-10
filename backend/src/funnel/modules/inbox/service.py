@@ -10,18 +10,18 @@ from funnel.modules.applications.domain import Channel
 from funnel.modules.applications.schemas import ApplicationCreate
 from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
-from funnel.modules.discovery.domain import Feed
-from funnel.modules.discovery.service import SearchProfileService
+from funnel.modules.discovery.domain import Feed, next_import_at
+from funnel.modules.discovery.service import JobBoardService, SearchProfileService
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
     BoardUnavailableError,
     FeedCooldownError,
     FeedOffer,
     FeedUnavailableError,
+    JobBoardNotImportedError,
     OfferAction,
     OfferStatus,
     duplicate_key,
-    next_import_at,
     next_status,
 )
 from funnel.modules.inbox.feeds import FeedReader
@@ -98,7 +98,7 @@ class OfferService:
 
 @dataclass(frozen=True)
 class ImportResult:
-    feed: Feed
+    job_board_id: UUID
     found: int
     added: int
     filtered: int
@@ -107,34 +107,43 @@ class ImportResult:
 
 
 class FeedImportService:
-    """Reads a public feed and fills the inbox, within the limits of the feed's terms."""
+    """Reads the feed of a job board and fills the inbox, within the limits of the feed's
+    terms."""
 
-    def __init__(
-        self, imports: FeedImportRepository, profiles: SearchProfileService, reader: FeedReader
+    def __init__(  # noqa: PLR0913, PLR0917  # one collaborator each, wired in the router
+        self,
+        imports: FeedImportRepository,
+        profiles: SearchProfileService,
+        job_boards: JobBoardService,
+        reader: FeedReader,
     ) -> None:
         self._imports = imports
         self._profiles = profiles
+        self._job_boards = job_boards
         self._reader = reader
 
-    async def last_imports(self) -> list[tuple[Feed, datetime | None]]:
-        last = await self._imports.last_imports()
-        return [(feed, last.get(feed)) for feed in sorted(Feed)]
-
-    async def import_feed(self, feed_name: str, now: datetime) -> ImportResult:
-        feed = _feed(feed_name)
-        last = (await self._imports.last_imports()).get(feed)
+    async def import_job_board(self, job_board_id: UUID, now: datetime) -> ImportResult:
+        job_board = await self._job_boards.get(job_board_id)
+        feed = job_board.feed
+        if feed is None:
+            raise JobBoardNotImportedError(f"The job board {job_board.name} is not imported")
+        last = job_board.last_imported_at
         if last is not None and now < next_import_at(last):
             raise FeedCooldownError(feed, next_import_at(last), now)
 
         profiles = await self._profiles.all_terms()
         titles = list(dict.fromkeys(title for terms in profiles for title in terms.titles))
         published = await self._read(feed, titles)
-        added = await self._imports.add_new([_offer_row(offer, feed=feed) for offer in published])
+        added = await self._imports.add_new(
+            [_offer_row(offer, job_board_id=job_board.id) for offer in published]
+        )
         filtered = await self._imports.count_filtered(added, profiles)
-        expired = await self._imports.expire_missing(feed, [offer.url for offer in published])
+        expired = await self._imports.expire_missing(
+            job_board.id, [offer.url for offer in published]
+        )
         # Only a successful read counts for the limit: a failed one can be retried at once.
-        await self._imports.record(feed, now)
-        return ImportResult(feed, len(published), len(added), filtered, expired, now)
+        await self._job_boards.record_import(job_board, now)
+        return ImportResult(job_board.id, len(published), len(added), filtered, expired, now)
 
     async def _read(self, feed: Feed, titles: list[str]) -> list[FeedOffer]:
         try:
@@ -142,13 +151,6 @@ class FeedImportService:
         except (httpx2.HTTPError, ValueError, KeyError, TypeError) as error:
             # Network failure, error status or an unexpected shape: the feed is unusable now.
             raise FeedUnavailableError(f"{feed} could not be read") from error
-
-
-def _feed(name: str) -> Feed:
-    try:
-        return Feed(name)
-    except ValueError as error:
-        raise NotFoundError(f"Feed {name} does not exist") from error
 
 
 @dataclass(frozen=True)
@@ -212,7 +214,7 @@ class WatchedCompanyService:
 
 
 def _offer_row(
-    offer: FeedOffer, *, feed: Feed | None = None, watched_company_id: UUID | None = None
+    offer: FeedOffer, *, job_board_id: UUID | None = None, watched_company_id: UUID | None = None
 ) -> OfferRow:
     return OfferRow(
         url=offer.url,
@@ -221,6 +223,6 @@ def _offer_row(
         description=offer.description,
         duplicate_key=duplicate_key(offer.company, offer.title),
         status=OfferStatus.PENDING,
-        feed=feed,
+        job_board_id=job_board_id,
         watched_company_id=watched_company_id,
     )
