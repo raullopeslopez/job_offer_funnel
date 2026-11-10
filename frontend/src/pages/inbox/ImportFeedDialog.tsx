@@ -18,7 +18,7 @@ import type { components } from "../../api/schema";
 
 type Feed = components["schemas"]["Feed"];
 type ImportResult = components["schemas"]["ImportRead"];
-type Values = { feed: Feed | ""; profile_id: string };
+type Values = { feed: Feed | "" };
 
 const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
@@ -41,7 +41,7 @@ export function ImportFeedDialog({ open, onClose }: Props) {
     setError,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ defaultValues: { feed: "", profile_id: "" } });
+  } = useForm<Values>({ defaultValues: { feed: "" } });
 
   const feeds = useQuery({
     queryKey: ["feeds"],
@@ -52,37 +52,20 @@ export function ImportFeedDialog({ open, onClose }: Props) {
       return data;
     },
   });
-  const profiles = useQuery({
-    queryKey: ["search-profiles"],
-    enabled: open,
-    queryFn: async () => {
-      const { data, error } = await api.GET("/api/v1/search-profiles", {
-        params: { query: { limit: 100 } },
-      });
-      if (error) throw error;
-      return data.items;
-    },
-  });
-
   const close = () => {
     reset();
     setResult(null);
     onClose();
   };
 
-  const onSubmit = handleSubmit(async ({ feed, profile_id }) => {
+  const onSubmit = handleSubmit(async ({ feed }) => {
     if (!feed) {
       setError("feed", { message: "Choose a feed" });
-      return;
-    }
-    if (!profile_id) {
-      setError("profile_id", { message: "Choose a search profile" });
       return;
     }
     setResult(null);
     const { data, error, response } = await api.POST("/api/v1/feeds/{feed}/imports", {
       params: { path: { feed } },
-      body: { profile_id },
     });
     if (data) {
       setResult(data);
@@ -107,7 +90,7 @@ export function ImportFeedDialog({ open, onClose }: Props) {
             {errors.root && <Alert severity="warning">{errors.root.message}</Alert>}
             {result && (
               <Alert severity="success">
-                {result.found} found, {result.matching} matching, {result.added} added,{" "}
+                {result.found} found, {result.added} added, {result.filtered} filtered,{" "}
                 {result.already_in_inbox} already in the inbox, {result.expired} expired
               </Alert>
             )}
@@ -126,26 +109,6 @@ export function ImportFeedDialog({ open, onClose }: Props) {
                   {(feeds.data ?? []).map(({ feed }) => (
                     <MenuItem key={feed} value={feed}>
                       {feed}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
-            <Controller
-              name="profile_id"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  select
-                  label="Search profile"
-                  fullWidth
-                  error={Boolean(errors.profile_id)}
-                  helperText={errors.profile_id?.message}
-                >
-                  {(profiles.data ?? []).map((profile) => (
-                    <MenuItem key={profile.id} value={profile.id}>
-                      {profile.name}
                     </MenuItem>
                   ))}
                 </TextField>

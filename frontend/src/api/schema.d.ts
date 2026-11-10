@@ -182,7 +182,8 @@ export interface paths {
         put?: never;
         /**
          * Import Feed
-         * @description Add the feed's offers that match the profile to the inbox, as pending.
+         * @description Add every offer of the feed to the inbox, as pending; the ones that fit no search
+         *     profile are filtered. Himalayas is searched by the titles of every profile.
          *
          *     Duplicates are skipped; pending offers of this feed that left it are discarded as
          *     expired. A feed can be imported at most once every 6 hours (each feed's terms).
@@ -517,7 +518,8 @@ export interface paths {
         put?: never;
         /**
          * Import Watched Company
-         * @description Add the company's open offers that match the profile to the inbox, as pending.
+         * @description Add every open offer of the company to the inbox, as pending; the ones that fit no
+         *     search profile are filtered.
          *
          *     Duplicates are skipped; pending offers of this company that left its board are
          *     discarded as expired. No limit on how often: the ATS boards state none.
@@ -682,12 +684,12 @@ export interface components {
         BoardImportRead: {
             /**
              * Added
-             * @description Matching offers added to the inbox as pending.
+             * @description New offers added to the inbox as pending.
              */
             added: number;
             /**
              * Already In Inbox
-             * @description Matching offers skipped as duplicates.
+             * @description Offers skipped as duplicates.
              */
             already_in_inbox: number;
             /**
@@ -695,6 +697,11 @@ export interface components {
              * @description Pending offers of this company discarded as expired.
              */
             expired: number;
+            /**
+             * Filtered
+             * @description Added offers that fit no search profile.
+             */
+            filtered: number;
             /**
              * Found
              * @description Open offers the company's board returned.
@@ -705,11 +712,6 @@ export interface components {
              * Format: date-time
              */
             imported_at: string;
-            /**
-             * Matching
-             * @description Offers that match the profile.
-             */
-            matching: number;
             /**
              * Watched Company Id
              * Format: uuid
@@ -845,25 +847,16 @@ export interface components {
             /** Status */
             status: string;
         };
-        /** ImportCreate */
-        ImportCreate: {
-            /**
-             * Profile Id
-             * Format: uuid
-             * @description The search profile the feed's offers must match.
-             */
-            profile_id: string;
-        };
         /** ImportRead */
         ImportRead: {
             /**
              * Added
-             * @description Matching offers added to the inbox as pending.
+             * @description New offers added to the inbox as pending.
              */
             added: number;
             /**
              * Already In Inbox
-             * @description Matching offers skipped as duplicates.
+             * @description Offers skipped as duplicates.
              */
             already_in_inbox: number;
             /**
@@ -872,6 +865,11 @@ export interface components {
              */
             expired: number;
             feed: components["schemas"]["Feed"];
+            /**
+             * Filtered
+             * @description Added offers that fit no search profile.
+             */
+            filtered: number;
             /**
              * Found
              * @description Offers the feed returned.
@@ -882,11 +880,6 @@ export interface components {
              * Format: date-time
              */
             imported_at: string;
-            /**
-             * Matching
-             * @description Offers that match the profile.
-             */
-            matching: number;
         };
         /** JobBoardCreate */
         JobBoardCreate: {
@@ -987,6 +980,11 @@ export interface components {
             discard_reason: string | null;
             /** @description The public feed it was imported from, if any. */
             feed: components["schemas"]["Feed"] | null;
+            /**
+             * Filtered
+             * @description Pending, imported and fitting none of the current search profiles.
+             */
+            filtered: boolean;
             /**
              * Id
              * Format: uuid
@@ -2026,11 +2024,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImportCreate"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             201: {
@@ -2059,13 +2053,13 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description Invalid body (`validation-error`), or the search profile does not exist (`unknown-search-profile`) */
+            /** @description Invalid request (`validation-error`) */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ValidationProblemRead"] | components["schemas"]["ProblemRead"];
+                    "application/json": components["schemas"]["ValidationProblemRead"];
                 };
             };
             /** @description Imported less than 6 hours ago (`feed-cooldown`); `Retry-After` gives the seconds to wait */
@@ -2465,6 +2459,8 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["OfferStatus"] | null;
+                /** @description Only the filtered offers (true) or the others (false). */
+                filtered?: boolean | null;
                 limit?: number;
                 offset?: number;
             };
@@ -3227,11 +3223,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImportCreate"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             201: {
@@ -3260,13 +3252,13 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description Invalid body (`validation-error`), or the search profile does not exist (`unknown-search-profile`) */
+            /** @description Invalid request (`validation-error`) */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ValidationProblemRead"] | components["schemas"]["ProblemRead"];
+                    "application/json": components["schemas"]["ValidationProblemRead"];
                 };
             };
             /** @description The ATS did not answer or does not know the board (`board-unavailable`); nothing changed */
