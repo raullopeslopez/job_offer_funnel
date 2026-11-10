@@ -3,8 +3,8 @@ Feature: Inbox screen
   I want to review the offers I collect from the job boards in one screen
   So that I triage each one without opening the API docs
 
-  The rules of the offers (duplicates, statuses, promoting, feed limits) are those
-  of specs/inbox/inbox.feature and specs/inbox/public_feeds.feature. This screen
+  The rules of the offers (duplicates, statuses, promoting, import limits) are those
+  of specs/inbox/inbox.feature and specs/inbox/job_board_imports.feature. This screen
   only shows them: every rejection appears as a message, next to its field when
   it belongs to one. The inbox opens with the pending offers that are not filtered,
   most recent first; the filtered ones (specs/inbox/filtered_offers.feature) have
@@ -40,16 +40,16 @@ Feature: Inbox screen
   @component
   Scenario: The filtered offers have their own view
     Given a search profile named "Backend" with the title "Backend Engineer"
-    And the feed "remoteok" was imported with an offer for "Acme" as "Backend Engineer"
-    And the feed "remoteok" was imported with an offer for "Globex" as "Data Engineer"
+    And the job board "Remote OK" was imported with an offer for "Acme" as "Backend Engineer"
+    And the job board "Remote OK" was imported with an offer for "Globex" as "Data Engineer"
     When I open the inbox showing the "filtered" offers
     Then I see the offers, in order: "Data Engineer"
 
   @component
   Scenario: The pending view leaves out the filtered offers
     Given a search profile named "Backend" with the title "Backend Engineer"
-    And the feed "remoteok" was imported with an offer for "Acme" as "Backend Engineer"
-    And the feed "remoteok" was imported with an offer for "Globex" as "Data Engineer"
+    And the job board "Remote OK" was imported with an offer for "Acme" as "Backend Engineer"
+    And the job board "Remote OK" was imported with an offer for "Globex" as "Data Engineer"
     When I open the inbox
     Then I see the offers, in order: "Backend Engineer"
 
@@ -89,24 +89,31 @@ Feature: Inbox screen
     Then I see the message "The offer already exists"
     And I see 1 offers in total
 
-  # --- Importing feeds ---
+  # --- Importing job boards ---
   # @component: the E2E tests cannot reach the public feeds; component tests cover these.
 
   @component
-  Scenario: Import a feed
+  Scenario: Import a job board
     Given a search profile named "Backend" with the title "Backend Engineer"
+    And a job board named "Remote OK" imported from the feed "remoteok"
     And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer"
     And I am on the inbox
-    When I import the feed "remoteok"
+    When I import the job board "Remote OK"
     Then I see the import summary: 1 found, 1 added, 0 filtered, 0 already in the inbox
     And I see the offers, in order: "Backend Engineer"
 
   @component
-  Scenario: A feed imported too recently says when it can be imported again
-    Given the feed "remoteok" was imported 1 hour ago
+  Scenario: A job board imported too recently says when it can be imported again
+    Given the job board "Remote OK" was imported 1 hour ago
     And I am on the inbox
-    When I import the feed "remoteok"
-    Then I see that the feed "remoteok" can be imported again in 5 hours
+    When I import the job board "Remote OK"
+    Then I see that the job board "Remote OK" can be imported again in 5 hours
+
+  Scenario: Only the imported job boards can be imported
+    Given a job board named "LinkedIn"
+    And a job board named "Remote OK" imported from the feed "remoteok"
+    When I open the inbox
+    Then I can import the job boards: "Remote OK"
 
   # --- Discarding and restoring ---
 

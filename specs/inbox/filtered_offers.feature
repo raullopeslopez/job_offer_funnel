@@ -3,7 +3,7 @@ Feature: Filtered offers
   I want the imported offers that fit none of my search profiles kept apart, not lost
   So that a badly written profile hides offers I can still find and fix
 
-  Imports keep every offer their source returns (specs/inbox/public_feeds.feature and
+  Imports keep every offer their source returns (specs/inbox/job_board_imports.feature and
   specs/inbox/ats_companies.feature). A pending imported offer is filtered when it fits
   none of the search profiles. It fits a profile when:
   - one of the profile's titles appears in the offer's title,
@@ -16,6 +16,7 @@ Feature: Filtered offers
 
   Background:
     Given the time is 2026-03-10 09:00
+    And a job board named "Remote OK" imported from the feed "remoteok"
     And a search profile named "Backend" with:
       | titles            | Backend Engineer, Python Developer |
       | keywords          | Python                             |
@@ -24,7 +25,7 @@ Feature: Filtered offers
   # --- Fitting a profile ---
 
   Scenario Outline: An imported offer fits when a title, every keyword and no exclusion fit
-    Given the feed "remoteok" was imported with:
+    Given the job board "Remote OK" was imported with:
       | title   | company | description   | url                    |
       | <title> | Acme    | <description> | https://remoteok.com/1 |
     When I view the offer "<title>"
@@ -51,7 +52,7 @@ Feature: Filtered offers
 
   Scenario: Without search profiles every imported offer is filtered
     Given there are no search profiles
-    And the feed "remoteok" was imported with:
+    And the job board "Remote OK" was imported with:
       | title            | company | description     | url                    |
       | Backend Engineer | Acme    | Python services | https://remoteok.com/1 |
     When I view the offer "Backend Engineer"
@@ -65,7 +66,7 @@ Feature: Filtered offers
   # --- Following the profiles ---
 
   Scenario: Editing a profile so an offer fits takes it out of the filtered ones
-    Given the feed "remoteok" was imported with:
+    Given the job board "Remote OK" was imported with:
       | title         | company | description      | url                    |
       | Data Engineer | Acme    | Python pipelines | https://remoteok.com/1 |
     And I edit the profile "Backend" to have the titles "Backend Engineer, Data Engineer"
@@ -73,7 +74,7 @@ Feature: Filtered offers
     Then the offer is not filtered
 
   Scenario: Deleting the only profile an offer fits filters it
-    Given the feed "remoteok" was imported with:
+    Given the job board "Remote OK" was imported with:
       | title            | company | description     | url                    |
       | Backend Engineer | Acme    | Python services | https://remoteok.com/1 |
     And I delete the profile "Backend"
@@ -83,7 +84,7 @@ Feature: Filtered offers
   # --- Listing ---
 
   Scenario Outline: List the pending offers that are filtered or not
-    Given the feed "remoteok" was imported with:
+    Given the job board "Remote OK" was imported with:
       | title            | company | description     | url                    |
       | Backend Engineer | Acme    | Python services | https://remoteok.com/1 |
       | Data Engineer    | Globex  | Spark pipelines | https://remoteok.com/2 |
@@ -97,7 +98,7 @@ Feature: Filtered offers
       | not filtered | "Frontend Engineer", "Backend Engineer"  |
 
   Scenario: Only pending offers are filtered
-    Given the feed "remoteok" was imported with:
+    Given the job board "Remote OK" was imported with:
       | title         | company | description     | url                    |
       | Data Engineer | Globex  | Spark pipelines | https://remoteok.com/1 |
     And I discarded the offer "Data Engineer"
@@ -107,7 +108,7 @@ Feature: Filtered offers
   # --- Acting on a filtered offer ---
 
   Scenario Outline: A filtered offer can be discarded or promoted
-    Given the feed "remoteok" was imported with:
+    Given the job board "Remote OK" was imported with:
       | title         | company | description     | url                    |
       | Data Engineer | Globex  | Spark pipelines | https://remoteok.com/1 |
     When I <action> the offer "Data Engineer"
