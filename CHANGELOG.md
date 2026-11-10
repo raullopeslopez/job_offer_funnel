@@ -17,6 +17,11 @@ While the version is `0.x`, the API may change without a major version bump.
   for the others); they can still be discarded or promoted. The inbox screen shows them
   in their own Filtered tab.
 
+- Scheduled imports: on the deployed app the inbox fills by itself every 6 hours with the
+  offers of every public feed and watched company (GitHub Actions workflow
+  `import-offers`, also runnable by hand). `just import-offers` does the same against the
+  local API, or any API given in `API_URL`.
+
 - The app can be deployed to Render (API and web app, `render.yaml`) with the database in Neon.
 - Web app navigation with an icon per screen, a light/dark theme toggle that remembers your choice, and a mobile layout below 900px with a top bar and a slide-in menu.
 - `just seed-job-boards` now registers 43 more job boards with a checked search URL:
