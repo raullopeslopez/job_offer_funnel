@@ -60,7 +60,7 @@ Un patrón entra cuando aparece el problema concreto que resuelve.
   - procrastinate: con el primer job real.
   - Encolar jobs en la misma transacción: con el primer job, verificando antes que procrastinate comparte conexión con SQLAlchemy async/asyncpg.
   - Domain events: cuando una acción dispare 2 o más efectos.
-  - Adapters por portal: **adoptado** con los feeds (`inbox/feeds.py`): una función por feed que traduce su JSON a `FeedOffer`, en la capa del repository. Las llamadas externas usan `httpx2` con un cliente inyectado (`get_feed_client`); los tests lo sustituyen por `MockTransport` y nunca salen a internet. Antes de añadir un feed, verificar sus condiciones y anotarlas en `docs/fase0.md`.
+  - Adapters por portal: **adoptado** con los feeds (`inbox/feeds.py`): una función por feed que traduce su JSON a `FeedOffer`, en la capa del repository. Las llamadas externas usan `httpx2` con un cliente inyectado (`get_feed_client`); los tests lo sustituyen por `MockTransport` y nunca salen a internet. El feed lo declara el portal (`job_boards.import_method` y `feed`, en `discovery`): se importa el portal, las ofertas llevan su `job_board_id` y la fecha de la última importación vive en el portal (`inbox` la actualiza con `build_job_board_service`). Antes de añadir un feed, verificar sus condiciones y anotarlas en `docs/fase0.md`.
   - CORS: el frontend llama a la API por el proxy de Vite (mismo origen), así que no hace falta. Disparador: desplegar frontend y API en orígenes distintos.
   - `user_id` en las tablas: solo si el producto pasa a ser multiusuario. Hoy hay un único usuario y la columna no aportaría nada.
 - **Descartados**: `BaseRepository[T]` genérico, god services, Mediator o bus de comandos, DDD completo, Specification, `Protocol` con una sola implementación.
@@ -71,7 +71,7 @@ Un patrón entra cuando aparece el problema concreto que resuelve.
 - **Métodos**: `GET` lee · `POST` crea (201) · `PATCH` modifica parcialmente (nunca `PUT`) · `DELETE` borra (204).
 - **Datos**: JSON en `snake_case`; enums en minúscula; IDs UUIDv7; fechas ISO 8601 (`occurred_on` para días, `*_at` para instantes UTC).
 - **Colecciones**: paginación offset con `Depends(get_page_params)` (`limit` 1-100, por defecto 20; `offset` ≥ 0) y respuesta `Page[XRead]` = `{items, total, limit, offset}` (`core/pagination.py`). Filtros por query y `sort` (`-campo` = descendente). Orden siempre determinista (desempate por `id`).
-- **Versionado**: cambio compatible (añadir) → sin más; cambio que rompe (quitar o renombrar un campo o un slug de error, cambiar un tipo) → `/v2`. El test de contrato detecta cualquier cambio.
+- **Versionado**: cambio compatible (añadir) → sin más; cambio que rompe (quitar o renombrar un campo o un slug de error, cambiar un tipo) → `/v2`, salvo en `0.x` cuando todos los clientes (el frontend y los scripts del repo) se actualizan en el mismo PR: entonces se rompe en `/v1` y se anota en `Changed`/`Removed` del changelog. El test de contrato detecta cualquier cambio.
 - Schemas `XCreate`/`XUpdate`/`XRead`; nunca exponer modelos ORM.
 
 ### Contrato de errores (`core/errors.py`)

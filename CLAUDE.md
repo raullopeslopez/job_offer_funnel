@@ -22,7 +22,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Spec + implementación: `discovery/job_boards`
 - [x] Spec + implementación: `discovery/generated_searches`
 - [x] Spec + implementación: `inbox/inbox`
-- [x] Spec + implementación: `inbox/public_feeds` (primera integración externa)
+- [x] Spec + implementación: `inbox/public_feeds` (primera integración externa; hoy `inbox/job_board_imports`)
 - [x] Spec + implementación: `inbox/ats_companies`
 - [x] Alcance del frontend: `docs/frontend.md` (stack, tooling, una pantalla por PR)
 - [x] `chore/frontend-setup`: `frontend/` (React + Vite + MUI), pantalla del token, layout, tipos generados, servicio `web`, CI
@@ -34,6 +34,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Pantalla 6: `specs/ui/settings.feature` (Ajustes: empresas y portales)
 - [x] Pantalla 7: `specs/ui/watched_companies.feature` (Empresas vigiladas)
 - [x] Alcance de la fase 1: `docs/fase1.md` (importación amplia y periódica, nuevas fuentes, CVs por oferta en formato Harvard)
+- [x] Fase 1, filas 1 a 3: importación amplia con filtradas (`inbox/filtered_offers`), importación periódica cada 6 h y el portal como único catálogo de fuentes (`inbox/job_board_imports`: método de importación y feed en el portal, que es el origen de las ofertas importadas)
 - [x] Rediseño visual (Epic #30): tema premium v2 claro/oscuro, responsive y anclas visuales en todas las pantallas; componentes compartidos en `frontend/src/components/`
 
 ## Criterio: evitar la sobreingeniería

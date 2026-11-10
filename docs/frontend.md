@@ -46,7 +46,7 @@ Una pantalla por PR, en orden de uso:
 
 | # | Spec | Pantalla | Endpoints |
 |---|------|----------|-----------|
-| 1 | `specs/ui/inbox.feature` | **Bandeja**: listado de ofertas, alta manual, importar feeds, descartar y deshacer, pasar a candidatura | `offers`, `feeds` |
+| 1 | `specs/ui/inbox.feature` | **Bandeja**: listado de ofertas, alta manual, importar portales, descartar y deshacer, pasar a candidatura | `offers`, `job-boards` |
 | 2 | `specs/ui/searches.feature` | **Búsquedas**: perfiles (CRUD) y, por perfil, las búsquedas generadas con su enlace al portal | `search-profiles`, `searches` |
 | 3 | `specs/ui/applications.feature` | **Candidaturas**: listado con filtros, alta, edición y detalle con historial | `applications` |
 | 4 | `specs/ui/stage_transitions.feature` | **Transiciones** en el detalle: avanzar de fase, salidas y deshacer la última | `transitions` |
