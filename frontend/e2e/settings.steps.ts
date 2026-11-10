@@ -10,7 +10,7 @@ const NEW_BUTTONS: Record<Section, string> = {
   companies: "New company",
   "job boards": "New job board",
 };
-const SELECTS = new Set(["syntax"]);
+const SELECTS = new Set(["syntax", "feed"]);
 
 // See searches.steps.ts: the name cells are found by their column, outside getByRole("grid").
 const nameCells = (page: Page) => page.locator('[role="gridcell"][data-field="name"]');
@@ -134,6 +134,13 @@ When(
   /^I change the "(.*)" of the (?:company|job board) "(.*)" to "(.*)"$/,
   async ({ page }, field: string, name: string, value: string) => {
     await edit(page, name, { [field]: value });
+  },
+);
+
+When(
+  "I change the job board {string} to be imported from the feed {string}",
+  async ({ page }, name: string, feed: string) => {
+    await edit(page, name, { feed });
   },
 );
 

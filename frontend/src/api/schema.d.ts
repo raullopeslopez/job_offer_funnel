@@ -927,8 +927,8 @@ export interface components {
          * JobBoardUpdate
          * @description Partial update: only the fields sent change. Only `feed` can be null.
          *
-         *     The result must keep `feed` with `api` and only with it: to start importing send both
-         *     fields, to stop send `import_method: none` and `feed: null`.
+         *     `import_method` and `feed` change together: to start importing send `api` and a feed,
+         *     to stop send `import_method: none` and `feed: null`.
          */
         JobBoardUpdate: {
             /** @description The public feed it is imported from: required with `api`, null with `none`. At most one job board imports each feed. */

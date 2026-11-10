@@ -3,16 +3,33 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { server } from "../../test/server";
-import { ImportFeedDialog } from "./ImportFeedDialog";
+import { ImportJobBoardDialog } from "./ImportJobBoardDialog";
 
 // specs/ui/inbox.feature, @component scenarios: the E2E tests cannot reach the public feeds.
 
 const FIVE_HOURS = 5 * 60 * 60;
+const REMOTE_OK_ID = "6f1c1d2e-0000-4000-8000-000000000005";
+const IMPORTS_URL = `/api/v1/job-boards/${REMOTE_OK_ID}/imports`;
 
-function feeds() {
+const jobBoard = (id: string, name: string, feed: string | null) => ({
+  id,
+  name,
+  search_url_template: "https://jobs.example/?q={query}",
+  syntax: "keywords",
+  import_method: feed ? "api" : "none",
+  feed,
+  last_imported_at: null,
+  next_import_at: null,
+});
+
+function jobBoards() {
+  const items = [
+    jobBoard("6f1c1d2e-0000-4000-8000-000000000004", "LinkedIn", null),
+    jobBoard(REMOTE_OK_ID, "Remote OK", "remoteok"),
+  ];
   server.use(
-    http.get("/api/v1/feeds", () =>
-      HttpResponse.json([{ feed: "remoteok", last_imported_at: null, next_import_at: null }]),
+    http.get("/api/v1/job-boards", () =>
+      HttpResponse.json({ items, total: items.length, limit: 100, offset: 0 }),
     ),
   );
 }
@@ -21,27 +38,27 @@ function renderDialog() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <ImportFeedDialog open onClose={() => {}} />
+      <ImportJobBoardDialog open onClose={() => {}} />
     </QueryClientProvider>,
   );
 }
 
-async function importFeed(feed: string) {
+async function importJobBoard(name: string) {
   const user = userEvent.setup();
-  await user.click(screen.getByRole("combobox", { name: "Feed" }));
-  await user.click(await screen.findByRole("option", { name: feed }));
+  await user.click(screen.getByRole("combobox", { name: "Job board" }));
+  await user.click(await screen.findByRole("option", { name }));
   await user.click(screen.getByRole("button", { name: "Import" }));
 }
 
-describe("ImportFeedDialog", () => {
+describe("ImportJobBoardDialog", () => {
   it("shows the summary of the import", async () => {
     // Arrange
-    feeds();
+    jobBoards();
     server.use(
-      http.post("/api/v1/feeds/remoteok/imports", () =>
+      http.post(IMPORTS_URL, () =>
         HttpResponse.json(
           {
-            feed: "remoteok",
+            job_board_id: REMOTE_OK_ID,
             imported_at: "2026-03-10T09:00:00Z",
             found: 1,
             added: 1,
@@ -56,7 +73,7 @@ describe("ImportFeedDialog", () => {
     renderDialog();
 
     // Act
-    await importFeed("remoteok");
+    await importJobBoard("Remote OK");
 
     // Assert
     expect(
@@ -64,11 +81,11 @@ describe("ImportFeedDialog", () => {
     ).toBeInTheDocument();
   });
 
-  it("says when a feed imported too recently can be imported again", async () => {
+  it("says when a job board imported too recently can be imported again", async () => {
     // Arrange
-    feeds();
+    jobBoards();
     server.use(
-      http.post("/api/v1/feeds/remoteok/imports", () =>
+      http.post(IMPORTS_URL, () =>
         HttpResponse.json(
           {
             type: "/problems/feed-cooldown",
@@ -83,11 +100,25 @@ describe("ImportFeedDialog", () => {
     renderDialog();
 
     // Act
-    await importFeed("remoteok");
+    await importJobBoard("Remote OK");
 
     // Assert
     expect(
-      await screen.findByText("remoteok can be imported again in 5 hours"),
+      await screen.findByText("Remote OK can be imported again in 5 hours"),
     ).toBeInTheDocument();
+  });
+
+  it("offers only the job boards with an import method", async () => {
+    // Arrange
+    jobBoards();
+    renderDialog();
+    const user = userEvent.setup();
+
+    // Act
+    await user.click(screen.getByRole("combobox", { name: "Job board" }));
+
+    // Assert
+    const options = await screen.findAllByRole("option");
+    expect(options.map((option) => option.textContent)).toEqual(["Remote OK"]);
   });
 });

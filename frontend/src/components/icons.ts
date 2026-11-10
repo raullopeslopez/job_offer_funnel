@@ -12,7 +12,6 @@ import GroupsOutlined from "@mui/icons-material/GroupsOutlined";
 import HandshakeOutlined from "@mui/icons-material/HandshakeOutlined";
 import HubOutlined from "@mui/icons-material/HubOutlined";
 import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
-import RssFeedOutlined from "@mui/icons-material/RssFeedOutlined";
 import ScheduleOutlined from "@mui/icons-material/ScheduleOutlined";
 import SendOutlined from "@mui/icons-material/SendOutlined";
 import TravelExploreOutlined from "@mui/icons-material/TravelExploreOutlined";
@@ -57,9 +56,8 @@ export const channelIcons: Record<string, SvgIconComponent> = {
 type Offer = components["schemas"]["OfferRead"];
 
 export function offerSourceIcon(
-  offer: Pick<Offer, "feed" | "job_board_name" | "watched_company_name">,
+  offer: Pick<Offer, "job_board_name" | "watched_company_name">,
 ): SvgIconComponent {
-  if (offer.feed) return RssFeedOutlined;
   if (offer.job_board_name || offer.watched_company_name) return TravelExploreOutlined;
   return EditNoteOutlined;
 }

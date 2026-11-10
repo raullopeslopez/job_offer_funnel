@@ -13,7 +13,7 @@ import { api } from "../../api/client";
 import { TabLabel } from "../../components/TabLabel";
 import { AddOfferDialog } from "./AddOfferDialog";
 import { DiscardDialog } from "./DiscardDialog";
-import { ImportFeedDialog } from "./ImportFeedDialog";
+import { ImportJobBoardDialog } from "./ImportJobBoardDialog";
 import { type Offer, type OfferStatus, OffersGrid, type OfferView } from "./OffersGrid";
 import { PromoteDialog } from "./PromoteDialog";
 
@@ -108,7 +108,7 @@ export function InboxPage() {
           Inbox
         </Typography>
         <Button variant="outlined" onClick={() => setDialog("import")}>
-          Import feed
+          Import job board
         </Button>
         <Button variant="contained" onClick={() => setDialog("add")}>
           Add offer
@@ -152,7 +152,7 @@ export function InboxPage() {
           await refresh();
         }}
       />
-      <ImportFeedDialog open={dialog === "import"} onClose={() => setDialog(null)} />
+      <ImportJobBoardDialog open={dialog === "import"} onClose={() => setDialog(null)} />
       <DiscardDialog
         offer={discarding}
         onClose={() => setDiscarding(null)}

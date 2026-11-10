@@ -33,7 +33,7 @@ type Props = {
 };
 
 const EMPTY: Record<OfferView, { icon: SvgIconComponent; text: string }> = {
-  pending: { icon: InboxOutlined, text: "Import a feed or add an offer to fill the inbox." },
+  pending: { icon: InboxOutlined, text: "Import a job board or add an offer to fill the inbox." },
   filtered: {
     icon: FilterAltOutlined,
     text: "Imported offers that fit none of your search profiles are kept here.",
@@ -57,7 +57,7 @@ export function OffersGrid({ status, offers, total, loading, pagination, ...prop
       minWidth: 220,
       sortable: false,
       renderCell: ({ row }) => {
-        const source = row.job_board_name ?? row.watched_company_name ?? row.feed ?? "manual";
+        const source = row.job_board_name ?? row.watched_company_name ?? "manual";
         return (
           <TwoLineCell
             lead={<CompanyAvatar name={row.company} />}

@@ -15,7 +15,7 @@ export function TokenForm() {
 
   const onSubmit = handleSubmit(async ({ token }) => {
     try {
-      const { response } = await api.GET("/api/v1/feeds", {
+      const { response } = await api.GET("/api/v1/watched-companies", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.status === 401) {

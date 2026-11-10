@@ -16,9 +16,11 @@ import { api } from "../../api/client";
 import { isProblem } from "../../api/problems";
 import type { components } from "../../api/schema";
 
-type Feed = components["schemas"]["Feed"];
 type ImportResult = components["schemas"]["ImportRead"];
-type Values = { feed: Feed | "" };
+type Values = { job_board_id: string };
+
+// The API's largest page: more job boards than this would need paging.
+const PAGE_LIMIT = 100;
 
 const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
@@ -32,7 +34,7 @@ function inTime(seconds: number): string {
 
 type Props = { open: boolean; onClose: () => void };
 
-export function ImportFeedDialog({ open, onClose }: Props) {
+export function ImportJobBoardDialog({ open, onClose }: Props) {
   const queryClient = useQueryClient();
   const [result, setResult] = useState<ImportResult | null>(null);
   const {
@@ -41,15 +43,18 @@ export function ImportFeedDialog({ open, onClose }: Props) {
     setError,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ defaultValues: { feed: "" } });
+  } = useForm<Values>({ defaultValues: { job_board_id: "" } });
 
-  const feeds = useQuery({
-    queryKey: ["feeds"],
+  // Only the job boards with an import method can be imported.
+  const jobBoards = useQuery({
+    queryKey: ["job-boards", "imported"],
     enabled: open,
     queryFn: async () => {
-      const { data, error } = await api.GET("/api/v1/feeds");
+      const { data, error } = await api.GET("/api/v1/job-boards", {
+        params: { query: { limit: PAGE_LIMIT } },
+      });
       if (error) throw error;
-      return data;
+      return data.items.filter((jobBoard) => jobBoard.import_method !== "none");
     },
   });
   const close = () => {
@@ -58,24 +63,25 @@ export function ImportFeedDialog({ open, onClose }: Props) {
     onClose();
   };
 
-  const onSubmit = handleSubmit(async ({ feed }) => {
-    if (!feed) {
-      setError("feed", { message: "Choose a feed" });
+  const onSubmit = handleSubmit(async ({ job_board_id }) => {
+    const name = jobBoards.data?.find((jobBoard) => jobBoard.id === job_board_id)?.name;
+    if (!name) {
+      setError("job_board_id", { message: "Choose a job board" });
       return;
     }
     setResult(null);
-    const { data, error, response } = await api.POST("/api/v1/feeds/{feed}/imports", {
-      params: { path: { feed } },
+    const { data, error, response } = await api.POST("/api/v1/job-boards/{job_board_id}/imports", {
+      params: { path: { job_board_id } },
     });
     if (data) {
       setResult(data);
       await queryClient.invalidateQueries({ queryKey: ["offers"] });
-      await queryClient.invalidateQueries({ queryKey: ["feeds"] });
+      await queryClient.invalidateQueries({ queryKey: ["job-boards"] });
     } else if (isProblem(error, "feed-cooldown")) {
       const wait = Number(response.headers.get("Retry-After") ?? 0);
-      setError("root", { message: `${feed} can be imported again ${inTime(wait)}` });
+      setError("root", { message: `${name} can be imported again ${inTime(wait)}` });
     } else if (isProblem(error, "feed-unavailable")) {
-      setError("root", { message: `${feed} is not available right now. Try again later.` });
+      setError("root", { message: `${name} is not available right now. Try again later.` });
     } else {
       setError("root", { message: error?.title ?? "The API returned an unexpected error" });
     }
@@ -84,7 +90,7 @@ export function ImportFeedDialog({ open, onClose }: Props) {
   return (
     <Dialog open={open} onClose={close} fullWidth>
       <form onSubmit={onSubmit} noValidate>
-        <DialogTitle>Import feed</DialogTitle>
+        <DialogTitle>Import job board</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             {errors.root && <Alert severity="warning">{errors.root.message}</Alert>}
@@ -95,20 +101,20 @@ export function ImportFeedDialog({ open, onClose }: Props) {
               </Alert>
             )}
             <Controller
-              name="feed"
+              name="job_board_id"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
                   select
-                  label="Feed"
+                  label="Job board"
                   fullWidth
-                  error={Boolean(errors.feed)}
-                  helperText={errors.feed?.message}
+                  error={Boolean(errors.job_board_id)}
+                  helperText={errors.job_board_id?.message}
                 >
-                  {(feeds.data ?? []).map(({ feed }) => (
-                    <MenuItem key={feed} value={feed}>
-                      {feed}
+                  {(jobBoards.data ?? []).map(({ id, name }) => (
+                    <MenuItem key={id} value={id}>
+                      {name}
                     </MenuItem>
                   ))}
                 </TextField>
