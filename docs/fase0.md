@@ -86,6 +86,39 @@ No encajan en `{query}` (no se añaden):
 | Ad Hoc Minds | Lista de vacantes sin búsqueda |
 | Avanti Recruitment | Web oficial no localizada; sus ofertas salen en IT Jobs y otros portales del seed |
 
+## Vías automáticas por portal
+
+Comprobación del 2026-11-10 sobre los 55 portales del seed: una petición real al buscador y al RSS de cada uno, después un navegador y, para los que bloquean ambos, su ayuda oficial. **Las condiciones de uso de los RSS están sin verificar**: se revisan antes de integrar cada uno (`docs/fase1.md`, fila 4).
+
+**RSS de ofertas** (descargados, con ofertas reales):
+
+| Portal | URL | Filtra por palabra clave |
+|--------|-----|--------------------------|
+| Reed | `https://www.reed.co.uk/jobs/rss?keywords={query}` | Sí |
+| Evenbreak | `https://www.evenbreak.com/jobsrss/?keywords={query}` | Sí |
+| EuRemoteJobs | `https://euremotejobs.com/search/{query}/feed/rss2/` | Sí |
+| Durlston Partners | `https://durlstonpartners.com/search/{query}/feed/rss2/` | Sí |
+| Jobicy | `https://jobicy.com/?feed=job_feed&search_keywords={query}` | Sí (ya se importa por API) |
+| Cryptocurrency Jobs | `https://cryptocurrencyjobs.co/index.xml` | No |
+| Landing.jobs | `https://landing.jobs/feed` | No |
+| We Work Remotely | `https://weworkremotely.com/remote-jobs.rss` | No, solo por categoría. Sus condiciones prohíben guardar datos (ver abajo) |
+| Himalayas | `https://himalayas.app/jobs/rss` | No (ya se importa por API) |
+| Remotive | `https://remotive.com/remote-jobs/feed` | No (ya se importa por API) |
+| ITJobBoard.net | `https://www.itjobboard.net/rss/` | No; 10 ofertas y algunas no son de IT: poco útil |
+
+No sirven: el RSS de Remote OK devuelve 410 (retirado; queda la API) y el de Dynamite Jobs es de su blog.
+
+**Alertas por email**:
+
+| Estado | Portales |
+|--------|----------|
+| Vistas en la página (23) | LinkedIn, Reed, Adzuna, CV-Library, Talent.com UK, Jobrapido UK, Jobijoba UK, IT Jobs, ITJobBoard.net, EuroTechJobs, EuroJobs, JobsInNetwork, Escape the City, Built In, Jobicy, Remotive, EuRemoteJobs, Dynamite Jobs, Cryptocurrency Jobs, Hunter Bond, Evenbreak, LGBT Jobs, BME Jobs |
+| Confirmadas en su ayuda oficial (9) | Indeed e Indeed UK (diarias o semanales), Welcome to the Jungle, Bright Network, Remote OK (por etiqueta), Himalayas (ligadas al perfil; semanales en la cuenta gratuita), Landing.jobs (máximo cinco búsquedas guardadas), jobvector ("Jobmail"), Women in Tech Jobs |
+| Sin confirmar: bloquean el acceso automático (8) | Glassdoor, Monster, CareerBuilder, Totaljobs, CWJobs, ZipRecruiter UK, FlexJobs, Remote.co |
+| Ni RSS ni alertas detectadas (13) | Signify Technology, Source Group International, Client Server, Understanding Recruitment, 3Search, Hiring Cafe, Startup Jobs, jobtensor, DiverseJobsMatter, VanHack, Workwise, RemoteJobs.io, Levels.fyi (solo "Save this search") |
+
+"No detectadas" quiere decir que no salen en la página de búsqueda ni en resultados web: podrían existir tras iniciar sesión.
+
 ## Condiciones de los feeds (spec 6)
 
 Verificadas el 2026-11-08 en las páginas oficiales. Para uso privado de una persona; ninguno lo prohíbe.
