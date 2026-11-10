@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import count
 from typing import Any, cast
+from uuid import uuid7
 
 import httpx2
 import pytest
@@ -17,10 +18,10 @@ from funnel.modules.inbox.router import get_feed_client
 
 pytestmark = pytest.mark.bdd
 
-scenarios("inbox/public_feeds.feature")
+scenarios("inbox/job_board_imports.feature")
 
 OFFERS_URL = "/api/v1/offers"
-FEEDS_URL = "/api/v1/feeds"
+JOB_BOARDS_URL = "/api/v1/job-boards"
 FEED_HOSTS = {
     "remoteok.com": "remoteok",
     "remotive.com": "remotive",
@@ -96,6 +97,7 @@ FEED_PAYLOADS: dict[str, Callable[[list[Row]], object]] = {
 class ScenarioState:
     now: datetime | None = None
     profiles: dict[str, str] = field(default_factory=dict)
+    job_boards: dict[str, dict[str, str]] = field(default_factory=dict)
     published: dict[str, list[Row]] = field(default_factory=dict)
     unavailable: set[str] = field(default_factory=set)
     searched: dict[str, list[str]] = field(default_factory=dict)
@@ -157,8 +159,20 @@ def _rows(datatable: list[list[str]]) -> list[Row]:
     return [dict(zip(header, values, strict=True)) for values in rows]
 
 
-def _import(client: TestClient, feed: str) -> httpx2.Response:
-    return client.post(f"{FEEDS_URL}/{feed}/imports")
+def _add_job_board(
+    client: TestClient, state: ScenarioState, name: str, feed: str | None = None
+) -> None:
+    body = {"name": name, "search_url_template": "https://jobs.example/?q={query}"}
+    body |= {"syntax": "keywords"}
+    if feed is not None:
+        body |= {"import_method": "api", "feed": feed}
+    response = client.post(JOB_BOARDS_URL, json=body)
+    assert response.status_code == 201, response.text
+    state.job_boards[name] = response.json()
+
+
+def _import(client: TestClient, state: ScenarioState, job_board: str) -> httpx2.Response:
+    return client.post(f"{JOB_BOARDS_URL}/{state.job_boards[job_board]['id']}/imports")
 
 
 def _offer(client: TestClient, title: str) -> dict[str, Any]:
@@ -168,8 +182,16 @@ def _offer(client: TestClient, title: str) -> dict[str, Any]:
     return next(offer for offer in offers if offer["title"] == title)
 
 
-def _add_offer(client: TestClient, state: ScenarioState, company: str, title: str) -> str:
+def _add_offer(
+    client: TestClient,
+    state: ScenarioState,
+    company: str,
+    title: str,
+    job_board: str | None = None,
+) -> str:
     body = {"url": f"https://jobs.example/{next(state.urls)}", "company": company, "title": title}
+    if job_board is not None:
+        body["job_board_id"] = state.job_boards[job_board]["id"]
     response = client.post(OFFERS_URL, json=body)
     assert response.status_code == 201, response.text
     offer_id: str = response.json()["id"]
@@ -225,26 +247,44 @@ def given_feed_down(state: ScenarioState, feed: str) -> None:
     state.unavailable.add(feed)
 
 
-def _imported_at(client: TestClient, state: ScenarioState, feed: str, moment: str) -> None:
+@given("the job boards imported from a feed:")
+def given_imported_job_boards(
+    client: TestClient, state: ScenarioState, datatable: list[list[str]]
+) -> None:
+    for row in _rows(datatable):
+        _add_job_board(client, state, row["name"], row["feed"])
+
+
+@given(parsers.parse('a job board named "{name}"'))
+def given_job_board(client: TestClient, state: ScenarioState, name: str) -> None:
+    _add_job_board(client, state, name)
+
+
+def _imported_at(client: TestClient, state: ScenarioState, job_board: str, moment: str) -> None:
     assert state.now is not None, "the scenario must set the time first"
     _set_time(client, _moment(moment))
-    response = _import(client, feed)
+    response = _import(client, state, job_board)
     assert response.status_code == 201, response.text
     _set_time(client, state.now)
 
 
-@given(parsers.re(r'the feed "(?P<feed>[^"]+)" was imported at (?P<moment>[0-9: -]+)$'))
-def given_feed_imported(client: TestClient, state: ScenarioState, feed: str, moment: str) -> None:
-    state.published.setdefault(feed, [])
-    _imported_at(client, state, feed, moment)
-
-
-@given(parsers.parse('the feed "{feed}" was imported at {moment} with:'))
-def given_feed_imported_with(
-    client: TestClient, state: ScenarioState, feed: str, moment: str, datatable: list[list[str]]
+@given(parsers.re(r'the job board "(?P<job_board>[^"]+)" was imported at (?P<moment>[0-9: -]+)$'))
+def given_job_board_imported(
+    client: TestClient, state: ScenarioState, job_board: str, moment: str
 ) -> None:
-    state.published[feed] = _rows(datatable)
-    _imported_at(client, state, feed, moment)
+    _imported_at(client, state, job_board, moment)
+
+
+@given(parsers.parse('the job board "{job_board}" was imported at {moment} with:'))
+def given_job_board_imported_with(
+    client: TestClient,
+    state: ScenarioState,
+    job_board: str,
+    moment: str,
+    datatable: list[list[str]],
+) -> None:
+    state.published[state.job_boards[job_board]["feed"]] = _rows(datatable)
+    _imported_at(client, state, job_board, moment)
 
 
 @given(parsers.parse('I promoted the offer "{title}"'))
@@ -259,6 +299,13 @@ def given_offer(client: TestClient, state: ScenarioState, company: str, title: s
     _add_offer(client, state, company, title)
 
 
+@given(parsers.parse('an offer for "{company}" as "{title}" from "{job_board}"'))
+def given_offer_from(
+    client: TestClient, state: ScenarioState, company: str, title: str, job_board: str
+) -> None:
+    _add_offer(client, state, company, title, job_board)
+
+
 @given(parsers.parse('an offer for "{company}" as "{title}" that was discarded'))
 def given_discarded_offer(
     client: TestClient, state: ScenarioState, company: str, title: str
@@ -271,19 +318,19 @@ def given_discarded_offer(
 # --- When ---
 
 
-@when(parsers.parse('I import the feed "{feed}"'))
-def when_import(client: TestClient, state: ScenarioState, feed: str) -> None:
-    state.response = _import(client, feed)
+@when(parsers.parse('I import the job board "{job_board}"'))
+def when_import(client: TestClient, state: ScenarioState, job_board: str) -> None:
+    state.response = _import(client, state, job_board)
 
 
-@when(parsers.parse('I add an offer for "{company}" as "{title}"'))
-def when_add_offer(client: TestClient, state: ScenarioState, company: str, title: str) -> None:
-    _add_offer(client, state, company, title)
+@when("I import a nonexistent job board")
+def when_import_nonexistent(client: TestClient, state: ScenarioState) -> None:
+    state.response = client.post(f"{JOB_BOARDS_URL}/{uuid7()}/imports")
 
 
-@when("I list the feeds")
-def when_list_feeds(client: TestClient, state: ScenarioState) -> None:
-    state.response = client.get(FEEDS_URL)
+@when("I list the job boards")
+def when_list_job_boards(client: TestClient, state: ScenarioState) -> None:
+    state.response = client.get(JOB_BOARDS_URL)
 
 
 # --- Then ---
@@ -323,15 +370,12 @@ def then_pending_offers(client: TestClient, titles: str) -> None:
     assert [item["title"] for item in response.json()["items"]] == expected
 
 
-@then(parsers.parse('the offer "{title}" links to "{url}" and comes from the feed "{feed}"'))
-def then_offer_source(client: TestClient, title: str, url: str, feed: str) -> None:
+@then(
+    parsers.parse('the offer "{title}" links to "{url}" and comes from the job board "{job_board}"')
+)
+def then_offer_source(client: TestClient, title: str, url: str, job_board: str) -> None:
     offer = _offer(client, title)
-    assert (offer["url"], offer["feed"]) == (url, feed)
-
-
-@then(parsers.parse('the offer "{title}" comes from no feed'))
-def then_offer_without_feed(client: TestClient, title: str) -> None:
-    assert _offer(client, title)["feed"] is None
+    assert (offer["url"], offer["job_board_name"]) == (url, job_board)
 
 
 @then(parsers.re(r'the offer "(?P<title>[^"]+)" is "(?P<status>[^"]+)"$'))
@@ -345,7 +389,9 @@ def then_offer_status_reason(client: TestClient, title: str, status: str, reason
     assert (offer["status"], offer["discard_reason"]) == (status, reason)
 
 
-@then(parsers.parse("it is rejected because the feed was imported too recently, until {moment}"))
+@then(
+    parsers.parse("it is rejected because the job board was imported too recently, until {moment}")
+)
 def then_cooldown(state: ScenarioState, moment: str) -> None:
     assert state.now is not None
     _assert_problem(state, 429, "feed-cooldown")
@@ -355,37 +401,34 @@ def then_cooldown(state: ScenarioState, moment: str) -> None:
 
 REJECTIONS = {
     "the feed is not available": (502, "feed-unavailable"),
-    "the feed does not exist": (404, "not-found"),
+    "the job board is not imported": (409, "job-board-not-imported"),
+    "the job board does not exist": (404, "not-found"),
 }
 
 
-@then(
-    parsers.re(
-        r"it is rejected because (?P<reason>the feed is not available|the feed does not exist)$"
-    )
-)
+@then(parsers.re(f"it is rejected because (?P<reason>{'|'.join(REJECTIONS)})$"))
 def then_rejected(state: ScenarioState, reason: str) -> None:
     _assert_problem(state, *REJECTIONS[reason])
 
 
-@then(parsers.parse('the feed "{feed}" has never been imported'))
-def then_never_imported(client: TestClient, feed: str) -> None:
-    response = client.get(FEEDS_URL)
+@then(parsers.parse('the job board "{job_board}" has never been imported'))
+def then_never_imported(client: TestClient, state: ScenarioState, job_board: str) -> None:
+    response = client.get(f"{JOB_BOARDS_URL}/{state.job_boards[job_board]['id']}")
     assert response.status_code == 200, response.text
-    feeds = {item["feed"]: item for item in response.json()}
-    assert feeds[feed]["last_imported_at"] is None
+    assert response.json()["last_imported_at"] is None
 
 
-@then("the feeds are:")
-def then_feeds_are(state: ScenarioState, datatable: list[list[str]]) -> None:
+@then("the job boards are:")
+def then_job_boards_are(state: ScenarioState, datatable: list[list[str]]) -> None:
     response = state.last_response
     assert response.status_code == 200, response.text
     actual = [
         {
-            "feed": item["feed"],
+            "name": item["name"],
+            "import_method": item["import_method"],
             "last_imported_at": _local(item["last_imported_at"]),
             "next_import_at": _local(item["next_import_at"]),
         }
-        for item in response.json()
+        for item in response.json()["items"]
     ]
     assert actual == _rows(datatable)

@@ -64,7 +64,7 @@ Feature: Generated searches
     Given a job board named "LinkedIn" with syntax "boolean"
     And a job board named "Remote OK" imported from the feed "remoteok"
     When I generate the searches of the profile "Backend"
-    Then there are searches for "LinkedIn" only
+    Then the job boards with searches are, in order: "LinkedIn"
 
   # --- URLs ---
 

@@ -30,6 +30,7 @@ class ScenarioState:
     profiles: dict[str, str] = field(default_factory=dict)
     # What the fake sources answer: Remote OK's JSON and Greenhouse boards by board name.
     remoteok: list[Row] = field(default_factory=list)
+    remoteok_id: str | None = None
     boards: dict[str, list[Row]] = field(default_factory=dict)
     offer: dict[str, Any] | None = None
     response: httpx2.Response | None = None
@@ -132,12 +133,24 @@ def given_no_profiles(client: TestClient, state: ScenarioState) -> None:
     state.profiles.clear()
 
 
-@given(parsers.parse('the feed "remoteok" was imported with:'))
-def given_feed_imported(
+@given(parsers.parse('a job board named "Remote OK" imported from the feed "remoteok"'))
+def given_remoteok_job_board(client: TestClient, state: ScenarioState) -> None:
+    body = {
+        "name": "Remote OK",
+        "search_url_template": "https://remoteok.com/?q={query}",
+        "syntax": "keywords",
+        "import_method": "api",
+        "feed": "remoteok",
+    }
+    state.remoteok_id = _ok(client.post("/api/v1/job-boards", json=body))["id"]
+
+
+@given(parsers.parse('the job board "Remote OK" was imported with:'))
+def given_job_board_imported(
     client: TestClient, state: ScenarioState, datatable: list[list[str]]
 ) -> None:
     state.remoteok = _rows(datatable)
-    _ok(client.post("/api/v1/feeds/remoteok/imports"))
+    _ok(client.post(f"/api/v1/job-boards/{state.remoteok_id}/imports"))
 
 
 @given(parsers.parse('the board of the watched company "{company}" was imported with:'))
