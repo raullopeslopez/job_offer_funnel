@@ -105,8 +105,8 @@ Común a todos: la app se identifica con el User-Agent `job-offer-funnel`, sin d
 | Fuera | Entra cuando... |
 |-------|-----------------|
 | Portales asiáticos: Glints, Kalibrr, Tech in Asia, Snaphunt, Dealls | La búsqueda se centre en Asia; se añaden pegando la URL de una búsqueda real (su plantilla no se puede sacar de URLs indexadas) |
-| Consulta periódica de los ATS (jobs, procrastinate) | Lanzarla a mano se haga pesado |
-| Lectura de alertas por email | Dar de alta ofertas a mano sea el cuello de botella |
+| Consulta periódica de los ATS y los feeds | En plan: ver `docs/fase1.md` (workflow programado contra Render) |
+| Lectura de alertas por email | En plan: ver `docs/fase1.md` |
 | Scoring de encaje | La bandeja tenga más ofertas de las que se revisan |
 | Seniority y salario mínimo en el perfil | La seniority va hoy en los títulos ("Senior Backend Engineer"); el salario, con la fase de salarios |
 | Salarios (bandas de mercado desde webs externas) | Fase propia, revisando antes las condiciones de cada web |

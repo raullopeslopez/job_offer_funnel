@@ -31,7 +31,8 @@ Fases incluidas: de `evaluated` a `accepted`. Una candidatura se crea en `evalua
 | Frontend / dashboard | En curso: ver `docs/frontend.md` |
 | i18n (otros idiomas además del inglés) | Exista el frontend y se quiera la app en otro idioma |
 | Fase 0 (descubrimiento, portales, búsquedas) | En curso: ver `docs/fase0.md` |
-| Contactos, documentos y versiones de CV | Se quiera medir la conversión por versión de CV o por referido |
+| Contactos | Se quiera medir la conversión por referido |
+| Documentos y versiones de CV | En plan: ver `docs/fase1.md` (CV maestro y CVs por oferta) |
 | Eventos y rondas de entrevista | Las notas no basten para preparar entrevistas |
 | Tareas y follow-ups | Se olviden los seguimientos |
 | Ghosting automático (jobs, procrastinate) | Marcarlo a mano se haga pesado |
