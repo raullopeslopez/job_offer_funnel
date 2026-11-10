@@ -42,6 +42,13 @@ class SearchProfileService:
     async def list_page(self, page: PageParams) -> tuple[list[SearchProfileRow], int]:
         return await self._repository.list_page(page)
 
+    async def all_terms(self) -> list[SearchTerms]:
+        """What every profile looks for, from the oldest: imports filter offers with them."""
+        return [
+            SearchTerms(row.titles, row.keywords, row.excluded_keywords)
+            for row in await self._repository.list_all()
+        ]
+
 
 class JobBoardService:
     """Job boards have no rules beyond validation: plain CRUD on rows."""

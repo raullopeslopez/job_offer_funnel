@@ -5,53 +5,35 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   Stack,
-  TextField,
 } from "@mui/material";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { api } from "../../api/client";
 import { isProblem } from "../../api/problems";
 import type { components } from "../../api/schema";
 import type { WatchedCompany } from "./WatchedCompaniesPage";
 
 type ImportResult = components["schemas"]["BoardImportRead"];
-type Values = { profile_id: string };
 
 type Props = { company: WatchedCompany; onClose: () => void };
 
 export function ImportWatchedCompanyDialog({ company, onClose }: Props) {
   const queryClient = useQueryClient();
   const [result, setResult] = useState<ImportResult | null>(null);
+  // No fields: the form only tracks the submission and its error.
   const {
-    control,
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ defaultValues: { profile_id: "" } });
+  } = useForm();
 
-  const profiles = useQuery({
-    queryKey: ["search-profiles"],
-    queryFn: async () => {
-      const { data, error } = await api.GET("/api/v1/search-profiles", {
-        params: { query: { limit: 100 } },
-      });
-      if (error) throw error;
-      return data.items;
-    },
-  });
-
-  const onSubmit = handleSubmit(async ({ profile_id }) => {
-    if (!profile_id) {
-      setError("profile_id", { message: "Choose a search profile" });
-      return;
-    }
+  const onSubmit = handleSubmit(async () => {
     setResult(null);
     const { data, error } = await api.POST(
       "/api/v1/watched-companies/{watched_company_id}/imports",
-      { params: { path: { watched_company_id: company.id } }, body: { profile_id } },
+      { params: { path: { watched_company_id: company.id } } },
     );
     if (data) {
       setResult(data);
@@ -74,30 +56,10 @@ export function ImportWatchedCompanyDialog({ company, onClose }: Props) {
             {errors.root && <Alert severity="warning">{errors.root.message}</Alert>}
             {result && (
               <Alert severity="success">
-                {result.found} found, {result.matching} matching, {result.added} added,{" "}
+                {result.found} found, {result.added} added, {result.filtered} filtered,{" "}
                 {result.already_in_inbox} already in the inbox, {result.expired} expired
               </Alert>
             )}
-            <Controller
-              name="profile_id"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  select
-                  label="Search profile"
-                  fullWidth
-                  error={Boolean(errors.profile_id)}
-                  helperText={errors.profile_id?.message}
-                >
-                  {(profiles.data ?? []).map((profile) => (
-                    <MenuItem key={profile.id} value={profile.id}>
-                      {profile.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
           </Stack>
         </DialogContent>
         <DialogActions>

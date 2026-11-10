@@ -68,26 +68,18 @@ Feature: Watched companies screen
   # @component: the E2E tests cannot reach the ATS; component tests cover these.
 
   @component
-  Scenario: Import a watched company for a search profile
+  Scenario: Import a watched company
     Given a search profile named "Backend" with the title "Backend Engineer"
     And the company "Acme" is watched on "greenhouse" with board "acme"
     And the board of "Acme" publishes an offer as "Backend Engineer"
     And I am on the watched companies
-    When I import the watched company "Acme" for the profile "Backend"
-    Then I see the import summary: 1 found, 1 matching, 1 added, 0 already in the inbox, 0 expired
+    When I import the watched company "Acme"
+    Then I see the import summary: 1 found, 1 added, 0 filtered, 0 already in the inbox, 0 expired
 
   @component
   Scenario: A board that is not available says so
-    Given a search profile named "Backend" with the title "Backend Engineer"
-    And the company "Acme" is watched on "greenhouse" with board "acme"
+    Given the company "Acme" is watched on "greenhouse" with board "acme"
     And the board of "Acme" is not available
     And I am on the watched companies
-    When I import the watched company "Acme" for the profile "Backend"
+    When I import the watched company "Acme"
     Then I see the message "Board not available"
-
-  @component
-  Scenario: Importing needs a search profile
-    Given the company "Acme" is watched on "greenhouse" with board "acme"
-    And I am on the watched companies
-    When I import the watched company "Acme" without choosing a profile
-    Then I see an error on the field "profile_id"

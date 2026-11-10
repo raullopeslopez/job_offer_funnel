@@ -6,7 +6,9 @@ Feature: Inbox screen
   The rules of the offers (duplicates, statuses, promoting, feed limits) are those
   of specs/inbox/inbox.feature and specs/inbox/public_feeds.feature. This screen
   only shows them: every rejection appears as a message, next to its field when
-  it belongs to one. The inbox opens with the pending offers, most recent first.
+  it belongs to one. The inbox opens with the pending offers that are not filtered,
+  most recent first; the filtered ones (specs/inbox/filtered_offers.feature) have
+  their own view.
 
   Background:
     Given I am signed in with a valid token
@@ -32,6 +34,24 @@ Feature: Inbox screen
       | pending   | Pending one   |
       | discarded | Discarded one |
       | promoted  | Promoted one  |
+
+  # @component: only an import makes filtered offers, and the E2E tests cannot reach the feeds.
+
+  @component
+  Scenario: The filtered offers have their own view
+    Given a search profile named "Backend" with the title "Backend Engineer"
+    And the feed "remoteok" was imported with an offer for "Acme" as "Backend Engineer"
+    And the feed "remoteok" was imported with an offer for "Globex" as "Data Engineer"
+    When I open the inbox showing the "filtered" offers
+    Then I see the offers, in order: "Data Engineer"
+
+  @component
+  Scenario: The pending view leaves out the filtered offers
+    Given a search profile named "Backend" with the title "Backend Engineer"
+    And the feed "remoteok" was imported with an offer for "Acme" as "Backend Engineer"
+    And the feed "remoteok" was imported with an offer for "Globex" as "Data Engineer"
+    When I open the inbox
+    Then I see the offers, in order: "Backend Engineer"
 
   Scenario: An empty inbox says so
     When I open the inbox
@@ -73,20 +93,19 @@ Feature: Inbox screen
   # @component: the E2E tests cannot reach the public feeds; component tests cover these.
 
   @component
-  Scenario: Import a feed for a search profile
+  Scenario: Import a feed
     Given a search profile named "Backend" with the title "Backend Engineer"
     And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer"
     And I am on the inbox
-    When I import the feed "remoteok" for the profile "Backend"
-    Then I see the import summary: 1 found, 1 matching, 1 added, 0 already in the inbox
+    When I import the feed "remoteok"
+    Then I see the import summary: 1 found, 1 added, 0 filtered, 0 already in the inbox
     And I see the offers, in order: "Backend Engineer"
 
   @component
   Scenario: A feed imported too recently says when it can be imported again
-    Given a search profile named "Backend" with the title "Backend Engineer"
-    And the feed "remoteok" was imported 1 hour ago
+    Given the feed "remoteok" was imported 1 hour ago
     And I am on the inbox
-    When I import the feed "remoteok" for the profile "Backend"
+    When I import the feed "remoteok"
     Then I see that the feed "remoteok" can be imported again in 5 hours
 
   # --- Discarding and restoring ---

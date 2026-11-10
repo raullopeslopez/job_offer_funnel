@@ -3,14 +3,27 @@ from datetime import datetime
 from typing import Any, cast
 from uuid import UUID, uuid7
 
-from sqlalchemy import ColumnElement, CursorResult, func, select, update
+from sqlalchemy import (
+    ColumnElement,
+    CursorResult,
+    Select,
+    and_,
+    false,
+    func,
+    not_,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import with_expression
 
 from funnel.core.db import flush_checking_unique
 from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
+from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import EXPIRED_REASON, Feed, OfferStatus, UnknownJobBoardError
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
@@ -22,13 +35,47 @@ from funnel.modules.inbox.models import (
 )
 
 
+def _fits(terms: SearchTerms) -> ColumnElement[bool]:
+    """A title in the offer's title, every keyword in title or description, no exclusion
+    in the title; ignoring case. Exclusions skip the description: a passing mention of an
+    excluded word there would drop good offers."""
+    text = OfferRow.title + " " + func.coalesce(OfferRow.description, "")
+    return and_(
+        or_(false(), *(OfferRow.title.icontains(title, autoescape=True) for title in terms.titles)),
+        *(text.icontains(keyword, autoescape=True) for keyword in terms.keywords),
+        *(
+            not_(OfferRow.title.icontains(excluded, autoescape=True))
+            for excluded in terms.excluded_keywords
+        ),
+    )
+
+
+def filtered(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
+    """Pending, imported (only those have a description) and fitting no profile."""
+    return and_(
+        OfferRow.status == OfferStatus.PENDING,
+        OfferRow.description.is_not(None),
+        not_(or_(false(), *(_fits(terms) for terms in profiles))),
+    )
+
+
+def _select_offers(profiles: Sequence[SearchTerms]) -> Select[OfferRow]:
+    # populate_existing: rows already in the session get `filtered` computed again.
+    return (
+        select(OfferRow)
+        .options(with_expression(OfferRow.filtered, filtered(profiles)))
+        .execution_options(populate_existing=True)
+    )
+
+
 class OfferRepository:
-    """Never commits: the request session does."""
+    """Never commits: the request session does. Every read needs the current search
+    profiles, which decide whether each offer is filtered."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def add(self, offer: OfferRow) -> OfferRow:
+    async def add(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
         # Read before flushing: after a failed flush the row cannot be loaded any more.
         duplicate = f"An offer for {offer.company} as {offer.title} already exists"
         self._session.add(offer)
@@ -40,24 +87,40 @@ class OfferRepository:
             if JOB_BOARD_FOREIGN_KEY in str(error.orig):
                 raise UnknownJobBoardError("The job board does not exist") from error
             raise
-        await self._session.refresh(offer)  # loads created_at and job_board_name
-        return offer
+        return await self._reload(offer, profiles)
 
-    async def get(self, offer_id: UUID) -> OfferRow | None:
-        return await self._session.get(OfferRow, offer_id)
+    async def get(self, offer_id: UUID, profiles: Sequence[SearchTerms]) -> OfferRow | None:
+        found: OfferRow | None = await self._session.scalar(
+            _select_offers(profiles).where(OfferRow.id == offer_id)
+        )
+        return found
 
-    async def save(self, offer: OfferRow) -> OfferRow:
+    async def save(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
         await self._session.flush()
-        # The flush expires job_board_name; reload it here, not lazily outside async code.
-        await self._session.refresh(offer)
-        return offer
+        return await self._reload(offer, profiles)
 
-    async def list_page(
-        self, status: OfferStatus | None, page: PageParams
+    async def _reload(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
+        # Loads what the database computes (created_at, job_board_name, filtered) here, not
+        # lazily outside async code.
+        reloaded = await self.get(offer.id, profiles)
+        assert reloaded is not None
+        return reloaded
+
+    async def list_page(  # noqa: PLR0913, PLR0917  # two filters, the page and the profiles
+        self,
+        status: OfferStatus | None,
+        is_filtered: bool | None,
+        page: PageParams,
+        profiles: Sequence[SearchTerms],
     ) -> tuple[list[OfferRow], int]:
-        conditions = [] if status is None else [OfferRow.status == status]
+        conditions: list[ColumnElement[bool]] = []
+        if status is not None:
+            conditions.append(OfferRow.status == status)
+        if is_filtered is not None:
+            condition = filtered(profiles)
+            conditions.append(condition if is_filtered else not_(condition))
         rows = await self._session.scalars(
-            select(OfferRow)
+            _select_offers(profiles)
             .where(*conditions)
             .order_by(OfferRow.created_at.desc(), OfferRow.id.desc())
             .limit(page.limit)
@@ -78,14 +141,14 @@ class FeedImportRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def add_new(self, offers: Sequence[OfferRow]) -> int:
-        """Insert the offers that are not duplicates; return how many were inserted.
+    async def add_new(self, offers: Sequence[OfferRow]) -> list[UUID]:
+        """Insert the offers that are not duplicates; return the ids of those inserted.
 
         ON CONFLICT DO NOTHING keeps the UNIQUE constraint as the judge of duplicates
         without aborting the transaction, as a failed flush would.
         """
         if not offers:
-            return 0
+            return []
         values = [
             {
                 column.key: getattr(offer, column.key)
@@ -101,7 +164,19 @@ class FeedImportRepository:
             .on_conflict_do_nothing(constraint=UNIQUE_DUPLICATE_KEY)
             .returning(OfferRow.id)
         )
-        return len(inserted.all())
+        return list(inserted.all())
+
+    async def count_filtered(
+        self, offer_ids: Collection[UUID], profiles: Sequence[SearchTerms]
+    ) -> int:
+        if not offer_ids:
+            return 0
+        total = await self._session.scalar(
+            select(func.count())
+            .select_from(OfferRow)
+            .where(OfferRow.id.in_(offer_ids), filtered(profiles))
+        )
+        return total or 0
 
     async def expire_missing(self, feed: Feed, published_urls: Collection[str]) -> int:
         """Discard as expired the pending offers of `feed` that it no longer publishes."""
@@ -150,8 +225,13 @@ class WatchedCompanyRepository:
         # Offers from a board are stored like those from a feed.
         self._offers = FeedImportRepository(session)
 
-    async def add_new_offers(self, offers: Sequence[OfferRow]) -> int:
+    async def add_new_offers(self, offers: Sequence[OfferRow]) -> list[UUID]:
         return await self._offers.add_new(offers)
+
+    async def count_filtered(
+        self, offer_ids: Collection[UUID], profiles: Sequence[SearchTerms]
+    ) -> int:
+        return await self._offers.count_filtered(offer_ids, profiles)
 
     async def expire_missing_offers(self, company_id: UUID, published_urls: Collection[str]) -> int:
         return await self._offers.expire_missing_from_board(company_id, published_urls)

@@ -371,18 +371,23 @@
       "BoardImportRead": {
         "properties": {
           "added": {
-            "description": "Matching offers added to the inbox as pending.",
+            "description": "New offers added to the inbox as pending.",
             "title": "Added",
             "type": "integer"
           },
           "already_in_inbox": {
-            "description": "Matching offers skipped as duplicates.",
+            "description": "Offers skipped as duplicates.",
             "title": "Already In Inbox",
             "type": "integer"
           },
           "expired": {
             "description": "Pending offers of this company discarded as expired.",
             "title": "Expired",
+            "type": "integer"
+          },
+          "filtered": {
+            "description": "Added offers that fit no search profile.",
+            "title": "Filtered",
             "type": "integer"
           },
           "found": {
@@ -395,11 +400,6 @@
             "title": "Imported At",
             "type": "string"
           },
-          "matching": {
-            "description": "Offers that match the profile.",
-            "title": "Matching",
-            "type": "integer"
-          },
           "watched_company_id": {
             "format": "uuid",
             "title": "Watched Company Id",
@@ -409,8 +409,8 @@
         "required": [
           "watched_company_id",
           "found",
-          "matching",
           "added",
+          "filtered",
           "already_in_inbox",
           "expired",
           "imported_at"
@@ -748,30 +748,15 @@
         "title": "HealthRead",
         "type": "object"
       },
-      "ImportCreate": {
-        "properties": {
-          "profile_id": {
-            "description": "The search profile the feed's offers must match.",
-            "format": "uuid",
-            "title": "Profile Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "profile_id"
-        ],
-        "title": "ImportCreate",
-        "type": "object"
-      },
       "ImportRead": {
         "properties": {
           "added": {
-            "description": "Matching offers added to the inbox as pending.",
+            "description": "New offers added to the inbox as pending.",
             "title": "Added",
             "type": "integer"
           },
           "already_in_inbox": {
-            "description": "Matching offers skipped as duplicates.",
+            "description": "Offers skipped as duplicates.",
             "title": "Already In Inbox",
             "type": "integer"
           },
@@ -783,6 +768,11 @@
           "feed": {
             "$ref": "#/components/schemas/Feed"
           },
+          "filtered": {
+            "description": "Added offers that fit no search profile.",
+            "title": "Filtered",
+            "type": "integer"
+          },
           "found": {
             "description": "Offers the feed returned.",
             "title": "Found",
@@ -792,18 +782,13 @@
             "format": "date-time",
             "title": "Imported At",
             "type": "string"
-          },
-          "matching": {
-            "description": "Offers that match the profile.",
-            "title": "Matching",
-            "type": "integer"
           }
         },
         "required": [
           "feed",
           "found",
-          "matching",
           "added",
+          "filtered",
           "already_in_inbox",
           "expired",
           "imported_at"
@@ -1050,6 +1035,11 @@
             ],
             "description": "The public feed it was imported from, if any."
           },
+          "filtered": {
+            "description": "Pending, imported and fitting none of the current search profiles.",
+            "title": "Filtered",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -1134,6 +1124,7 @@
           "job_board_name",
           "notes",
           "status",
+          "filtered",
           "discard_reason",
           "application_id",
           "feed",
@@ -3019,7 +3010,7 @@
     },
     "/api/v1/feeds/{feed}/imports": {
       "post": {
-        "description": "Add the feed's offers that match the profile to the inbox, as pending.\n\nDuplicates are skipped; pending offers of this feed that left it are discarded as\nexpired. A feed can be imported at most once every 6 hours (each feed's terms).",
+        "description": "Add every offer of the feed to the inbox, as pending; the ones that fit no search\nprofile are filtered. Himalayas is searched by the titles of every profile.\n\nDuplicates are skipped; pending offers of this feed that left it are discarded as\nexpired. A feed can be imported at most once every 6 hours (each feed's terms).",
         "operationId": "import_feed_api_v1_feeds__feed__imports_post",
         "parameters": [
           {
@@ -3032,16 +3023,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ImportCreate"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "201": {
             "content": {
@@ -3077,19 +3058,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ValidationProblemRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ProblemRead"
-                    }
-                  ],
-                  "title": "Response 422 Import Feed Api V1 Feeds  Feed  Imports Post"
+                  "$ref": "#/components/schemas/ValidationProblemRead"
                 }
               }
             },
-            "description": "Invalid body (`validation-error`), or the search profile does not exist (`unknown-search-profile`)"
+            "description": "Invalid request (`validation-error`)"
           },
           "429": {
             "content": {
@@ -3644,6 +3617,24 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "description": "Only the filtered offers (true) or the others (false).",
+            "in": "query",
+            "name": "filtered",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the filtered offers (true) or the others (false).",
+              "title": "Filtered"
             }
           },
           {
@@ -4702,7 +4693,7 @@
     },
     "/api/v1/watched-companies/{watched_company_id}/imports": {
       "post": {
-        "description": "Add the company's open offers that match the profile to the inbox, as pending.\n\nDuplicates are skipped; pending offers of this company that left its board are\ndiscarded as expired. No limit on how often: the ATS boards state none.",
+        "description": "Add every open offer of the company to the inbox, as pending; the ones that fit no\nsearch profile are filtered.\n\nDuplicates are skipped; pending offers of this company that left its board are\ndiscarded as expired. No limit on how often: the ATS boards state none.",
         "operationId": "import_watched_company_api_v1_watched_companies__watched_company_id__imports_post",
         "parameters": [
           {
@@ -4716,16 +4707,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ImportCreate"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "201": {
             "content": {
@@ -4761,19 +4742,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ValidationProblemRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ProblemRead"
-                    }
-                  ],
-                  "title": "Response 422 Import Watched Company Api V1 Watched Companies  Watched Company Id  Imports Post"
+                  "$ref": "#/components/schemas/ValidationProblemRead"
                 }
               }
             },
-            "description": "Invalid body (`validation-error`), or the search profile does not exist (`unknown-search-profile`)"
+            "description": "Invalid request (`validation-error`)"
           },
           "502": {
             "content": {

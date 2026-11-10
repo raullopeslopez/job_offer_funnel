@@ -11,7 +11,6 @@ from http import HTTPStatus
 from typing import Final
 
 from funnel.core.exceptions import AppError, DomainError
-from funnel.modules.discovery.domain import SearchTerms
 
 
 class OfferStatus(StrEnum):
@@ -52,19 +51,6 @@ class FeedOffer:
     url: str
 
 
-def matches(terms: SearchTerms, offer: FeedOffer) -> bool:
-    """A title in the offer's title, every keyword in title or description, no exclusion
-    in the title; ignoring case. Exclusions skip the description: a passing mention of an
-    excluded word there would drop good offers."""
-    title = offer.title.casefold()
-    text = f"{title} {offer.description.casefold()}"
-    return (
-        any(wanted.casefold() in title for wanted in terms.titles)
-        and all(keyword.casefold() in text for keyword in terms.keywords)
-        and not any(excluded.casefold() in title for excluded in terms.excluded_keywords)
-    )
-
-
 def next_import_at(last_imported_at: datetime) -> datetime:
     return last_imported_at + FEED_COOLDOWN
 
@@ -99,14 +85,6 @@ class InvalidOfferStatusError(DomainError):
     slug = "invalid-offer-status"
     title = "Invalid offer status"
     status = HTTPStatus.CONFLICT
-
-
-class UnknownSearchProfileError(AppError):
-    """The search profile referenced in the request does not exist."""
-
-    slug = "unknown-search-profile"
-    title = "Unknown search profile"
-    status = HTTPStatus.UNPROCESSABLE_CONTENT
 
 
 class FeedCooldownError(AppError):

@@ -1,4 +1,4 @@
-﻿import { Box, Button, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { Box, Button, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
 import type { GridPaginationModel } from "@mui/x-data-grid";
 import {
   keepPreviousData,
@@ -14,14 +14,23 @@ import { TabLabel } from "../../components/TabLabel";
 import { AddOfferDialog } from "./AddOfferDialog";
 import { DiscardDialog } from "./DiscardDialog";
 import { ImportFeedDialog } from "./ImportFeedDialog";
-import { type Offer, type OfferStatus, OffersGrid } from "./OffersGrid";
+import { type Offer, type OfferStatus, OffersGrid, type OfferView } from "./OffersGrid";
 import { PromoteDialog } from "./PromoteDialog";
 
-const STATUSES: { value: OfferStatus; label: string }[] = [
+// The pending offers are split: those that fit a search profile and the filtered ones
+// (specs/inbox/filtered_offers.feature).
+type View = OfferView;
+const VIEWS: { value: View; label: string }[] = [
   { value: "pending", label: "Pending" },
+  { value: "filtered", label: "Filtered" },
   { value: "discarded", label: "Discarded" },
   { value: "promoted", label: "Promoted" },
 ];
+
+function viewQuery(view: View): { status: OfferStatus; filtered?: boolean } {
+  if (view === "filtered") return { status: "pending", filtered: true };
+  return view === "pending" ? { status: view, filtered: false } : { status: view };
+}
 const PAGE_SIZE = 20;
 
 type Notice = { message: string; undoDiscardOf?: string };
@@ -29,7 +38,7 @@ type Notice = { message: string; undoDiscardOf?: string };
 export function InboxPage() {
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
-  const status = (params.get("status") as OfferStatus | null) ?? "pending";
+  const view = (params.get("status") as View | null) ?? "pending";
   const [pagination, setPagination] = useState<GridPaginationModel>({
     page: 0,
     pageSize: PAGE_SIZE,
@@ -40,12 +49,12 @@ export function InboxPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
 
   const offers = useQuery({
-    queryKey: ["offers", status, pagination.page, pagination.pageSize],
+    queryKey: ["offers", view, pagination.page, pagination.pageSize],
     queryFn: async () => {
       const { data, error } = await api.GET("/api/v1/offers", {
         params: {
           query: {
-            status,
+            ...viewQuery(view),
             limit: pagination.pageSize,
             offset: pagination.page * pagination.pageSize,
           },
@@ -58,11 +67,11 @@ export function InboxPage() {
   });
 
   const counts = useQueries({
-    queries: STATUSES.map(({ value }) => ({
+    queries: VIEWS.map(({ value }) => ({
       queryKey: ["offers", "count", value],
       queryFn: async () => {
         const { data, error } = await api.GET("/api/v1/offers", {
-          params: { query: { status: value, limit: 1 } },
+          params: { query: { ...viewQuery(value), limit: 1 } },
         });
         if (error) throw error;
         return data.total;
@@ -85,7 +94,7 @@ export function InboxPage() {
     },
   });
 
-  const changeStatus = (next: OfferStatus) => {
+  const changeView = (next: View) => {
     setParams(next === "pending" ? {} : { status: next });
     setPagination((current) => ({ ...current, page: 0 }));
   };
@@ -106,8 +115,8 @@ export function InboxPage() {
         </Button>
       </Stack>
 
-      <Tabs value={status} onChange={(_, next: OfferStatus) => changeStatus(next)} sx={{ mb: 2 }}>
-        {STATUSES.map(({ value, label }, index) => (
+      <Tabs value={view} onChange={(_, next: View) => changeView(next)} sx={{ mb: 2 }}>
+        {VIEWS.map(({ value, label }, index) => (
           <Tab
             key={value}
             value={value}
@@ -122,7 +131,7 @@ export function InboxPage() {
 
       <Box>
         <OffersGrid
-          status={status}
+          status={view}
           offers={offers.data?.items ?? []}
           total={total}
           loading={offers.isFetching}
@@ -139,7 +148,7 @@ export function InboxPage() {
         onClose={() => setDialog(null)}
         onAdded={async () => {
           setDialog(null);
-          changeStatus("pending");
+          changeView("pending");
           await refresh();
         }}
       />

@@ -101,6 +101,7 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Devolver a pendiente | `restore` |
 | Feed público (API o RSS de un portal) | `feed`: `remoteok` · `remotive` · `himalayas` · `jobicy` |
 | Importación de un feed | `import` |
+| Oferta filtrada (importada, pendiente y sin encaje con ningún perfil) | `filtered` |
 | Empresa vigilada (por su ATS) | `watched company` |
 | ATS (sistema de selección de la empresa) | `ats`: `greenhouse` · `lever` · `ashby` |
 | Tablero de la empresa en su ATS (nombre en la URL pública de empleo) | `board` |

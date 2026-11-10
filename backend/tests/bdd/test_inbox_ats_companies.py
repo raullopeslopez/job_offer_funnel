@@ -156,17 +156,14 @@ def _watch(
     return response
 
 
-def _import(
-    client: TestClient, state: ScenarioState, company: str, profile: str
-) -> httpx2.Response:
+def _import(client: TestClient, state: ScenarioState, company: str) -> httpx2.Response:
     watched = state.watched.get(company)
     watched_id = watched.id if watched is not None else str(uuid7())
-    profile_id = state.profiles.get(profile, str(uuid7()))
-    return client.post(f"{WATCHED_URL}/{watched_id}/imports", json={"profile_id": profile_id})
+    return client.post(f"{WATCHED_URL}/{watched_id}/imports")
 
 
 def _import_ok(client: TestClient, state: ScenarioState, company: str) -> None:
-    response = _import(client, state, company, "Backend")
+    response = _import(client, state, company)
     assert response.status_code == 201, response.text
 
 
@@ -300,9 +297,9 @@ def when_unwatch(client: TestClient, state: ScenarioState, name: str) -> None:
     state.response = client.delete(f"{WATCHED_URL}/{watched_id}")
 
 
-@when(parsers.parse('I import the watched company "{company}" for the profile "{profile}"'))
-def when_import(client: TestClient, state: ScenarioState, company: str, profile: str) -> None:
-    state.response = _import(client, state, company, profile)
+@when(parsers.parse('I import the watched company "{company}"'))
+def when_import(client: TestClient, state: ScenarioState, company: str) -> None:
+    state.response = _import(client, state, company)
 
 
 @when(parsers.parse('I add an offer for "{company}" as "{title}"'))
@@ -335,18 +332,18 @@ def then_watched_companies(state: ScenarioState, datatable: list[list[str]]) -> 
 
 @then(
     parsers.parse(
-        "the import found {found:d} offers, {matching:d} matching, {added:d} added "
+        "the import found {found:d} offers, {added:d} added, {filtered:d} filtered "
         "and {already:d} already in the inbox"
     )
 )
 def then_import_counts(
-    state: ScenarioState, found: int, matching: int, added: int, already: int
+    state: ScenarioState, found: int, added: int, filtered: int, already: int
 ) -> None:
     response = state.last_response
     assert response.status_code == 201, response.text
     body = response.json()
-    counts = (body["found"], body["matching"], body["added"], body["already_in_inbox"])
-    assert counts == (found, matching, added, already)
+    counts = (body["found"], body["added"], body["filtered"], body["already_in_inbox"])
+    assert counts == (found, added, filtered, already)
 
 
 @then(parsers.parse("the pending offers are: {titles}"))
@@ -405,7 +402,6 @@ REJECTIONS = {
     "the company is already watched": (409, "already-exists"),
     "the board is not available": (502, "board-unavailable"),
     "the watched company does not exist": (404, "not-found"),
-    "the search profile does not exist": (422, "unknown-search-profile"),
 }
 
 

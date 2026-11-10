@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Filtered offers: a pending imported offer that fits none of the search profiles is
+  `filtered` (new field on every offer), so a badly written profile hides offers instead
+  of losing them. It always follows the current profiles: creating, editing or deleting
+  one changes it at once. List them with `GET /api/v1/offers?filtered=true` (or `false`
+  for the others); they can still be discarded or promoted. The inbox screen shows them
+  in their own Filtered tab.
+
 - The app can be deployed to Render (API and web app, `render.yaml`) with the database in Neon.
 - Web app navigation with an icon per screen, a light/dark theme toggle that remembers your choice, and a mobile layout below 900px with a top bar and a slide-in menu.
 - `just seed-job-boards` now registers 43 more job boards with a checked search URL:
@@ -23,9 +30,8 @@ While the version is `0.x`, the API may change without a major version bump.
   dark theme that follows the system setting.
 - Watched companies (`/api/v1/watched-companies`): watch a company through the public
   job board of its ATS (Greenhouse, Lever or Ashby), list them by name and stop watching
-  one. Importing a watched company for a search profile adds its open offers that match
-  the profile to the inbox as pending, skipping duplicates and discarding as expired the
-  pending ones that left its board. It can be imported again at any time.
+  one. Importing a watched company adds its open offers to the inbox as pending, skipping
+  duplicates and discarding as expired the pending ones that left its board. It can be imported again at any time.
 - Offers show the watched company they were imported from (`watched_company_id`,
   `watched_company_name`); offers of a company no longer watched stay in the inbox.
 - Web app at `http://localhost:8081`, started by `just up` together with the API. It asks
@@ -33,7 +39,7 @@ While the version is `0.x`, the API may change without a major version bump.
   rejects it.
 - Inbox screen in the web app (`/inbox`): the pending, discarded and promoted offers,
   most recent first, each linking to its posting. Add an offer by hand (invalid fields
-  and duplicates are shown in the form), import a public feed for a search profile and
+  and duplicates are shown in the form), import a public feed and
   see its summary (or when it can be imported again), discard an offer with an optional
   reason and undo it, restore discarded offers, and promote an offer to an application
   through a chosen channel.
@@ -68,6 +74,10 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- **Breaking:** importing a feed or a watched company no longer takes a search profile
+  (no request body): it adds every offer the source returns, skipping duplicates. The
+  import summary reports how many of the added ones are `filtered` instead of `matching`.
+  Himalayas is searched by the titles of every search profile.
 - Metrics screen shows four key figures on top (active, interviewing, response rate and
   offers) and a rate bar next to each conversion rate.
 - Lists are easier to scan: two-line rows with the company avatar (its logo in Settings),

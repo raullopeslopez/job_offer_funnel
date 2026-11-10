@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import count
 from typing import Any, cast
-from uuid import uuid7
 
 import httpx2
 import pytest
@@ -99,6 +98,7 @@ class ScenarioState:
     profiles: dict[str, str] = field(default_factory=dict)
     published: dict[str, list[Row]] = field(default_factory=dict)
     unavailable: set[str] = field(default_factory=set)
+    searched: dict[str, list[str]] = field(default_factory=dict)
     response: httpx2.Response | None = None
     urls: count[int] = field(default_factory=count)
 
@@ -119,6 +119,8 @@ def fake_feeds(client: TestClient, state: ScenarioState) -> Iterator[None]:
 
     def answer(request: httpx2.Request) -> httpx2.Response:
         feed = FEED_HOSTS[request.url.host]
+        if "q" in request.url.params:
+            state.searched.setdefault(feed, []).append(request.url.params["q"])
         if feed in state.unavailable:
             return httpx2.Response(503)
         return httpx2.Response(200, json=FEED_PAYLOADS[feed](state.published.get(feed, [])))
@@ -155,9 +157,8 @@ def _rows(datatable: list[list[str]]) -> list[Row]:
     return [dict(zip(header, values, strict=True)) for values in rows]
 
 
-def _import(client: TestClient, state: ScenarioState, feed: str, profile: str) -> httpx2.Response:
-    profile_id = state.profiles.get(profile, str(uuid7()))
-    return client.post(f"{FEEDS_URL}/{feed}/imports", json={"profile_id": profile_id})
+def _import(client: TestClient, feed: str) -> httpx2.Response:
+    return client.post(f"{FEEDS_URL}/{feed}/imports")
 
 
 def _offer(client: TestClient, title: str) -> dict[str, Any]:
@@ -201,6 +202,14 @@ def given_profile(
     state.profiles[name] = response.json()["id"]
 
 
+@given("there are no search profiles")
+def given_no_profiles(client: TestClient, state: ScenarioState) -> None:
+    for profile_id in state.profiles.values():
+        response = client.delete(f"/api/v1/search-profiles/{profile_id}")
+        assert response.status_code == 204, response.text
+    state.profiles.clear()
+
+
 @given(parsers.parse('the feed "{feed}" publishes:'))
 def given_feed_publishes(state: ScenarioState, feed: str, datatable: list[list[str]]) -> None:
     state.published[feed] = _rows(datatable)
@@ -219,7 +228,7 @@ def given_feed_down(state: ScenarioState, feed: str) -> None:
 def _imported_at(client: TestClient, state: ScenarioState, feed: str, moment: str) -> None:
     assert state.now is not None, "the scenario must set the time first"
     _set_time(client, _moment(moment))
-    response = _import(client, state, feed, "Backend")
+    response = _import(client, feed)
     assert response.status_code == 201, response.text
     _set_time(client, state.now)
 
@@ -262,9 +271,9 @@ def given_discarded_offer(
 # --- When ---
 
 
-@when(parsers.parse('I import the feed "{feed}" for the profile "{profile}"'))
-def when_import(client: TestClient, state: ScenarioState, feed: str, profile: str) -> None:
-    state.response = _import(client, state, feed, profile)
+@when(parsers.parse('I import the feed "{feed}"'))
+def when_import(client: TestClient, state: ScenarioState, feed: str) -> None:
+    state.response = _import(client, feed)
 
 
 @when(parsers.parse('I add an offer for "{company}" as "{title}"'))
@@ -282,18 +291,28 @@ def when_list_feeds(client: TestClient, state: ScenarioState) -> None:
 
 @then(
     parsers.parse(
-        "the import found {found:d} offers, {matching:d} matching, {added:d} added "
+        "the import found {found:d} offers, {added:d} added, {filtered:d} filtered "
         "and {already:d} already in the inbox"
     )
 )
 def then_import_counts(
-    state: ScenarioState, found: int, matching: int, added: int, already: int
+    state: ScenarioState, found: int, added: int, filtered: int, already: int
 ) -> None:
     response = state.last_response
     assert response.status_code == 201, response.text
     body = response.json()
-    counts = (body["found"], body["matching"], body["added"], body["already_in_inbox"])
-    assert counts == (found, matching, added, already)
+    counts = (body["found"], body["added"], body["filtered"], body["already_in_inbox"])
+    assert counts == (found, added, filtered, already)
+
+
+@then(parsers.parse('the feed "{feed}" was searched for: {queries}'))
+def then_searched_for(state: ScenarioState, feed: str, queries: str) -> None:
+    assert state.searched.get(feed, []) == re.findall(r'"([^"]*)"', queries)
+
+
+@then(parsers.parse('the feed "{feed}" was not searched'))
+def then_not_searched(state: ScenarioState, feed: str) -> None:
+    assert feed not in state.searched
 
 
 @then(parsers.parse("the pending offers are: {titles}"))
@@ -337,14 +356,12 @@ def then_cooldown(state: ScenarioState, moment: str) -> None:
 REJECTIONS = {
     "the feed is not available": (502, "feed-unavailable"),
     "the feed does not exist": (404, "not-found"),
-    "the search profile does not exist": (422, "unknown-search-profile"),
 }
 
 
 @then(
     parsers.re(
-        r"it is rejected because (?P<reason>the feed is not available|the feed does not exist"
-        r"|the search profile does not exist)$"
+        r"it is rejected because (?P<reason>the feed is not available|the feed does not exist)$"
     )
 )
 def then_rejected(state: ScenarioState, reason: str) -> None:

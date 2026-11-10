@@ -1,7 +1,8 @@
-﻿import type { SvgIconComponent } from "@mui/icons-material";
+import type { SvgIconComponent } from "@mui/icons-material";
 import ArrowUpwardOutlined from "@mui/icons-material/ArrowUpwardOutlined";
 import CloseOutlined from "@mui/icons-material/CloseOutlined";
 import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
+import FilterAltOutlined from "@mui/icons-material/FilterAltOutlined";
 import InboxOutlined from "@mui/icons-material/InboxOutlined";
 import { Box, Button, Link, Stack } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
@@ -16,9 +17,11 @@ import { useNarrowGrid } from "../../components/useNarrowGrid";
 
 export type Offer = components["schemas"]["OfferRead"];
 export type OfferStatus = components["schemas"]["OfferStatus"];
+/** A tab of the inbox: a status, or the pending offers that fit no search profile. */
+export type OfferView = OfferStatus | "filtered";
 
 type Props = {
-  status: OfferStatus;
+  status: OfferView;
   offers: Offer[];
   total: number;
   loading: boolean;
@@ -29,8 +32,12 @@ type Props = {
   onRestore: (offer: Offer) => void;
 };
 
-const EMPTY: Record<OfferStatus, { icon: SvgIconComponent; text: string }> = {
+const EMPTY: Record<OfferView, { icon: SvgIconComponent; text: string }> = {
   pending: { icon: InboxOutlined, text: "Import a feed or add an offer to fill the inbox." },
+  filtered: {
+    icon: FilterAltOutlined,
+    text: "Imported offers that fit none of your search profiles are kept here.",
+  },
   discarded: {
     icon: DeleteOutlineOutlined,
     text: "Discarded offers are kept here so you can restore them.",
