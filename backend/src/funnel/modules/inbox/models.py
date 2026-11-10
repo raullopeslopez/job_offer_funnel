@@ -3,7 +3,7 @@ from enum import StrEnum
 from uuid import UUID, uuid7
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, column, func, select, table
-from sqlalchemy.orm import Mapped, column_property, mapped_column
+from sqlalchemy.orm import Mapped, column_property, mapped_column, query_expression
 
 from funnel.core.db import Base
 from funnel.modules.inbox.domain import Ats, Feed, OfferStatus
@@ -61,6 +61,9 @@ class OfferRow(Base):
     url: Mapped[str] = mapped_column(String(2048))
     company: Mapped[str] = mapped_column(String(200))
     title: Mapped[str] = mapped_column(String(200))
+    # Only imported offers have one (maybe empty): it is what marks them as imported, and
+    # their keywords are looked for in it.
+    description: Mapped[str | None] = mapped_column(Text)
     # Company and title normalized: the database rejects the same offer twice.
     duplicate_key: Mapped[str] = mapped_column(String(401), unique=True)
     job_board_id: Mapped[UUID | None] = mapped_column(
@@ -78,6 +81,8 @@ class OfferRow(Base):
         ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Depends on the current search profiles, so every query computes it (see repository.py).
+    filtered: Mapped[bool] = query_expression()
     watched_company_name: Mapped[str | None] = column_property(
         select(WatchedCompanyRow.name)
         .where(WatchedCompanyRow.id == watched_company_id)

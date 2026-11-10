@@ -8,10 +8,10 @@ from typing import Any, Final
 
 import httpx2
 
-from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import Feed, FeedOffer
 
-Reader = Callable[[httpx2.AsyncClient, SearchTerms], Awaitable[list[FeedOffer]]]
+# Titles to search by, for the feeds whose terms rule out reading them whole.
+Reader = Callable[[httpx2.AsyncClient, Sequence[str]], Awaitable[list[FeedOffer]]]
 
 # Offers are stored in VARCHAR(200) columns.
 _MAX_TEXT = 200
@@ -49,7 +49,7 @@ def _kept(offers: Sequence[FeedOffer | None]) -> list[FeedOffer]:
     return [offer for offer in offers if offer is not None]
 
 
-async def _remoteok(client: httpx2.AsyncClient, _terms: SearchTerms) -> list[FeedOffer]:
+async def _remoteok(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[FeedOffer]:
     jobs = await _get_json(client, "https://remoteok.com/api")
     # The first element is the legal notice, not a job.
     return _kept(
@@ -61,18 +61,18 @@ async def _remoteok(client: httpx2.AsyncClient, _terms: SearchTerms) -> list[Fee
     )
 
 
-async def _remotive(client: httpx2.AsyncClient, _terms: SearchTerms) -> list[FeedOffer]:
+async def _remotive(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[FeedOffer]:
     body = await _get_json(client, "https://remotive.com/api/remote-jobs")
     return _kept(
         [_offer(job, ("title", "company_name", "description", "url")) for job in body["jobs"]]
     )
 
 
-async def _himalayas(client: httpx2.AsyncClient, terms: SearchTerms) -> list[FeedOffer]:
+async def _himalayas(client: httpx2.AsyncClient, titles: Sequence[str]) -> list[FeedOffer]:
     # Its terms rule out bulk collection: search by each title instead of reading it all.
     # Applying must go through applicationLink, so that is the link kept.
     offers: dict[str, FeedOffer] = {}
-    for title in terms.titles:
+    for title in titles:
         body = await _get_json(client, "https://himalayas.app/jobs/api/search", {"q": title})
         for job in body["jobs"]:
             offer = _offer(job, ("title", "companyName", "description", "applicationLink"))
@@ -81,7 +81,7 @@ async def _himalayas(client: httpx2.AsyncClient, terms: SearchTerms) -> list[Fee
     return list(offers.values())
 
 
-async def _jobicy(client: httpx2.AsyncClient, _terms: SearchTerms) -> list[FeedOffer]:
+async def _jobicy(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[FeedOffer]:
     body = await _get_json(
         client, "https://jobicy.com/api/v2/remote-jobs", {"count": str(_JOBICY_PAGE_SIZE)}
     )
@@ -104,5 +104,5 @@ class FeedReader:
     def __init__(self, client: httpx2.AsyncClient) -> None:
         self._client = client
 
-    async def read(self, feed: Feed, terms: SearchTerms) -> list[FeedOffer]:
-        return await READERS[feed](self._client, terms)
+    async def read(self, feed: Feed, titles: Sequence[str]) -> list[FeedOffer]:
+        return await READERS[feed](self._client, titles)

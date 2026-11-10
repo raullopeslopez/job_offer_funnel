@@ -63,11 +63,11 @@ def fake_sources(client: TestClient, state: ScenarioState) -> Iterator[None]:
             ]
             return httpx2.Response(200, json=[{"legal": "Link back to Remote OK."}, *jobs])
         board = request.url.path.strip("/").split("/")[2]  # /v1/boards/<board>/jobs
-        jobs = [
+        board_jobs = [
             {"id": i, "title": r["title"], "content": r["description"], "absolute_url": r["url"]}
             for i, r in enumerate(state.boards[board])
         ]
-        return httpx2.Response(200, json={"jobs": jobs, "meta": {"total": len(jobs)}})
+        return httpx2.Response(200, json={"jobs": board_jobs, "meta": {"total": len(board_jobs)}})
 
     async def fake_client() -> AsyncIterator[httpx2.AsyncClient]:
         async with httpx2.AsyncClient(transport=httpx2.MockTransport(answer)) as fake:

@@ -50,6 +50,13 @@ class SearchProfileRepository:
         total = await self._session.scalar(select(func.count()).select_from(SearchProfileRow))
         return list(rows), total or 0
 
+    async def list_all(self) -> list[SearchProfileRow]:
+        """Every profile: there are a handful, so no pagination."""
+        rows = await self._session.scalars(
+            select(SearchProfileRow).order_by(SearchProfileRow.created_at, SearchProfileRow.id)
+        )
+        return list(rows)
+
     async def _flush_checking_name(self, profile: SearchProfileRow) -> None:
         detail = f"A search profile named {profile.name} already exists"
         await flush_checking_unique(self._session, UNIQUE_PROFILE_NAME_INDEX, detail)

@@ -41,9 +41,10 @@ def get_offer_service(
     session: SessionDep,
     clock: Annotated[Clock, Depends(get_clock)],
 ) -> OfferService:
-    # Composition root. One session for all three services: promoting is all or nothing.
+    # Composition root. One session for all the services: promoting is all or nothing.
     return OfferService(
         OfferRepository(session),
+        build_search_profile_service(session),
         build_company_service(session),
         build_application_service(session, clock),
     )
@@ -85,7 +86,7 @@ async def create_offer(offer: OfferCreate, service: Service) -> OfferRead:
 
 
 @offers_router.get("")
-async def list_offers(
+async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input as a parameter
     page: Annotated[PageParams, Depends(get_page_params)],
     service: Service,
     status: Annotated[OfferStatus | None, Query()] = None,
