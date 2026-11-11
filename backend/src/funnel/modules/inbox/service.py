@@ -17,10 +17,10 @@ from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
     BoardUnavailableError,
     EmailAlertNotImportedError,
-    ImportedByEmailError,
     FeedCooldownError,
     FeedOffer,
     FeedUnavailableError,
+    ImportedByEmailError,
     JobBoardNotImportedError,
     OfferAction,
     OfferStatus,

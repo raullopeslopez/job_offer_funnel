@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import (
+    EmailAlert,
     GeneratedSearch,
     SearchTerms,
     build_queries,
