@@ -152,6 +152,13 @@ When(
 );
 
 When(
+  "I change the job board {string} to be imported from the email alert {string}",
+  async ({ page }, name: string, emailAlert: string) => {
+    await edit(page, name, { feed: `${emailAlert} alerts` });
+  },
+);
+
+When(
   "I clear the {string} of the company {string}",
   async ({ page }, field: string, name: string) => {
     await edit(page, name, { [field]: "" });

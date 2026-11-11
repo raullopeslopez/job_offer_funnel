@@ -109,8 +109,9 @@ Feature: Inbox screen
     When I import the job board "Remote OK"
     Then I see that the job board "Remote OK" can be imported again in 5 hours
 
-  Scenario: Only the imported job boards can be imported
-    Given a job board named "LinkedIn"
+  Scenario: Only the job boards imported from a feed or an RSS can be imported
+    Given a job board named "Indeed"
+    And a job board named "LinkedIn" imported from the email alert "linkedin"
     And a job board named "Remote OK" imported from the feed "remoteok"
     When I open the inbox
     Then I can import the job boards: "Remote OK"

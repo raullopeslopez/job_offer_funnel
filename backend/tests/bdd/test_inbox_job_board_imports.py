@@ -302,6 +302,13 @@ def given_rss_job_board(client: TestClient, state: ScenarioState, name: str, tem
     _add_job_board(client, state, name, {"import_method": "rss", "rss_url_template": template})
 
 
+@given(parsers.parse('a job board named "{name}" imported from the email alert "{email_alert}"'))
+def given_email_job_board(
+    client: TestClient, state: ScenarioState, name: str, email_alert: str
+) -> None:
+    _add_job_board(client, state, name, {"import_method": "email", "email_alert": email_alert})
+
+
 @given(parsers.parse('the RSS of "{job_board}" publishes for "{title}":'))
 def given_rss_publishes(
     state: ScenarioState, job_board: str, title: str, datatable: list[list[str]]
@@ -500,6 +507,7 @@ def then_cooldown(state: ScenarioState, moment: str) -> None:
 REJECTIONS = {
     "the feed is not available": (502, "feed-unavailable"),
     "the job board is not imported": (409, "job-board-not-imported"),
+    "the job board is imported from its email alerts": (409, "job-board-imported-by-email"),
     "the job board does not exist": (404, "not-found"),
 }
 

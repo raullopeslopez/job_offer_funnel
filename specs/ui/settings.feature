@@ -141,6 +141,12 @@ Feature: Settings screen
     When I change the job board "Evenbreak" to be imported from the RSS "https://www.evenbreak.com/jobsrss/?keywords={query}"
     Then the job board "Evenbreak" shows "rss"
 
+  Scenario: Start importing a job board from its email alerts
+    Given a job board named "LinkedIn"
+    And I am on the job boards in the settings
+    When I change the job board "LinkedIn" to be imported from the email alert "linkedin"
+    Then the job board "LinkedIn" shows "linkedin alerts"
+
   Scenario: A feed that another job board imports is rejected with a message
     Given a job board named "Remote OK" imported from the feed "remoteok"
     And a job board named "Remotive"

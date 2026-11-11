@@ -23,6 +23,7 @@ _FIELD = r'"(?P<field>[^"]*)"'
 _VALUE = r'"(?P<value>[^"]*)"'
 _FEED = r'"(?P<feed>[^"]*)"'
 _RSS = r'"(?P<rss_url_template>[^"]*)"'
+_ALERT = r'"(?P<email_alert>[^"]*)"'
 
 
 @dataclass
@@ -55,6 +56,10 @@ def _imported(name: str, feed: str) -> dict[str, str]:
 
 def _from_rss(name: str, rss_url_template: str) -> dict[str, str]:
     return _body(name) | {"import_method": "rss", "rss_url_template": rss_url_template}
+
+
+def _from_email(name: str, email_alert: str) -> dict[str, str]:
+    return _body(name) | {"import_method": "email", "email_alert": email_alert}
 
 
 def _create(client: TestClient, state: ScenarioState, body: dict[str, Any]) -> None:
@@ -104,6 +109,15 @@ def given_rss_job_board(
     client: TestClient, state: ScenarioState, name: str, rss_url_template: str
 ) -> None:
     response = client.post(URL, json=_from_rss(name, rss_url_template))
+    assert response.status_code == 201, response.text
+    state.job_board_id = response.json()["id"]
+
+
+@given(parsers.re(f"a job board named {_NAME} imported from the email alert {_ALERT}$"))
+def given_email_job_board(
+    client: TestClient, state: ScenarioState, name: str, email_alert: str
+) -> None:
+    response = client.post(URL, json=_from_email(name, email_alert))
     assert response.status_code == 201, response.text
     state.job_board_id = response.json()["id"]
 
@@ -178,6 +192,26 @@ def when_create_with_import_source(
         "feed": feed or None,
         "rss_url_template": rss_url_template or None,
     }
+    _create(client, state, body)
+
+
+@when(parsers.re(f"I create a job board named {_NAME} imported from the email alert {_ALERT}$"))
+def when_create_from_email(
+    client: TestClient, state: ScenarioState, name: str, email_alert: str
+) -> None:
+    _create(client, state, _from_email(name, email_alert))
+
+
+@when(
+    parsers.re(
+        f'I create a job board named {_NAME} with import method "(?P<import_method>[^"]*)" '
+        f"and email alert {_ALERT}$"
+    )
+)
+def when_create_with_email_alert(
+    client: TestClient, state: ScenarioState, name: str, import_method: str, email_alert: str
+) -> None:
+    body = _body(name) | {"import_method": import_method, "email_alert": email_alert or None}
     _create(client, state, body)
 
 
@@ -259,6 +293,16 @@ def then_no_feed(client: TestClient, state: ScenarioState) -> None:
 @then("the job board has no RSS URL template")
 def then_no_rss_url_template(client: TestClient, state: ScenarioState) -> None:
     assert _read_job_board(client, state)["rss_url_template"] is None
+
+
+@then("the job board has no email alert")
+def then_no_email_alert(client: TestClient, state: ScenarioState) -> None:
+    assert _read_job_board(client, state)["email_alert"] is None
+
+
+@then("it is rejected because another job board already imports that email alert")
+def then_email_alert_taken(state: ScenarioState) -> None:
+    _assert_problem(state, 409, "email-alert-taken")
 
 
 @then("it is rejected because another job board already imports that feed")

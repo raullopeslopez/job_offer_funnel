@@ -8,8 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from funnel.core.db import flush_checking_references, flush_checking_unique
 from funnel.core.pagination import PageParams
-from funnel.modules.discovery.domain import FeedTakenError, ImportMethod
+from funnel.modules.discovery.domain import (
+    EmailAlert,
+    EmailAlertTakenError,
+    FeedTakenError,
+    ImportMethod,
+)
 from funnel.modules.discovery.models import (
+    UNIQUE_JOB_BOARD_EMAIL_ALERT,
     UNIQUE_JOB_BOARD_FEED,
     UNIQUE_JOB_BOARD_NAME_INDEX,
     UNIQUE_PROFILE_NAME_INDEX,
@@ -106,6 +112,11 @@ class JobBoardRepository:
         total = await self._session.scalar(select(func.count()).select_from(JobBoardRow))
         return list(rows), total or 0
 
+    async def get_by_email_alert(self, email_alert: EmailAlert) -> JobBoardRow | None:
+        return await self._session.scalar(
+            select(JobBoardRow).where(JobBoardRow.email_alert == email_alert)
+        )
+
     async def list_searched_by_hand(self) -> list[JobBoardRow]:
         """Every job board that is not imported, alphabetically: there are a handful, so
         no pagination."""
@@ -119,9 +130,12 @@ class JobBoardRepository:
     async def _flush_checking_name(self, job_board: JobBoardRow) -> None:
         detail = f"A job board named {job_board.name} already exists"
         feed_taken = f"Another job board already imports the feed {job_board.feed}"
+        alert_taken = f"Another job board already imports the email alert {job_board.email_alert}"
         try:
             await flush_checking_unique(self._session, UNIQUE_JOB_BOARD_NAME_INDEX, detail)
         except IntegrityError as error:
             if UNIQUE_JOB_BOARD_FEED in str(error.orig):
                 raise FeedTakenError(feed_taken) from error
+            if UNIQUE_JOB_BOARD_EMAIL_ALERT in str(error.orig):
+                raise EmailAlertTakenError(alert_taken) from error
             raise

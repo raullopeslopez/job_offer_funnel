@@ -21,6 +21,13 @@ Given(
   },
 );
 
+Given(
+  "a job board named {string} imported from the email alert {string}",
+  async ({ api }, name: string, emailAlert: string) => {
+    await api.addEmailJobBoard(name, emailAlert as "linkedin");
+  },
+);
+
 Then("I see an error on the field {string}", async ({ page }, field: string) => {
   const input = page.getByRole("dialog").getByLabel(fieldLabel(field), { exact: true });
   await expect(input).toHaveAttribute("aria-invalid", "true");

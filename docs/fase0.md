@@ -101,6 +101,7 @@ Comprobación del 2026-11-10 sobre los 55 portales del seed: una petición real 
 | Jobicy | `https://jobicy.com/?feed=job_feed&search_keywords={query}` | Sí (ya se importa por API) |
 | Cryptocurrency Jobs | `https://cryptocurrencyjobs.co/index.xml` | No |
 | Landing.jobs | `https://landing.jobs/feed` | No |
+| Alertas de LinkedIn (email) | Se leen los emails de `jobalerts-noreply@linkedin.com` que llegan al buzón dedicado (reenviados desde el personal); nunca se accede a LinkedIn. Formato verificado con alertas reales el 2026-11-11 | Enlace a la oferta sin el tracking del email; ni scraping ni login en LinkedIn |
 | We Work Remotely | `https://weworkremotely.com/remote-jobs.rss` | No, solo por categoría. Sus condiciones prohíben guardar datos (ver abajo) |
 | Himalayas | `https://himalayas.app/jobs/rss` | No (ya se importa por API) |
 | Remotive | `https://remotive.com/remote-jobs/feed` | No (ya se importa por API) |

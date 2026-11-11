@@ -10,6 +10,18 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- LinkedIn job alerts: a job board can be imported from its job alert emails
+  (`import_method: email` with `email_alert: linkedin`; at most one job board per alert,
+  `email-alert-taken` otherwise), also from the settings screen. `POST
+  /api/v1/email-alerts/imports` takes an alert email (sender and plain-text body) and
+  adds its offers to that job board like an import: pending, filtered when they fit no
+  search profile, duplicates skipped, links without the email's tracking. Every LinkedIn
+  job alert is read, whatever its search. Other emails are rejected (`unsupported-alert`),
+  and so are alerts no job board imports (`email-alert-not-imported`). Such job boards are
+  not imported on demand (`job-board-imported-by-email`). The scheduled import reads new
+  alerts by IMAP from the Gmail account dedicated to them when `GMAIL_ADDRESS` and
+  `GMAIL_APP_PASSWORD` are set, and labels each one `funnel-imported`.
+
 - Job boards can be imported from their RSS: `import_method: rss` with an
   `rss_url_template` (an http(s) URL with `{query}`). The RSS is read once per title of
   the search profiles, and each item reading `Company: Title` becomes an offer, with the

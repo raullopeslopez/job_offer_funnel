@@ -151,6 +151,31 @@ export interface paths {
         patch: operations["update_company_api_v1_companies__company_id__patch"];
         trace?: never;
     };
+    "/api/v1/email-alerts/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Email Alert
+         * @description Add every offer of a job alert email to the inbox, as pending, with the job board
+         *     that imports the alert (import method `email`) as their source; the ones that fit no
+         *     search profile are filtered. Any LinkedIn job alert is read, whatever its search.
+         *
+         *     Duplicates are skipped. Each offer links to the posting without the email's tracking.
+         *     Offers of alerts never expire and there is no limit: an alert lists only new offers.
+         */
+        post: operations["import_email_alert_api_v1_email_alerts_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/job-boards": {
         parameters: {
             query?: never;
@@ -539,6 +564,54 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlertEmailCreate */
+        AlertEmailCreate: {
+            /**
+             * Sender
+             * @description The email address it comes from.
+             * @example jobalerts-noreply@linkedin.com
+             */
+            sender: string;
+            /**
+             * Text
+             * @description The plain-text body of the email.
+             */
+            text: string;
+        };
+        /** AlertImportRead */
+        AlertImportRead: {
+            /**
+             * Added
+             * @description New offers added to the inbox as pending.
+             */
+            added: number;
+            /**
+             * Already In Inbox
+             * @description Offers skipped as duplicates.
+             */
+            already_in_inbox: number;
+            /**
+             * Filtered
+             * @description Added offers that fit no search profile.
+             */
+            filtered: number;
+            /**
+             * Found
+             * @description Offers the alert listed.
+             */
+            found: number;
+            /**
+             * Imported At
+             * Format: date-time
+             */
+            imported_at: string;
+            /**
+             * Job Board Id
+             * Format: uuid
+             * @description The job board that imports the alert.
+             */
+            job_board_id: string;
+        };
         /** ApplicationCreate */
         ApplicationCreate: {
             channel: components["schemas"]["Channel"];
@@ -790,6 +863,12 @@ export interface components {
             reason?: string | null;
         };
         /**
+         * EmailAlert
+         * @description Job alert emails the app can read, one format each (see docs/fase0.md).
+         * @enum {string}
+         */
+        EmailAlert: "linkedin";
+        /**
          * Feed
          * @description Public JSON APIs of remote job boards (see docs/fase0.md for their terms).
          * @enum {string}
@@ -825,7 +904,7 @@ export interface components {
          * @description How the offers of a job board reach the inbox.
          * @enum {string}
          */
-        ImportMethod: "none" | "api" | "rss";
+        ImportMethod: "none" | "api" | "rss" | "email";
         /** ImportRead */
         ImportRead: {
             /**
@@ -866,10 +945,12 @@ export interface components {
         };
         /** JobBoardCreate */
         JobBoardCreate: {
+            /** @description The job alert emails it is imported from: required with `email`, null otherwise. At most one job board imports each email alert. */
+            email_alert?: components["schemas"]["EmailAlert"] | null;
             /** @description The public feed it is imported from: required with `api`, null otherwise. At most one job board imports each feed. */
             feed?: components["schemas"]["Feed"] | null;
             /**
-             * @description How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`) or `rss` (imported from its `rss_url_template`).
+             * @description How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`), `rss` (imported from its `rss_url_template`) or `email` (imported from its `email_alert` emails).
              * @default none
              */
             import_method: components["schemas"]["ImportMethod"];
@@ -887,6 +968,7 @@ export interface components {
         };
         /** JobBoardRead */
         JobBoardRead: {
+            email_alert: components["schemas"]["EmailAlert"] | null;
             feed: components["schemas"]["Feed"] | null;
             /**
              * Id
@@ -930,17 +1012,20 @@ export interface components {
         };
         /**
          * JobBoardUpdate
-         * @description Partial update: only the fields sent change. Only `feed` and `rss_url_template`
-         *     can be null.
+         * @description Partial update: only the fields sent change. Only `feed`, `rss_url_template` and
+         *     `email_alert` can be null.
          *
-         *     The import method is set whole: `feed` and `rss_url_template` are sent only with
-         *     `import_method`, and the one not sent is cleared. To import from a feed send `api`
-         *     and the feed, from an RSS `rss` and its template, and to stop send `none`.
+         *     The import method is set whole: `feed`, `rss_url_template` and `email_alert` are sent
+         *     only with `import_method`, and the ones not sent are cleared. To import from a feed
+         *     send `api` and the feed, from an RSS `rss` and its template, from email alerts `email`
+         *     and the alert, and to stop send `none`.
          */
         JobBoardUpdate: {
+            /** @description The job alert emails it is imported from: required with `email`, null otherwise. At most one job board imports each email alert. */
+            email_alert?: components["schemas"]["EmailAlert"] | null;
             /** @description The public feed it is imported from: required with `api`, null otherwise. At most one job board imports each feed. */
             feed?: components["schemas"]["Feed"] | null;
-            /** @description How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`) or `rss` (imported from its `rss_url_template`). */
+            /** @description How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`), `rss` (imported from its `rss_url_template`) or `email` (imported from its `email_alert` emails). */
             import_method?: components["schemas"]["ImportMethod"] | null;
             /** Name */
             name?: string | null;
@@ -1992,6 +2077,57 @@ export interface operations {
             };
         };
     };
+    import_email_alert_api_v1_email_alerts_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertEmailCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertImportRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description No job board imports this email alert (`email-alert-not-imported`); nothing changed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Not a supported alert (`unsupported-alert`): only LinkedIn's job alerts are read */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+        };
+    };
     list_job_boards_api_v1_job_boards_get: {
         parameters: {
             query?: {
@@ -2289,7 +2425,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description The job board's import method is `none` (`job-board-not-imported`) */
+            /** @description The job board's import method is `none` (`job-board-not-imported`) or `email` (`job-board-imported-by-email`) */
             409: {
                 headers: {
                     [name: string]: unknown;

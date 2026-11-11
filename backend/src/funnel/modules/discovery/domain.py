@@ -34,6 +34,7 @@ class ImportMethod(StrEnum):
     NONE = "none"  # by hand, with its generated searches
     API = "api"  # imported from its public feed
     RSS = "rss"  # imported from its RSS, read once per search profile title
+    EMAIL = "email"  # imported from its job alert emails
 
 
 class Feed(StrEnum):
@@ -43,6 +44,12 @@ class Feed(StrEnum):
     JOBICY = "jobicy"
     REMOTEOK = "remoteok"
     REMOTIVE = "remotive"
+
+
+class EmailAlert(StrEnum):
+    """Job alert emails the app can read, one format each (see docs/fase0.md)."""
+
+    LINKEDIN = "linkedin"
 
 
 # The strictest feed terms (Remotive: at most 4 reads a day) apply to every feed.
@@ -58,6 +65,14 @@ class FeedTakenError(AppError):
 
     slug = "feed-taken"
     title = "Feed already imported by another job board"
+    status = HTTPStatus.CONFLICT
+
+
+class EmailAlertTakenError(AppError):
+    """Each email alert is imported by one job board at most."""
+
+    slug = "email-alert-taken"
+    title = "Email alert already imported by another job board"
     status = HTTPStatus.CONFLICT
 
 

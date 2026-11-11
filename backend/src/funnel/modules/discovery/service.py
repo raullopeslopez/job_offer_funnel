@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import (
+    EmailAlert,
     GeneratedSearch,
     SearchTerms,
     build_queries,
@@ -76,6 +77,10 @@ class JobBoardService:
 
     async def list_page(self, page: PageParams) -> tuple[list[JobBoardRow], int]:
         return await self._repository.list_page(page)
+
+    async def find_by_email_alert(self, email_alert: EmailAlert) -> JobBoardRow | None:
+        """The job board that imports the email alert, if any."""
+        return await self._repository.get_by_email_alert(email_alert)
 
     async def record_import(self, job_board: JobBoardRow, imported_at: datetime) -> None:
         await self._repository.record_import(job_board, imported_at)
