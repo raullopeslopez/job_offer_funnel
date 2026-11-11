@@ -10,6 +10,15 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- LinkedIn job alerts: `POST /api/v1/email-alerts/imports` takes a job alert email
+  (sender and plain-text body) and adds its offers to the inbox like a feed import:
+  pending, filtered when they fit no search profile, duplicates skipped. Every LinkedIn
+  job alert is read, whatever its search. Each offer links to the posting without the
+  email's tracking and shows where it came from in the new `alert` field. Any other email
+  is rejected (`unsupported-alert`). The scheduled import reads new alerts from Gmail by
+  IMAP when `GMAIL_ADDRESS` and `GMAIL_APP_PASSWORD` are set, and labels each one
+  `funnel-imported` so it is imported only once.
+
 - Filtered offers: a pending imported offer that fits none of the search profiles is
   `filtered` (new field on every offer), so a badly written profile hides offers instead
   of losing them. It always follows the current profiles: creating, editing or deleting

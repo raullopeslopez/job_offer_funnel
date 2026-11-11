@@ -97,6 +97,7 @@ Verificadas el 2026-11-08 en las páginas oficiales. Para uso privado de una per
 | Himalayas (`himalayas.app/jobs/api/search`) | Citar y enlazar a Himalayas; postular solo por `applicationLink`; retirar las caducadas; no recopilar en masa; no reenviar (cláusula 113 de sus [términos](https://himalayas.app/terms), [docs](https://himalayas.app/docs/remote-jobs-api)) | Se guarda `applicationLink`; búsqueda por títulos, no el feed entero; las caducadas se descartan |
 | Jobicy (`jobicy.com/api/v2/remote-jobs`) | Citar la fuente; pocas consultas al día; no reenviar ([repo](https://github.com/Jobicy/remote-jobs-api)) | Una importación cada 6 h; feed guardado |
 | Adzuna (`api.adzuna.com`) | Clave gratuita solo para evaluar la API; uso continuado de pago ([términos](https://developer.adzuna.com/docs/terms_of_service), verificado el 2026-11-11) | Descartada (fila 3 de `docs/fase1.md`) |
+| Alertas de LinkedIn (email) | Se leen los emails de `jobalerts-noreply@linkedin.com` del propio buzón (IMAP con contraseña de aplicación); nunca se accede a LinkedIn | Enlace a la oferta sin el tracking del email; ni scraping ni login en LinkedIn |
 | We Work Remotely | Fuera de la primera versión: sus condiciones de API prohíben guardar datos | Sigue como portal con búsqueda asistida |
 
 Común a todos: la app se identifica con el User-Agent `job-offer-funnel`, sin datos personales, y nada se publica ni se reenvía.

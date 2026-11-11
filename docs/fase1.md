@@ -23,7 +23,7 @@
 | 2 | Importación periódica: script + workflow de GitHub Actions cada 6 h contra Render | Que la Bandeja se llene sola |
 | 3 | ~~Fuente Adzuna (API oficial)~~ Descartada el 2026-11-11 | Su plan gratuito es solo para evaluar la API ("The free tier is intended for evaluating the API", [términos](https://developer.adzuna.com/docs/terms_of_service)); el uso continuado es de pago |
 | 4 | Fuente Reed (API oficial) | Volumen en Reino Unido |
-| 5 | Alertas por email de LinkedIn e Indeed | Los dos portales grandes, que no tienen API para candidatos |
+| 5 | Alertas por email de LinkedIn (Indeed aplazado: solo manda recomendaciones, sin alertas de búsqueda; entra cuando haya una alerta suya y muestras de su formato) | El portal grande, que no tiene API para candidatos |
 | 6 | CV maestro: contacto, experiencias con logros, educación y habilidades | La única fuente de verdad de los CVs |
 | 7 | CV para una oferta: encaje de palabras clave y selección de logros | Adaptar el CV sin reescribirlo desde cero |
 | 8 | Plantilla Harvard en PDF y DOCX, con versión ligada a la candidatura | El documento que se envía, y medir qué versión convierte |
