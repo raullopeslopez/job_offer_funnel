@@ -21,7 +21,7 @@
 | 0 | Poblar producción (sin PR): seed de portales contra Render, perfiles y empresas vigiladas | Sin perfiles no hay nada que importar |
 | 1 | Importación amplia: guardar todo lo importado, encaje calculado en la app, pestaña de filtradas | Que una mala query no haga perder ofertas |
 | 2 | Importación periódica: script + workflow de GitHub Actions cada 6 h contra Render | Que la Bandeja se llene sola |
-| 3 | Fuente Adzuna (API oficial) | Volumen: agrega muchos portales de Reino Unido y Europa |
+| 3 | ~~Fuente Adzuna (API oficial)~~ Descartada el 2026-11-11 | Su plan gratuito es solo para evaluar la API ("The free tier is intended for evaluating the API", [términos](https://developer.adzuna.com/docs/terms_of_service)); el uso continuado es de pago |
 | 4 | Fuente Reed (API oficial) | Volumen en Reino Unido |
 | 5 | Alertas por email de LinkedIn e Indeed | Los dos portales grandes, que no tienen API para candidatos |
 | 6 | CV maestro: contacto, experiencias con logros, educación y habilidades | La única fuente de verdad de los CVs |
