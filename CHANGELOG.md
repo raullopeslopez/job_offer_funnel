@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Job boards can be imported from their RSS: `import_method: rss` with an
+  `rss_url_template` (an http(s) URL with `{query}`). The RSS is read once per title of
+  the search profiles, and each item reading `Company: Title` becomes an offer, with the
+  same 6-hour limit and expiry as the feeds. Evenbreak is the first one: `just
+  seed-job-boards` registers it as imported, and an existing Evenbreak job board switches
+  to its RSS on upgrade. The settings screen sets the RSS of a job board.
+
 - Filtered offers: a pending imported offer that fits none of the search profiles is
   `filtered` (new field on every offer), so a badly written profile hides offers instead
   of losing them. It always follows the current profiles: creating, editing or deleting
