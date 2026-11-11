@@ -232,6 +232,11 @@ Feature: Job board imports
     When I import the job board "LinkedIn"
     Then it is rejected because the job board is not imported
 
+  Scenario: A job board imported from its email alerts is not imported on demand
+    Given a job board named "LinkedIn" imported from the email alert "linkedin"
+    When I import the job board "LinkedIn"
+    Then it is rejected because the job board is imported from its email alerts
+
   Scenario: Importing needs an existing job board
     When I import a nonexistent job board
     Then it is rejected because the job board does not exist

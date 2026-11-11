@@ -10,10 +10,12 @@ Feature: Job boards
   is allowed.
   A job board also has an import method, how its offers reach the inbox: "none" (by
   hand, with its generated searches; the default), "api" (the app imports them from
-  the board's public feed: remoteok, remotive, himalayas or jobicy) or "rss" (the app
-  reads the board's RSS). A feed goes with "api" and only with it, and at most one job
-  board imports each feed. An RSS URL template goes with "rss" and only with it: an
-  http(s) URL with the placeholder {query}, where each search goes, and no other one.
+  the board's public feed: remoteok, remotive, himalayas or jobicy), "rss" (the app
+  reads the board's RSS) or "email" (the app reads the board's job alerts from email:
+  linkedin). A feed goes with "api" and only with it, and at most one job board imports
+  each feed. An RSS URL template goes with "rss" and only with it: an http(s) URL with
+  the placeholder {query}, where each search goes, and no other one. An email alert goes
+  with "email" and only with it, and at most one job board imports each email alert.
 
   # --- Creating ---
 
@@ -106,6 +108,36 @@ Feature: Job boards
       | rss           |          | https://jobs.example/rss                        |
       | rss           |          | https://jobs.example/rss?q={query}&l={location} |
       | rss           |          | ftp://jobs.example/rss?q={query}                |
+
+  Scenario: Create a job board imported from its email alerts
+    When I create a job board named "LinkedIn" imported from the email alert "linkedin"
+    Then the job board has:
+      | import_method | email    |
+      | email_alert   | linkedin |
+    And the job board has no feed
+    And the job board has no RSS URL template
+
+  Scenario Outline: The email alert goes with the import method "email"
+    When I create a job board named "Jobs" with import method "<import_method>" and email alert "<email_alert>"
+    Then it is rejected as invalid
+
+    Examples:
+      | import_method | email_alert |
+      | email         |             |
+      | none          | linkedin    |
+      | email         | indeed      |
+
+  Scenario: Two job boards cannot import the same email alert
+    Given a job board named "LinkedIn" imported from the email alert "linkedin"
+    When I create a job board named "LinkedIn again" imported from the email alert "linkedin"
+    Then it is rejected because another job board already imports that email alert
+
+  Scenario: Stop importing a job board from its email alerts
+    Given a job board named "LinkedIn" imported from the email alert "linkedin"
+    When I change it to not be imported
+    Then the job board has:
+      | import_method | none |
+    And the job board has no email alert
 
   Scenario: Two job boards cannot import the same feed
     Given a job board named "Remote OK" imported from the feed "remoteok"
