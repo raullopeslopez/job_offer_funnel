@@ -280,6 +280,8 @@
   {
     "name": "Evenbreak",
     "search_url_template": "https://www.evenbreak.com/searchjobs/?Keywords={query}&radialtown={location}",
-    "syntax": "keywords"
+    "syntax": "keywords",
+    "import_method": "rss",
+    "rss_url_template": "https://www.evenbreak.com/jobsrss/?keywords={query}"
   }
 ]

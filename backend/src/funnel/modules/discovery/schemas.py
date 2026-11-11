@@ -193,6 +193,13 @@ class JobBoardUpdate(BaseModel):
             raise ValueError(msg)
         return self
 
+    def changes(self) -> dict[str, object]:
+        """The fields to change: with `import_method`, the source not sent is cleared."""
+        sent = self.model_dump(exclude_unset=True)
+        if "import_method" in sent:
+            return {"feed": None, "rss_url_template": None} | sent
+        return sent
+
 
 class JobBoardRead(BaseModel):
     id: UUID

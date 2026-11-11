@@ -17,6 +17,8 @@ down_revision: Union[str, Sequence[str], None] = 'a7d2f4c91b3e'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+EVENBREAK_RSS = "https://www.evenbreak.com/jobsrss/?keywords={query}"
+
 
 def upgrade() -> None:
     """Upgrade schema."""
@@ -25,6 +27,12 @@ def upgrade() -> None:
         op.f('ck_job_boards_import_method'), 'job_boards', "import_method IN ('none', 'api', 'rss')"
     )
     op.add_column('job_boards', sa.Column('rss_url_template', sa.String(length=2048), nullable=True))
+    # Evenbreak, the one job board with a usable RSS (docs/fase0.md), is imported from it.
+    op.execute(
+        "UPDATE job_boards SET import_method = 'rss', "
+        f"rss_url_template = '{EVENBREAK_RSS}' "
+        "WHERE lower(name) = 'evenbreak' AND import_method = 'none'"
+    )
     op.create_check_constraint(
         op.f('ck_job_boards_rss_url_template_with_rss'),
         'job_boards',

@@ -191,7 +191,7 @@ async def update_job_board(
     job_board_id: UUID, changes: JobBoardUpdate, service: JobBoardServiceDependency
 ) -> JobBoardRead:
     """Change only the fields sent."""
-    updated = await service.update(job_board_id, changes.model_dump(exclude_unset=True))
+    updated = await service.update(job_board_id, changes.changes())
     return JobBoardRead.model_validate(updated, from_attributes=True)
 
 

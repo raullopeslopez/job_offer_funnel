@@ -9,7 +9,7 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { api } from "../../api/client";
 import { fieldErrors, isProblem } from "../../api/problems";
 import type { components } from "../../api/schema";
@@ -21,9 +21,28 @@ const SYNTAXES: Syntax[] = ["boolean", "minus", "keywords"];
 type Feed = components["schemas"]["Feed"];
 const FEEDS: Feed[] = ["himalayas", "jobicy", "remoteok", "remotive"];
 
-// "" is "not imported": the import method follows the feed.
-type Values = { name: string; search_url_template: string; syntax: Syntax; feed: Feed | "" };
-const FIELDS: (keyof Values)[] = ["name", "search_url_template", "syntax", "feed"];
+// The import method follows the source: "" is "not imported", "rss" its RSS, else a feed.
+const RSS = "rss";
+type Values = {
+  name: string;
+  search_url_template: string;
+  syntax: Syntax;
+  feed: Feed | typeof RSS | "";
+  rss_url_template: string;
+};
+const FIELDS: (keyof Values)[] = [
+  "name",
+  "search_url_template",
+  "syntax",
+  "feed",
+  "rss_url_template",
+];
+
+function importSource({ feed, rss_url_template }: Values) {
+  if (feed === RSS) return { import_method: "rss" as const, rss_url_template };
+  if (feed) return { import_method: "api" as const, feed };
+  return { import_method: "none" as const, feed: null };
+}
 
 /** Creates a job board, or edits `jobBoard` when given. */
 type Props = { jobBoard: JobBoard | null; onClose: () => void; onSaved: () => void };
@@ -40,14 +59,15 @@ export function JobBoardDialog({ jobBoard, onClose, onSaved }: Props) {
       name: jobBoard?.name ?? "",
       search_url_template: jobBoard?.search_url_template ?? "",
       syntax: jobBoard?.syntax ?? "keywords",
-      feed: jobBoard?.feed ?? "",
+      feed: jobBoard?.import_method === "rss" ? RSS : (jobBoard?.feed ?? ""),
+      rss_url_template: jobBoard?.rss_url_template ?? "",
     },
   });
+  const source = useWatch({ control, name: "feed" });
 
-  const onSubmit = handleSubmit(async ({ feed, ...fields }) => {
-    const body = feed
-      ? { ...fields, import_method: "api" as const, feed }
-      : { ...fields, import_method: "none" as const, feed: null };
+  const onSubmit = handleSubmit(async (values) => {
+    const { name, search_url_template, syntax } = values;
+    const body = { name, search_url_template, syntax, ...importSource(values) };
     const { error } = jobBoard
       ? await api.PATCH("/api/v1/job-boards/{job_board_id}", {
           params: { path: { job_board_id: jobBoard.id } },
@@ -137,6 +157,7 @@ export function JobBoardDialog({ jobBoard, onClose, onSaved }: Props) {
                   slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}
                 >
                   <MenuItem value="">Not imported</MenuItem>
+                  <MenuItem value={RSS}>{RSS}</MenuItem>
                   {FEEDS.map((feed) => (
                     <MenuItem key={feed} value={feed}>
                       {feed}
@@ -145,6 +166,18 @@ export function JobBoardDialog({ jobBoard, onClose, onSaved }: Props) {
                 </TextField>
               )}
             />
+            {source === RSS && (
+              <TextField
+                {...register("rss_url_template")}
+                label="RSS URL template"
+                fullWidth
+                error={Boolean(errors.rss_url_template)}
+                helperText={
+                  errors.rss_url_template?.message ??
+                  "{query} marks each title of your search profiles; items read “Company: Title”"
+                }
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>

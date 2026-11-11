@@ -145,6 +145,13 @@ When(
 );
 
 When(
+  "I change the job board {string} to be imported from the RSS {string}",
+  async ({ page }, name: string, template: string) => {
+    await edit(page, name, { feed: "rss", rss_url_template: template });
+  },
+);
+
+When(
   "I clear the {string} of the company {string}",
   async ({ page }, field: string, name: string) => {
     await edit(page, name, { [field]: "" });

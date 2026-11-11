@@ -11,7 +11,6 @@ from http import HTTPStatus
 from typing import Final
 
 from funnel.core.exceptions import AppError, DomainError
-from funnel.modules.discovery.domain import Feed
 
 
 class OfferStatus(StrEnum):
@@ -88,10 +87,10 @@ class FeedCooldownError(AppError):
     title = "Feed imported too recently"
     status = HTTPStatus.TOO_MANY_REQUESTS
 
-    def __init__(self, feed: Feed, allowed_at: datetime, now: datetime) -> None:
+    def __init__(self, job_board: str, allowed_at: datetime, now: datetime) -> None:
         wait = int((allowed_at - now).total_seconds())
         super().__init__(
-            f"{feed} can be imported again at {allowed_at.isoformat()}",
+            f"{job_board} can be imported again at {allowed_at.isoformat()}",
             headers={"Retry-After": str(wait)},
         )
 
