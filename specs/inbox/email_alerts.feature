@@ -6,9 +6,11 @@ Feature: Email alerts
   Importing an alert email adds its offers to the inbox like an import from a feed: as
   pending, kept as filtered when they fit no search profile
   (specs/inbox/filtered_offers.feature), and skipping the offers already in the inbox.
-  Only LinkedIn's job alerts are read; any other email is rejected. Each offer links to
-  the posting without the email's tracking and comes from its alert. An alert only
-  lists new offers, so the offers of alerts never expire.
+  Only LinkedIn's job alerts are read; any other email is rejected. Every LinkedIn job
+  alert is read the same way, whatever its search: the search profiles, not the alert,
+  decide which offers fit. Each offer links to the posting without the email's tracking
+  and comes from its alert. An alert only lists new offers, so the offers of alerts
+  never expire.
 
   Background:
     Given the time is 2026-03-10 09:00
