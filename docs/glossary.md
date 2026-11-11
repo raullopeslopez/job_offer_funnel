@@ -103,5 +103,6 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Importación de un feed | `import` |
 | Oferta filtrada (importada, pendiente y sin encaje con ningún perfil) | `filtered` |
 | Empresa vigilada (por su ATS) | `watched company` |
+| Alerta por email (de un portal sin API, como LinkedIn) | `email alert` · `alert`: `linkedin` |
 | ATS (sistema de selección de la empresa) | `ats`: `greenhouse` · `lever` · `ashby` |
 | Tablero de la empresa en su ATS (nombre en la URL pública de empleo) | `board` |
