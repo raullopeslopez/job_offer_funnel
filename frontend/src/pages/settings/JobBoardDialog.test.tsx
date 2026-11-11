@@ -10,6 +10,10 @@ const JOB_BOARD: JobBoard = {
   name: "LinkedIn",
   search_url_template: "https://www.linkedin.com/jobs/search/?keywords={query}",
   syntax: "boolean",
+  import_method: "none",
+  feed: null,
+  last_imported_at: null,
+  next_import_at: null,
 };
 
 function renderDialog(jobBoard: JobBoard | null = null) {
@@ -47,6 +51,8 @@ describe("JobBoardDialog", () => {
       name: "LinkedIn",
       search_url_template: "https://jobs.example/search?q={query}",
       syntax: "boolean",
+      import_method: "none",
+      feed: null,
     });
   });
 

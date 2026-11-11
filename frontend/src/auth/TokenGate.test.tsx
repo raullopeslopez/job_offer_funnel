@@ -8,9 +8,9 @@ import { getToken, saveToken } from "./token";
 
 const VALID_TOKEN = "secret";
 
-function feedsRequireToken() {
+function apiRequiresToken() {
   server.use(
-    http.get("/api/v1/feeds", ({ request }) =>
+    http.get("/api/v1/watched-companies", ({ request }) =>
       request.headers.get("Authorization") === `Bearer ${VALID_TOKEN}`
         ? HttpResponse.json([])
         : HttpResponse.json(
@@ -47,7 +47,7 @@ describe("TokenGate", () => {
 
   it("shows the app and keeps the token when the API accepts it", async () => {
     // Arrange
-    feedsRequireToken();
+    apiRequiresToken();
     renderGate();
 
     // Act
@@ -63,7 +63,7 @@ describe("TokenGate", () => {
     { token: "wrong", message: "Invalid token" },
   ])("rejects the token '$token' with '$message'", async ({ token, message }) => {
     // Arrange
-    feedsRequireToken();
+    apiRequiresToken();
     renderGate();
 
     // Act
@@ -76,7 +76,7 @@ describe("TokenGate", () => {
 
   it("tells when the API cannot be reached", async () => {
     // Arrange
-    server.use(http.get("/api/v1/feeds", () => HttpResponse.error()));
+    server.use(http.get("/api/v1/watched-companies", () => HttpResponse.error()));
     renderGate();
 
     // Act
@@ -89,12 +89,12 @@ describe("TokenGate", () => {
 
   it("asks for the token again when the API rejects the stored one", async () => {
     // Arrange
-    feedsRequireToken();
+    apiRequiresToken();
     saveToken("revoked");
     renderGate();
 
     // Act
-    await act(() => api.GET("/api/v1/feeds"));
+    await act(() => api.GET("/api/v1/watched-companies"));
 
     // Assert
     expect(screen.getByLabelText(/token/i)).toBeInTheDocument();

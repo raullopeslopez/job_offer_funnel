@@ -129,6 +129,19 @@ Feature: Settings screen
     When I change the "syntax" of the job board "LinkedIn" to "keywords"
     Then the job board "LinkedIn" shows "keywords"
 
+  Scenario: Start importing a job board from its feed
+    Given a job board named "Remote OK"
+    And I am on the job boards in the settings
+    When I change the job board "Remote OK" to be imported from the feed "remoteok"
+    Then the job board "Remote OK" shows "remoteok"
+
+  Scenario: A feed that another job board imports is rejected with a message
+    Given a job board named "Remote OK" imported from the feed "remoteok"
+    And a job board named "Remotive"
+    And I am on the job boards in the settings
+    When I change the job board "Remotive" to be imported from the feed "remoteok"
+    Then I see the message "Another job board already imports that feed"
+
   Scenario: A job board cannot be renamed to the name of another one
     Given job boards named "Indeed" and "LinkedIn"
     And I am on the job boards in the settings

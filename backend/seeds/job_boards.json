@@ -17,7 +17,9 @@
   {
     "name": "Jobicy",
     "search_url_template": "https://jobicy.com/jobs?search_keywords={query}",
-    "syntax": "keywords"
+    "syntax": "keywords",
+    "import_method": "api",
+    "feed": "jobicy"
   },
   {
     "name": "Welcome to the Jungle",
@@ -32,7 +34,9 @@
   {
     "name": "Himalayas",
     "search_url_template": "https://himalayas.app/jobs?search={query}",
-    "syntax": "keywords"
+    "syntax": "keywords",
+    "import_method": "api",
+    "feed": "himalayas"
   },
   {
     "name": "EuRemoteJobs",
@@ -52,7 +56,9 @@
   {
     "name": "Remote OK",
     "search_url_template": "https://remoteok.com/?search={query}",
-    "syntax": "keywords"
+    "syntax": "keywords",
+    "import_method": "api",
+    "feed": "remoteok"
   },
   {
     "name": "RemoteJobs.io",
@@ -142,7 +148,9 @@
   {
     "name": "Remotive",
     "search_url_template": "https://remotive.com/remote-jobs?query={query}",
-    "syntax": "keywords"
+    "syntax": "keywords",
+    "import_method": "api",
+    "feed": "remotive"
   },
   {
     "name": "Totaljobs",

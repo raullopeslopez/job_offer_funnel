@@ -12,6 +12,8 @@ Feature: Generated searches
   The URL is the job board's template with the query and the location URL-encoded;
   without a location, {location} is left empty. Work modes do not change the URL:
   they are shown so the job board's own filter can be set.
+  Job boards that are imported (specs/inbox/job_board_imports.feature) get no searches:
+  their offers reach the inbox by themselves.
 
   Background:
     Given a search profile named "Backend" with:
@@ -57,6 +59,12 @@ Feature: Generated searches
       | boolean  | "Backend Engineer" |
       | minus    | "Backend Engineer" |
       | keywords | Backend Engineer   |
+
+  Scenario: An imported job board gets no searches
+    Given a job board named "LinkedIn" with syntax "boolean"
+    And a job board named "Remote OK" imported from the feed "remoteok"
+    When I generate the searches of the profile "Backend"
+    Then the job boards with searches are, in order: "LinkedIn"
 
   # --- URLs ---
 

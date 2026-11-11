@@ -74,6 +74,19 @@ def given_job_board(client: TestClient, name: str, syntax: str) -> None:
     _create_job_board(client, name, syntax, TEMPLATE)
 
 
+@given(parsers.parse('a job board named "{name}" imported from the feed "{feed}"'))
+def given_imported_job_board(client: TestClient, name: str, feed: str) -> None:
+    body = {
+        "name": name,
+        "search_url_template": TEMPLATE,
+        "syntax": "keywords",
+        "import_method": "api",
+        "feed": feed,
+    }
+    response = client.post(JOB_BOARDS_URL, json=body)
+    assert response.status_code == 201, response.text
+
+
 @given(parsers.parse('a job board named "{name}" with syntax "{syntax}" and template "{template}"'))
 def given_job_board_with_template(
     client: TestClient, name: str, syntax: str, template: str

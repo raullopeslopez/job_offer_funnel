@@ -90,6 +90,7 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Modalidad | `work_mode`: `remote` · `hybrid` · `onsite` |
 | Sintaxis de búsqueda | `syntax`: `boolean` · `minus` · `keywords` |
 | Plantilla de URL de búsqueda | `search_url_template` |
+| Método de importación de un portal (cómo llegan sus ofertas a la Bandeja) | `import_method`: `none` (a mano, con su búsqueda generada) · `api` (por su feed) |
 
 ## Bandeja
 
@@ -99,8 +100,8 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Motivo de descarte | `discard_reason` |
 | Pasar a candidatura | `promote` |
 | Devolver a pendiente | `restore` |
-| Feed público (API o RSS de un portal) | `feed`: `remoteok` · `remotive` · `himalayas` · `jobicy` |
-| Importación de un feed | `import` |
+| Feed público (API de un portal, con un adaptador en el código; lo declara el portal) | `feed`: `remoteok` · `remotive` · `himalayas` · `jobicy` |
+| Importación de un portal | `import` |
 | Oferta filtrada (importada, pendiente y sin encaje con ningún perfil) | `filtered` |
 | Empresa vigilada (por su ATS) | `watched company` |
 | ATS (sistema de selección de la empresa) | `ats`: `greenhouse` · `lever` · `ashby` |

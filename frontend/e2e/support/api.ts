@@ -31,8 +31,10 @@ export class Api {
     name: string,
     syntax: Schemas["Syntax"] = "keywords",
     template = "https://jobs.example/search?q={query}",
+    feed: Schemas["Feed"] | null = null,
   ): Promise<Schemas["JobBoardRead"]> {
-    return this.post("/job-boards", { name, search_url_template: template, syntax });
+    const body = { name, search_url_template: template, syntax };
+    return this.post("/job-boards", feed ? { ...body, import_method: "api", feed } : body);
   }
 
   addSearchProfile(

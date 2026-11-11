@@ -107,7 +107,8 @@ async def generate_searches(
     profile_id: UUID,
     service: Annotated[SearchGenerationService, Depends(get_search_generation_service)],
 ) -> ProfileSearchesRead:
-    """The profile's search for every job board, in its syntax, with a URL ready to open.
+    """The profile's search for every job board that is not imported, in its syntax, with
+    a URL ready to open.
 
     Computed on every request: editing the profile or a job board updates the searches.
     """
@@ -148,7 +149,8 @@ _JOB_BOARD_NOT_FOUND: dict[int | str, dict[str, Any]] = {
 _JOB_BOARD_NAME_TAKEN: dict[int | str, dict[str, Any]] = {
     HTTPStatus.CONFLICT: {
         "model": ProblemRead,
-        "description": "A job board with that name already exists (`already-exists`)",
+        "description": "A job board with that name already exists (`already-exists`), or "
+        "another job board already imports that feed (`feed-taken`)",
     }
 }
 

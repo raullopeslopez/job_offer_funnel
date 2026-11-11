@@ -12,9 +12,12 @@ from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
 from funnel.modules.applications.service import build_application_service
 from funnel.modules.companies.service import build_company_service
-from funnel.modules.discovery.service import build_search_profile_service
+from funnel.modules.discovery.service import (
+    build_job_board_service,
+    build_search_profile_service,
+)
 from funnel.modules.inbox.ats import BoardReader
-from funnel.modules.inbox.domain import OfferStatus, next_import_at
+from funnel.modules.inbox.domain import OfferStatus
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.repository import (
     FeedImportRepository,
@@ -24,7 +27,6 @@ from funnel.modules.inbox.repository import (
 from funnel.modules.inbox.schemas import (
     BoardImportRead,
     DiscardCreate,
-    FeedRead,
     ImportRead,
     OfferCreate,
     OfferRead,
@@ -148,7 +150,7 @@ async def promote_offer(offer_id: UUID, promotion: PromotionCreate, service: Ser
 
 # --- Public feeds ---
 
-feeds_router = APIRouter(prefix="/feeds", tags=["inbox"])
+imports_router = APIRouter(prefix="/job-boards", tags=["inbox"])
 
 # Identifies the app to the feeds, as their terms expect; no personal data.
 USER_AGENT = "job-offer-funnel"
@@ -167,32 +169,27 @@ def get_feed_import_service(
     session: SessionDep,
     client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)],
 ) -> FeedImportService:
+    # One session for both modules: the offers and the import date are all or nothing.
     return FeedImportService(
-        FeedImportRepository(session), build_search_profile_service(session), FeedReader(client)
+        FeedImportRepository(session),
+        build_search_profile_service(session),
+        build_job_board_service(session),
+        FeedReader(client),
     )
 
 
 FeedService = Annotated[FeedImportService, Depends(get_feed_import_service)]
 
 
-@feeds_router.get("")
-async def list_feeds(service: FeedService) -> list[FeedRead]:
-    """Every public feed, with its last import and the earliest next one."""
-    return [
-        FeedRead(
-            feed=feed,
-            last_imported_at=last,
-            next_import_at=None if last is None else next_import_at(last),
-        )
-        for feed, last in await service.last_imports()
-    ]
-
-
-@feeds_router.post(
-    "/{feed}/imports",
+@imports_router.post(
+    "/{job_board_id}/imports",
     status_code=HTTPStatus.CREATED,
     responses={
-        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Feed does not exist"},
+        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Job board does not exist"},
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "The job board's import method is `none` (`job-board-not-imported`)",
+        },
         HTTPStatus.TOO_MANY_REQUESTS: {
             "model": ProblemRead,
             "description": "Imported less than 6 hours ago (`feed-cooldown`); "
@@ -204,18 +201,20 @@ async def list_feeds(service: FeedService) -> list[FeedRead]:
         },
     },
 )
-async def import_feed(
-    feed: str, service: FeedService, clock: Annotated[Clock, Depends(get_clock)]
+async def import_job_board(
+    job_board_id: UUID, service: FeedService, clock: Annotated[Clock, Depends(get_clock)]
 ) -> ImportRead:
-    """Add every offer of the feed to the inbox, as pending; the ones that fit no search
-    profile are filtered. Himalayas is searched by the titles of every profile.
+    """Add every offer of the job board's feed to the inbox, as pending, with the job
+    board as their source; the ones that fit no search profile are filtered. Himalayas is
+    searched by the titles of every profile.
 
-    Duplicates are skipped; pending offers of this feed that left it are discarded as
-    expired. A feed can be imported at most once every 6 hours (each feed's terms).
+    Duplicates are skipped; pending imported offers of this job board that left the feed
+    are discarded as expired. A job board can be imported at most once every 6 hours
+    (each feed's terms).
     """
-    result = await service.import_feed(feed, clock.now())
+    result = await service.import_job_board(job_board_id, clock.now())
     return ImportRead(
-        feed=result.feed,
+        job_board_id=result.job_board_id,
         found=result.found,
         added=result.added,
         filtered=result.filtered,
@@ -320,5 +319,5 @@ async def import_watched_company(
 
 router = APIRouter()
 router.include_router(offers_router)
-router.include_router(feeds_router)
+router.include_router(imports_router)
 router.include_router(watched_companies_router)

@@ -20,6 +20,7 @@ const FIELD_LABELS: Record<string, string> = {
   website: "Website",
   search_url_template: "Search URL template",
   syntax: "Syntax",
+  feed: "Imported from",
   ats: "ATS",
   board: "Board",
   profile_id: "Search profile",

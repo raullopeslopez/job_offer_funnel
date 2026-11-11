@@ -11,19 +11,20 @@ import type { Offer } from "./OffersGrid";
 // specs/ui/inbox.feature, @component scenarios: only an import makes filtered offers, and
 // the E2E tests cannot reach the feeds.
 
+const REMOTE_OK_ID = "6f1c1d2e-0000-4000-8000-000000000005";
+
 const offer = (title: string, filtered: boolean): Offer => ({
   id: crypto.randomUUID(),
   url: `https://remoteok.com/${title}`,
   company: "Acme",
   title,
-  job_board_id: null,
-  job_board_name: null,
+  job_board_id: REMOTE_OK_ID,
+  job_board_name: "Remote OK",
   notes: null,
   status: "pending",
   filtered,
   discard_reason: null,
   application_id: null,
-  feed: "remoteok",
   watched_company_id: null,
   watched_company_name: null,
   created_at: "2026-03-10T09:00:00Z",

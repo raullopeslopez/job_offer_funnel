@@ -1,0 +1,131 @@
+Feature: Job board imports
+  As a job seeker
+  I want to import into the inbox the offers of the job boards that publish a feed
+  So that new offers arrive without searching by hand
+
+  A job board with import method "api" (specs/discovery/job_boards.feature) is imported
+  from its feed: remoteok, remotive, himalayas or jobicy. Importing it adds to the inbox,
+  as pending, every offer the feed returns; the ones that fit no search profile are kept
+  as filtered (specs/inbox/filtered_offers.feature). Offers already in the inbox are skipped.
+  Himalayas' terms rule out reading it whole, so it is searched by the titles of all the
+  search profiles; without profiles it returns nothing.
+  Every imported offer keeps the link to the original posting and its job board as source.
+  To respect each feed's terms, a job board can be imported at most once every 6 hours,
+  and its pending imported offers that are no longer in the feed are discarded as expired.
+
+  Background:
+    Given the time is 2026-03-10 09:00
+    And a search profile named "Backend" with:
+      | titles | Backend Engineer, Python Developer |
+    And the job boards imported from a feed:
+      | name      | feed      |
+      | Remote OK | remoteok  |
+      | Remotive  | remotive  |
+      | Himalayas | himalayas |
+      | Jobicy    | jobicy    |
+
+  # --- Importing ---
+
+  Scenario: Import every offer of a job board
+    Given the feed "remoteok" publishes:
+      | title              | company | description             | url                     |
+      | Backend Engineer   | Acme    | Python and PostgreSQL   | https://remoteok.com/1  |
+      | Python Developer   | Globex  | We use Python daily     | https://remoteok.com/2  |
+      | Frontend Engineer  | Initech | React and Python        | https://remoteok.com/3  |
+    When I import the job board "Remote OK"
+    Then the import found 3 offers, 3 added, 1 filtered and 0 already in the inbox
+    And the pending offers are: "Frontend Engineer", "Python Developer", "Backend Engineer"
+
+  Scenario: Himalayas is searched by the titles of every search profile
+    Given a search profile named "Data" with:
+      | titles | Data Engineer |
+    When I import the job board "Himalayas"
+    Then the feed "himalayas" was searched for: "Backend Engineer", "Python Developer", "Data Engineer"
+
+  Scenario: Without search profiles Himalayas returns nothing
+    Given there are no search profiles
+    When I import the job board "Himalayas"
+    Then the feed "himalayas" was not searched
+    And the import found 0 offers, 0 added, 0 filtered and 0 already in the inbox
+
+  Scenario: Offers already in the inbox are skipped, even if discarded
+    Given an offer for "Acme" as "Backend Engineer" that was discarded
+    And the feed "remoteok" publishes:
+      | title            | company | description     | url                    |
+      | Backend Engineer | ACME    | Python services | https://remoteok.com/1 |
+    When I import the job board "Remote OK"
+    Then the import found 1 offers, 0 added, 0 filtered and 1 already in the inbox
+
+  Scenario: An imported offer keeps the original link and its job board as source
+    Given the feed "himalayas" publishes:
+      | title            | company | description     | url                         |
+      | Backend Engineer | Acme    | Python services | https://himalayas.app/jobs/1 |
+    When I import the job board "Himalayas"
+    Then the offer "Backend Engineer" links to "https://himalayas.app/jobs/1" and comes from the job board "Himalayas"
+
+  # --- Respecting the feeds' terms ---
+
+  Scenario: A job board cannot be imported again within 6 hours
+    Given the job board "Remote OK" was imported at 2026-03-10 04:00
+    When I import the job board "Remote OK"
+    Then it is rejected because the job board was imported too recently, until 2026-03-10 10:00
+
+  Scenario: A job board can be imported again after 6 hours
+    Given the job board "Remote OK" was imported at 2026-03-10 03:00
+    And the feed "remoteok" publishes no offers
+    When I import the job board "Remote OK"
+    Then the import found 0 offers, 0 added, 0 filtered and 0 already in the inbox
+
+  Scenario: Each job board has its own limit
+    Given the job board "Remote OK" was imported at 2026-03-10 08:00
+    And the feed "jobicy" publishes no offers
+    When I import the job board "Jobicy"
+    Then the import found 0 offers, 0 added, 0 filtered and 0 already in the inbox
+
+  Scenario: Pending offers that left the feed are discarded as expired
+    Given the job board "Remote OK" was imported at 2026-03-10 01:00 with:
+      | title            | company | description     | url                    |
+      | Backend Engineer | Acme    | Python services | https://remoteok.com/1 |
+      | Python Developer | Globex  | Python services | https://remoteok.com/2 |
+    And I promoted the offer "Python Developer"
+    And the feed "remoteok" publishes no offers
+    When I import the job board "Remote OK"
+    Then the offer "Backend Engineer" is "discarded" with reason "expired"
+    And the offer "Python Developer" is "promoted"
+
+  Scenario: Offers added by hand never expire, even in an imported job board
+    Given an offer for "Acme" as "Backend Engineer" from "Remote OK"
+    And the feed "remoteok" publishes no offers
+    When I import the job board "Remote OK"
+    Then the offer "Backend Engineer" is "pending"
+
+  Scenario: A feed that is not available adds nothing and can be retried at once
+    Given the feed "remotive" is not available
+    When I import the job board "Remotive"
+    Then it is rejected because the feed is not available
+    And the job board "Remotive" has never been imported
+
+  # --- Last import ---
+
+  Scenario: The job boards show when they were last imported
+    Given a job board named "LinkedIn"
+    And the job board "Remote OK" was imported at 2026-03-10 04:00
+    When I list the job boards
+    Then the job boards are:
+      | name      | import_method | last_imported_at | next_import_at   |
+      | Himalayas | api           |                  |                  |
+      | Jobicy    | api           |                  |                  |
+      | LinkedIn  | none          |                  |                  |
+      | Remote OK | api           | 2026-03-10 04:00 | 2026-03-10 10:00 |
+      | Remotive  | api           |                  |                  |
+
+  # --- Errors ---
+
+  Scenario: Only a job board with an import method can be imported
+    Given a job board named "LinkedIn"
+    When I import the job board "LinkedIn"
+    Then it is rejected because the job board is not imported
+
+  Scenario: Importing needs an existing job board
+    When I import a nonexistent job board
+    Then it is rejected because the job board does not exist

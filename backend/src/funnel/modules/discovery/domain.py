@@ -5,9 +5,13 @@ Source of truth: specs/discovery/.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import StrEnum
+from http import HTTPStatus
 from typing import Final
 from urllib.parse import quote
+
+from funnel.core.exceptions import AppError
 
 
 class WorkMode(StrEnum):
@@ -22,6 +26,38 @@ class Syntax(StrEnum):
     BOOLEAN = "boolean"  # AND, OR, NOT, "quotes" and (parentheses)
     MINUS = "minus"  # OR, "quotes" and -word to exclude
     KEYWORDS = "keywords"  # plain words
+
+
+class ImportMethod(StrEnum):
+    """How the offers of a job board reach the inbox."""
+
+    NONE = "none"  # by hand, with its generated searches
+    API = "api"  # imported from its public feed
+
+
+class Feed(StrEnum):
+    """Public JSON APIs of remote job boards (see docs/fase0.md for their terms)."""
+
+    HIMALAYAS = "himalayas"
+    JOBICY = "jobicy"
+    REMOTEOK = "remoteok"
+    REMOTIVE = "remotive"
+
+
+# The strictest feed terms (Remotive: at most 4 reads a day) apply to every feed.
+IMPORT_COOLDOWN: Final = timedelta(hours=6)
+
+
+def next_import_at(last_imported_at: datetime) -> datetime:
+    return last_imported_at + IMPORT_COOLDOWN
+
+
+class FeedTakenError(AppError):
+    """Each feed is imported by one job board at most."""
+
+    slug = "feed-taken"
+    title = "Feed already imported by another job board"
+    status = HTTPStatus.CONFLICT
 
 
 # Placeholders of a job board's search URL template.

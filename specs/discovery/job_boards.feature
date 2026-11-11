@@ -8,6 +8,10 @@ Feature: Job boards
   "minus" (OR, quotes and -word to exclude) or "keywords" (plain words). The template is an http(s) URL with the placeholder
   {query}, where the search goes, and optionally {location}; no other placeholder
   is allowed.
+  A job board also has an import method, how its offers reach the inbox: "none" (by
+  hand, with its generated searches; the default) or "api" (the app imports them from
+  the board's public feed: remoteok, remotive, himalayas or jobicy). A feed goes with
+  "api" and only with it, and at most one job board imports each feed.
 
   # --- Creating ---
 
@@ -53,6 +57,61 @@ Feature: Job boards
       | name     |
       | LinkedIn |
       | linkedin |
+
+  # --- Import method ---
+
+  Scenario: A job board is not imported unless it says so
+    When I create a job board named "LinkedIn" with template "https://www.linkedin.com/jobs/search/?keywords={query}" and syntax "boolean"
+    Then the job board has:
+      | import_method | none |
+    And the job board has no feed
+
+  Scenario: Create a job board imported from its feed
+    When I create a job board named "Remote OK" imported from the feed "remoteok"
+    Then the job board has:
+      | import_method | api      |
+      | feed          | remoteok |
+
+  Scenario Outline: The import method and the feed must go together
+    When I create a job board named "Jobs" with import method "<import_method>" and feed "<feed>"
+    Then it is rejected as invalid
+
+    Examples:
+      | import_method | feed     |
+      | api           |          |
+      | none          | remoteok |
+      | api           | linkedin |
+      | scraping      |          |
+
+  Scenario: Two job boards cannot import the same feed
+    Given a job board named "Remote OK" imported from the feed "remoteok"
+    When I create a job board named "RemoteOK again" imported from the feed "remoteok"
+    Then it is rejected because another job board already imports that feed
+
+  Scenario: Start importing a job board
+    Given a job board named "Remote OK"
+    When I change it to be imported from the feed "remoteok"
+    Then the job board has:
+      | import_method | api      |
+      | feed          | remoteok |
+
+  Scenario: Stop importing a job board
+    Given a job board named "Remote OK" imported from the feed "remoteok"
+    When I change it to not be imported
+    Then the job board has:
+      | import_method | none |
+    And the job board has no feed
+
+  Scenario: An edit cannot leave the import method without its feed
+    Given a job board named "Remote OK"
+    When I change its "import_method" to "api"
+    Then it is rejected as invalid
+
+  Scenario: A job board cannot take the feed of another one
+    Given a job board named "Remote OK" imported from the feed "remoteok"
+    And a job board named "Remotive"
+    When I change it to be imported from the feed "remoteok"
+    Then it is rejected because another job board already imports that feed
 
   # --- Viewing and listing ---
 

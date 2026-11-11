@@ -23,7 +23,7 @@
 | 0 | Poblar producción (sin PR): seed de portales contra Render, perfiles y empresas vigiladas | Sin perfiles no hay nada que importar |
 | 1 | Importación amplia: guardar todo lo importado, encaje calculado en la app, pestaña de filtradas (hecho) | Que una mala query no haga perder ofertas |
 | 2 | Importación periódica: script + workflow de GitHub Actions cada 6 h contra Render (hecho) | Que la Bandeja se llene sola |
-| 3 | Método de importación en el portal y origen único de la oferta: `job_boards` gana el método, las ofertas importadas llevan `job_board_id`, se retira `feed` de las ofertas. Migración reversible que conserva el origen de las ya importadas | Base de las filas 4 y 5; quita los portales duplicados y la búsqueda manual en los que ya se importan solos |
+| 3 | Método de importación en el portal y origen único de la oferta: `job_boards` gana el método, las ofertas importadas llevan `job_board_id`, se retira `feed` de las ofertas. Migración reversible que conserva el origen de las ya importadas (hecho; por ahora con los métodos `none` y `api`: `rss` y `email` entran con las filas 4 y 5) | Base de las filas 4 y 5; quita los portales duplicados y la búsqueda manual en los que ya se importan solos |
 | 4 | Importador RSS genérico: Reed, Evenbreak, EuRemoteJobs, Durlston Partners, Cryptocurrency Jobs y Landing.jobs, previa revisión de sus condiciones | Seis portales más con un solo parser y sin claves |
 | 5 | Alertas por email, empezando por LinkedIn e Indeed; después, el resto de portales con alertas | El volumen: los portales grandes, que no tienen API ni RSS para candidatos |
 | 6 | CV maestro: contacto, experiencias con logros, educación y habilidades | La única fuente de verdad de los CVs |

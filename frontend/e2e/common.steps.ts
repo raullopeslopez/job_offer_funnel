@@ -14,6 +14,13 @@ Given("a job board named {string}", async ({ api }, name: string) => {
   await api.addJobBoard(name);
 });
 
+Given(
+  "a job board named {string} imported from the feed {string}",
+  async ({ api }, name: string, feed: string) => {
+    await api.addJobBoard(name, "keywords", undefined, feed as "remoteok");
+  },
+);
+
 Then("I see an error on the field {string}", async ({ page }, field: string) => {
   const input = page.getByRole("dialog").getByLabel(fieldLabel(field), { exact: true });
   await expect(input).toHaveAttribute("aria-invalid", "true");

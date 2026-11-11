@@ -21,6 +21,7 @@ _TEMPLATE = r'"(?P<template>[^"]*)"'
 _SYNTAX = r'"(?P<syntax>[^"]*)"'
 _FIELD = r'"(?P<field>[^"]*)"'
 _VALUE = r'"(?P<value>[^"]*)"'
+_FEED = r'"(?P<feed>[^"]*)"'
 
 
 @dataclass
@@ -45,6 +46,10 @@ def _quoted(text: str) -> list[str]:
 
 def _body(name: str) -> dict[str, str]:
     return {"name": name, "search_url_template": TEMPLATE, "syntax": "boolean"}
+
+
+def _imported(name: str, feed: str) -> dict[str, str]:
+    return _body(name) | {"import_method": "api", "feed": feed}
 
 
 def _create(client: TestClient, state: ScenarioState, body: dict[str, Any]) -> None:
@@ -73,9 +78,18 @@ def _assert_problem(state: ScenarioState, status: int, slug: str) -> None:
 # --- Given ---
 
 
-@given(parsers.parse('a job board named "{name}"'))
+@given(parsers.re(f"a job board named {_NAME}$"))
 def given_job_board(client: TestClient, state: ScenarioState, name: str) -> None:
     response = client.post(URL, json=_body(name))
+    assert response.status_code == 201, response.text
+    state.job_board_id = response.json()["id"]
+
+
+@given(parsers.re(f"a job board named {_NAME} imported from the feed {_FEED}$"))
+def given_imported_job_board(
+    client: TestClient, state: ScenarioState, name: str, feed: str
+) -> None:
+    response = client.post(URL, json=_imported(name, feed))
     assert response.status_code == 201, response.text
     state.job_board_id = response.json()["id"]
 
@@ -105,6 +119,33 @@ def when_create(
 ) -> None:
     body = {"name": name, "search_url_template": template, "syntax": syntax}
     _create(client, state, body)
+
+
+@when(parsers.re(f"I create a job board named {_NAME} imported from the feed {_FEED}$"))
+def when_create_imported(client: TestClient, state: ScenarioState, name: str, feed: str) -> None:
+    _create(client, state, _imported(name, feed))
+
+
+@when(
+    parsers.re(
+        f'I create a job board named {_NAME} with import method "(?P<import_method>[^"]*)" '
+        f"and feed {_FEED}$"
+    )
+)
+def when_create_with_import(
+    client: TestClient, state: ScenarioState, name: str, import_method: str, feed: str
+) -> None:
+    _create(client, state, _body(name) | {"import_method": import_method, "feed": feed or None})
+
+
+@when(parsers.parse('I change it to be imported from the feed "{feed}"'))
+def when_start_importing(client: TestClient, state: ScenarioState, feed: str) -> None:
+    _update(client, state, {"import_method": "api", "feed": feed})
+
+
+@when("I change it to not be imported")
+def when_stop_importing(client: TestClient, state: ScenarioState) -> None:
+    _update(client, state, {"import_method": "none", "feed": None})
 
 
 @when("I view that job board")
@@ -158,6 +199,16 @@ def then_job_board_has(
 ) -> None:
     job_board = _read_job_board(client, state)
     assert {field: job_board[field] for field, _ in datatable} == dict(datatable)
+
+
+@then("the job board has no feed")
+def then_no_feed(client: TestClient, state: ScenarioState) -> None:
+    assert _read_job_board(client, state)["feed"] is None
+
+
+@then("it is rejected because another job board already imports that feed")
+def then_feed_taken(state: ScenarioState) -> None:
+    _assert_problem(state, 409, "feed-taken")
 
 
 @then(parsers.parse('its "{field}" is "{value}"'))

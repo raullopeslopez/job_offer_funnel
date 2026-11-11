@@ -22,6 +22,13 @@ While the version is `0.x`, the API may change without a major version bump.
   `import-offers`, also runnable by hand). `just import-offers` does the same against the
   local API, or any API given in `API_URL`.
 
+- Job boards say how their offers reach the inbox: `import_method` is `none` (by hand, with
+  the generated searches) or `api`, with the public `feed` they are imported from (`remoteok`,
+  `remotive`, `himalayas` or `jobicy`; one job board per feed). Import one with
+  `POST /api/v1/job-boards/{id}/imports`; each job board shows `last_imported_at` and
+  `next_import_at`. The settings screen sets the feed of a job board, and
+  `just seed-job-boards` registers Remote OK, Remotive, Himalayas and Jobicy as imported.
+
 - The app can be deployed to Render (API and web app, `render.yaml`) with the database in Neon.
 - Web app navigation with an icon per screen, a light/dark theme toggle that remembers your choice, and a mobile layout below 900px with a top bar and a slide-in menu.
 - `just seed-job-boards` now registers 43 more job boards with a checked search URL:
@@ -83,6 +90,13 @@ While the version is `0.x`, the API may change without a major version bump.
   (no request body): it adds every offer the source returns, skipping duplicates. The
   import summary reports how many of the added ones are `filtered` instead of `matching`.
   Himalayas is searched by the titles of every search profile.
+- **Breaking:** feeds are imported through their job board. `GET /api/v1/feeds` and
+  `POST /api/v1/feeds/{feed}/imports` are gone (use the job boards and
+  `POST /api/v1/job-boards/{id}/imports`), offers no longer have `feed` (an imported offer
+  has the `job_board_id` and `job_board_name` of its job board), and the import summary
+  has `job_board_id` instead of `feed`. Existing offers and import dates move to the job
+  boards named Remote OK, Remotive, Himalayas and Jobicy, created if missing.
+- A search profile's generated searches leave out the job boards that are imported.
 - Metrics screen shows four key figures on top (active, interviewing, response rate and
   offers) and a rate bar next to each conversion rate.
 - Lists are easier to scan: two-line rows with the company avatar (its logo in Settings),

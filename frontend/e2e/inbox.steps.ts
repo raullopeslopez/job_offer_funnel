@@ -192,3 +192,9 @@ Then("the offer {string} cannot be discarded or promoted", async ({ page }, titl
   await expect(row(page, title)).toBeVisible();
   await expect(row(page, title).getByRole("button", { name: /Discard|Promote/ })).toHaveCount(0);
 });
+
+Then("I can import the job boards: {string}", async ({ page }, name: string) => {
+  await page.getByRole("button", { name: "Import job board" }).click();
+  await page.getByRole("dialog").getByRole("combobox", { name: "Job board" }).click();
+  await expect(page.getByRole("option")).toHaveText([name]);
+});

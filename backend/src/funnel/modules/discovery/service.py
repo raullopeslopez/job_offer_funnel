@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,9 +77,13 @@ class JobBoardService:
     async def list_page(self, page: PageParams) -> tuple[list[JobBoardRow], int]:
         return await self._repository.list_page(page)
 
+    async def record_import(self, job_board: JobBoardRow, imported_at: datetime) -> None:
+        await self._repository.record_import(job_board, imported_at)
+
 
 class SearchGenerationService:
-    """Builds a profile's searches for every job board; nothing is stored."""
+    """Builds a profile's searches for every job board that is not imported; nothing is
+    stored."""
 
     def __init__(self, profiles: SearchProfileRepository, job_boards: JobBoardRepository) -> None:
         self._profiles = profiles
@@ -95,7 +100,7 @@ class SearchGenerationService:
             keywords=profile.keywords,
             excluded_keywords=profile.excluded_keywords,
         )
-        job_boards = await self._job_boards.list_all()
+        job_boards = await self._job_boards.list_searched_by_hand()
         return profile, [
             (job_board, _searches(job_board, terms, profile.location)) for job_board in job_boards
         ]
@@ -113,3 +118,8 @@ def _searches(
 def build_search_profile_service(session: AsyncSession) -> SearchProfileService:
     """For other modules: the service on their request session, without its repository."""
     return SearchProfileService(SearchProfileRepository(session))
+
+
+def build_job_board_service(session: AsyncSession) -> JobBoardService:
+    """For other modules: the service on their request session, without its repository."""
+    return JobBoardService(JobBoardRepository(session))
