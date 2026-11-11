@@ -24,7 +24,7 @@
 | 1 | Importación amplia: guardar todo lo importado, encaje calculado en la app, pestaña de filtradas (hecho) | Que una mala query no haga perder ofertas |
 | 2 | Importación periódica: script + workflow de GitHub Actions cada 6 h contra Render (hecho) | Que la Bandeja se llene sola |
 | 3 | Método de importación en el portal y origen único de la oferta: `job_boards` gana el método, las ofertas importadas llevan `job_board_id`, se retira `feed` de las ofertas. Migración reversible que conserva el origen de las ya importadas (hecho; por ahora con los métodos `none` y `api`: `rss` y `email` entran con las filas 4 y 5) | Base de las filas 4 y 5; quita los portales duplicados y la búsqueda manual en los que ya se importan solos |
-| 4 | Importador RSS genérico: Reed, Evenbreak, EuRemoteJobs, Durlston Partners, Cryptocurrency Jobs y Landing.jobs, previa revisión de sus condiciones | Seis portales más con un solo parser y sin claves |
+| 4 | Importación por RSS: método `rss` con la plantilla de la URL del RSS en el portal, leída por cada título de los perfiles. Solo Evenbreak: de los seis RSS, Landing.jobs y Cryptocurrency Jobs lo prohíben en sus condiciones y Reed, EuRemoteJobs y Durlston no traen la empresa (`docs/fase0.md`) | Un portal más sin claves, y el método listo para el siguiente RSS |
 | 5 | Alertas por email, empezando por LinkedIn e Indeed; después, el resto de portales con alertas | El volumen: los portales grandes, que no tienen API ni RSS para candidatos |
 | 6 | CV maestro: contacto, experiencias con logros, educación y habilidades | La única fuente de verdad de los CVs |
 | 7 | CV para una oferta: encaje de palabras clave y selección de logros | Adaptar el CV sin reescribirlo desde cero |
@@ -37,7 +37,8 @@ Las filas 1 a 5 son de ofertas y van antes que las de CVs (6 a 8). Cada fila sig
 | Fuera | Entra cuando... |
 |-------|-----------------|
 | Fuente Adzuna por API oficial | Sus alertas por email (fila 5) se queden cortas; exige clave |
-| Fuente Reed por API oficial | Su RSS (fila 4) no se pueda usar por sus condiciones o se quede corto; exige clave |
+| Fuente Reed por API oficial | Sus alertas por email (fila 5) se queden cortas; su RSS no trae la empresa (fila 4); exige clave |
+| Empresa del RSS por otra convención (`<author>`, `Título at Empresa`) | Aparezca un RSS permitido que la traiga así; hoy solo Evenbreak (`Empresa: Título`) |
 | Importar el CV desde PDF o DOCX (pdf_oxide) | Mantener el CV maestro a mano se haga pesado |
 | Reescritura del CV con IA (API de Claude) | Retocar a mano los CVs por oferta se haga pesado; implica coste por uso y enviar datos del CV a un tercero |
 | Puntuación de encaje en lugar de filtro | La Bandeja tenga más ofertas de las que se revisan |

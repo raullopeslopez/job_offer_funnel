@@ -9,9 +9,11 @@ Feature: Job boards
   {query}, where the search goes, and optionally {location}; no other placeholder
   is allowed.
   A job board also has an import method, how its offers reach the inbox: "none" (by
-  hand, with its generated searches; the default) or "api" (the app imports them from
-  the board's public feed: remoteok, remotive, himalayas or jobicy). A feed goes with
-  "api" and only with it, and at most one job board imports each feed.
+  hand, with its generated searches; the default), "api" (the app imports them from
+  the board's public feed: remoteok, remotive, himalayas or jobicy) or "rss" (the app
+  reads the board's RSS). A feed goes with "api" and only with it, and at most one job
+  board imports each feed. An RSS URL template goes with "rss" and only with it: an
+  http(s) URL with the placeholder {query}, where each search goes, and no other one.
 
   # --- Creating ---
 
@@ -65,6 +67,7 @@ Feature: Job boards
     Then the job board has:
       | import_method | none |
     And the job board has no feed
+    And the job board has no RSS URL template
 
   Scenario: Create a job board imported from its feed
     When I create a job board named "Remote OK" imported from the feed "remoteok"
@@ -82,6 +85,27 @@ Feature: Job boards
       | none          | remoteok |
       | api           | linkedin |
       | scraping      |          |
+
+  Scenario: Create a job board imported from its RSS
+    When I create a job board named "Evenbreak" imported from the RSS "https://www.evenbreak.com/jobsrss/?keywords={query}"
+    Then the job board has:
+      | import_method    | rss                                                 |
+      | rss_url_template | https://www.evenbreak.com/jobsrss/?keywords={query} |
+    And the job board has no feed
+
+  Scenario Outline: The RSS URL template goes with the import method "rss" and must be valid
+    When I create a job board named "Jobs" with import method "<import_method>", feed "<feed>" and RSS URL template "<rss_url_template>"
+    Then it is rejected as invalid
+
+    Examples:
+      | import_method | feed     | rss_url_template                                |
+      | rss           |          |                                                 |
+      | none          |          | https://jobs.example/rss?q={query}              |
+      | api           | remoteok | https://jobs.example/rss?q={query}              |
+      | rss           | remoteok | https://jobs.example/rss?q={query}              |
+      | rss           |          | https://jobs.example/rss                        |
+      | rss           |          | https://jobs.example/rss?q={query}&l={location} |
+      | rss           |          | ftp://jobs.example/rss?q={query}                |
 
   Scenario: Two job boards cannot import the same feed
     Given a job board named "Remote OK" imported from the feed "remoteok"
@@ -101,10 +125,38 @@ Feature: Job boards
     Then the job board has:
       | import_method | none |
     And the job board has no feed
+    And the job board has no RSS URL template
+
+  Scenario: Start importing a job board from its RSS
+    Given a job board named "Evenbreak"
+    When I change it to be imported from the RSS "https://www.evenbreak.com/jobsrss/?keywords={query}"
+    Then the job board has:
+      | import_method    | rss                                                 |
+      | rss_url_template | https://www.evenbreak.com/jobsrss/?keywords={query} |
+
+  Scenario: Stop importing a job board from its RSS
+    Given a job board named "Evenbreak" imported from the RSS "https://www.evenbreak.com/jobsrss/?keywords={query}"
+    When I change it to not be imported
+    Then the job board has:
+      | import_method | none |
+    And the job board has no RSS URL template
+
+  Scenario: Switch a job board from its RSS to a feed
+    Given a job board named "Jobicy" imported from the RSS "https://jobicy.com/?feed=job_feed&search_keywords={query}"
+    When I change it to be imported from the feed "jobicy"
+    Then the job board has:
+      | import_method | api    |
+      | feed          | jobicy |
+    And the job board has no RSS URL template
 
   Scenario: An edit cannot leave the import method without its feed
     Given a job board named "Remote OK"
     When I change its "import_method" to "api"
+    Then it is rejected as invalid
+
+  Scenario: An edit cannot leave the import method "rss" without its RSS URL template
+    Given a job board named "Evenbreak"
+    When I change its "import_method" to "rss"
     Then it is rejected as invalid
 
   Scenario: A job board cannot take the feed of another one
