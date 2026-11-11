@@ -79,17 +79,25 @@ _PLACEHOLDER = re.compile(r"\{(\w*)\}")
 _http_url_text = TypeAdapter(HttpUrlText)
 
 
-def _validate_search_url_template(template: str) -> str:
+def _validate_url_template(template: str, allowed: frozenset[str]) -> str:
     found = set(_PLACEHOLDER.findall(template))
     if QUERY_PLACEHOLDER not in found:
         msg = f"must contain {{{QUERY_PLACEHOLDER}}}"
         raise ValueError(msg)
-    if unknown := found - PLACEHOLDERS:
+    if unknown := found - allowed:
         msg = f"unknown placeholders: {', '.join(sorted(unknown))}"
         raise ValueError(msg)
     # Validate the URL as it will be opened, with the placeholders filled in.
     _http_url_text.validate_python(_PLACEHOLDER.sub("x", template))
     return template
+
+
+def _validate_search_url_template(template: str) -> str:
+    return _validate_url_template(template, PLACEHOLDERS)
+
+
+def _validate_rss_url_template(template: str) -> str:
+    return _validate_url_template(template, frozenset({QUERY_PLACEHOLDER}))
 
 
 SearchUrlTemplate = Annotated[
@@ -103,14 +111,37 @@ SearchUrlTemplate = Annotated[
 ]
 
 
+RssUrlTemplate = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, max_length=2048),
+    AfterValidator(_validate_rss_url_template),
+    Field(
+        description="http(s) URL of its RSS with {query}, where each search profile title "
+        "goes. Its items read `Company: Title`. Required with `rss`, null otherwise.",
+        examples=["https://www.evenbreak.com/jobsrss/?keywords={query}"],
+    ),
+]
+
 _IMPORT_METHOD = Field(
     description="How its offers reach the inbox: `none` (by hand, with its generated "
-    "searches) or `api` (imported from its `feed`)."
+    "searches), `api` (imported from its `feed`) or `rss` (imported from its "
+    "`rss_url_template`)."
 )
 _FEED = Field(
-    description="The public feed it is imported from: required with `api`, null with "
-    "`none`. At most one job board imports each feed."
+    description="The public feed it is imported from: required with `api`, null "
+    "otherwise. At most one job board imports each feed."
 )
+
+
+def _check_import_source(
+    import_method: ImportMethod | None, feed: Feed | None, rss_url_template: str | None
+) -> None:
+    if (import_method is ImportMethod.API) != (feed is not None):
+        msg = "feed is required with import_method api and not allowed otherwise"
+        raise ValueError(msg)
+    if (import_method is ImportMethod.RSS) != (rss_url_template is not None):
+        msg = "rss_url_template is required with import_method rss and not allowed otherwise"
+        raise ValueError(msg)
 
 
 class JobBoardCreate(BaseModel):
@@ -119,20 +150,21 @@ class JobBoardCreate(BaseModel):
     syntax: Syntax
     import_method: Annotated[ImportMethod, _IMPORT_METHOD] = ImportMethod.NONE
     feed: Annotated[Feed | None, _FEED] = None
+    rss_url_template: RssUrlTemplate | None = None
 
     @model_validator(mode="after")
-    def _feed_goes_with_api(self) -> Self:
-        if (self.import_method is ImportMethod.API) != (self.feed is not None):
-            msg = "feed is required with import_method api and not allowed with none"
-            raise ValueError(msg)
+    def _source_goes_with_method(self) -> Self:
+        _check_import_source(self.import_method, self.feed, self.rss_url_template)
         return self
 
 
 class JobBoardUpdate(BaseModel):
-    """Partial update: only the fields sent change. Only `feed` can be null.
+    """Partial update: only the fields sent change. Only `feed` and `rss_url_template`
+    can be null.
 
-    `import_method` and `feed` change together: to start importing send `api` and a feed,
-    to stop send `import_method: none` and `feed: null`.
+    The import method is set whole: `feed` and `rss_url_template` are sent only with
+    `import_method`, and the one not sent is cleared. To import from a feed send `api`
+    and the feed, from an RSS `rss` and its template, and to stop send `none`.
     """
 
     name: Text | None = None
@@ -140,6 +172,7 @@ class JobBoardUpdate(BaseModel):
     syntax: Syntax | None = None
     import_method: Annotated[ImportMethod | None, _IMPORT_METHOD] = None
     feed: Annotated[Feed | None, _FEED] = None
+    rss_url_template: RssUrlTemplate | None = None
 
     @field_validator("name", "search_url_template", "syntax", "import_method")
     @classmethod
@@ -151,12 +184,12 @@ class JobBoardUpdate(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _feed_goes_with_api(self) -> Self:
-        sent = self.model_fields_set & {"import_method", "feed"}
-        if sent and (
-            len(sent) == 1 or (self.import_method is ImportMethod.API) != (self.feed is not None)
-        ):
-            msg = "send import_method and feed together: a feed with api, null with none"
+    def _source_goes_with_method(self) -> Self:
+        sent = self.model_fields_set
+        if "import_method" in sent:
+            _check_import_source(self.import_method, self.feed, self.rss_url_template)
+        elif sent & {"feed", "rss_url_template"}:
+            msg = "feed and rss_url_template are sent only with import_method"
             raise ValueError(msg)
         return self
 
@@ -168,6 +201,7 @@ class JobBoardRead(BaseModel):
     syntax: Syntax
     import_method: ImportMethod
     feed: Feed | None
+    rss_url_template: str | None
     last_imported_at: datetime | None = Field(description="Null if never imported.")
     next_import_at: datetime | None = Field(
         description="Earliest next import (6 hours later); null if never imported."

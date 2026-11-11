@@ -12,6 +12,7 @@ const JOB_BOARD: JobBoard = {
   syntax: "boolean",
   import_method: "none",
   feed: null,
+  rss_url_template: null,
   last_imported_at: null,
   next_import_at: null,
 };

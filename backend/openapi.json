@@ -713,7 +713,8 @@
         "description": "How the offers of a job board reach the inbox.",
         "enum": [
           "none",
-          "api"
+          "api",
+          "rss"
         ],
         "title": "ImportMethod",
         "type": "string"
@@ -779,18 +780,34 @@
                 "type": "null"
               }
             ],
-            "description": "The public feed it is imported from: required with `api`, null with `none`. At most one job board imports each feed."
+            "description": "The public feed it is imported from: required with `api`, null otherwise. At most one job board imports each feed."
           },
           "import_method": {
             "$ref": "#/components/schemas/ImportMethod",
             "default": "none",
-            "description": "How its offers reach the inbox: `none` (by hand, with its generated searches) or `api` (imported from its `feed`)."
+            "description": "How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`) or `rss` (imported from its `rss_url_template`)."
           },
           "name": {
             "maxLength": 200,
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "rss_url_template": {
+            "anyOf": [
+              {
+                "description": "http(s) URL of its RSS with {query}, where each search profile title goes. Its items read `Company: Title`. Required with `rss`, null otherwise.",
+                "examples": [
+                  "https://www.evenbreak.com/jobsrss/?keywords={query}"
+                ],
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rss Url Template"
           },
           "search_url_template": {
             "description": "http(s) URL with {query} where the search goes, and optionally {location}.",
@@ -863,6 +880,17 @@
             "description": "Earliest next import (6 hours later); null if never imported.",
             "title": "Next Import At"
           },
+          "rss_url_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rss Url Template"
+          },
           "search_url_template": {
             "title": "Search Url Template",
             "type": "string"
@@ -878,6 +906,7 @@
           "syntax",
           "import_method",
           "feed",
+          "rss_url_template",
           "last_imported_at",
           "next_import_at"
         ],
@@ -917,7 +946,7 @@
         "type": "object"
       },
       "JobBoardUpdate": {
-        "description": "Partial update: only the fields sent change. Only `feed` can be null.\n\n`import_method` and `feed` change together: to start importing send `api` and a feed,\nto stop send `import_method: none` and `feed: null`.",
+        "description": "Partial update: only the fields sent change. Only `feed` and `rss_url_template`\ncan be null.\n\nThe import method is set whole: `feed` and `rss_url_template` are sent only with\n`import_method`, and the one not sent is cleared. To import from a feed send `api`\nand the feed, from an RSS `rss` and its template, and to stop send `none`.",
         "properties": {
           "feed": {
             "anyOf": [
@@ -928,7 +957,7 @@
                 "type": "null"
               }
             ],
-            "description": "The public feed it is imported from: required with `api`, null with `none`. At most one job board imports each feed."
+            "description": "The public feed it is imported from: required with `api`, null otherwise. At most one job board imports each feed."
           },
           "import_method": {
             "anyOf": [
@@ -939,7 +968,7 @@
                 "type": "null"
               }
             ],
-            "description": "How its offers reach the inbox: `none` (by hand, with its generated searches) or `api` (imported from its `feed`)."
+            "description": "How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`) or `rss` (imported from its `rss_url_template`)."
           },
           "name": {
             "anyOf": [
@@ -953,6 +982,22 @@
               }
             ],
             "title": "Name"
+          },
+          "rss_url_template": {
+            "anyOf": [
+              {
+                "description": "http(s) URL of its RSS with {query}, where each search profile title goes. Its items read `Company: Title`. Required with `rss`, null otherwise.",
+                "examples": [
+                  "https://www.evenbreak.com/jobsrss/?keywords={query}"
+                ],
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rss Url Template"
           },
           "search_url_template": {
             "anyOf": [
@@ -3361,7 +3406,7 @@
     },
     "/api/v1/job-boards/{job_board_id}/imports": {
       "post": {
-        "description": "Add every offer of the job board's feed to the inbox, as pending, with the job\nboard as their source; the ones that fit no search profile are filtered. Himalayas is\nsearched by the titles of every profile.\n\nDuplicates are skipped; pending imported offers of this job board that left the feed\nare discarded as expired. A job board can be imported at most once every 6 hours\n(each feed's terms).",
+        "description": "Add every offer of the job board's feed or RSS to the inbox, as pending, with the\njob board as their source; the ones that fit no search profile are filtered. Himalayas\nand the RSS are searched by the titles of every profile; RSS items read\n`Company: Title`.\n\nDuplicates are skipped; pending imported offers of this job board that left its feed\nor RSS are discarded as expired. A job board can be imported at most once every 6\nhours (each source's terms).",
         "operationId": "import_job_board_api_v1_job_boards__job_board_id__imports_post",
         "parameters": [
           {
@@ -3444,7 +3489,7 @@
                 }
               }
             },
-            "description": "The feed did not answer (`feed-unavailable`); nothing changed"
+            "description": "The feed or RSS did not answer or could not be read (`feed-unavailable`); nothing changed"
           }
         },
         "security": [

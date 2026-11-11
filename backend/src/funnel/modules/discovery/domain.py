@@ -33,6 +33,7 @@ class ImportMethod(StrEnum):
 
     NONE = "none"  # by hand, with its generated searches
     API = "api"  # imported from its public feed
+    RSS = "rss"  # imported from its RSS, read once per search profile title
 
 
 class Feed(StrEnum):
