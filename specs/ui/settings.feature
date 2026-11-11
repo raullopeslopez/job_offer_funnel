@@ -135,6 +135,12 @@ Feature: Settings screen
     When I change the job board "Remote OK" to be imported from the feed "remoteok"
     Then the job board "Remote OK" shows "remoteok"
 
+  Scenario: Start importing a job board from its RSS
+    Given a job board named "Evenbreak"
+    And I am on the job boards in the settings
+    When I change the job board "Evenbreak" to be imported from the RSS "https://www.evenbreak.com/jobsrss/?keywords={query}"
+    Then the job board "Evenbreak" shows "rss"
+
   Scenario: A feed that another job board imports is rejected with a message
     Given a job board named "Remote OK" imported from the feed "remoteok"
     And a job board named "Remotive"

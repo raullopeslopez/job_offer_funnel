@@ -10,7 +10,7 @@ from funnel.modules.applications.domain import Channel
 from funnel.modules.applications.schemas import ApplicationCreate
 from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
-from funnel.modules.discovery.domain import Feed, next_import_at
+from funnel.modules.discovery.domain import Feed, ImportMethod, next_import_at
 from funnel.modules.discovery.service import JobBoardService, SearchProfileService
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
@@ -124,16 +124,19 @@ class FeedImportService:
 
     async def import_job_board(self, job_board_id: UUID, now: datetime) -> ImportResult:
         job_board = await self._job_boards.get(job_board_id)
-        feed = job_board.feed
-        if feed is None:
+        if job_board.import_method is ImportMethod.NONE:
             raise JobBoardNotImportedError(f"The job board {job_board.name} is not imported")
         last = job_board.last_imported_at
         if last is not None and now < next_import_at(last):
-            raise FeedCooldownError(feed, next_import_at(last), now)
+            raise FeedCooldownError(job_board.name, next_import_at(last), now)
 
         profiles = await self._profiles.all_terms()
         titles = list(dict.fromkeys(title for terms in profiles for title in terms.titles))
-        published = await self._read(feed, titles)
+        try:
+            published = await self._read(job_board.feed, job_board.rss_url_template, titles)
+        except (httpx2.HTTPError, ValueError, KeyError, TypeError) as error:
+            # Network failure, error status or an unexpected shape: the source is unusable now.
+            raise FeedUnavailableError(f"{job_board.name} could not be read") from error
         added = await self._imports.add_new(
             [_offer_row(offer, job_board_id=job_board.id) for offer in published]
         )
@@ -145,12 +148,14 @@ class FeedImportService:
         await self._job_boards.record_import(job_board, now)
         return ImportResult(job_board.id, len(published), len(added), filtered, expired, now)
 
-    async def _read(self, feed: Feed, titles: list[str]) -> list[FeedOffer]:
-        try:
+    async def _read(
+        self, feed: Feed | None, rss_url_template: str | None, titles: list[str]
+    ) -> list[FeedOffer]:
+        if feed is not None:
             return await self._reader.read(feed, titles)
-        except (httpx2.HTTPError, ValueError, KeyError, TypeError) as error:
-            # Network failure, error status or an unexpected shape: the feed is unusable now.
-            raise FeedUnavailableError(f"{feed} could not be read") from error
+        # The schemas and a CHECK give every imported job board a feed or an RSS.
+        assert rss_url_template is not None
+        return await self._reader.read_rss(rss_url_template, titles)
 
 
 @dataclass(frozen=True)

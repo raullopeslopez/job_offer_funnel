@@ -12,6 +12,7 @@ const JOB_BOARD: JobBoard = {
   syntax: "boolean",
   import_method: "none",
   feed: null,
+  rss_url_template: null,
   last_imported_at: null,
   next_import_at: null,
 };
@@ -53,6 +54,38 @@ describe("JobBoardDialog", () => {
       syntax: "boolean",
       import_method: "none",
       feed: null,
+    });
+  });
+
+  it("imports a job board from its RSS", async () => {
+    // Arrange
+    let body: unknown;
+    server.use(
+      http.patch(`/api/v1/job-boards/${JOB_BOARD.id}`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(JOB_BOARD);
+      }),
+    );
+    const onSaved = renderDialog(JOB_BOARD);
+    const user = userEvent.setup();
+
+    // Act
+    await user.click(screen.getByRole("combobox", { name: "Imported from" }));
+    await user.click(screen.getByRole("option", { name: "rss" }));
+    await user.type(
+      screen.getByLabelText("RSS URL template"),
+      "https://www.evenbreak.com/jobsrss/?keywords={{query}",
+    );
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    // Assert
+    expect(onSaved).toHaveBeenCalled();
+    expect(body).toEqual({
+      name: "LinkedIn",
+      search_url_template: JOB_BOARD.search_url_template,
+      syntax: "boolean",
+      import_method: "rss",
+      rss_url_template: "https://www.evenbreak.com/jobsrss/?keywords={query}",
     });
   });
 

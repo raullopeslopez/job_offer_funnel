@@ -208,13 +208,14 @@ export interface paths {
         put?: never;
         /**
          * Import Job Board
-         * @description Add every offer of the job board's feed to the inbox, as pending, with the job
-         *     board as their source; the ones that fit no search profile are filtered. Himalayas is
-         *     searched by the titles of every profile.
+         * @description Add every offer of the job board's feed or RSS to the inbox, as pending, with the
+         *     job board as their source; the ones that fit no search profile are filtered. Himalayas
+         *     and the RSS are searched by the titles of every profile; RSS items read
+         *     `Company: Title`.
          *
-         *     Duplicates are skipped; pending imported offers of this job board that left the feed
-         *     are discarded as expired. A job board can be imported at most once every 6 hours
-         *     (each feed's terms).
+         *     Duplicates are skipped; pending imported offers of this job board that left its feed
+         *     or RSS are discarded as expired. A job board can be imported at most once every 6
+         *     hours (each source's terms).
          */
         post: operations["import_job_board_api_v1_job_boards__job_board_id__imports_post"];
         delete?: never;
@@ -824,7 +825,7 @@ export interface components {
          * @description How the offers of a job board reach the inbox.
          * @enum {string}
          */
-        ImportMethod: "none" | "api";
+        ImportMethod: "none" | "api" | "rss";
         /** ImportRead */
         ImportRead: {
             /**
@@ -865,15 +866,17 @@ export interface components {
         };
         /** JobBoardCreate */
         JobBoardCreate: {
-            /** @description The public feed it is imported from: required with `api`, null with `none`. At most one job board imports each feed. */
+            /** @description The public feed it is imported from: required with `api`, null otherwise. At most one job board imports each feed. */
             feed?: components["schemas"]["Feed"] | null;
             /**
-             * @description How its offers reach the inbox: `none` (by hand, with its generated searches) or `api` (imported from its `feed`).
+             * @description How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`) or `rss` (imported from its `rss_url_template`).
              * @default none
              */
             import_method: components["schemas"]["ImportMethod"];
             /** Name */
             name: string;
+            /** Rss Url Template */
+            rss_url_template?: string | null;
             /**
              * Search Url Template
              * @description http(s) URL with {query} where the search goes, and optionally {location}.
@@ -903,6 +906,8 @@ export interface components {
              * @description Earliest next import (6 hours later); null if never imported.
              */
             next_import_at: string | null;
+            /** Rss Url Template */
+            rss_url_template: string | null;
             /** Search Url Template */
             search_url_template: string;
             syntax: components["schemas"]["Syntax"];
@@ -925,18 +930,22 @@ export interface components {
         };
         /**
          * JobBoardUpdate
-         * @description Partial update: only the fields sent change. Only `feed` can be null.
+         * @description Partial update: only the fields sent change. Only `feed` and `rss_url_template`
+         *     can be null.
          *
-         *     `import_method` and `feed` change together: to start importing send `api` and a feed,
-         *     to stop send `import_method: none` and `feed: null`.
+         *     The import method is set whole: `feed` and `rss_url_template` are sent only with
+         *     `import_method`, and the one not sent is cleared. To import from a feed send `api`
+         *     and the feed, from an RSS `rss` and its template, and to stop send `none`.
          */
         JobBoardUpdate: {
-            /** @description The public feed it is imported from: required with `api`, null with `none`. At most one job board imports each feed. */
+            /** @description The public feed it is imported from: required with `api`, null otherwise. At most one job board imports each feed. */
             feed?: components["schemas"]["Feed"] | null;
-            /** @description How its offers reach the inbox: `none` (by hand, with its generated searches) or `api` (imported from its `feed`). */
+            /** @description How its offers reach the inbox: `none` (by hand, with its generated searches), `api` (imported from its `feed`) or `rss` (imported from its `rss_url_template`). */
             import_method?: components["schemas"]["ImportMethod"] | null;
             /** Name */
             name?: string | null;
+            /** Rss Url Template */
+            rss_url_template?: string | null;
             /** Search Url Template */
             search_url_template?: string | null;
             syntax?: components["schemas"]["Syntax"] | null;
@@ -2307,7 +2316,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description The feed did not answer (`feed-unavailable`); nothing changed */
+            /** @description The feed or RSS did not answer or could not be read (`feed-unavailable`); nothing changed */
             502: {
                 headers: {
                     [name: string]: unknown;

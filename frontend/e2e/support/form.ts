@@ -21,6 +21,7 @@ const FIELD_LABELS: Record<string, string> = {
   search_url_template: "Search URL template",
   syntax: "Syntax",
   feed: "Imported from",
+  rss_url_template: "RSS URL template",
   ats: "ATS",
   board: "Board",
   profile_id: "Search profile",

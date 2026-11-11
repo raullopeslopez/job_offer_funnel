@@ -35,6 +35,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Pantalla 7: `specs/ui/watched_companies.feature` (Empresas vigiladas)
 - [x] Alcance de la fase 1: `docs/fase1.md` (importación amplia y periódica, nuevas fuentes, CVs por oferta en formato Harvard)
 - [x] Fase 1, filas 1 a 3: importación amplia con filtradas (`inbox/filtered_offers`), importación periódica cada 6 h y el portal como único catálogo de fuentes (`inbox/job_board_imports`: método de importación y feed en el portal, que es el origen de las ofertas importadas)
+- [x] Fase 1, fila 4: importación por RSS (método `rss` con `rss_url_template`; solo Evenbreak, por condiciones y por la empresa en el RSS: `docs/fase0.md`)
 - [x] Rediseño visual (Epic #30): tema premium v2 claro/oscuro, responsive y anclas visuales en todas las pantallas; componentes compartidos en `frontend/src/components/`
 
 ## Criterio: evitar la sobreingeniería

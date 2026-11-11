@@ -88,7 +88,7 @@ No encajan en `{query}` (no se añaden):
 
 ## Vías automáticas por portal
 
-Comprobación del 2026-11-10 sobre los 55 portales del seed: una petición real al buscador y al RSS de cada uno, después un navegador y, para los que bloquean ambos, su ayuda oficial. **Las condiciones de uso de los RSS están sin verificar**: se revisan antes de integrar cada uno (`docs/fase1.md`, fila 4).
+Comprobación del 2026-11-10 sobre los 55 portales del seed: una petición real al buscador y al RSS de cada uno, después un navegador y, para los que bloquean ambos, su ayuda oficial. Las condiciones de uso de los RSS se verificaron el 2026-11-11: ver la tabla de condiciones, más abajo.
 
 **RSS de ofertas** (descargados, con ofertas reales):
 
@@ -107,6 +107,17 @@ Comprobación del 2026-11-10 sobre los 55 portales del seed: una petición real 
 | ITJobBoard.net | `https://www.itjobboard.net/rss/` | No; 10 ofertas y algunas no son de IT: poco útil |
 
 No sirven: el RSS de Remote OK devuelve 410 (retirado; queda la API) y el de Dynamite Jobs es de su blog.
+
+**Condiciones y empresa en el RSS** (comprobado el 2026-11-11 para la fila 4 de `docs/fase1.md`): una oferta necesita empresa, y la app identifica cada oferta por empresa + título.
+
+| Portal | Condiciones | Empresa en el RSS | Decisión |
+|--------|-------------|-------------------|----------|
+| Evenbreak | No tratan RSS ni acceso automático ([T&C](https://www.evenbreak.com/terms-and-conditions/)) | En el título: `Empresa: Título` | Se importa por RSS |
+| Reed | Permiten copiar "for your own private or domestic purposes"; nada sobre RSS ([terms](https://www.reed.co.uk/terms)) | No | Alertas por email (fila 5); su API, aplazada |
+| EuRemoteJobs | Sin condiciones encontradas | No (`dc:creator` es quien publica) | Alertas por email (fila 5) |
+| Durlston Partners | Solo política de privacidad; agencia que oculta al cliente | No | Sigue con búsqueda asistida |
+| Landing.jobs | Prohíben guardar o copiar el contenido y el acceso con scripts (cláusulas 5.7, 8.2; [tos](https://landing.jobs/tos)) | Sí (`<author>`) | Fuera: sus condiciones |
+| Cryptocurrency Jobs | Prohíben "scrape", "crawl" y enlazar a algo que no sea la portada (secciones 9 y 15; [terms](https://cryptocurrencyjobs.co/terms/)) | Sí (`Título at Empresa`) | Fuera: sus condiciones |
 
 **Alertas por email**:
 

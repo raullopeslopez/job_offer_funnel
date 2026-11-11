@@ -61,7 +61,9 @@ export function JobBoardsSection() {
           primary={row.name}
           secondary={
             <Meta icon={CodeOutlined} mono>
-              {row.feed ? `${row.syntax} · imported from ${row.feed}` : row.syntax}
+              {row.import_method === "none"
+                ? row.syntax
+                : `${row.syntax} · imported from ${row.feed ?? row.import_method}`}
             </Meta>
           }
         />

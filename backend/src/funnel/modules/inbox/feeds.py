@@ -1,14 +1,18 @@
 """One adapter per public feed: read its JSON API and turn each job into a FeedOffer.
+Plus one reader for every RSS, whose items read "Company: Title" (Evenbreak's convention).
 
-Response shapes checked against the live APIs on 2026-11-08; terms in docs/fase0.md.
+Response shapes checked against the live APIs on 2026-11-08 and the RSS on 2026-11-11;
+terms in docs/fase0.md.
 """
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Any, Final
+from urllib.parse import quote
+from xml.etree import ElementTree
 
 import httpx2
 
-from funnel.modules.discovery.domain import Feed
+from funnel.modules.discovery.domain import QUERY_PLACEHOLDER, Feed
 from funnel.modules.inbox.domain import FeedOffer
 
 # Titles to search by, for the feeds whose terms rule out reading them whole.
@@ -99,11 +103,59 @@ READERS: Final[Mapping[Feed, Reader]] = {
 }
 
 
+_RSS_FIELDS: Final = ("title", "company", "description", "url")
+
+
+def _rss_offer(item: ElementTree.Element) -> FeedOffer | None:
+    """None when the item lacks a company, a title or a link."""
+    company, colon, title = (item.findtext("title") or "").partition(":")
+    if not colon:
+        return None
+    job = {
+        "title": title,
+        "company": company,
+        "description": item.findtext("description") or "",
+        "url": item.findtext("link") or "",
+    }
+    return _offer(job, _RSS_FIELDS)
+
+
+def _rss_offers(document: str) -> list[FeedOffer]:
+    try:
+        # Safe on untrusted input: expat resolves no external entities and caps expansion.
+        root = ElementTree.fromstring(document)
+    except ElementTree.ParseError as error:
+        msg = "not XML"
+        raise ValueError(msg) from error
+    channel = root.find("channel")
+    if root.tag != "rss" or channel is None:
+        msg = "not an RSS"
+        raise ValueError(msg)
+    return _kept([_rss_offer(item) for item in channel.iter("item")])
+
+
+async def _rss(
+    client: httpx2.AsyncClient, url_template: str, titles: Sequence[str]
+) -> list[FeedOffer]:
+    # Read once per title; an item found by several titles is one offer.
+    offers: dict[str, FeedOffer] = {}
+    for title in titles:
+        url = url_template.replace(f"{{{QUERY_PLACEHOLDER}}}", quote(title, safe=""))
+        response = await client.get(url)
+        response.raise_for_status()
+        for offer in _rss_offers(response.text):
+            offers.setdefault(offer.url, offer)
+    return list(offers.values())
+
+
 class FeedReader:
-    """Reads any feed with one HTTP client; each feed's adapter knows its JSON."""
+    """Reads any feed or RSS with one HTTP client; each feed's adapter knows its JSON."""
 
     def __init__(self, client: httpx2.AsyncClient) -> None:
         self._client = client
 
     async def read(self, feed: Feed, titles: Sequence[str]) -> list[FeedOffer]:
         return await READERS[feed](self._client, titles)
+
+    async def read_rss(self, url_template: str, titles: Sequence[str]) -> list[FeedOffer]:
+        return await _rss(self._client, url_template, titles)

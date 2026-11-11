@@ -57,6 +57,10 @@ class JobBoardRow(Base):
     __table_args__ = (
         # The schemas validate it first; the database keeps it true whatever writes the row.
         CheckConstraint("(import_method = 'api') = (feed IS NOT NULL)", name="feed_with_api"),
+        CheckConstraint(
+            "(import_method = 'rss') = (rss_url_template IS NOT NULL)",
+            name="rss_url_template_with_rss",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
@@ -68,6 +72,7 @@ class JobBoardRow(Base):
     )
     # Unique: each feed is imported by one job board at most.
     feed: Mapped[Feed | None] = mapped_column(_enum_column_type(Feed, "feed"), unique=True)
+    rss_url_template: Mapped[str | None] = mapped_column(String(2048))
     # The 6-hour limit of the feeds' terms is checked against it.
     last_imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

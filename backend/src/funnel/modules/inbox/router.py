@@ -197,20 +197,22 @@ FeedService = Annotated[FeedImportService, Depends(get_feed_import_service)]
         },
         HTTPStatus.BAD_GATEWAY: {
             "model": ProblemRead,
-            "description": "The feed did not answer (`feed-unavailable`); nothing changed",
+            "description": "The feed or RSS did not answer or could not be read "
+            "(`feed-unavailable`); nothing changed",
         },
     },
 )
 async def import_job_board(
     job_board_id: UUID, service: FeedService, clock: Annotated[Clock, Depends(get_clock)]
 ) -> ImportRead:
-    """Add every offer of the job board's feed to the inbox, as pending, with the job
-    board as their source; the ones that fit no search profile are filtered. Himalayas is
-    searched by the titles of every profile.
+    """Add every offer of the job board's feed or RSS to the inbox, as pending, with the
+    job board as their source; the ones that fit no search profile are filtered. Himalayas
+    and the RSS are searched by the titles of every profile; RSS items read
+    `Company: Title`.
 
-    Duplicates are skipped; pending imported offers of this job board that left the feed
-    are discarded as expired. A job board can be imported at most once every 6 hours
-    (each feed's terms).
+    Duplicates are skipped; pending imported offers of this job board that left its feed
+    or RSS are discarded as expired. A job board can be imported at most once every 6
+    hours (each source's terms).
     """
     result = await service.import_job_board(job_board_id, clock.now())
     return ImportRead(
