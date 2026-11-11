@@ -22,6 +22,8 @@ from funnel.modules.inbox.repository import (
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import (
+    AlertEmailCreate,
+    AlertImportRead,
     BoardImportRead,
     DiscardCreate,
     FeedRead,
@@ -32,7 +34,12 @@ from funnel.modules.inbox.schemas import (
     WatchedCompanyCreate,
     WatchedCompanyRead,
 )
-from funnel.modules.inbox.service import FeedImportService, OfferService, WatchedCompanyService
+from funnel.modules.inbox.service import (
+    EmailAlertService,
+    FeedImportService,
+    OfferService,
+    WatchedCompanyService,
+)
 
 offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
@@ -318,7 +325,50 @@ async def import_watched_company(
     )
 
 
+# --- Email alerts ---
+
+email_alerts_router = APIRouter(prefix="/email-alerts", tags=["inbox"])
+
+
+def get_email_alert_service(session: SessionDep) -> EmailAlertService:
+    return EmailAlertService(FeedImportRepository(session), build_search_profile_service(session))
+
+
+@email_alerts_router.post(
+    "/imports",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.UNPROCESSABLE_CONTENT: {
+            "model": ProblemRead,
+            "description": "Not a supported alert (`unsupported-alert`): only LinkedIn's "
+            "job alerts are read",
+        },
+    },
+)
+async def import_email_alert(
+    email: AlertEmailCreate,
+    service: Annotated[EmailAlertService, Depends(get_email_alert_service)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> AlertImportRead:
+    """Add every offer of a job alert email to the inbox, as pending; the ones that fit no
+    search profile are filtered. Any LinkedIn job alert is read, whatever its search.
+
+    Duplicates are skipped. Each offer links to the posting without the email's tracking.
+    Offers of alerts never expire: an alert lists only new offers.
+    """
+    result = await service.import_alert(email.sender, email.text, clock.now())
+    return AlertImportRead(
+        alert=result.alert,
+        found=result.found,
+        added=result.added,
+        filtered=result.filtered,
+        already_in_inbox=result.found - result.added,
+        imported_at=result.imported_at,
+    )
+
+
 router = APIRouter()
 router.include_router(offers_router)
 router.include_router(feeds_router)
+router.include_router(email_alerts_router)
 router.include_router(watched_companies_router)

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
-from funnel.modules.inbox.domain import Ats, Feed, OfferStatus
+from funnel.modules.inbox.domain import Alert, Ats, Feed, OfferStatus
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -34,6 +34,24 @@ class ImportRead(BaseModel):
     filtered: int = Field(description="Added offers that fit no search profile.")
     already_in_inbox: int = Field(description="Offers skipped as duplicates.")
     expired: int = Field(description="Pending offers of this feed discarded as expired.")
+    imported_at: datetime
+
+
+class AlertEmailCreate(BaseModel):
+    sender: Annotated[str, StringConstraints(strip_whitespace=True, max_length=320)] = Field(
+        description="The email address it comes from.", examples=["jobalerts-noreply@linkedin.com"]
+    )
+    text: Annotated[str, StringConstraints(max_length=1_000_000)] = Field(
+        description="The plain-text body of the email."
+    )
+
+
+class AlertImportRead(BaseModel):
+    alert: Alert
+    found: int = Field(description="Offers the alert listed.")
+    added: int = Field(description="New offers added to the inbox as pending.")
+    filtered: int = Field(description="Added offers that fit no search profile.")
+    already_in_inbox: int = Field(description="Offers skipped as duplicates.")
     imported_at: datetime
 
 
@@ -88,6 +106,7 @@ class OfferRead(BaseModel):
     discard_reason: str | None = Field(description="Set while the offer is discarded.")
     application_id: UUID | None = Field(description="Set once the offer is promoted.")
     feed: Feed | None = Field(description="The public feed it was imported from, if any.")
+    alert: Alert | None = Field(description="The email alert it was imported from, if any.")
     watched_company_id: UUID | None = Field(
         description="The watched company it was imported from, if still watched."
     )

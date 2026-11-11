@@ -11,8 +11,10 @@ from funnel.modules.applications.schemas import ApplicationCreate
 from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
 from funnel.modules.discovery.service import SearchProfileService
+from funnel.modules.inbox.alerts import read_alert
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
+    Alert,
     BoardUnavailableError,
     Feed,
     FeedCooldownError,
@@ -211,9 +213,31 @@ class WatchedCompanyService:
             ) from error
 
 
-def _offer_row(
-    offer: FeedOffer, *, feed: Feed | None = None, watched_company_id: UUID | None = None
-) -> OfferRow:
+@dataclass(frozen=True)
+class AlertImportResult:
+    alert: Alert
+    found: int
+    added: int
+    filtered: int
+    imported_at: datetime
+
+
+class EmailAlertService:
+    """Imports the offers of job alert emails; they never expire (an alert lists only new ones)."""
+
+    def __init__(self, imports: FeedImportRepository, profiles: SearchProfileService) -> None:
+        self._imports = imports
+        self._profiles = profiles
+
+    async def import_alert(self, sender: str, text: str, now: datetime) -> AlertImportResult:
+        alert, offers = read_alert(sender, text)
+        added = await self._imports.add_new([_offer_row(offer, alert=alert) for offer in offers])
+        filtered = await self._imports.count_filtered(added, await self._profiles.all_terms())
+        return AlertImportResult(alert, len(offers), len(added), filtered, now)
+
+
+def _offer_row(offer: FeedOffer, **source: Feed | Alert | UUID) -> OfferRow:
+    """An imported offer, pending; `source` is its feed, alert or watched company."""
     return OfferRow(
         url=offer.url,
         company=offer.company,
@@ -221,6 +245,5 @@ def _offer_row(
         description=offer.description,
         duplicate_key=duplicate_key(offer.company, offer.title),
         status=OfferStatus.PENDING,
-        feed=feed,
-        watched_company_id=watched_company_id,
+        **source,
     )

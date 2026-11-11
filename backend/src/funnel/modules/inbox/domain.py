@@ -28,6 +28,12 @@ class Feed(StrEnum):
     REMOTIVE = "remotive"
 
 
+class Alert(StrEnum):
+    """Job alerts read from email, for boards with no API for job seekers."""
+
+    LINKEDIN = "linkedin"
+
+
 class Ats(StrEnum):
     """Applicant tracking systems whose public job boards can be read (no limits stated)."""
 
@@ -114,6 +120,14 @@ class BoardUnavailableError(AppError):
     slug = "board-unavailable"
     title = "Board not available"
     status = HTTPStatus.BAD_GATEWAY
+
+
+class UnsupportedAlertError(AppError):
+    """The email does not come from a job alert the app can read."""
+
+    slug = "unsupported-alert"
+    title = "Unsupported alert"
+    status = HTTPStatus.UNPROCESSABLE_CONTENT
 
 
 class UnknownJobBoardError(AppError):

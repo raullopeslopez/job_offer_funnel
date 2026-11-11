@@ -24,6 +24,7 @@ const offer = (title: string, filtered: boolean): Offer => ({
   discard_reason: null,
   application_id: null,
   feed: "remoteok",
+  alert: null,
   watched_company_id: null,
   watched_company_name: null,
   created_at: "2026-03-10T09:00:00Z",

@@ -151,6 +151,30 @@ export interface paths {
         patch: operations["update_company_api_v1_companies__company_id__patch"];
         trace?: never;
     };
+    "/api/v1/email-alerts/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Email Alert
+         * @description Add every offer of a job alert email to the inbox, as pending; the ones that fit no
+         *     search profile are filtered. Any LinkedIn job alert is read, whatever its search.
+         *
+         *     Duplicates are skipped. Each offer links to the posting without the email's tracking.
+         *     Offers of alerts never expire: an alert lists only new offers.
+         */
+        post: operations["import_email_alert_api_v1_email_alerts_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/feeds": {
         parameters: {
             query?: never;
@@ -555,6 +579,55 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Alert
+         * @description Job alerts read from email, for boards with no API for job seekers.
+         * @enum {string}
+         */
+        Alert: "linkedin";
+        /** AlertEmailCreate */
+        AlertEmailCreate: {
+            /**
+             * Sender
+             * @description The email address it comes from.
+             * @example jobalerts-noreply@linkedin.com
+             */
+            sender: string;
+            /**
+             * Text
+             * @description The plain-text body of the email.
+             */
+            text: string;
+        };
+        /** AlertImportRead */
+        AlertImportRead: {
+            /**
+             * Added
+             * @description New offers added to the inbox as pending.
+             */
+            added: number;
+            alert: components["schemas"]["Alert"];
+            /**
+             * Already In Inbox
+             * @description Offers skipped as duplicates.
+             */
+            already_in_inbox: number;
+            /**
+             * Filtered
+             * @description Added offers that fit no search profile.
+             */
+            filtered: number;
+            /**
+             * Found
+             * @description Offers the alert listed.
+             */
+            found: number;
+            /**
+             * Imported At
+             * Format: date-time
+             */
+            imported_at: string;
+        };
         /** ApplicationCreate */
         ApplicationCreate: {
             channel: components["schemas"]["Channel"];
@@ -961,6 +1034,8 @@ export interface components {
         };
         /** OfferRead */
         OfferRead: {
+            /** @description The email alert it was imported from, if any. */
+            alert: components["schemas"]["Alert"] | null;
             /**
              * Application Id
              * @description Set once the offer is promoted.
@@ -1973,6 +2048,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    import_email_alert_api_v1_email_alerts_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertEmailCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertImportRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Not a supported alert (`unsupported-alert`): only LinkedIn's job alerts are read */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
                 };
             };
         };

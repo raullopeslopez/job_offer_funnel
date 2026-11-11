@@ -1,6 +1,81 @@
 {
   "components": {
     "schemas": {
+      "Alert": {
+        "description": "Job alerts read from email, for boards with no API for job seekers.",
+        "enum": [
+          "linkedin"
+        ],
+        "title": "Alert",
+        "type": "string"
+      },
+      "AlertEmailCreate": {
+        "properties": {
+          "sender": {
+            "description": "The email address it comes from.",
+            "examples": [
+              "jobalerts-noreply@linkedin.com"
+            ],
+            "maxLength": 320,
+            "title": "Sender",
+            "type": "string"
+          },
+          "text": {
+            "description": "The plain-text body of the email.",
+            "maxLength": 1000000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sender",
+          "text"
+        ],
+        "title": "AlertEmailCreate",
+        "type": "object"
+      },
+      "AlertImportRead": {
+        "properties": {
+          "added": {
+            "description": "New offers added to the inbox as pending.",
+            "title": "Added",
+            "type": "integer"
+          },
+          "alert": {
+            "$ref": "#/components/schemas/Alert"
+          },
+          "already_in_inbox": {
+            "description": "Offers skipped as duplicates.",
+            "title": "Already In Inbox",
+            "type": "integer"
+          },
+          "filtered": {
+            "description": "Added offers that fit no search profile.",
+            "title": "Filtered",
+            "type": "integer"
+          },
+          "found": {
+            "description": "Offers the alert listed.",
+            "title": "Found",
+            "type": "integer"
+          },
+          "imported_at": {
+            "format": "date-time",
+            "title": "Imported At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alert",
+          "found",
+          "added",
+          "filtered",
+          "already_in_inbox",
+          "imported_at"
+        ],
+        "title": "AlertImportRead",
+        "type": "object"
+      },
       "ApplicationCreate": {
         "properties": {
           "channel": {
@@ -990,6 +1065,17 @@
       },
       "OfferRead": {
         "properties": {
+          "alert": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Alert"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The email alert it was imported from, if any."
+          },
           "application_id": {
             "anyOf": [
               {
@@ -1128,6 +1214,7 @@
           "discard_reason",
           "application_id",
           "feed",
+          "alert",
           "watched_company_id",
           "watched_company_name",
           "created_at"
@@ -2954,6 +3041,63 @@
         "summary": "Update Company",
         "tags": [
           "companies"
+        ]
+      }
+    },
+    "/api/v1/email-alerts/imports": {
+      "post": {
+        "description": "Add every offer of a job alert email to the inbox, as pending; the ones that fit no\nsearch profile are filtered. Any LinkedIn job alert is read, whatever its search.\n\nDuplicates are skipped. Each offer links to the posting without the email's tracking.\nOffers of alerts never expire: an alert lists only new offers.",
+        "operationId": "import_email_alert_api_v1_email_alerts_imports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertEmailCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertImportRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Not a supported alert (`unsupported-alert`): only LinkedIn's job alerts are read"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import Email Alert",
+        "tags": [
+          "inbox"
         ]
       }
     },

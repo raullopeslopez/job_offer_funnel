@@ -6,7 +6,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, column, 
 from sqlalchemy.orm import Mapped, column_property, mapped_column, query_expression
 
 from funnel.core.db import Base
-from funnel.modules.inbox.domain import Ats, Feed, OfferStatus
+from funnel.modules.inbox.domain import Alert, Ats, Feed, OfferStatus
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
@@ -76,6 +76,7 @@ class OfferRow(Base):
         ForeignKey("applications.id", ondelete="SET NULL"), index=True
     )
     feed: Mapped[Feed | None] = mapped_column(_enum_column_type(Feed, "feed"))
+    alert: Mapped[Alert | None] = mapped_column(_enum_column_type(Alert, "alert"))
     # Stopping watching a company keeps its offers, without a source.
     watched_company_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True
