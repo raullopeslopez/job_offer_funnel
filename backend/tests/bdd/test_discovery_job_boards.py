@@ -22,6 +22,7 @@ _SYNTAX = r'"(?P<syntax>[^"]*)"'
 _FIELD = r'"(?P<field>[^"]*)"'
 _VALUE = r'"(?P<value>[^"]*)"'
 _FEED = r'"(?P<feed>[^"]*)"'
+_RSS = r'"(?P<rss_url_template>[^"]*)"'
 
 
 @dataclass
@@ -50,6 +51,10 @@ def _body(name: str) -> dict[str, str]:
 
 def _imported(name: str, feed: str) -> dict[str, str]:
     return _body(name) | {"import_method": "api", "feed": feed}
+
+
+def _from_rss(name: str, rss_url_template: str) -> dict[str, str]:
+    return _body(name) | {"import_method": "rss", "rss_url_template": rss_url_template}
 
 
 def _create(client: TestClient, state: ScenarioState, body: dict[str, Any]) -> None:
@@ -90,6 +95,15 @@ def given_imported_job_board(
     client: TestClient, state: ScenarioState, name: str, feed: str
 ) -> None:
     response = client.post(URL, json=_imported(name, feed))
+    assert response.status_code == 201, response.text
+    state.job_board_id = response.json()["id"]
+
+
+@given(parsers.re(f"a job board named {_NAME} imported from the RSS {_RSS}$"))
+def given_rss_job_board(
+    client: TestClient, state: ScenarioState, name: str, rss_url_template: str
+) -> None:
+    response = client.post(URL, json=_from_rss(name, rss_url_template))
     assert response.status_code == 201, response.text
     state.job_board_id = response.json()["id"]
 
@@ -136,6 +150,42 @@ def when_create_with_import(
     client: TestClient, state: ScenarioState, name: str, import_method: str, feed: str
 ) -> None:
     _create(client, state, _body(name) | {"import_method": import_method, "feed": feed or None})
+
+
+@when(parsers.re(f"I create a job board named {_NAME} imported from the RSS {_RSS}$"))
+def when_create_from_rss(
+    client: TestClient, state: ScenarioState, name: str, rss_url_template: str
+) -> None:
+    _create(client, state, _from_rss(name, rss_url_template))
+
+
+@when(
+    parsers.re(
+        f'I create a job board named {_NAME} with import method "(?P<import_method>[^"]*)", '
+        f"feed {_FEED} and RSS URL template {_RSS}$"
+    )
+)
+def when_create_with_import_source(
+    client: TestClient,
+    state: ScenarioState,
+    name: str,
+    import_method: str,
+    feed: str,
+    rss_url_template: str,
+) -> None:
+    body = _body(name) | {
+        "import_method": import_method,
+        "feed": feed or None,
+        "rss_url_template": rss_url_template or None,
+    }
+    _create(client, state, body)
+
+
+@when(parsers.re(f"I change it to be imported from the RSS {_RSS}$"))
+def when_start_importing_from_rss(
+    client: TestClient, state: ScenarioState, rss_url_template: str
+) -> None:
+    _update(client, state, {"import_method": "rss", "rss_url_template": rss_url_template})
 
 
 @when(parsers.parse('I change it to be imported from the feed "{feed}"'))
@@ -204,6 +254,11 @@ def then_job_board_has(
 @then("the job board has no feed")
 def then_no_feed(client: TestClient, state: ScenarioState) -> None:
     assert _read_job_board(client, state)["feed"] is None
+
+
+@then("the job board has no RSS URL template")
+def then_no_rss_url_template(client: TestClient, state: ScenarioState) -> None:
+    assert _read_job_board(client, state)["rss_url_template"] is None
 
 
 @then("it is rejected because another job board already imports that feed")

@@ -1,10 +1,12 @@
 import re
+from collections import defaultdict
 from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import count
 from typing import Any, cast
 from uuid import uuid7
+from xml.sax.saxutils import escape
 
 import httpx2
 import pytest
@@ -28,6 +30,10 @@ FEED_HOSTS = {
     "himalayas.app": "himalayas",
     "jobicy.com": "jobicy",
 }
+
+# The RSS of each job board imported from one, by host; the RSS is read once per title.
+RSS_HOSTS = {"www.evenbreak.com": "Evenbreak"}
+RSS_QUERY = "keywords"
 
 Row = dict[str, str]
 
@@ -84,6 +90,21 @@ def _jobicy(rows: list[Row]) -> object:
     return {"jobs": jobs}
 
 
+def _rss(rows: list[Row]) -> str:
+    """Evenbreak's RSS, as served on 2026-11-11: the company goes in the item title."""
+    items = "".join(
+        f"<item><title>{escape(r['title'])}</title>"
+        f"<description>{escape(r['description'])}</description>"
+        f'<link>{escape(r["link"])}</link><guid isPermaLink="true">{escape(r["link"])}</guid>'
+        "</item>"
+        for r in rows
+    )
+    return (
+        '<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel>'
+        f"<title>Job Search RSS</title>{items}</channel></rss>"
+    )
+
+
 # The real shape of each feed's JSON, checked against the live APIs on 2026-11-08.
 FEED_PAYLOADS: dict[str, Callable[[list[Row]], object]] = {
     "remoteok": _remoteok,
@@ -101,6 +122,11 @@ class ScenarioState:
     published: dict[str, list[Row]] = field(default_factory=dict)
     unavailable: set[str] = field(default_factory=set)
     searched: dict[str, list[str]] = field(default_factory=dict)
+    # RSS items by job board and title searched; `rss_any` answers every other title.
+    rss: defaultdict[str, dict[str, list[Row]]] = field(default_factory=lambda: defaultdict(dict))
+    rss_any: dict[str, list[Row]] = field(default_factory=dict)
+    rss_invalid: set[str] = field(default_factory=set)
+    rss_reads: dict[str, list[str]] = field(default_factory=dict)
     response: httpx2.Response | None = None
     urls: count[int] = field(default_factory=count)
 
@@ -119,7 +145,20 @@ def state() -> ScenarioState:
 def fake_feeds(client: TestClient, state: ScenarioState) -> Iterator[None]:
     """Every feed request is answered from the scenario: tests never reach the internet."""
 
+    def answer_rss(request: httpx2.Request) -> httpx2.Response:
+        job_board = RSS_HOSTS[request.url.host]
+        state.rss_reads.setdefault(job_board, []).append(str(request.url))
+        if job_board in state.unavailable:
+            return httpx2.Response(503)
+        if job_board in state.rss_invalid:
+            return httpx2.Response(200, text="<html><body>Not found</body></html>")
+        query = request.url.params[RSS_QUERY]
+        rows = state.rss[job_board].get(query, state.rss_any.get(job_board, []))
+        return httpx2.Response(200, text=_rss(rows))
+
     def answer(request: httpx2.Request) -> httpx2.Response:
+        if request.url.host in RSS_HOSTS:
+            return answer_rss(request)
         feed = FEED_HOSTS[request.url.host]
         if "q" in request.url.params:
             state.searched.setdefault(feed, []).append(request.url.params["q"])
@@ -160,12 +199,10 @@ def _rows(datatable: list[list[str]]) -> list[Row]:
 
 
 def _add_job_board(
-    client: TestClient, state: ScenarioState, name: str, feed: str | None = None
+    client: TestClient, state: ScenarioState, name: str, source: dict[str, str] | None = None
 ) -> None:
     body = {"name": name, "search_url_template": "https://jobs.example/?q={query}"}
-    body |= {"syntax": "keywords"}
-    if feed is not None:
-        body |= {"import_method": "api", "feed": feed}
+    body |= {"syntax": "keywords"} | (source or {})
     response = client.post(JOB_BOARDS_URL, json=body)
     assert response.status_code == 201, response.text
     state.job_boards[name] = response.json()
@@ -252,12 +289,40 @@ def given_imported_job_boards(
     client: TestClient, state: ScenarioState, datatable: list[list[str]]
 ) -> None:
     for row in _rows(datatable):
-        _add_job_board(client, state, row["name"], row["feed"])
+        _add_job_board(client, state, row["name"], {"import_method": "api", "feed": row["feed"]})
 
 
-@given(parsers.parse('a job board named "{name}"'))
+@given(parsers.re(r'a job board named "(?P<name>[^"]+)"$'))
 def given_job_board(client: TestClient, state: ScenarioState, name: str) -> None:
     _add_job_board(client, state, name)
+
+
+@given(parsers.parse('a job board named "{name}" imported from the RSS "{template}"'))
+def given_rss_job_board(client: TestClient, state: ScenarioState, name: str, template: str) -> None:
+    _add_job_board(client, state, name, {"import_method": "rss", "rss_url_template": template})
+
+
+@given(parsers.parse('the RSS of "{job_board}" publishes for "{title}":'))
+def given_rss_publishes(
+    state: ScenarioState, job_board: str, title: str, datatable: list[list[str]]
+) -> None:
+    state.rss[job_board][title] = _rows(datatable)
+
+
+@given(parsers.parse('the RSS of "{job_board}" publishes nothing'))
+def given_rss_publishes_nothing(state: ScenarioState, job_board: str) -> None:
+    state.rss[job_board].clear()
+    state.rss_any[job_board] = []
+
+
+@given(parsers.parse('the RSS of "{job_board}" is not available'))
+def given_rss_down(state: ScenarioState, job_board: str) -> None:
+    state.unavailable.add(job_board)
+
+
+@given(parsers.parse('the RSS of "{job_board}" is not a valid RSS'))
+def given_rss_invalid(state: ScenarioState, job_board: str) -> None:
+    state.rss_invalid.add(job_board)
 
 
 def _imported_at(client: TestClient, state: ScenarioState, job_board: str, moment: str) -> None:
@@ -283,7 +348,20 @@ def given_job_board_imported_with(
     moment: str,
     datatable: list[list[str]],
 ) -> None:
-    state.published[state.job_boards[job_board]["feed"]] = _rows(datatable)
+    rows = _rows(datatable)
+    feed = state.job_boards[job_board]["feed"]
+    if feed is None:
+        # An RSS: its items read "Company: Title" and come back for every title.
+        state.rss_any[job_board] = [
+            {
+                "title": f"{r['company']}: {r['title']}",
+                "description": r["description"],
+                "link": r["url"],
+            }
+            for r in rows
+        ]
+    else:
+        state.published[feed] = rows
     _imported_at(client, state, job_board, moment)
 
 
@@ -360,6 +438,26 @@ def then_searched_for(state: ScenarioState, feed: str, queries: str) -> None:
 @then(parsers.parse('the feed "{feed}" was not searched'))
 def then_not_searched(state: ScenarioState, feed: str) -> None:
     assert feed not in state.searched
+
+
+@then(parsers.parse('the RSS of "{job_board}" was read at:'))
+def then_rss_read_at(state: ScenarioState, job_board: str, datatable: list[list[str]]) -> None:
+    assert state.rss_reads.get(job_board, []) == [url for (url,) in datatable]
+
+
+@then(parsers.parse('the RSS of "{job_board}" was not read'))
+def then_rss_not_read(state: ScenarioState, job_board: str) -> None:
+    assert job_board not in state.rss_reads
+
+
+@then("the pending offers are, with their company:")
+def then_pending_offers_with_company(client: TestClient, datatable: list[list[str]]) -> None:
+    response = client.get(OFFERS_URL, params={"status": "pending"})
+    assert response.status_code == 200, response.text
+    offers = [
+        {"company": item["company"], "title": item["title"]} for item in response.json()["items"]
+    ]
+    assert offers == _rows(datatable)
 
 
 @then(parsers.parse("the pending offers are: {titles}"))
