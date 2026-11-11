@@ -17,6 +17,7 @@ from funnel.core.fields import HttpUrlText
 from funnel.modules.discovery.domain import (
     PLACEHOLDERS,
     QUERY_PLACEHOLDER,
+    EmailAlert,
     Feed,
     ImportMethod,
     Syntax,
@@ -124,24 +125,31 @@ RssUrlTemplate = Annotated[
 
 _IMPORT_METHOD = Field(
     description="How its offers reach the inbox: `none` (by hand, with its generated "
-    "searches), `api` (imported from its `feed`) or `rss` (imported from its "
-    "`rss_url_template`)."
+    "searches), `api` (imported from its `feed`), `rss` (imported from its "
+    "`rss_url_template`) or `email` (imported from its `email_alert` emails)."
 )
 _FEED = Field(
     description="The public feed it is imported from: required with `api`, null "
     "otherwise. At most one job board imports each feed."
 )
 
+_EMAIL_ALERT = Field(
+    description="The job alert emails it is imported from: required with `email`, null "
+    "otherwise. At most one job board imports each email alert."
+)
+# Each import method that imports, and the field that says where from.
+_SOURCES = {
+    ImportMethod.API: "feed",
+    ImportMethod.RSS: "rss_url_template",
+    ImportMethod.EMAIL: "email_alert",
+}
 
-def _check_import_source(
-    import_method: ImportMethod | None, feed: Feed | None, rss_url_template: str | None
-) -> None:
-    if (import_method is ImportMethod.API) != (feed is not None):
-        msg = "feed is required with import_method api and not allowed otherwise"
-        raise ValueError(msg)
-    if (import_method is ImportMethod.RSS) != (rss_url_template is not None):
-        msg = "rss_url_template is required with import_method rss and not allowed otherwise"
-        raise ValueError(msg)
+
+def _check_import_source(import_method: ImportMethod | None, sources: dict[str, object]) -> None:
+    for method, field in _SOURCES.items():
+        if (import_method is method) != (sources[field] is not None):
+            msg = f"{field} is required with import_method {method} and not allowed otherwise"
+            raise ValueError(msg)
 
 
 class JobBoardCreate(BaseModel):
@@ -151,20 +159,22 @@ class JobBoardCreate(BaseModel):
     import_method: Annotated[ImportMethod, _IMPORT_METHOD] = ImportMethod.NONE
     feed: Annotated[Feed | None, _FEED] = None
     rss_url_template: RssUrlTemplate | None = None
+    email_alert: Annotated[EmailAlert | None, _EMAIL_ALERT] = None
 
     @model_validator(mode="after")
     def _source_goes_with_method(self) -> Self:
-        _check_import_source(self.import_method, self.feed, self.rss_url_template)
+        _check_import_source(self.import_method, self.model_dump(include=set(_SOURCES.values())))
         return self
 
 
 class JobBoardUpdate(BaseModel):
-    """Partial update: only the fields sent change. Only `feed` and `rss_url_template`
-    can be null.
+    """Partial update: only the fields sent change. Only `feed`, `rss_url_template` and
+    `email_alert` can be null.
 
-    The import method is set whole: `feed` and `rss_url_template` are sent only with
-    `import_method`, and the one not sent is cleared. To import from a feed send `api`
-    and the feed, from an RSS `rss` and its template, and to stop send `none`.
+    The import method is set whole: `feed`, `rss_url_template` and `email_alert` are sent
+    only with `import_method`, and the ones not sent are cleared. To import from a feed
+    send `api` and the feed, from an RSS `rss` and its template, from email alerts `email`
+    and the alert, and to stop send `none`.
     """
 
     name: Text | None = None
@@ -173,6 +183,7 @@ class JobBoardUpdate(BaseModel):
     import_method: Annotated[ImportMethod | None, _IMPORT_METHOD] = None
     feed: Annotated[Feed | None, _FEED] = None
     rss_url_template: RssUrlTemplate | None = None
+    email_alert: Annotated[EmailAlert | None, _EMAIL_ALERT] = None
 
     @field_validator("name", "search_url_template", "syntax", "import_method")
     @classmethod
@@ -186,10 +197,11 @@ class JobBoardUpdate(BaseModel):
     @model_validator(mode="after")
     def _source_goes_with_method(self) -> Self:
         sent = self.model_fields_set
+        sources = set(_SOURCES.values())
         if "import_method" in sent:
-            _check_import_source(self.import_method, self.feed, self.rss_url_template)
-        elif sent & {"feed", "rss_url_template"}:
-            msg = "feed and rss_url_template are sent only with import_method"
+            _check_import_source(self.import_method, self.model_dump(include=sources))
+        elif sent & sources:
+            msg = "feed, rss_url_template and email_alert are sent only with import_method"
             raise ValueError(msg)
         return self
 
@@ -197,7 +209,7 @@ class JobBoardUpdate(BaseModel):
         """The fields to change: with `import_method`, the source not sent is cleared."""
         sent = self.model_dump(exclude_unset=True)
         if "import_method" in sent:
-            return {"feed": None, "rss_url_template": None} | sent
+            return dict.fromkeys(_SOURCES.values()) | sent
         return sent
 
 
@@ -209,6 +221,7 @@ class JobBoardRead(BaseModel):
     import_method: ImportMethod
     feed: Feed | None
     rss_url_template: str | None
+    email_alert: EmailAlert | None
     last_imported_at: datetime | None = Field(description="Null if never imported.")
     next_import_at: datetime | None = Field(
         description="Earliest next import (6 hours later); null if never imported."

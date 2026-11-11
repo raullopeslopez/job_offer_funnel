@@ -39,6 +39,24 @@ class ImportRead(BaseModel):
     imported_at: datetime
 
 
+class AlertEmailCreate(BaseModel):
+    sender: Annotated[str, StringConstraints(strip_whitespace=True, max_length=320)] = Field(
+        description="The email address it comes from.", examples=["jobalerts-noreply@linkedin.com"]
+    )
+    text: Annotated[str, StringConstraints(max_length=1_000_000)] = Field(
+        description="The plain-text body of the email."
+    )
+
+
+class AlertImportRead(BaseModel):
+    job_board_id: UUID = Field(description="The job board that imports the alert.")
+    found: int = Field(description="Offers the alert listed.")
+    added: int = Field(description="New offers added to the inbox as pending.")
+    filtered: int = Field(description="Added offers that fit no search profile.")
+    already_in_inbox: int = Field(description="Offers skipped as duplicates.")
+    imported_at: datetime
+
+
 class WatchedCompanyCreate(BaseModel):
     name: Text = Field(description="Unique ignoring case; the company of its imported offers.")
     ats: Ats

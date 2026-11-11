@@ -109,6 +109,30 @@ class BoardUnavailableError(AppError):
     status = HTTPStatus.BAD_GATEWAY
 
 
+class ImportedByEmailError(DomainError):
+    """A job board imported from its email alerts is imported when each alert arrives."""
+
+    slug = "job-board-imported-by-email"
+    title = "Job board imported from its email alerts"
+    status = HTTPStatus.CONFLICT
+
+
+class UnsupportedAlertError(AppError):
+    """The email does not come from a job alert the app can read."""
+
+    slug = "unsupported-alert"
+    title = "Unsupported alert"
+    status = HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+class EmailAlertNotImportedError(DomainError):
+    """No job board imports the email alert, so its offers would have no source."""
+
+    slug = "email-alert-not-imported"
+    title = "No job board imports this email alert"
+    status = HTTPStatus.CONFLICT
+
+
 class UnknownJobBoardError(AppError):
     """The job board referenced in the request does not exist (422: the path is valid)."""
 

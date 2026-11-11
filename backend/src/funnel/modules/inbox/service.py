@@ -12,9 +12,12 @@ from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
 from funnel.modules.discovery.domain import Feed, ImportMethod, next_import_at
 from funnel.modules.discovery.service import JobBoardService, SearchProfileService
+from funnel.modules.inbox.alerts import read_alert
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
     BoardUnavailableError,
+    EmailAlertNotImportedError,
+    ImportedByEmailError,
     FeedCooldownError,
     FeedOffer,
     FeedUnavailableError,
@@ -126,6 +129,8 @@ class FeedImportService:
         job_board = await self._job_boards.get(job_board_id)
         if job_board.import_method is ImportMethod.NONE:
             raise JobBoardNotImportedError(f"The job board {job_board.name} is not imported")
+        if job_board.import_method is ImportMethod.EMAIL:
+            raise ImportedByEmailError(f"{job_board.name} is imported from its email alerts")
         last = job_board.last_imported_at
         if last is not None and now < next_import_at(last):
             raise FeedCooldownError(job_board.name, next_import_at(last), now)
@@ -156,6 +161,43 @@ class FeedImportService:
         # The schemas and a CHECK give every imported job board a feed or an RSS.
         assert rss_url_template is not None
         return await self._reader.read_rss(rss_url_template, titles)
+
+
+@dataclass(frozen=True)
+class AlertImportResult:
+    job_board_id: UUID
+    found: int
+    added: int
+    filtered: int
+    imported_at: datetime
+
+
+class EmailAlertService:
+    """Imports the offers of a job alert email into the job board that imports the alert.
+
+    No limit and no expiry: each alert is a new email that lists only new offers.
+    """
+
+    def __init__(
+        self,
+        imports: FeedImportRepository,
+        profiles: SearchProfileService,
+        job_boards: JobBoardService,
+    ) -> None:
+        self._imports = imports
+        self._profiles = profiles
+        self._job_boards = job_boards
+
+    async def import_alert(self, sender: str, text: str, now: datetime) -> AlertImportResult:
+        email_alert, offers = read_alert(sender, text)
+        job_board = await self._job_boards.find_by_email_alert(email_alert)
+        if job_board is None:
+            raise EmailAlertNotImportedError(f"No job board imports the {email_alert} alerts")
+        added = await self._imports.add_new(
+            [_offer_row(offer, job_board_id=job_board.id) for offer in offers]
+        )
+        filtered = await self._imports.count_filtered(added, await self._profiles.all_terms())
+        return AlertImportResult(job_board.id, len(offers), len(added), filtered, now)
 
 
 @dataclass(frozen=True)

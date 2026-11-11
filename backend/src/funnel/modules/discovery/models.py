@@ -6,11 +6,19 @@ from sqlalchemy import ARRAY, CheckConstraint, DateTime, Enum, Index, String, fu
 from sqlalchemy.orm import Mapped, mapped_column
 
 from funnel.core.db import Base
-from funnel.modules.discovery.domain import Feed, ImportMethod, Syntax, WorkMode, next_import_at
+from funnel.modules.discovery.domain import (
+    EmailAlert,
+    Feed,
+    ImportMethod,
+    Syntax,
+    WorkMode,
+    next_import_at,
+)
 
 UNIQUE_PROFILE_NAME_INDEX = "uq_search_profiles_lower_name"
 UNIQUE_JOB_BOARD_NAME_INDEX = "uq_job_boards_lower_name"
 UNIQUE_JOB_BOARD_FEED = "uq_job_boards_feed"
+UNIQUE_JOB_BOARD_EMAIL_ALERT = "uq_job_boards_email_alert"
 
 _WORK_MODES = ", ".join(f"'{mode.value}'" for mode in WorkMode)
 
@@ -61,6 +69,9 @@ class JobBoardRow(Base):
             "(import_method = 'rss') = (rss_url_template IS NOT NULL)",
             name="rss_url_template_with_rss",
         ),
+        CheckConstraint(
+            "(import_method = 'email') = (email_alert IS NOT NULL)", name="email_alert_with_email"
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
@@ -73,6 +84,10 @@ class JobBoardRow(Base):
     # Unique: each feed is imported by one job board at most.
     feed: Mapped[Feed | None] = mapped_column(_enum_column_type(Feed, "feed"), unique=True)
     rss_url_template: Mapped[str | None] = mapped_column(String(2048))
+    # Unique: each email alert is imported by one job board at most.
+    email_alert: Mapped[EmailAlert | None] = mapped_column(
+        _enum_column_type(EmailAlert, "email_alert"), unique=True
+    )
     # The 6-hour limit of the feeds' terms is checked against it.
     last_imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
