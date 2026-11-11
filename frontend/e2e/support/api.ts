@@ -37,6 +37,19 @@ export class Api {
     return this.post("/job-boards", feed ? { ...body, import_method: "api", feed } : body);
   }
 
+  addEmailJobBoard(
+    name: string,
+    emailAlert: Schemas["EmailAlert"],
+  ): Promise<Schemas["JobBoardRead"]> {
+    const body = { name, search_url_template: "https://jobs.example/search?q={query}" };
+    return this.post("/job-boards", {
+      ...body,
+      syntax: "keywords",
+      import_method: "email",
+      email_alert: emailAlert,
+    });
+  }
+
   addSearchProfile(
     name: string,
     fields: Partial<Schemas["SearchProfileCreate"]> = {},

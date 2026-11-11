@@ -19,6 +19,11 @@ export type JobBoard = components["schemas"]["JobBoardRead"];
 
 const PAGE_SIZE = 20;
 
+function importedFrom(jobBoard: JobBoard): string {
+  if (jobBoard.email_alert) return `${jobBoard.email_alert} alerts`;
+  return jobBoard.feed ?? jobBoard.import_method;
+}
+
 export function JobBoardsSection() {
   const queryClient = useQueryClient();
   const [pagination, setPagination] = useState<GridPaginationModel>({
@@ -63,7 +68,7 @@ export function JobBoardsSection() {
             <Meta icon={CodeOutlined} mono>
               {row.import_method === "none"
                 ? row.syntax
-                : `${row.syntax} · imported from ${row.feed ?? row.import_method}`}
+                : `${row.syntax} · imported from ${importedFrom(row)}`}
             </Meta>
           }
         />

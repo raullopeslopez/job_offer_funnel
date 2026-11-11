@@ -54,7 +54,10 @@ export function ImportJobBoardDialog({ open, onClose }: Props) {
         params: { query: { limit: PAGE_LIMIT } },
       });
       if (error) throw error;
-      return data.items.filter((jobBoard) => jobBoard.import_method !== "none");
+      // Email job boards are imported as their alerts arrive, not on demand.
+      return data.items.filter(
+        ({ import_method }) => import_method === "api" || import_method === "rss",
+      );
     },
   });
   const close = () => {

@@ -21,13 +21,19 @@ const SYNTAXES: Syntax[] = ["boolean", "minus", "keywords"];
 type Feed = components["schemas"]["Feed"];
 const FEEDS: Feed[] = ["himalayas", "jobicy", "remoteok", "remotive"];
 
-// The import method follows the source: "" is "not imported", "rss" its RSS, else a feed.
+type EmailAlert = components["schemas"]["EmailAlert"];
+const EMAIL_ALERTS: EmailAlert[] = ["linkedin"];
+type AlertSource = `${EmailAlert} alerts`;
+const alertSource = (alert: EmailAlert): AlertSource => `${alert} alerts`;
+
+// The import method follows the source: "" is "not imported", "rss" its RSS, "<alert>
+// alerts" its job alert emails, else a feed.
 const RSS = "rss";
 type Values = {
   name: string;
   search_url_template: string;
   syntax: Syntax;
-  feed: Feed | typeof RSS | "";
+  feed: Feed | typeof RSS | AlertSource | "";
   rss_url_template: string;
 };
 const FIELDS: (keyof Values)[] = [
@@ -40,8 +46,16 @@ const FIELDS: (keyof Values)[] = [
 
 function importSource({ feed, rss_url_template }: Values) {
   if (feed === RSS) return { import_method: "rss" as const, rss_url_template };
-  if (feed) return { import_method: "api" as const, feed };
+  const alert = EMAIL_ALERTS.find((candidate) => alertSource(candidate) === feed);
+  if (alert) return { import_method: "email" as const, email_alert: alert };
+  if (feed) return { import_method: "api" as const, feed: feed as Feed };
   return { import_method: "none" as const, feed: null };
+}
+
+function currentSource(jobBoard: JobBoard | null): Values["feed"] {
+  if (jobBoard?.import_method === "rss") return RSS;
+  if (jobBoard?.email_alert) return alertSource(jobBoard.email_alert);
+  return jobBoard?.feed ?? "";
 }
 
 /** Creates a job board, or edits `jobBoard` when given. */
@@ -59,7 +73,7 @@ export function JobBoardDialog({ jobBoard, onClose, onSaved }: Props) {
       name: jobBoard?.name ?? "",
       search_url_template: jobBoard?.search_url_template ?? "",
       syntax: jobBoard?.syntax ?? "keywords",
-      feed: jobBoard?.import_method === "rss" ? RSS : (jobBoard?.feed ?? ""),
+      feed: currentSource(jobBoard),
       rss_url_template: jobBoard?.rss_url_template ?? "",
     },
   });
@@ -84,6 +98,10 @@ export function JobBoardDialog({ jobBoard, onClose, onSaved }: Props) {
     }
     if (isProblem(error, "feed-taken")) {
       setError("root", { message: "Another job board already imports that feed" });
+      return;
+    }
+    if (isProblem(error, "email-alert-taken")) {
+      setError("root", { message: "Another job board already imports those email alerts" });
       return;
     }
     const byField = fieldErrors(error);
@@ -161,6 +179,11 @@ export function JobBoardDialog({ jobBoard, onClose, onSaved }: Props) {
                   {FEEDS.map((feed) => (
                     <MenuItem key={feed} value={feed}>
                       {feed}
+                    </MenuItem>
+                  ))}
+                  {EMAIL_ALERTS.map((alert) => (
+                    <MenuItem key={alert} value={alertSource(alert)}>
+                      {alertSource(alert)}
                     </MenuItem>
                   ))}
                 </TextField>
