@@ -339,6 +339,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read Offers
+         * @description Have the offer reader read up to 5 pending imported offers: their work mode, whether
+         *     they can be done living in the location of the search profiles they fit, and whether
+         *     they are stable jobs. What a reading says filters the offer like the profile's words.
+         *
+         *     An offer is read once for each location of the profiles it fits by its words; offers
+         *     without a description are never read. Call it again while `left` is not 0; an offer
+         *     the reader fails on is left to be read.
+         */
+        post: operations["read_offers_api_v1_offers_readings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/offers/{offer_id}": {
         parameters: {
             query?: never;
@@ -1082,7 +1108,7 @@ export interface components {
             discard_reason: string | null;
             /**
              * Filtered
-             * @description Pending, imported and fitting none of the current search profiles.
+             * @description Pending, imported and fitting none of the current search profiles, by its words or by what its readings say.
              */
             filtered: boolean;
             /**
@@ -1096,6 +1122,11 @@ export interface components {
             job_board_name: string | null;
             /** Notes */
             notes: string | null;
+            /**
+             * Readings
+             * @description What its description says, once read, for each profile location.
+             */
+            readings: components["schemas"]["ReadingRead"][];
             status: components["schemas"]["OfferStatus"];
             /** Title */
             title: string;
@@ -1235,6 +1266,53 @@ export interface components {
              * @default portal
              */
             channel: components["schemas"]["Channel"];
+        };
+        /** ReadingBatchRead */
+        ReadingBatchRead: {
+            /**
+             * Failed
+             * @description Readings the offer reader failed on; left to be read.
+             */
+            failed: number;
+            /**
+             * Left
+             * @description Readings still to be made, the failed ones included.
+             */
+            left: number;
+            /**
+             * Read
+             * @description Readings made now, one per offer and location.
+             */
+            read: number;
+        };
+        /**
+         * ReadingRead
+         * @description What the offer's description says. Null is what it does not say; every answer has
+         *     its evidence, a sentence of the description.
+         */
+        ReadingRead: {
+            /**
+             * Admits Location
+             * @description Whether the job can be done living in `location`.
+             */
+            admits_location: boolean | null;
+            /** Admits Location Evidence */
+            admits_location_evidence: string | null;
+            /**
+             * Location
+             * @description The search profile location it was read for; null for profiles without one.
+             */
+            location: string | null;
+            /**
+             * Stable
+             * @description Full-time with no end date, as an employee or a contractor (true); paid by the task or the hour, temporary or part-time (false).
+             */
+            stable: boolean | null;
+            /** Stable Evidence */
+            stable_evidence: string | null;
+            work_mode: components["schemas"]["WorkMode"] | null;
+            /** Work Mode Evidence */
+            work_mode_evidence: string | null;
         };
         /** SearchProfileCreate */
         SearchProfileCreate: {
@@ -2668,6 +2746,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationProblemRead"] | components["schemas"]["ProblemRead"];
+                };
+            };
+        };
+    };
+    read_offers_api_v1_offers_readings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingBatchRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+            /** @description No offer reader is configured (`offer-reader-unavailable`); nothing changed */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
                 };
             };
         };

@@ -1235,7 +1235,7 @@
             "title": "Discard Reason"
           },
           "filtered": {
-            "description": "Pending, imported and fitting none of the current search profiles.",
+            "description": "Pending, imported and fitting none of the current search profiles, by its words or by what its readings say.",
             "title": "Filtered",
             "type": "boolean"
           },
@@ -1277,6 +1277,14 @@
               }
             ],
             "title": "Notes"
+          },
+          "readings": {
+            "description": "What its description says, once read, for each profile location.",
+            "items": {
+              "$ref": "#/components/schemas/ReadingRead"
+            },
+            "title": "Readings",
+            "type": "array"
           },
           "status": {
             "$ref": "#/components/schemas/OfferStatus"
@@ -1324,6 +1332,7 @@
           "notes",
           "status",
           "filtered",
+          "readings",
           "discard_reason",
           "application_id",
           "watched_company_id",
@@ -1632,6 +1641,127 @@
           }
         },
         "title": "PromotionCreate",
+        "type": "object"
+      },
+      "ReadingBatchRead": {
+        "properties": {
+          "failed": {
+            "description": "Readings the offer reader failed on; left to be read.",
+            "title": "Failed",
+            "type": "integer"
+          },
+          "left": {
+            "description": "Readings still to be made, the failed ones included.",
+            "title": "Left",
+            "type": "integer"
+          },
+          "read": {
+            "description": "Readings made now, one per offer and location.",
+            "title": "Read",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "read",
+          "failed",
+          "left"
+        ],
+        "title": "ReadingBatchRead",
+        "type": "object"
+      },
+      "ReadingRead": {
+        "description": "What the offer's description says. Null is what it does not say; every answer has\nits evidence, a sentence of the description.",
+        "properties": {
+          "admits_location": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the job can be done living in `location`.",
+            "title": "Admits Location"
+          },
+          "admits_location_evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admits Location Evidence"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The search profile location it was read for; null for profiles without one.",
+            "title": "Location"
+          },
+          "stable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Full-time with no end date, as an employee or a contractor (true); paid by the task or the hour, temporary or part-time (false).",
+            "title": "Stable"
+          },
+          "stable_evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stable Evidence"
+          },
+          "work_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work_mode_evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Mode Evidence"
+          }
+        },
+        "required": [
+          "location",
+          "work_mode",
+          "work_mode_evidence",
+          "admits_location",
+          "admits_location_evidence",
+          "stable",
+          "stable_evidence"
+        ],
+        "title": "ReadingRead",
         "type": "object"
       },
       "SearchProfileCreate": {
@@ -3997,6 +4127,63 @@
           }
         ],
         "summary": "Create Offer",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/readings": {
+      "post": {
+        "description": "Have the offer reader read up to 5 pending imported offers: their work mode, whether\nthey can be done living in the location of the search profiles they fit, and whether\nthey are stable jobs. What a reading says filters the offer like the profile's words.\n\nAn offer is read once for each location of the profiles it fits by its words; offers\nwithout a description are never read. Call it again while `left` is not 0; an offer\nthe reader fails on is left to be read.",
+        "operationId": "read_offers_api_v1_offers_readings_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingBatchRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "No offer reader is configured (`offer-reader-unavailable`); nothing changed"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Offers",
         "tags": [
           "inbox"
         ]

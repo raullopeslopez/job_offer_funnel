@@ -60,7 +60,7 @@ class FakeOfferReader:
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
 
-    async def read(self, offer: OfferText, location: str | None) -> Reading:
+    async def read(self, offer: OfferText, _location: str | None) -> Reading:
         if offer.company in self._state.failing:
             raise OfferReaderError("the reader is down")
         return self._state.answers.get(offer.title, Reading())

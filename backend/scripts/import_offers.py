@@ -10,6 +10,9 @@ Email alerts are read by IMAP from the Gmail account dedicated to them (docs/fas
 GMAIL_ADDRESS and GMAIL_APP_PASSWORD (an app password, never printed); without them they are
 skipped. Each alert the API takes gets the Gmail label `funnel-imported`, so it is sent only
 once; whether it is read stays as is.
+
+Last, the offer reader reads the new offers (specs/inbox/offer_readings.feature); an API
+without one (no GROQ_API_KEY) skips it.
 """
 
 import email
@@ -32,6 +35,11 @@ WAKE_UP_ATTEMPTS = 3
 # The API's largest page: more job boards than this would need paging.
 PAGE_LIMIT = 100
 
+
+# The offer reader's free plan counts tokens by the minute (modules/inbox/reader.py): one
+# call a minute, for at most 8 minutes of the workflow's 15.
+READING_PAUSE_SECONDS = 62
+READING_ROUNDS = 8
 
 # Imported when the script asks; `email` job boards are imported as their alerts arrive.
 IMPORTED_ON_DEMAND = frozenset({"api", "rss"})
@@ -138,6 +146,34 @@ def import_alerts(api: str) -> bool:
     return all(results)
 
 
+def read_offers(api: str) -> bool:
+    """Have the offer reader read the new offers, a few a minute; return whether it worked.
+
+    The API reads up to 5 per call and the reader's plan allows about that many a minute, so
+    the script waits between calls and stops after READING_ROUNDS. A round that reads
+    nothing means the reader's quota is spent: what is left waits for the next run.
+    """
+    for _round in range(READING_ROUNDS):
+        try:
+            batch = call("POST", f"{api}/offers/readings")
+        except HTTPError as error:
+            if error.code == HTTPStatus.SERVICE_UNAVAILABLE:
+                print("skipped   offer readings (the API has no offer reader)")
+                return True
+            print(f"FAILED    offer readings: {error.code} {error.read().decode()}")
+            return False
+        except (URLError, TimeoutError) as error:
+            print(f"FAILED    offer readings: {error}")
+            return False
+        print(
+            f"read      {batch['read']} offers, failed on {batch['failed']}, {batch['left']} left"
+        )
+        if batch["left"] == 0 or batch["read"] == 0:
+            break
+        time.sleep(READING_PAUSE_SECONDS)
+    return True
+
+
 def main() -> int:
     api_url = os.environ.get("API_URL", f"http://localhost:{os.environ.get('API_PORT', '8080')}")
     api = f"{api_url}/api/v1"
@@ -154,6 +190,7 @@ def main() -> int:
         for company in call("GET", f"{api}/watched-companies")
     ]
     results.append(import_alerts(api))
+    results.append(read_offers(api))
     return 0 if all(results) else 1
 
 
