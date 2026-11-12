@@ -5,19 +5,23 @@ Feature: Offer readings
 
   A title says little: "Backend Engineer" may be remote from anywhere or three days a
   week in an office. Reading the offers sends the description of each pending imported
-  offer to the offer reader, which answers two things:
+  offer to the offer reader, which answers three things:
   - its work mode: remote, hybrid or onsite;
-  - whether the job can be done living in a location: yes or no.
+  - whether the job can be done living in a location: yes or no;
+  - whether it is a stable job: yes for a full-time position with no end date, as an
+    employee or as a contractor; no when it is paid by the task or by the hour,
+    temporary or part-time.
   Each answer comes with its evidence, the sentence of the description that says so. An
   answer whose evidence is not in the description, letter for letter, is not kept. What
   the description does not say stays unknown.
   An offer is read once for each location of the search profiles it fits by its title,
   keywords and exclusions (specs/inbox/filtered_offers.feature); for profiles without a
-  location it is read for its work mode only. Offers without a description (added by
+  location it is read without that question. Offers without a description (added by
   hand or from an email alert) are never read. At most 20 offers are read at a time.
-  A reading adds two rules to fitting a profile, and only what is known can filter:
+  A reading adds three rules to fitting a profile, and only what is known can filter:
   - the offer's work mode, when known, is one of the profile's work modes, if it has any;
-  - the offer, when known, can be done living in the profile's location, if it has one.
+  - the offer, when known, can be done living in the profile's location, if it has one;
+  - the offer, when known, is a stable job, whatever the profile.
   So an offer that has not been read, or whose description says nothing, is never
   filtered for it. Whether an offer is filtered still follows the current profiles.
 
@@ -89,7 +93,7 @@ Feature: Offer readings
       | discarded |
       | promoted  |
 
-  Scenario: A profile without a location is read for the work mode only
+  Scenario: A profile without a location is read without the location question
     Given I edit the profile "Backend" to have no location
     And the job board "Remote OK" was imported with:
       | title            | company | description                         | url                    |
@@ -124,6 +128,42 @@ Feature: Offer readings
       | Fully remote.                                | remote    | Fully remote                         |        |                               | not filtered |
       | Hiring across Europe.                        |           |                                      | yes    | Hiring across Europe          | not filtered |
       | Python services.                             |           |                                      |        |                               | not filtered |
+
+  Scenario Outline: A read offer that is not a stable job is filtered
+    Given the job board "Remote OK" was imported with:
+      | title            | company | description   | url                    |
+      | Backend Engineer | Acme    | <description> | https://remoteok.com/1 |
+    And the offer reader answers for "Backend Engineer":
+      | stable   | stable_evidence   |
+      | <stable> | <stable_evidence> |
+    And I read the offers
+    When I view the offer "Backend Engineer"
+    Then the offer is <filtered>
+    And the reading of "Backend Engineer" for "Spain" says:
+      | stable   | stable_evidence   |
+      | <stable> | <stable_evidence> |
+
+    Examples:
+      | description                         | stable | stable_evidence      | filtered     |
+      | Full-time, permanent position.      | yes    | Full-time, permanent | not filtered |
+      | Full-time contractor, paid monthly. | yes    | Full-time contractor | not filtered |
+      | Task based, up to $500 per task.    | no     | Task based           | filtered     |
+      | Up to $85 per hour, flexible hours. | no     | $85 per hour         | filtered     |
+      | Six-month contract.                 | no     | Six-month contract   | filtered     |
+      | Part-time, 20 hours a week.         | no     | Part-time            | filtered     |
+      | Python services.                    |        |                      | not filtered |
+
+  Scenario: An offer that is not a stable job is filtered for a profile that asks for nothing else
+    Given I edit the profile "Backend" to have no location and no work modes
+    And the job board "Remote OK" was imported with:
+      | title            | company | description                      | url                    |
+      | Backend Engineer | Acme    | Task based, up to $500 per task. | https://remoteok.com/1 |
+    And the offer reader answers for "Backend Engineer":
+      | stable | stable_evidence |
+      | no     | Task based      |
+    And I read the offers
+    When I view the offer "Backend Engineer"
+    Then the offer is filtered
 
   Scenario: An offer that has not been read is not filtered by its description
     Given the job board "Remote OK" was imported with:
