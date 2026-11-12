@@ -25,13 +25,21 @@ You read a job posting and answer only with what it states explicitly. Never gue
 For every answer give as evidence one short excerpt copied character by character from \
 the description. If the description does not state something, answer null for it and for \
 its evidence.
-- work_mode: "remote" if the job is fully remote; "hybrid" if some days are in an office; \
-"onsite" if it is done at an office or site.
-- admits_location: true if the description states that someone living in the given \
-location can do the job (it names that place, or a region that contains it, or says \
-anywhere or worldwide); false if it restricts the job to people living somewhere else.
+- work_mode: where the work is done, never what the role is about. "remote" if it can be \
+done fully from home, also when an office is optional, when remote is one of the options \
+offered, or when it only asks for occasional travel; "hybrid" only if it requires regular \
+days in an office; "onsite" only if it requires working at an office or site. Where the \
+company or its team is does not make a job hybrid or onsite.
+- admits_location: true only if the description states where the job can be done from and \
+that includes the given location (it names that place, or a region that contains it, or \
+says anywhere or worldwide); false only if it requires living, being a citizen or having \
+the right to work somewhere that excludes the given location. Otherwise null: a job that \
+is just "remote", preferred locations, working hours or time zones, languages, the \
+salary's currency, and where the company, its team or its clients are, are not \
+requirements.
 - stable: true if it is a full-time position with no end date, as an employee or as a \
-contractor; false if it is paid by the task or by the hour, temporary, or part-time."""
+contractor; false if it is paid by the task or by the hour, temporary, or part-time. \
+Weekly hours or a salary alone say nothing: null."""
 
 
 def _nullable(json_type: str, **keywords: Any) -> dict[str, Any]:

@@ -149,6 +149,12 @@ While the version is `0.x`, the API may change without a major version bump.
 - Every write is committed before the API answers. Before, the response could arrive
   first: a read right after a write could still return the old data, and a failed
   commit could still answer with a success.
+- Offer readings filter fewer good offers. A job is read as hybrid or onsite only when it
+  requires days at an office: an optional office, remote as one of the options or
+  occasional travel are remote. A job is read as not doable from the profile's `location`
+  only when it requires living, being a citizen or having the right to work somewhere
+  else: preferred locations, working hours, languages, the salary's currency and where
+  the company or its team are no longer count. Offers already read keep their reading.
 
 ## [0.2.0] - 2026-11-08
 
