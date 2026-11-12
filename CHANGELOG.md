@@ -10,6 +10,19 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Offer readings: `POST /api/v1/offers/readings` has an offer reader (a language model)
+  read the description of up to 5 pending imported offers that fit a search profile by
+  its words, and answers how many it read, failed on and left. A reading says the offer's
+  work mode, whether the job can be done living in the profile's `location`, and whether
+  it is a stable job (full-time with no end date, as an employee or a contractor), each
+  with the sentence of the description that says so; an answer without that sentence in
+  the description is not kept. Offers show their `readings`, and what a reading says
+  filters the offer: a work mode the profile does not accept, a job that cannot be done
+  from its location, or one paid by the task or the hour, temporary or part-time. What
+  the description does not say never filters. Needs `GROQ_API_KEY`; without it nothing is
+  read (`offer-reader-unavailable`) and everything else works the same. The scheduled
+  import reads the new offers after importing, a few a minute.
+
 - LinkedIn job alerts: a job board can be imported from its job alert emails
   (`import_method: email` with `email_alert: linkedin`; at most one job board per alert,
   `email-alert-taken` otherwise), also from the settings screen. `POST

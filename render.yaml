@@ -22,6 +22,9 @@ services:
         sync: false
       - key: AUTH_TOKEN
         generateValue: true
+      # Optional: without it no offer is read (specs/inbox/offer_readings.feature).
+      - key: GROQ_API_KEY
+        sync: false
 
   - type: web
     name: job-offer-funnel-web

@@ -108,7 +108,7 @@ layers = ["router", "service", "repository", "models", "domain"]
 name = "inbox layers"
 type = "layers"
 containers = ["funnel.modules.inbox"]
-layers = ["router", "service", "repository | feeds | ats | alerts", "models", "domain"]
+layers = ["router", "service", "repository | feeds | ats | alerts | reader", "models", "domain"]
 
 [[tool.importlinter.contracts]]
 name = "metrics layers"

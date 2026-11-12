@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
+from funnel.modules.discovery.domain import WorkMode
 from funnel.modules.inbox.domain import Ats, OfferStatus
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -85,6 +86,32 @@ class BoardImportRead(BaseModel):
     imported_at: datetime
 
 
+class ReadingRead(BaseModel):
+    """What the offer's description says. Null is what it does not say; every answer has
+    its evidence, a sentence of the description."""
+
+    location: str | None = Field(
+        description="The search profile location it was read for; null for profiles without one."
+    )
+    work_mode: WorkMode | None
+    work_mode_evidence: str | None
+    admits_location: bool | None = Field(
+        description="Whether the job can be done living in `location`."
+    )
+    admits_location_evidence: str | None
+    stable: bool | None = Field(
+        description="Full-time with no end date, as an employee or a contractor (true); "
+        "paid by the task or the hour, temporary or part-time (false)."
+    )
+    stable_evidence: str | None
+
+
+class ReadingBatchRead(BaseModel):
+    read: int = Field(description="Readings made now, one per offer and location.")
+    failed: int = Field(description="Readings the offer reader failed on; left to be read.")
+    left: int = Field(description="Readings still to be made, the failed ones included.")
+
+
 class OfferRead(BaseModel):
     id: UUID
     url: str
@@ -95,7 +122,11 @@ class OfferRead(BaseModel):
     notes: str | None
     status: OfferStatus
     filtered: bool = Field(
-        description="Pending, imported and fitting none of the current search profiles."
+        description="Pending, imported and fitting none of the current search profiles, "
+        "by its words or by what its readings say."
+    )
+    readings: list[ReadingRead] = Field(
+        description="What its description says, once read, for each profile location."
     )
     discard_reason: str | None = Field(description="Set while the offer is discarded.")
     application_id: UUID | None = Field(description="Set once the offer is promoted.")

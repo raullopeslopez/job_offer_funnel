@@ -37,6 +37,7 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Fase 1, filas 1 a 3: importación amplia con filtradas (`inbox/filtered_offers`), importación periódica cada 6 h y el portal como único catálogo de fuentes (`inbox/job_board_imports`: método de importación y feed en el portal, que es el origen de las ofertas importadas)
 - [x] Fase 1, fila 4: importación por RSS (método `rss` con `rss_url_template`; solo Evenbreak, por condiciones y por la empresa en el RSS: `docs/fase0.md`)
 - [x] Fase 1, fila 5: alertas por email de LinkedIn (método `email` con `email_alert`, `inbox/email_alerts`; el buzón dedicado se lee por IMAP en el script de cada 6 h)
+- [x] Fase 1, segundo filtro: lectura de ofertas (`inbox/offer_readings`): un lector externo (Groq, `GROQ_API_KEY`) saca de la descripción la modalidad, si se puede hacer desde la ubicación del perfil y si el puesto es estable, con su frase literal; el encaje lo sigue calculando la app
 - [x] Rediseño visual (Epic #30): tema premium v2 claro/oscuro, responsive y anclas visuales en todas las pantallas; componentes compartidos en `frontend/src/components/`
 
 ## Criterio: evitar la sobreingeniería

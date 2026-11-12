@@ -23,6 +23,7 @@ const offer = (title: string, filtered: boolean): Offer => ({
   notes: null,
   status: "pending",
   filtered,
+  readings: [],
   discard_reason: null,
   application_id: null,
   watched_company_id: null,

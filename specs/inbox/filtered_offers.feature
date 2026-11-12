@@ -9,6 +9,8 @@ Feature: Filtered offers
   - one of the profile's titles appears in the offer's title,
   - all of its keywords appear in the title or the description,
   - none of its excluded keywords appears in the title.
+  Once an offer's description has been read, what it says about the work mode and the
+  location filters too (specs/inbox/offer_readings.feature).
   Words are compared ignoring case. Whether an offer is filtered always follows the
   current profiles: creating, editing or deleting a profile changes it at once.
   Offers added by hand are never filtered. A filtered offer is still pending: it can be

@@ -2,14 +2,34 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid7
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, column, func, select, table
-from sqlalchemy.orm import Mapped, column_property, mapped_column, query_expression
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    column,
+    func,
+    select,
+    table,
+)
+from sqlalchemy.orm import (
+    Mapped,
+    column_property,
+    mapped_column,
+    query_expression,
+    relationship,
+)
 
 from funnel.core.db import Base
+from funnel.modules.discovery.domain import WorkMode
 from funnel.modules.inbox.domain import Ats, OfferStatus
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
+UNIQUE_READING_INDEX = "uq_offer_readings_offer_id_location"
 # Their violation means "the job board does not exist": the repository translates it.
 JOB_BOARD_FOREIGN_KEY = "fk_offers_job_board_id_job_boards"
 
@@ -43,6 +63,35 @@ class WatchedCompanyRow(Base):
 
 # Unique ignoring case, enforced by the database (see companies/models.py).
 Index(UNIQUE_WATCHED_NAME_INDEX, func.lower(WatchedCompanyRow.name), unique=True)
+
+
+class OfferReadingRow(Base):
+    """What an offer's description says, read for the location of a search profile (NULL
+    for profiles without one). NULL answers are what the description does not say."""
+
+    __tablename__ = "offer_readings"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
+    offer_id: Mapped[UUID] = mapped_column(ForeignKey("offers.id", ondelete="CASCADE"))
+    location: Mapped[str | None] = mapped_column(String(200))
+    work_mode: Mapped[WorkMode | None] = mapped_column(_enum_column_type(WorkMode, "work_mode"))
+    work_mode_evidence: Mapped[str | None] = mapped_column(Text)
+    admits_location: Mapped[bool | None] = mapped_column(Boolean)
+    admits_location_evidence: Mapped[str | None] = mapped_column(Text)
+    stable: Mapped[bool | None] = mapped_column(Boolean)
+    stable_evidence: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# One reading per offer and location, the one without a location included. It is also the
+# index of the foreign key: offer_id leads it.
+Index(
+    UNIQUE_READING_INDEX,
+    OfferReadingRow.offer_id,
+    OfferReadingRow.location,
+    unique=True,
+    postgresql_nulls_not_distinct=True,
+)
 
 
 class OfferRow(Base):
@@ -81,4 +130,7 @@ class OfferRow(Base):
     )
     job_board_name: Mapped[str | None] = column_property(
         select(_job_boards.c.name).where(_job_boards.c.id == job_board_id).scalar_subquery()
+    )
+    readings: Mapped[list[OfferReadingRow]] = relationship(
+        lazy="selectin", order_by=(OfferReadingRow.created_at, OfferReadingRow.id), viewonly=True
     )

@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 import httpx2
+import structlog
 
 from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
@@ -15,6 +16,7 @@ from funnel.modules.discovery.service import JobBoardService, SearchProfileServi
 from funnel.modules.inbox.alerts import read_alert
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
+    READING_BATCH_SIZE,
     BoardUnavailableError,
     EmailAlertNotImportedError,
     FeedCooldownError,
@@ -23,18 +25,27 @@ from funnel.modules.inbox.domain import (
     ImportedByEmailError,
     JobBoardNotImportedError,
     OfferAction,
+    OfferReaderError,
+    OfferReaderUnavailableError,
     OfferStatus,
+    OfferText,
     duplicate_key,
     next_status,
+    plain_text,
+    supported,
 )
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.models import OfferRow, WatchedCompanyRow
+from funnel.modules.inbox.reader import OfferReader
 from funnel.modules.inbox.repository import (
     FeedImportRepository,
     OfferRepository,
+    ReadingRepository,
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import OfferCreate, WatchedCompanyCreate
+
+_logger = structlog.get_logger(__name__)
 
 
 class OfferService:
@@ -97,6 +108,46 @@ class OfferService:
         offer.status = status
         offer.application_id = application.id
         return await self._repository.save(offer, await self._profiles.all_terms())
+
+
+@dataclass(frozen=True)
+class ReadingBatch:
+    read: int
+    failed: int
+    left: int
+
+
+class OfferReadingService:
+    """Has the offer reader read the offers the search profiles fit by their words."""
+
+    def __init__(
+        self,
+        readings: ReadingRepository,
+        profiles: SearchProfileService,
+        reader: OfferReader | None,
+    ) -> None:
+        self._readings = readings
+        self._profiles = profiles
+        self._reader = reader
+
+    async def read_pending(self) -> ReadingBatch:
+        if self._reader is None:
+            raise OfferReaderUnavailableError("No offer reader is configured")
+        profiles = await self._profiles.all_terms()
+        unread, total = await self._readings.list_unread(profiles, READING_BATCH_SIZE)
+        read = 0
+        for offer, location in unread:
+            text = OfferText(offer.title, offer.company, plain_text(offer.description or ""))
+            try:
+                answer = await self._reader.read(text, location)
+            except OfferReaderError as error:
+                # Left unread: the next reading tries it again.
+                _logger.warning("offer_reading_failed", offer_id=str(offer.id), error=str(error))
+                continue
+            kept = supported(answer, text.description, asked_location=location is not None)
+            await self._readings.add(offer.id, location, kept)
+            read += 1
+        return ReadingBatch(read=read, failed=len(unread) - read, left=total - read)
 
 
 @dataclass(frozen=True)
