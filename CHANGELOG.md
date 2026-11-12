@@ -146,6 +146,10 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Importing Jobicy no longer loses most of its offers nor discards open ones: its feed
+  only publishes its latest offers (a few hours of postings), so an import now reads up
+  to 300 of them instead of 50, and its pending offers are no longer discarded as
+  `expired` when they leave the feed.
 - Every write is committed before the API answers. Before, the response could arrive
   first: a read right after a write could still return the old data, and a failed
   commit could still answer with a success.

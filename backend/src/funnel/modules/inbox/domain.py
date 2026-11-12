@@ -1,6 +1,7 @@
 """Offer status rules, duplicate detection and what a reading of an offer may keep.
 
-Source of truth: specs/inbox/inbox.feature and specs/inbox/offer_readings.feature.
+Source of truth: specs/inbox/inbox.feature, specs/inbox/job_board_imports.feature and
+specs/inbox/offer_readings.feature.
 """
 
 import html
@@ -13,7 +14,7 @@ from http import HTTPStatus
 from typing import Final
 
 from funnel.core.exceptions import AppError, DomainError
-from funnel.modules.discovery.domain import WorkMode
+from funnel.modules.discovery.domain import Feed, WorkMode
 
 
 class OfferStatus(StrEnum):
@@ -31,6 +32,9 @@ class Ats(StrEnum):
 
 
 EXPIRED_REASON: Final = "expired"
+# Feeds that publish only their latest offers: one that left them may still be open, so
+# their offers are not expired (Jobicy's 100 newest are a few hours of postings).
+LATEST_ONLY_FEEDS: Final = frozenset({Feed.JOBICY})
 
 
 @dataclass(frozen=True)
