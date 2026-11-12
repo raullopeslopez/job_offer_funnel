@@ -1,8 +1,8 @@
 """One adapter per public feed: read its JSON API and turn each job into a FeedOffer.
 Plus one reader for every RSS, whose items read "Company: Title" (Evenbreak's convention).
 
-Response shapes checked against the live APIs on 2026-11-08 and the RSS on 2026-11-11;
-terms in docs/fase0.md.
+Response shapes checked against the live APIs on 2026-11-08 (Jobicy's pages on 2026-11-12)
+and the RSS on 2026-11-11; terms in docs/fase0.md.
 """
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
@@ -20,7 +20,10 @@ Reader = Callable[[httpx2.AsyncClient, Sequence[str]], Awaitable[list[FeedOffer]
 
 # Offers are stored in VARCHAR(200) columns.
 _MAX_TEXT = 200
-_JOBICY_PAGE_SIZE = 50
+# Jobicy publishes about 14 offers an hour, newest first, 100 a page at most: 3 pages
+# cover the hours between two imports with room to spare.
+_JOBICY_PAGE_SIZE = 100
+_JOBICY_PAGES = 3
 
 
 async def _get_json(
@@ -87,12 +90,20 @@ async def _himalayas(client: httpx2.AsyncClient, titles: Sequence[str]) -> list[
 
 
 async def _jobicy(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[FeedOffer]:
-    body = await _get_json(
-        client, "https://jobicy.com/api/v2/remote-jobs", {"count": str(_JOBICY_PAGE_SIZE)}
-    )
-    return _kept(
-        [_offer(job, ("jobTitle", "companyName", "jobDescription", "url")) for job in body["jobs"]]
-    )
+    offers: list[FeedOffer | None] = []
+    params = {"count": str(_JOBICY_PAGE_SIZE)}
+    for _page in range(_JOBICY_PAGES):
+        body = await _get_json(client, "https://jobicy.com/api/v2/remote-jobs", params)
+        offers += [
+            _offer(job, ("jobTitle", "companyName", "jobDescription", "url"))
+            for job in body["jobs"]
+        ]
+        # The cursor of the next page; none on the last one.
+        cursor = body.get("nextCursor")
+        if not isinstance(cursor, str):
+            break
+        params = params | {"cursor": cursor}
+    return _kept(offers)
 
 
 READERS: Final[Mapping[Feed, Reader]] = {

@@ -16,6 +16,7 @@ from funnel.modules.discovery.service import JobBoardService, SearchProfileServi
 from funnel.modules.inbox.alerts import read_alert
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
+    LATEST_ONLY_FEEDS,
     READING_BATCH_SIZE,
     BoardUnavailableError,
     EmailAlertNotImportedError,
@@ -197,8 +198,12 @@ class FeedImportService:
             [_offer_row(offer, job_board_id=job_board.id) for offer in published]
         )
         filtered = await self._imports.count_filtered(added, profiles)
-        expired = await self._imports.expire_missing(
-            job_board.id, [offer.url for offer in published]
+        expired = (
+            0
+            if job_board.feed in LATEST_ONLY_FEEDS
+            else await self._imports.expire_missing(
+                job_board.id, [offer.url for offer in published]
+            )
         )
         # Only a successful read counts for the limit: a failed one can be retried at once.
         await self._job_boards.record_import(job_board, now)

@@ -87,7 +87,8 @@ def _jobicy(rows: list[Row]) -> object:
         }
         for r in rows
     ]
-    return {"jobs": jobs}
+    # One page, the last one: `nextCursor` is the `cursor` that asks for the page after it.
+    return {"jobs": jobs, "nextCursor": None, "hasMore": False}
 
 
 def _rss(rows: list[Row]) -> str:
@@ -120,6 +121,8 @@ class ScenarioState:
     profiles: dict[str, str] = field(default_factory=dict)
     job_boards: dict[str, dict[str, str]] = field(default_factory=dict)
     published: dict[str, list[Row]] = field(default_factory=dict)
+    # The feeds that publish in pages, each page asked for with the cursor the one before gave.
+    pages: dict[str, list[list[Row]]] = field(default_factory=dict)
     unavailable: set[str] = field(default_factory=set)
     searched: dict[str, list[str]] = field(default_factory=dict)
     # RSS items by job board and title searched; `rss_any` answers every other title.
@@ -164,6 +167,8 @@ def fake_feeds(client: TestClient, state: ScenarioState) -> Iterator[None]:
             state.searched.setdefault(feed, []).append(request.url.params["q"])
         if feed in state.unavailable:
             return httpx2.Response(503)
+        if feed in state.pages:
+            return httpx2.Response(200, json=_page(state.pages[feed], request))
         return httpx2.Response(200, json=FEED_PAYLOADS[feed](state.published.get(feed, [])))
 
     async def fake_client() -> AsyncIterator[httpx2.AsyncClient]:
@@ -174,6 +179,14 @@ def fake_feeds(client: TestClient, state: ScenarioState) -> Iterator[None]:
     overrides[get_feed_client] = fake_client
     yield
     overrides.pop(get_feed_client, None)
+
+
+def _page(pages: list[list[Row]], request: httpx2.Request) -> object:
+    """Jobicy's page for the cursor asked, as served on 2026-11-12; the first has no cursor."""
+    index = int(request.url.params.get("cursor", "0"))
+    more = index + 1 < len(pages)
+    page = cast(dict[str, object], _jobicy(pages[index]))
+    return page | {"nextCursor": str(index + 1) if more else None, "hasMore": more}
 
 
 def _set_time(client: TestClient, moment: datetime) -> None:
@@ -277,6 +290,23 @@ def given_feed_publishes(state: ScenarioState, feed: str, datatable: list[list[s
 @given(parsers.parse('the feed "{feed}" publishes no offers'))
 def given_feed_publishes_nothing(state: ScenarioState, feed: str) -> None:
     state.published[feed] = []
+
+
+@given(parsers.parse('the feed "{feed}" publishes {pages:d} pages of {size:d} offers'))
+def given_feed_publishes_pages(state: ScenarioState, feed: str, pages: int, size: int) -> None:
+    numbers = count(1)
+    state.pages[feed] = [
+        [
+            {
+                "title": f"Role {number}",
+                "company": f"Company {number}",
+                "description": "Remote",
+                "url": f"https://jobicy.com/jobs/{number}",
+            }
+            for number in (next(numbers) for _ in range(size))
+        ]
+        for _ in range(pages)
+    ]
 
 
 @given(parsers.parse('the feed "{feed}" is not available'))
