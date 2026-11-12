@@ -9,6 +9,9 @@ Feature: Job board imports
   as filtered (specs/inbox/filtered_offers.feature). Offers already in the inbox are skipped.
   Himalayas' terms rule out reading it whole, so it is searched by the titles of all the
   search profiles; without profiles it returns nothing.
+  Jobicy publishes only its latest offers, newest first and in pages of 100: an offer
+  leaves its feed within hours, long before it closes. So its first 3 pages are read, and
+  an offer that is no longer in its feed is not taken as closed.
   A job board with import method "rss" is read once for each title of all the search
   profiles, with the title in the {query} of its RSS URL template; without profiles it is
   not read. Each RSS item is an offer whose title reads "Company: Title" (Evenbreak's
@@ -18,7 +21,7 @@ Feature: Job board imports
   Every imported offer keeps the link to the original posting and its job board as source.
   To respect each source's terms, a job board can be imported at most once every 6 hours,
   and its pending imported offers that are no longer in its feed or RSS are discarded as
-  expired.
+  expired, except Jobicy's.
 
   Background:
     Given the time is 2026-03-10 09:00
@@ -69,6 +72,17 @@ Feature: Job board imports
       | Backend Engineer | Acme    | Python services | https://himalayas.app/jobs/1 |
     When I import the job board "Himalayas"
     Then the offer "Backend Engineer" links to "https://himalayas.app/jobs/1" and comes from the job board "Himalayas"
+
+  Scenario Outline: Jobicy is read page by page, up to 3 pages
+    Given the feed "jobicy" publishes <pages> pages of 2 offers
+    When I import the job board "Jobicy"
+    Then the import found <found> offers, <found> added, <found> filtered and 0 already in the inbox
+
+    Examples:
+      | pages | found |
+      | 1     | 2     |
+      | 3     | 6     |
+      | 4     | 6     |
 
   # --- Importing from an RSS ---
 
@@ -196,6 +210,14 @@ Feature: Job board imports
     When I import the job board "Remote OK"
     Then the offer "Backend Engineer" is "discarded" with reason "expired"
     And the offer "Python Developer" is "promoted"
+
+  Scenario: Pending offers that left Jobicy's feed are not expired
+    Given the job board "Jobicy" was imported at 2026-03-10 01:00 with:
+      | title            | company | description     | url                  |
+      | Backend Engineer | Acme    | Python services | https://jobicy.com/1 |
+    And the feed "jobicy" publishes no offers
+    When I import the job board "Jobicy"
+    Then the offer "Backend Engineer" is "pending"
 
   Scenario: Offers added by hand never expire, even in an imported job board
     Given an offer for "Acme" as "Backend Engineer" from "Remote OK"
