@@ -1,8 +1,10 @@
-"""Offer status rules and duplicate detection.
+"""Offer status rules, duplicate detection and what a reading of an offer may keep.
 
-Source of truth: specs/inbox/inbox.feature.
+Source of truth: specs/inbox/inbox.feature and specs/inbox/offer_readings.feature.
 """
 
+import html
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +13,7 @@ from http import HTTPStatus
 from typing import Final
 
 from funnel.core.exceptions import AppError, DomainError
+from funnel.modules.discovery.domain import WorkMode
 
 
 class OfferStatus(StrEnum):
@@ -38,6 +41,71 @@ class FeedOffer:
     company: str
     description: str
     url: str
+
+
+# Offers read per request: the offer reader's plan allows about this many a minute.
+READING_BATCH_SIZE: Final = 5
+
+_TAG: Final = re.compile(r"<[^>]+>")
+
+
+def plain_text(description: str) -> str:
+    """The description as the text a person reads: no tags, entities or extra spaces."""
+    return " ".join(html.unescape(_TAG.sub(" ", description)).split())
+
+
+@dataclass(frozen=True)
+class OfferText:
+    """What the offer reader is given; `description` is plain text."""
+
+    title: str
+    company: str
+    description: str
+
+
+@dataclass(frozen=True)
+class Reading:
+    """What a description says; None is what it does not say."""
+
+    work_mode: WorkMode | None = None
+    work_mode_evidence: str | None = None
+    admits_location: bool | None = None
+    admits_location_evidence: str | None = None
+    stable: bool | None = None
+    stable_evidence: str | None = None
+
+
+def _quoted(evidence: str | None, text: str) -> str | None:
+    """The evidence, if the text says it letter for letter (spaces aside)."""
+    quote = " ".join((evidence or "").split())
+    return quote if quote and quote in text else None
+
+
+def supported(answer: Reading, text: str, *, asked_location: bool) -> Reading:
+    """Only the answers whose evidence is in the text: the reader cannot make one up."""
+    work_mode = _quoted(answer.work_mode_evidence, text)
+    admits = _quoted(answer.admits_location_evidence, text) if asked_location else None
+    stable = _quoted(answer.stable_evidence, text)
+    return Reading(
+        work_mode=answer.work_mode if work_mode else None,
+        work_mode_evidence=work_mode if answer.work_mode is not None else None,
+        admits_location=answer.admits_location if admits else None,
+        admits_location_evidence=admits if answer.admits_location is not None else None,
+        stable=answer.stable if stable else None,
+        stable_evidence=stable if answer.stable is not None else None,
+    )
+
+
+class OfferReaderError(Exception):
+    """The offer reader did not answer for an offer, or answered something unusable."""
+
+
+class OfferReaderUnavailableError(AppError):
+    """No offer reader is configured, so nothing can be read."""
+
+    slug = "offer-reader-unavailable"
+    title = "Offer reader not available"
+    status = HTTPStatus.SERVICE_UNAVAILABLE
 
 
 class OfferAction(StrEnum):

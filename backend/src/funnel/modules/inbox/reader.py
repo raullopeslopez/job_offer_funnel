@@ -1,0 +1,136 @@
+"""The offer reader: a language model on Groq that says what a job description states.
+
+One chat completion per offer and location, answered as JSON with a strict schema
+(https://console.groq.com/docs/structured-outputs, checked on 2026-11-12). The free plan
+allows 8,000 tokens a minute for the default model, so the text sent is capped. What the
+model answers is not trusted: the domain keeps only the answers whose evidence is in the
+description.
+"""
+
+import json
+from typing import Any, Final
+
+import httpx2
+
+from funnel.modules.discovery.domain import WorkMode
+from funnel.modules.inbox.domain import OfferReaderError, OfferText, Reading
+
+API: Final = "https://api.groq.com/openai/v1/chat/completions"
+# A description says where and how the work is done at its start or at its end.
+_HEAD_CHARACTERS: Final = 3500
+_TAIL_CHARACTERS: Final = 1500
+
+_INSTRUCTIONS: Final = """\
+You read a job posting and answer only with what it states explicitly. Never guess.
+For every answer give as evidence one short excerpt copied character by character from \
+the description. If the description does not state something, answer null for it and for \
+its evidence.
+- work_mode: "remote" if the job is fully remote; "hybrid" if some days are in an office; \
+"onsite" if it is done at an office or site.
+- admits_location: true if the description states that someone living in the given \
+location can do the job (it names that place, or a region that contains it, or says \
+anywhere or worldwide); false if it restricts the job to people living somewhere else.
+- stable: true if it is a full-time position with no end date, as an employee or as a \
+contractor; false if it is paid by the task or by the hour, temporary, or part-time."""
+
+
+def _nullable(json_type: str, **keywords: Any) -> dict[str, Any]:
+    return {"type": [json_type, "null"], **keywords}
+
+
+def _schema(asks_location: bool) -> dict[str, Any]:
+    properties = {
+        "work_mode": _nullable("string", enum=[*(mode.value for mode in WorkMode), None]),
+        "work_mode_evidence": _nullable("string"),
+        "stable": _nullable("boolean"),
+        "stable_evidence": _nullable("string"),
+    }
+    if asks_location:
+        properties |= {
+            "admits_location": _nullable("boolean"),
+            "admits_location_evidence": _nullable("string"),
+        }
+    # Strict mode needs every property required and no others.
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": list(properties),
+        "additionalProperties": False,
+    }
+
+
+def _excerpt(description: str) -> str:
+    if len(description) <= _HEAD_CHARACTERS + _TAIL_CHARACTERS:
+        return description
+    return f"{description[:_HEAD_CHARACTERS]}\n[...]\n{description[-_TAIL_CHARACTERS:]}"
+
+
+def _question(offer: OfferText, location: str | None) -> str:
+    asked = "" if location is None else f"Location to answer admits_location for: {location}\n"
+    return (
+        f"{asked}Title: {offer.title}\nCompany: {offer.company}\n"
+        f"Description:\n{_excerpt(offer.description)}"
+    )
+
+
+def _optional[T](value: object, expected: type[T]) -> T | None:
+    if value is None:
+        return None
+    if not isinstance(value, expected):
+        raise TypeError(f"expected {expected.__name__}, got {value!r}")
+    return value
+
+
+def _reading(answer: dict[str, Any]) -> Reading:
+    work_mode = _optional(answer.get("work_mode"), str)
+    return Reading(
+        work_mode=None if work_mode is None else WorkMode(work_mode),
+        work_mode_evidence=_optional(answer.get("work_mode_evidence"), str),
+        admits_location=_optional(answer.get("admits_location"), bool),
+        admits_location_evidence=_optional(answer.get("admits_location_evidence"), str),
+        stable=_optional(answer.get("stable"), bool),
+        stable_evidence=_optional(answer.get("stable_evidence"), str),
+    )
+
+
+class OfferReader:
+    """Asks the model about one offer at a time."""
+
+    def __init__(self, client: httpx2.AsyncClient, api_key: str, model: str) -> None:
+        self._client = client
+        self._api_key = api_key
+        self._model = model
+
+    async def read(self, offer: OfferText, location: str | None) -> Reading:
+        """What the description says, for someone living in `location` if there is one.
+
+        Raises OfferReaderError when the model does not answer (network, quota, error
+        status) or answers something that is not the JSON asked for.
+        """
+        body = {
+            "model": self._model,
+            "temperature": 0,
+            "messages": [
+                {"role": "system", "content": _INSTRUCTIONS},
+                {"role": "user", "content": _question(offer, location)},
+            ],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "offer_reading",
+                    "strict": True,
+                    "schema": _schema(asks_location=location is not None),
+                },
+            },
+        }
+        try:
+            response = await self._client.post(
+                API, json=body, headers={"Authorization": f"Bearer {self._api_key}"}
+            )
+            response.raise_for_status()
+            answer = json.loads(response.json()["choices"][0]["message"]["content"])
+            if not isinstance(answer, dict):
+                raise TypeError(f"expected an object, got {answer!r}")
+            return _reading(answer)
+        except (httpx2.HTTPError, ValueError, KeyError, IndexError, TypeError) as error:
+            raise OfferReaderError(f"{type(error).__name__}: {error}") from error

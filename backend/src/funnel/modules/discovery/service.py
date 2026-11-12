@@ -10,6 +10,7 @@ from funnel.modules.discovery.domain import (
     EmailAlert,
     GeneratedSearch,
     SearchTerms,
+    WorkMode,
     build_queries,
     build_url,
 )
@@ -47,7 +48,13 @@ class SearchProfileService:
     async def all_terms(self) -> list[SearchTerms]:
         """What every profile looks for, from the oldest: imports filter offers with them."""
         return [
-            SearchTerms(row.titles, row.keywords, row.excluded_keywords)
+            SearchTerms(
+                row.titles,
+                row.keywords,
+                row.excluded_keywords,
+                row.location,
+                [WorkMode(mode) for mode in row.work_modes],
+            )
             for row in await self._repository.list_all()
         ]
 

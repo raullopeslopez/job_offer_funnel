@@ -4,9 +4,10 @@ from typing import Annotated, Any
 from uuid import UUID
 
 import httpx2
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from funnel.core.clock import Clock, get_clock
+from funnel.core.config import Settings
 from funnel.core.db import SessionDep
 from funnel.core.errors import ProblemRead, ValidationProblemRead
 from funnel.core.pagination import Page, PageParams, get_page_params
@@ -19,9 +20,11 @@ from funnel.modules.discovery.service import (
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import OfferStatus
 from funnel.modules.inbox.feeds import FeedReader
+from funnel.modules.inbox.reader import OfferReader
 from funnel.modules.inbox.repository import (
     FeedImportRepository,
     OfferRepository,
+    ReadingRepository,
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import (
@@ -33,12 +36,14 @@ from funnel.modules.inbox.schemas import (
     OfferCreate,
     OfferRead,
     PromotionCreate,
+    ReadingBatchRead,
     WatchedCompanyCreate,
     WatchedCompanyRead,
 )
 from funnel.modules.inbox.service import (
     EmailAlertService,
     FeedImportService,
+    OfferReadingService,
     OfferService,
     WatchedCompanyService,
 )
@@ -70,6 +75,36 @@ _WRONG_STATUS: dict[int | str, dict[str, Any]] = {
         "description": "Not allowed in the offer's current status (`invalid-offer-status`)",
     }
 }
+
+
+# Identifies the app to the feeds, as their terms expect; no personal data.
+USER_AGENT = "job-offer-funnel"
+FEED_TIMEOUT_SECONDS = 20
+
+
+async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
+    """HTTP client for the public feeds; tests replace it so they never reach the internet."""
+    async with httpx2.AsyncClient(
+        timeout=FEED_TIMEOUT_SECONDS, headers={"User-Agent": USER_AGENT}
+    ) as client:
+        yield client
+
+
+def get_offer_reader(
+    request: Request, client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)]
+) -> OfferReader | None:
+    """The offer reader, or None without its API key; tests replace it with a fake."""
+    settings: Settings = request.app.state.settings
+    api_key = settings.groq_api_key.get_secret_value()
+    return OfferReader(client, api_key, settings.groq_model) if api_key else None
+
+
+def get_offer_reading_service(
+    session: SessionDep, reader: Annotated[OfferReader | None, Depends(get_offer_reader)]
+) -> OfferReadingService:
+    return OfferReadingService(
+        ReadingRepository(session), build_search_profile_service(session), reader
+    )
 
 
 @offers_router.post(
@@ -111,6 +146,32 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
         limit=page.limit,
         offset=page.offset,
     )
+
+
+@offers_router.post(
+    "/readings",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.SERVICE_UNAVAILABLE: {
+            "model": ProblemRead,
+            "description": "No offer reader is configured (`offer-reader-unavailable`); "
+            "nothing changed",
+        },
+    },
+)
+async def read_offers(
+    service: Annotated[OfferReadingService, Depends(get_offer_reading_service)],
+) -> ReadingBatchRead:
+    """Have the offer reader read up to 5 pending imported offers: their work mode, whether
+    they can be done living in the location of the search profiles they fit, and whether
+    they are stable jobs. What a reading says filters the offer like the profile's words.
+
+    An offer is read once for each location of the profiles it fits by its words; offers
+    without a description are never read. Call it again while `left` is not 0; an offer
+    the reader fails on is left to be read.
+    """
+    batch = await service.read_pending()
+    return ReadingBatchRead(read=batch.read, failed=batch.failed, left=batch.left)
 
 
 @offers_router.get("/{offer_id}", responses=_NOT_FOUND)
@@ -158,18 +219,6 @@ async def promote_offer(offer_id: UUID, promotion: PromotionCreate, service: Ser
 # --- Public feeds ---
 
 imports_router = APIRouter(prefix="/job-boards", tags=["inbox"])
-
-# Identifies the app to the feeds, as their terms expect; no personal data.
-USER_AGENT = "job-offer-funnel"
-FEED_TIMEOUT_SECONDS = 20
-
-
-async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
-    """HTTP client for the public feeds; tests replace it so they never reach the internet."""
-    async with httpx2.AsyncClient(
-        timeout=FEED_TIMEOUT_SECONDS, headers={"User-Agent": USER_AGENT}
-    ) as client:
-        yield client
 
 
 def get_feed_import_service(

@@ -84,11 +84,13 @@ PLACEHOLDERS: Final = frozenset({QUERY_PLACEHOLDER, LOCATION_PLACEHOLDER})
 
 @dataclass(frozen=True)
 class SearchTerms:
-    """What a search profile looks for, as words."""
+    """What a search profile looks for: its words, and where and how the work is done."""
 
     titles: Sequence[str]  # any of them
     keywords: Sequence[str]  # all of them
     excluded_keywords: Sequence[str]  # none of them
+    location: str | None = None
+    work_modes: Sequence[WorkMode] = ()  # any of them; none means any
 
 
 @dataclass(frozen=True)

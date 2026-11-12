@@ -9,3 +9,7 @@ class Settings(BaseSettings):
     auth_token: SecretStr
     log_level: str = "INFO"
     timezone: str = "Europe/Madrid"
+    # The offer reader (modules/inbox/reader.py). Without the key no offer is read and the
+    # rest of the app works the same.
+    groq_api_key: SecretStr = SecretStr("")
+    groq_model: str = "openai/gpt-oss-20b"

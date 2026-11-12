@@ -7,6 +7,7 @@ from sqlalchemy import (
     CursorResult,
     Select,
     and_,
+    exists,
     false,
     func,
     not_,
@@ -23,17 +24,45 @@ from funnel.core.db import flush_checking_unique
 from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import SearchTerms
-from funnel.modules.inbox.domain import EXPIRED_REASON, OfferStatus, UnknownJobBoardError
+from funnel.modules.inbox.domain import (
+    EXPIRED_REASON,
+    OfferStatus,
+    Reading,
+    UnknownJobBoardError,
+)
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
     UNIQUE_DUPLICATE_KEY,
     UNIQUE_WATCHED_NAME_INDEX,
+    OfferReadingRow,
     OfferRow,
     WatchedCompanyRow,
 )
 
 
+def _read_for(location: str | None) -> ColumnElement[bool]:
+    return and_(
+        OfferReadingRow.offer_id == OfferRow.id,
+        OfferReadingRow.location.is_not_distinct_from(location),
+    )
+
+
+def _contradicted(terms: SearchTerms) -> ColumnElement[bool]:
+    """Its reading for the profile's location says something the profile rules out. Only
+    what is known counts: an offer not read, or a NULL answer, contradicts nothing."""
+    reasons = [OfferReadingRow.stable.is_(False)]
+    if terms.work_modes:
+        reasons.append(OfferReadingRow.work_mode.not_in(terms.work_modes))
+    if terms.location is not None:
+        reasons.append(OfferReadingRow.admits_location.is_(False))
+    return exists().where(_read_for(terms.location), or_(*reasons))
+
+
 def _fits(terms: SearchTerms) -> ColumnElement[bool]:
+    return and_(_fits_words(terms), not_(_contradicted(terms)))
+
+
+def _fits_words(terms: SearchTerms) -> ColumnElement[bool]:
     """A title in the offer's title, every keyword in title or description, no exclusion
     in the title; ignoring case. Exclusions skip the description: a passing mention of an
     excluded word there would drop good offers."""
@@ -128,6 +157,57 @@ class OfferRepository:
             select(func.count()).select_from(OfferRow).where(*conditions)
         )
         return list(rows), total or 0
+
+
+class ReadingRepository:
+    """What the offers' descriptions say. Never commits: the request session does."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def list_unread(
+        self, profiles: Sequence[SearchTerms], limit: int
+    ) -> tuple[list[tuple[OfferRow, str | None]], int]:
+        """The oldest readings still to be made, each an offer and a location, and how many
+        there are in all. An offer is read for the location of each profile it fits by its
+        words, if it is pending and has a description."""
+        unread: list[tuple[OfferRow, str | None]] = []
+        total = 0
+        for location in dict.fromkeys(terms.location for terms in profiles):
+            words = [_fits_words(terms) for terms in profiles if terms.location == location]
+            conditions = (
+                OfferRow.status == OfferStatus.PENDING,
+                func.coalesce(OfferRow.description, "") != "",
+                or_(*words),
+                not_(exists().where(_read_for(location))),
+            )
+            count = await self._session.scalar(
+                select(func.count()).select_from(OfferRow).where(*conditions)
+            )
+            total += count or 0
+            offers = await self._session.scalars(
+                select(OfferRow)
+                .where(*conditions)
+                .order_by(OfferRow.created_at, OfferRow.id)
+                .limit(limit - len(unread))
+            )
+            unread += [(offer, location) for offer in offers]
+        return unread, total
+
+    async def add(self, offer_id: UUID, location: str | None, reading: Reading) -> None:
+        self._session.add(
+            OfferReadingRow(
+                offer_id=offer_id,
+                location=location,
+                work_mode=reading.work_mode,
+                work_mode_evidence=reading.work_mode_evidence,
+                admits_location=reading.admits_location,
+                admits_location_evidence=reading.admits_location_evidence,
+                stable=reading.stable,
+                stable_evidence=reading.stable_evidence,
+            )
+        )
+        await self._session.flush()
 
 
 class FeedImportRepository:

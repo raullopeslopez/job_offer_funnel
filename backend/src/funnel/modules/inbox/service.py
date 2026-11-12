@@ -29,9 +29,11 @@ from funnel.modules.inbox.domain import (
 )
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.models import OfferRow, WatchedCompanyRow
+from funnel.modules.inbox.reader import OfferReader
 from funnel.modules.inbox.repository import (
     FeedImportRepository,
     OfferRepository,
+    ReadingRepository,
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import OfferCreate, WatchedCompanyCreate
@@ -97,6 +99,30 @@ class OfferService:
         offer.status = status
         offer.application_id = application.id
         return await self._repository.save(offer, await self._profiles.all_terms())
+
+
+@dataclass(frozen=True)
+class ReadingBatch:
+    read: int
+    failed: int
+    left: int
+
+
+class OfferReadingService:
+    """Has the offer reader read the offers the search profiles fit by their words."""
+
+    def __init__(
+        self,
+        readings: ReadingRepository,
+        profiles: SearchProfileService,
+        reader: OfferReader | None,
+    ) -> None:
+        self._readings = readings
+        self._profiles = profiles
+        self._reader = reader
+
+    async def read_pending(self) -> ReadingBatch:
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)
