@@ -109,8 +109,8 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Lectura de una oferta (lo que dice su descripción, para una ubicación de un perfil) | `reading` |
 | Lector de ofertas (servicio externo que lee la descripción) | `offer reader` |
 | Modalidad que dice la oferta | `work_mode` (los mismos valores que en el perfil) |
-| Se puede hacer viviendo en la ubicación del perfil | `admits_location`: `yes` · `no` |
-| Puesto estable (jornada completa y sin fecha de fin, como empleado o como contractor; no por tareas, por horas, temporal ni a media jornada) | `stable`: `yes` · `no` |
+| Se puede hacer viviendo en la ubicación del perfil | `admits_location` (sí o no; en las specs `yes` · `no`) |
+| Puesto estable (jornada completa y sin fecha de fin, como empleado o como contractor; no por tareas, por horas, temporal ni a media jornada) | `stable` (sí o no; en las specs `yes` · `no`) |
 | Frase literal de la descripción que justifica una respuesta | `evidence` |
 | ATS (sistema de selección de la empresa) | `ats`: `greenhouse` · `lever` · `ashby` |
 | Tablero de la empresa en su ATS (nombre en la URL pública de empleo) | `board` |
