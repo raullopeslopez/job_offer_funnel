@@ -106,5 +106,10 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Oferta filtrada (importada, pendiente y sin encaje con ningún perfil) | `filtered` |
 | Empresa vigilada (por su ATS) | `watched company` |
 | Alerta por email (método de importación `email` de un portal) | `email alert`: `linkedin` |
+| Lectura de una oferta (lo que dice su descripción, para una ubicación de un perfil) | `reading` |
+| Lector de ofertas (servicio externo que lee la descripción) | `offer reader` |
+| Modalidad que dice la oferta | `work_mode` (los mismos valores que en el perfil) |
+| Se puede hacer viviendo en la ubicación del perfil | `admits_location`: `yes` · `no` |
+| Frase literal de la descripción que justifica una respuesta | `evidence` |
 | ATS (sistema de selección de la empresa) | `ats`: `greenhouse` · `lever` · `ashby` |
 | Tablero de la empresa en su ATS (nombre en la URL pública de empleo) | `board` |
