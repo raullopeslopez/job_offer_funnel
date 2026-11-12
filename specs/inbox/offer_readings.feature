@@ -17,7 +17,8 @@ Feature: Offer readings
   An offer is read once for each location of the search profiles it fits by its title,
   keywords and exclusions (specs/inbox/filtered_offers.feature); for profiles without a
   location it is read without that question. Offers without a description (added by
-  hand or from an email alert) are never read. At most 20 offers are read at a time.
+  hand or from an email alert) are never read. At most 5 offers are read at a time,
+  so that the offer reader's limits are respected.
   A reading adds three rules to fitting a profile, and only what is known can filter:
   - the offer's work mode, when known, is one of the profile's work modes, if it has any;
   - the offer, when known, can be done living in the profile's location, if it has one;
@@ -70,10 +71,10 @@ Feature: Offer readings
       | work_mode | work_mode_evidence | admits_location | admits_location_evidence |
       | remote    | Fully remote       |                 |                          |
 
-  Scenario: At most 20 offers are read at a time
-    Given the job board "Remote OK" was imported with 21 offers as "Backend Engineer"
+  Scenario: At most 5 offers are read at a time
+    Given the job board "Remote OK" was imported with 6 offers as "Backend Engineer"
     When I read the offers
-    Then the reading read 20 offers, failed on 0 and left 1 to read
+    Then the reading read 5 offers, failed on 0 and left 1 to read
 
   Scenario: Offers without a description are not read
     Given an offer for "Acme" as "Backend Engineer"
