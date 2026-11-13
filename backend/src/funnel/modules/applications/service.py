@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +8,7 @@ from funnel.core.exceptions import NotFoundError
 from funnel.core.pagination import PageParams
 from funnel.modules.applications.domain import (
     Application,
+    Stage,
     StageChange,
     Transition,
     first_transition,
@@ -71,6 +72,10 @@ class ApplicationService:
     async def list_transitions(self, application_id: UUID) -> list[Transition]:
         await self.get(application_id)
         return await self._repository.list_transitions(application_id)
+
+    async def stages(self, application_ids: Collection[UUID]) -> dict[UUID, Stage]:
+        """The stage each of these applications reached; missing ones are left out."""
+        return await self._repository.stages(application_ids)
 
 
 def _not_found(application_id: UUID) -> NotFoundError:

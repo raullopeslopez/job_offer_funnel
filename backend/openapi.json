@@ -880,6 +880,23 @@
         "title": "DiscardReason",
         "type": "string"
       },
+      "DiscardReasonCountRead": {
+        "properties": {
+          "offers": {
+            "title": "Offers",
+            "type": "integer"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/DiscardReason"
+          }
+        },
+        "required": [
+          "reason",
+          "offers"
+        ],
+        "title": "DiscardReasonCountRead",
+        "type": "object"
+      },
       "EmailAlert": {
         "description": "Job alert emails the app can read, one format each (see docs/fase0.md).",
         "enum": [
@@ -1460,6 +1477,63 @@
         "title": "OfferCreate",
         "type": "object"
       },
+      "OfferQualityRead": {
+        "properties": {
+          "discard_reasons": {
+            "description": "Discards by reason, the most frequent first; expired ones left out.",
+            "items": {
+              "$ref": "#/components/schemas/DiscardReasonCountRead"
+            },
+            "title": "Discard Reasons",
+            "type": "array"
+          },
+          "fitting_per_week": {
+            "description": "Fitting offers a week, on average.",
+            "title": "Fitting Per Week",
+            "type": "number"
+          },
+          "near_misses_left": {
+            "description": "Pending near misses not reviewed yet.",
+            "title": "Near Misses Left",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceQualityRead"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "starts_on": {
+            "description": "First day of the 4 weeks, which end today.",
+            "format": "date",
+            "title": "Starts On",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/QualityFiguresRead"
+          },
+          "weeks": {
+            "description": "The 4 weeks, the oldest first.",
+            "items": {
+              "$ref": "#/components/schemas/WeekQualityRead"
+            },
+            "title": "Weeks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "starts_on",
+          "total",
+          "weeks",
+          "fitting_per_week",
+          "near_misses_left",
+          "discard_reasons",
+          "sources"
+        ],
+        "title": "OfferQualityRead",
+        "type": "object"
+      },
       "OfferRead": {
         "properties": {
           "application_id": {
@@ -1950,6 +2024,86 @@
         "title": "PromotionCreate",
         "type": "object"
       },
+      "QualityFiguresRead": {
+        "properties": {
+          "answered": {
+            "description": "Of the promoted, applications that reached `screening`.",
+            "title": "Answered",
+            "type": "integer"
+          },
+          "applied": {
+            "description": "Of the promoted, applications that reached `applied`.",
+            "title": "Applied",
+            "type": "integer"
+          },
+          "decided": {
+            "description": "Offers decided from Pending: promoted or discarded, without rescues and expired ones.",
+            "title": "Decided",
+            "type": "integer"
+          },
+          "fitting": {
+            "description": "Imported offers that fit the profiles as they are now.",
+            "title": "Fitting",
+            "type": "integer"
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "rescued \u00f7 reviewed near misses, in %.",
+            "title": "Losses"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "promoted_from_pending \u00f7 decided, in %.",
+            "title": "Precision"
+          },
+          "promoted": {
+            "description": "Promoted offers, rescues included.",
+            "title": "Promoted",
+            "type": "integer"
+          },
+          "promoted_from_pending": {
+            "title": "Promoted From Pending",
+            "type": "integer"
+          },
+          "rescued_near_misses": {
+            "title": "Rescued Near Misses",
+            "type": "integer"
+          },
+          "reviewed_near_misses": {
+            "description": "Near misses rescued or rightly filtered.",
+            "title": "Reviewed Near Misses",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "decided",
+          "promoted_from_pending",
+          "precision",
+          "reviewed_near_misses",
+          "rescued_near_misses",
+          "losses",
+          "fitting",
+          "promoted",
+          "applied",
+          "answered"
+        ],
+        "title": "QualityFiguresRead",
+        "type": "object"
+      },
       "ReadingBatchRead": {
         "properties": {
           "failed": {
@@ -2408,6 +2562,41 @@
         "title": "SearchProfileUpdate",
         "type": "object"
       },
+      "SourceQualityRead": {
+        "properties": {
+          "discarded": {
+            "description": "Discarded by the user: expired ones are left out.",
+            "title": "Discarded",
+            "type": "integer"
+          },
+          "fitting": {
+            "title": "Fitting",
+            "type": "integer"
+          },
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "promoted": {
+            "title": "Promoted",
+            "type": "integer"
+          },
+          "source": {
+            "description": "The job board or watched company the offers came from.",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "imported",
+          "fitting",
+          "promoted",
+          "discarded"
+        ],
+        "title": "SourceQualityRead",
+        "type": "object"
+      },
       "Stage": {
         "description": "Funnel stages, in order. `discovered` arrives with phase 0 (out of the MVP).",
         "enum": [
@@ -2642,6 +2831,92 @@
           "created_at"
         ],
         "title": "WatchedCompanyRead",
+        "type": "object"
+      },
+      "WeekQualityRead": {
+        "properties": {
+          "answered": {
+            "description": "Of the promoted, applications that reached `screening`.",
+            "title": "Answered",
+            "type": "integer"
+          },
+          "applied": {
+            "description": "Of the promoted, applications that reached `applied`.",
+            "title": "Applied",
+            "type": "integer"
+          },
+          "decided": {
+            "description": "Offers decided from Pending: promoted or discarded, without rescues and expired ones.",
+            "title": "Decided",
+            "type": "integer"
+          },
+          "fitting": {
+            "description": "Imported offers that fit the profiles as they are now.",
+            "title": "Fitting",
+            "type": "integer"
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "rescued \u00f7 reviewed near misses, in %.",
+            "title": "Losses"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "promoted_from_pending \u00f7 decided, in %.",
+            "title": "Precision"
+          },
+          "promoted": {
+            "description": "Promoted offers, rescues included.",
+            "title": "Promoted",
+            "type": "integer"
+          },
+          "promoted_from_pending": {
+            "title": "Promoted From Pending",
+            "type": "integer"
+          },
+          "rescued_near_misses": {
+            "title": "Rescued Near Misses",
+            "type": "integer"
+          },
+          "reviewed_near_misses": {
+            "description": "Near misses rescued or rightly filtered.",
+            "title": "Reviewed Near Misses",
+            "type": "integer"
+          },
+          "starts_on": {
+            "format": "date",
+            "title": "Starts On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decided",
+          "promoted_from_pending",
+          "precision",
+          "reviewed_near_misses",
+          "rescued_near_misses",
+          "losses",
+          "fitting",
+          "promoted",
+          "applied",
+          "answered",
+          "starts_on"
+        ],
+        "title": "WeekQualityRead",
         "type": "object"
       },
       "WorkMode": {
@@ -4678,6 +4953,53 @@
           }
         ],
         "summary": "Count Filtered Offers",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/quality": {
+      "get": {
+        "description": "Whether what reaches Pending is worth your time, and whether what is worth your time\nreaches Pending: the offers added in the last 4 weeks, in total and week by week.",
+        "operationId": "read_offer_quality_api_v1_offers_quality_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferQualityRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Offer Quality",
         "tags": [
           "inbox"
         ]

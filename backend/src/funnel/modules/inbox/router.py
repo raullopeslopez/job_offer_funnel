@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from dataclasses import asdict
 from http import HTTPStatus
 from typing import Annotated, Any
 from uuid import UUID
@@ -34,14 +35,19 @@ from funnel.modules.inbox.schemas import (
     CriteriaPreviewCreate,
     CriteriaPreviewRead,
     DiscardCreate,
+    DiscardReasonCountRead,
     FilteredCountsRead,
     ImportRead,
     OfferCreate,
+    OfferQualityRead,
     OfferRead,
     PromotionCreate,
+    QualityFiguresRead,
     ReadingBatchRead,
+    SourceQualityRead,
     WatchedCompanyCreate,
     WatchedCompanyRead,
+    WeekQualityRead,
 )
 from funnel.modules.inbox.service import (
     EmailAlertService,
@@ -210,6 +216,35 @@ async def preview_criteria(preview: CriteriaPreviewCreate, service: Service) -> 
     changes = preview.model_dump(exclude_unset=True, exclude={"search_profile_id", "name"})
     result = await service.preview(preview.search_profile_id, changes)
     return CriteriaPreviewRead.model_validate(result, from_attributes=True)
+
+
+@offers_router.get("/quality")
+async def read_offer_quality(
+    service: Service, clock: Annotated[Clock, Depends(get_clock)]
+) -> OfferQualityRead:
+    """Whether what reaches Pending is worth your time, and whether what is worth your time
+    reaches Pending: the offers added in the last 4 weeks, in total and week by week."""
+    quality = await service.quality(clock.now())
+    return OfferQualityRead(
+        starts_on=quality.starts_on,
+        total=QualityFiguresRead.model_validate(quality.total, from_attributes=True),
+        weeks=[
+            WeekQualityRead.model_validate(
+                {"starts_on": starts_on, **asdict(figures)}, from_attributes=True
+            )
+            for starts_on, figures in quality.weeks
+        ],
+        fitting_per_week=quality.fitting_per_week,
+        near_misses_left=quality.near_misses_left,
+        discard_reasons=[
+            DiscardReasonCountRead(reason=reason, offers=offers)
+            for reason, offers in quality.discard_reasons
+        ],
+        sources=[
+            SourceQualityRead.model_validate(source, from_attributes=True)
+            for source in quality.sources
+        ],
+    )
 
 
 @offers_router.get("/{offer_id}", responses=_NOT_FOUND)

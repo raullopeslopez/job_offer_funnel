@@ -380,6 +380,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Offer Quality
+         * @description Whether what reaches Pending is worth your time, and whether what is worth your time
+         *     reaches Pending: the offers added in the last 4 weeks, in total and week by week.
+         */
+        get: operations["read_offer_quality_api_v1_offers_quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/offers/readings": {
         parameters: {
             query?: never;
@@ -1011,6 +1032,12 @@ export interface components {
          * @enum {string}
          */
         DiscardReason: "title_word" | "stack" | "location" | "contract" | "company" | "none" | "expired";
+        /** DiscardReasonCountRead */
+        DiscardReasonCountRead: {
+            /** Offers */
+            offers: number;
+            reason: components["schemas"]["DiscardReason"];
+        };
         /**
          * EmailAlert
          * @description Job alert emails the app can read, one format each (see docs/fase0.md).
@@ -1265,6 +1292,38 @@ export interface components {
              */
             url: string;
         };
+        /** OfferQualityRead */
+        OfferQualityRead: {
+            /**
+             * Discard Reasons
+             * @description Discards by reason, the most frequent first; expired ones left out.
+             */
+            discard_reasons: components["schemas"]["DiscardReasonCountRead"][];
+            /**
+             * Fitting Per Week
+             * @description Fitting offers a week, on average.
+             */
+            fitting_per_week: number;
+            /**
+             * Near Misses Left
+             * @description Pending near misses not reviewed yet.
+             */
+            near_misses_left: number;
+            /** Sources */
+            sources: components["schemas"]["SourceQualityRead"][];
+            /**
+             * Starts On
+             * Format: date
+             * @description First day of the 4 weeks, which end today.
+             */
+            starts_on: string;
+            total: components["schemas"]["QualityFiguresRead"];
+            /**
+             * Weeks
+             * @description The 4 weeks, the oldest first.
+             */
+            weeks: components["schemas"]["WeekQualityRead"][];
+        };
         /** OfferRead */
         OfferRead: {
             /**
@@ -1456,6 +1515,53 @@ export interface components {
              */
             channel: components["schemas"]["Channel"];
         };
+        /** QualityFiguresRead */
+        QualityFiguresRead: {
+            /**
+             * Answered
+             * @description Of the promoted, applications that reached `screening`.
+             */
+            answered: number;
+            /**
+             * Applied
+             * @description Of the promoted, applications that reached `applied`.
+             */
+            applied: number;
+            /**
+             * Decided
+             * @description Offers decided from Pending: promoted or discarded, without rescues and expired ones.
+             */
+            decided: number;
+            /**
+             * Fitting
+             * @description Imported offers that fit the profiles as they are now.
+             */
+            fitting: number;
+            /**
+             * Losses
+             * @description rescued ÷ reviewed near misses, in %.
+             */
+            losses: number | null;
+            /**
+             * Precision
+             * @description promoted_from_pending ÷ decided, in %.
+             */
+            precision: number | null;
+            /**
+             * Promoted
+             * @description Promoted offers, rescues included.
+             */
+            promoted: number;
+            /** Promoted From Pending */
+            promoted_from_pending: number;
+            /** Rescued Near Misses */
+            rescued_near_misses: number;
+            /**
+             * Reviewed Near Misses
+             * @description Near misses rescued or rightly filtered.
+             */
+            reviewed_near_misses: number;
+        };
         /** ReadingBatchRead */
         ReadingBatchRead: {
             /**
@@ -1617,6 +1723,25 @@ export interface components {
             /** Work Modes */
             work_modes?: components["schemas"]["WorkMode"][] | null;
         };
+        /** SourceQualityRead */
+        SourceQualityRead: {
+            /**
+             * Discarded
+             * @description Discarded by the user: expired ones are left out.
+             */
+            discarded: number;
+            /** Fitting */
+            fitting: number;
+            /** Imported */
+            imported: number;
+            /** Promoted */
+            promoted: number;
+            /**
+             * Source
+             * @description The job board or watched company the offers came from.
+             */
+            source: string;
+        };
         /**
          * Stage
          * @description Funnel stages, in order. `discovered` arrives with phase 0 (out of the MVP).
@@ -1707,6 +1832,58 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** WeekQualityRead */
+        WeekQualityRead: {
+            /**
+             * Answered
+             * @description Of the promoted, applications that reached `screening`.
+             */
+            answered: number;
+            /**
+             * Applied
+             * @description Of the promoted, applications that reached `applied`.
+             */
+            applied: number;
+            /**
+             * Decided
+             * @description Offers decided from Pending: promoted or discarded, without rescues and expired ones.
+             */
+            decided: number;
+            /**
+             * Fitting
+             * @description Imported offers that fit the profiles as they are now.
+             */
+            fitting: number;
+            /**
+             * Losses
+             * @description rescued ÷ reviewed near misses, in %.
+             */
+            losses: number | null;
+            /**
+             * Precision
+             * @description promoted_from_pending ÷ decided, in %.
+             */
+            precision: number | null;
+            /**
+             * Promoted
+             * @description Promoted offers, rescues included.
+             */
+            promoted: number;
+            /** Promoted From Pending */
+            promoted_from_pending: number;
+            /** Rescued Near Misses */
+            rescued_near_misses: number;
+            /**
+             * Reviewed Near Misses
+             * @description Near misses rescued or rightly filtered.
+             */
+            reviewed_near_misses: number;
+            /**
+             * Starts On
+             * Format: date
+             */
+            starts_on: string;
         };
         /**
          * WorkMode
@@ -3052,6 +3229,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FilteredCountsRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    read_offer_quality_api_v1_offers_quality_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferQualityRead"];
                 };
             };
             /** @description Missing or invalid token */

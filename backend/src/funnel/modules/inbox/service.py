@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, time
 from typing import Any
 from uuid import UUID
 
@@ -33,6 +33,7 @@ from funnel.modules.inbox.domain import (
     OfferAction,
     OfferFilter,
     OfferNotFilteredError,
+    OfferQuality,
     OfferReaderError,
     OfferReaderUnavailableError,
     OfferStatus,
@@ -43,8 +44,10 @@ from funnel.modules.inbox.domain import (
     duplicate_key,
     is_title_word,
     next_status,
+    offer_quality,
     plain_text,
     preview_criteria,
+    quality_starts_on,
     supported,
 )
 from funnel.modules.inbox.feeds import FeedReader
@@ -102,6 +105,21 @@ class OfferService:
         return count_filtered(
             await self._repository.all_reasons(profiles), await self._repository.all_reviews()
         )
+
+    async def quality(self, now: datetime) -> OfferQuality:
+        """The offer quality of the 4 weeks up to now, with the applications of the promoted."""
+        starts_on = quality_starts_on(now.date())
+        since = datetime.combine(starts_on, time(), now.tzinfo)
+        added = await self._repository.added_since(since, await self._profiles.all_terms())
+        stages = await self._applications.stages(
+            [application_id for _, application_id in added if application_id is not None]
+        )
+        offers = [
+            replace(offer, stage=stages.get(application_id)) if application_id else offer
+            for offer, application_id in added
+        ]
+        counts = await self.count_filtered()
+        return offer_quality(offers, now.date(), counts.near_misses)
 
     async def preview(self, profile_id: UUID, changes: Mapping[str, Any]) -> CriteriaPreview:
         """What editing the profile with these changes would do to the offers; saves nothing."""

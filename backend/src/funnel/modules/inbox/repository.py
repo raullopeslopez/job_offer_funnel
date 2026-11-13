@@ -1,5 +1,6 @@
 from collections.abc import Collection, Sequence
 from dataclasses import replace
+from datetime import datetime
 from typing import Any, cast
 from uuid import UUID, uuid7
 
@@ -33,6 +34,7 @@ from funnel.modules.inbox.domain import (
     OfferFilter,
     OfferStatus,
     ProfileMatch,
+    QualityOffer,
     Reading,
     Review,
     ReviewMade,
@@ -245,6 +247,51 @@ class OfferRepository:
             .group_by(OfferRow.status, fits_now, fits_after)
         )
         return [FitChange(*row) for row in rows]
+
+    async def added_since(
+        self, since: datetime, profiles: Sequence[SearchTerms]
+    ) -> list[tuple[QualityOffer, UUID | None]]:
+        """The offers added since then, as the quality reads them, with their application."""
+        rows = await self._session.execute(
+            select(
+                OfferRow.created_at,
+                OfferRow.status,
+                OfferRow.description.is_not(None),
+                _fits_any(profiles),
+                func.coalesce(OfferRow.job_board_name, OfferRow.watched_company_name),
+                OfferRow.discard_reason,
+                OfferRow.review,
+                OfferRow.review_rules,
+                OfferRow.application_id,
+            ).where(OfferRow.created_at >= since)
+        )
+        zone = since.tzinfo
+        return [
+            (
+                QualityOffer(
+                    added_on=created_at.astimezone(zone).date(),
+                    status=status,
+                    is_imported=is_imported,
+                    fits=fits,
+                    source=source,
+                    discard_reason=discard_reason,
+                    review=review,
+                    review_rules=[Rule(rule) for rule in review_rules],
+                ),
+                application_id,
+            )
+            for (
+                created_at,
+                status,
+                is_imported,
+                fits,
+                source,
+                discard_reason,
+                review,
+                review_rules,
+                application_id,
+            ) in rows
+        ]
 
     async def all_reviews(self) -> list[ReviewMade]:
         rows = await self._session.execute(
