@@ -4,6 +4,7 @@ import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
 import FilterAltOutlined from "@mui/icons-material/FilterAltOutlined";
 import InboxOutlined from "@mui/icons-material/InboxOutlined";
 import { Button, Link, Stack, Typography } from "@mui/material";
+import type { ReactNode } from "react";
 import { Link as RouterLink } from "react-router";
 import type { components } from "../../api/schema";
 import { EmptyState } from "../../components/EmptyState";
@@ -11,20 +12,28 @@ import { GroupedList } from "../../components/GroupedList";
 import { OfferPiece } from "../../components/OfferPiece";
 import { offerSourceKind } from "../../components/offerSource";
 import { groupByDay } from "./dayGroups";
-import { ReadingStrip } from "./ReadingStrip";
+import type { SearchProfile } from "./filterRules";
+import { OfferStrip } from "./OfferStrip";
 import type { Offer, OfferView } from "./types";
 
-type JobBoard = Pick<components["schemas"]["JobBoardRead"], "id" | "import_method">;
+export type JobBoard = Pick<components["schemas"]["JobBoardRead"], "id" | "import_method">;
 
-type Props = {
-  view: OfferView;
-  offers: Offer[];
-  jobBoards: JobBoard[];
-  now?: Date;
+/** What the pieces of the inbox need besides the offer: where offers come from and the profiles. */
+export type OfferContext = { jobBoards: JobBoard[]; profiles: SearchProfile[]; now?: Date };
+
+export type OfferActions = {
   onDiscard: (offer: Offer) => void;
   onPromote: (offer: Offer) => void;
   onRestore: (offer: Offer) => void;
 };
+
+type Props = OfferContext &
+  OfferActions & {
+    view: OfferView;
+    offers: Offer[];
+    /** One titled group of all the offers, instead of a group per day. */
+    single?: { title: string; count: number };
+  };
 
 const EMPTY: Record<OfferView, { icon: SvgIconComponent; text: string }> = {
   pending: { icon: InboxOutlined, text: "Import a job board or add an offer to fill the inbox." },
@@ -39,45 +48,76 @@ const EMPTY: Record<OfferView, { icon: SvgIconComponent; text: string }> = {
   promoted: { icon: ArrowUpwardOutlined, text: "Promoted offers become applications." },
 };
 
-// The offers of a view as pieces, grouped by the day they were added.
-export function OfferList({ view, offers, jobBoards, now = new Date(), ...actions }: Props) {
+/** One offer of the inbox as a piece, with its strip and the actions given. */
+export function InboxOffer({
+  offer,
+  jobBoards,
+  profiles,
+  now = new Date(),
+  actions,
+}: OfferContext & { offer: Offer; actions: ReactNode }) {
+  const sourceKind = offerSourceKind(offer, jobBoards);
+  return (
+    <OfferPiece
+      offer={offer}
+      sourceKind={sourceKind}
+      now={now}
+      actions={actions}
+      strip={<OfferStrip offer={offer} sourceKind={sourceKind} profiles={profiles} />}
+      footer={
+        offer.status === "discarded" && (
+          <Typography variant="body2" color="text.secondary">
+            Reason: {offer.discard_reason || "—"}
+          </Typography>
+        )
+      }
+    />
+  );
+}
+
+// The offers of a view as pieces, grouped by the day they were added or in a single group.
+export function OfferList({
+  view,
+  offers,
+  jobBoards,
+  profiles,
+  now = new Date(),
+  single,
+  ...actions
+}: Props) {
   if (offers.length === 0) {
     const empty = EMPTY[view];
     return <EmptyState icon={empty.icon} title="No offers" text={empty.text} />;
+  }
+  const piece = (offer: Offer) => (
+    <InboxOffer
+      key={offer.id}
+      offer={offer}
+      jobBoards={jobBoards}
+      profiles={profiles}
+      now={now}
+      actions={<Actions offer={offer} {...actions} />}
+    />
+  );
+  if (single) {
+    return (
+      <GroupedList title={single.title} count={single.count}>
+        {offers.map(piece)}
+      </GroupedList>
+    );
   }
   return (
     <Stack spacing={4}>
       {groupByDay(offers, now).map((group) => (
         <GroupedList key={group.title} title={group.title} count={group.offers.length}>
-          {group.offers.map((offer) => (
-            <OfferPiece
-              key={offer.id}
-              offer={offer}
-              sourceKind={offerSourceKind(offer, jobBoards)}
-              now={now}
-              actions={<Actions offer={offer} {...actions} />}
-              strip={<ReadingStrip readings={offer.readings} />}
-              footer={
-                offer.status === "discarded" && (
-                  <Typography variant="body2" color="text.secondary">
-                    Reason: {offer.discard_reason || "—"}
-                  </Typography>
-                )
-              }
-            />
-          ))}
+          {group.offers.map(piece)}
         </GroupedList>
       ))}
     </Stack>
   );
 }
 
-function Actions({
-  offer,
-  onDiscard,
-  onPromote,
-  onRestore,
-}: { offer: Offer } & Pick<Props, "onDiscard" | "onPromote" | "onRestore">) {
+function Actions({ offer, onDiscard, onPromote, onRestore }: { offer: Offer } & OfferActions) {
   if (offer.status === "pending") {
     return (
       <>

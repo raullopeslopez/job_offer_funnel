@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Inbox: every imported offer shows its five rules (Title, Keywords, Mode, Location,
+  Contract) with the value that passed each one, "Not stated" when unknown, "Any" when the
+  profile does not ask for it, or the value against what the profile asks and the sentence
+  of the description behind it when the rule filtered the offer. The pending view ends
+  with "Maybe", the three most recent near misses, to promote anyway. The filtered view
+  groups the near misses by the rule that filtered them ("One rule away", with how many
+  fail it for each word or value) and lists the rest as "Further away".
 - Filter reasons: every pending imported offer has a `filter_reason` with the result of
   each rule (`title`, `keywords`, `excluded`, `work_mode`, `location`, `stable`: `passed`,
   `unknown` or `failed`) against its reference profile, the one whose rules it fails the

@@ -147,7 +147,12 @@ function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] 
           (nearMissOnly === null || String(o.filter_reason?.near_miss ?? false) === nearMissOnly) &&
           (failedRule === null || isFailing(o, failedRule)),
       );
-      return HttpResponse.json({ items: items.slice(0, limit), total: items.length, limit, offset: 0 });
+      return HttpResponse.json({
+        items: items.slice(0, limit),
+        total: items.length,
+        limit,
+        offset: 0,
+      });
     }),
     http.get("/api/v1/offers/filtered-counts", () => {
       const filtered = offers.filter((o) => o.status === "pending" && o.filtered);
@@ -280,7 +285,12 @@ describe("InboxPage reading strip", () => {
 describe("InboxPage rule strip", () => {
   it.each([
     [TITLE_PASSES, "Title", "Backend Engineer", "pass"],
-    [rule("keywords", "passed", { found: ["Python", "Django"] }), "Keywords", "Python, Django", "pass"],
+    [
+      rule("keywords", "passed", { found: ["Python", "Django"] }),
+      "Keywords",
+      "Python, Django",
+      "pass",
+    ],
     [rule("work_mode", "passed", { value: "remote" }), "Mode", "Remote", "pass"],
     [rule("work_mode", "unknown"), "Mode", "Not stated", "unknown"],
     [rule("location", "passed", { value: true }), "Location", "Spain", "pass"],
@@ -302,7 +312,13 @@ describe("InboxPage rule strip", () => {
 
   it('a rule the profile does not ask for says "Any"', async () => {
     // Arrange
-    const titleOnly = { ...BACKEND, keywords: [], excluded_keywords: [], location: null, work_modes: [] };
+    const titleOnly = {
+      ...BACKEND,
+      keywords: [],
+      excluded_keywords: [],
+      location: null,
+      work_modes: [],
+    };
     inboxWith(
       [imported("Backend Engineer", [TITLE_PASSES, rule("stable", "passed", { value: true })])],
       [titleOnly],
