@@ -3,8 +3,10 @@ the API.
 
 Run every 6 hours by `.github/workflows/import-offers.yml` against Render, or by hand with
 `just import-offers`. The API comes from API_URL (default: the one run by `just up`) and the
-token from AUTH_TOKEN, which is never printed. A job board still in its cooldown (429) is skipped,
-not a failure. Any other error makes the script exit with 1 after trying every source.
+token from AUTH_TOKEN, which is never printed. A job board still in its cooldown (429) and a
+feed or board that is not available (`feed-unavailable`, `board-unavailable`: outside services
+we do not control) are skipped, not failures. Any other error makes the script exit with 1
+after trying every source.
 
 Email alerts are read by IMAP from the Gmail account dedicated to them (docs/fase1.md), with
 GMAIL_ADDRESS and GMAIL_APP_PASSWORD (an app password, never printed); without them they are
@@ -41,6 +43,8 @@ PAGE_LIMIT = 100
 READING_PAUSE_SECONDS = 62
 READING_ROUNDS = 8
 
+# The API's problem types for a source that is down: a normal outcome, not a failure.
+UNAVAILABLE_SOURCE_PROBLEMS = ("feed-unavailable", "board-unavailable")
 # Imported when the script asks; `email` job boards are imported as their alerts arrive.
 IMPORTED_ON_DEMAND = frozenset({"api", "rss"})
 IMAP_HOST = "imap.gmail.com"
@@ -80,7 +84,11 @@ def import_from(label: str, url: str) -> bool:
         if error.code == HTTPStatus.TOO_MANY_REQUESTS:
             print(f"skipped   {label} (imported less than 6 hours ago)")
             return True
-        print(f"FAILED    {label}: {error.code} {error.read().decode()}")
+        body = error.read().decode()
+        if any(f"/problems/{slug}" in body for slug in UNAVAILABLE_SOURCE_PROBLEMS):
+            print(f"skipped   {label} (source not available, retried in the next run): {body}")
+            return True
+        print(f"FAILED    {label}: {error.code} {body}")
         return False
     except (URLError, TimeoutError) as error:
         print(f"FAILED    {label}: {error}")
