@@ -1,8 +1,8 @@
-// Premium theme (v2): the only place for color, typography, spacing and shape.
-import { alpha, createTheme } from "@mui/material/styles";
+// "Ink and signal" theme (v3): the only place for color, typography, spacing and shape.
+// Neutrals and ink carry the interface; the only saturated color tells where an offer came from.
+import { createTheme } from "@mui/material/styles";
 import type {} from "@mui/x-data-grid/themeAugmentation";
 
-const heading = '"Newsreader", Georgia, serif';
 const sans = '"Geist Sans", "Helvetica Neue", Arial, sans-serif';
 export const mono = '"Geist Mono", ui-monospace, Menlo, monospace';
 
@@ -12,12 +12,20 @@ type ToneColors = { bg: string; fg: string };
 export type Tone = "neutral" | "blue" | "indigo" | "teal" | "amber" | "green" | "red" | "orange";
 type Tones = Record<Tone, ToneColors>;
 
+// Where an offer came from. Used in sx as "source.<name>.solid" / ".tint" / ".text",
+// always next to the source's icon and label, never as color alone.
+type SourceColors = { solid: string; tint: string; text: string };
+export type Source = "api" | "rss" | "email" | "watched" | "manual";
+type Sources = Record<Source, SourceColors>;
+
 declare module "@mui/material/styles" {
   interface Palette {
     tone: Tones;
+    source: Sources;
   }
   interface PaletteOptions {
     tone?: Tones;
+    source?: Sources;
   }
 }
 
@@ -40,6 +48,38 @@ const darkTones: Tones = {
   green: { bg: "oklch(0.3 0.05 150)", fg: "oklch(0.85 0.09 150)" },
   red: { bg: "oklch(0.3 0.06 25)", fg: "oklch(0.83 0.09 25)" },
   orange: { bg: "oklch(0.32 0.06 50)", fg: "oklch(0.85 0.09 55)" },
+};
+
+const lightSources: Sources = {
+  api: {
+    solid: "oklch(0.58 0.17 255)",
+    tint: "oklch(0.955 0.03 255)",
+    text: "oklch(0.44 0.17 255)",
+  },
+  rss: { solid: "oklch(0.74 0.15 62)", tint: "oklch(0.955 0.04 62)", text: "oklch(0.45 0.11 55)" },
+  email: {
+    solid: "oklch(0.5 0.2 300)",
+    tint: "oklch(0.955 0.03 300)",
+    text: "oklch(0.44 0.19 300)",
+  },
+  watched: {
+    solid: "oklch(0.66 0.11 175)",
+    tint: "oklch(0.955 0.035 175)",
+    text: "oklch(0.42 0.09 175)",
+  },
+  manual: { solid: "#8a8d98", tint: "#eeeef1", text: "#4a4d57" },
+};
+// The dark scheme is not designed yet: same hues, with the lightness of darkTones.
+const darkSources: Sources = {
+  api: { solid: "oklch(0.58 0.17 255)", tint: "oklch(0.3 0.05 255)", text: "oklch(0.85 0.08 255)" },
+  rss: { solid: "oklch(0.74 0.15 62)", tint: "oklch(0.3 0.05 62)", text: "oklch(0.85 0.08 62)" },
+  email: { solid: "oklch(0.5 0.2 300)", tint: "oklch(0.3 0.05 300)", text: "oklch(0.85 0.08 300)" },
+  watched: {
+    solid: "oklch(0.66 0.11 175)",
+    tint: "oklch(0.3 0.05 175)",
+    text: "oklch(0.85 0.08 175)",
+  },
+  manual: { solid: "#8a8d98", tint: "#24252b", text: "#b4b6c2" },
 };
 
 export const toneOf: Record<string, Tone> = {
@@ -67,13 +107,14 @@ export const theme = createTheme({
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: "#3949ab", light: "#6b77c9", dark: "#2c3890" },
+        primary: { main: "#111318", light: "#3d4049", dark: "#2a2d36", contrastText: "#ffffff" },
         secondary: { main: "#00897b" },
-        background: { default: "#f6f6f8", paper: "#ffffff" },
-        text: { primary: "#17181c", secondary: "#5f6170", disabled: "#a3a5b0" },
-        divider: "#e7e7ec",
-        action: { hover: "rgba(23,24,28,0.04)", selected: "rgba(57,73,171,0.08)" },
+        background: { default: "#f7f7f8", paper: "#ffffff" },
+        text: { primary: "#111318", secondary: "#60636e", disabled: "#a3a5b0" },
+        divider: "#e6e6ea",
+        action: { hover: "rgba(17,19,24,0.04)", selected: "rgba(17,19,24,0.07)" },
         tone: lightTones,
+        source: lightSources,
       },
     },
     dark: {
@@ -86,33 +127,17 @@ export const theme = createTheme({
         divider: "#25262c",
         action: { hover: "rgba(255,255,255,0.05)", selected: "rgba(140,151,230,0.14)" },
         tone: darkTones,
+        source: darkSources,
       },
     },
   },
   typography: {
     fontFamily: sans,
     fontSize: 14,
-    h4: {
-      fontFamily: heading,
-      fontWeight: 500,
-      fontSize: "2.375rem",
-      lineHeight: 1.12,
-      letterSpacing: "-0.015em",
-    },
-    h5: {
-      fontFamily: heading,
-      fontWeight: 500,
-      fontSize: "1.5rem",
-      lineHeight: 1.25,
-      letterSpacing: "-0.01em",
-    },
-    h6: {
-      fontFamily: heading,
-      fontWeight: 500,
-      fontSize: "1.25rem",
-      lineHeight: 1.35,
-      letterSpacing: "-0.005em",
-    },
+    // Page headline, in-between heading and section title.
+    h4: { fontWeight: 700, fontSize: "2.75rem", lineHeight: 1.05, letterSpacing: "-0.04em" },
+    h5: { fontWeight: 600, fontSize: "1.5rem", lineHeight: 1.2, letterSpacing: "-0.03em" },
+    h6: { fontWeight: 600, fontSize: "1.125rem", lineHeight: 1.35, letterSpacing: "-0.02em" },
     body1: { fontSize: "0.9375rem", lineHeight: 1.55, letterSpacing: 0 },
     body2: { fontSize: "0.875rem", lineHeight: 1.5, letterSpacing: 0 },
     button: { textTransform: "none", fontWeight: 500, letterSpacing: "0.005em" },
@@ -122,15 +147,8 @@ export const theme = createTheme({
   shape: { borderRadius: 10 },
   components: {
     MuiButton: {
-      defaultProps: { disableElevation: false },
-      styleOverrides: {
-        contained: ({ theme }) => ({
-          boxShadow: "0 1px 2px rgba(16,18,28,0.14), inset 0 1px 0 rgba(255,255,255,0.14)",
-          "&:hover": {
-            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.28)}, inset 0 1px 0 rgba(255,255,255,0.14)`,
-          },
-        }),
-      },
+      defaultProps: { disableElevation: true },
+      styleOverrides: { root: { borderRadius: 999, minHeight: 44 } },
     },
     MuiIconButton: { styleOverrides: { root: { borderRadius: 10 } } },
     MuiOutlinedInput: {
@@ -140,8 +158,12 @@ export const theme = createTheme({
     },
     MuiPaper: {
       styleOverrides: {
-        rounded: { borderRadius: 14 },
-        elevation1: { boxShadow: "0 1px 2px rgba(16,18,28,0.04), 0 0 0 1px rgba(16,18,28,0.06)" },
+        rounded: { borderRadius: 16 },
+        // Thin lines instead of shadows. Menus and dialogs float, so they keep theirs.
+        elevation1: ({ theme }) => ({
+          boxShadow: "none",
+          border: `1px solid ${theme.palette.divider}`,
+        }),
       },
     },
     MuiDialog: {
