@@ -1,11 +1,9 @@
 import type { components } from "../../api/schema";
 import { RuleCell } from "../../components/RuleCell";
 import { MergedRuleCell, RuleStrip } from "../../components/RuleStrip";
+import { MODES } from "./filterRules";
 
 type Reading = components["schemas"]["ReadingRead"];
-type WorkMode = components["schemas"]["WorkMode"];
-
-const MODES: Record<WorkMode, string> = { remote: "Remote", hybrid: "Hybrid", onsite: "On-site" };
 
 const cell = (value: string | null) =>
   value ? ({ value, state: "pass" } as const) : ({ state: "unknown" } as const);

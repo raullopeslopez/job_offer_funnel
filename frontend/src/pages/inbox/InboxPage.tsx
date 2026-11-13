@@ -13,6 +13,8 @@ import { SegmentedTabs } from "../../components/SegmentedTabs";
 import { AddOfferDialog } from "./AddOfferDialog";
 import { DiscardDialog } from "./DiscardDialog";
 import { ImportJobBoardDialog } from "./ImportJobBoardDialog";
+import { MaybeGroup } from "./MaybeGroup";
+import { NearMissGroups } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
 import type { Offer, OfferStatus, OfferView } from "./types";
@@ -30,6 +32,10 @@ const VIEWS: { value: View; label: string; heading: string }[] = [
 function viewQuery(view: View): { status: OfferStatus; filtered?: boolean } {
   if (view === "filtered") return { status: "pending", filtered: true };
   return view === "pending" ? { status: view, filtered: false } : { status: view };
+}
+// The filtered view lists the near misses by rule, and then the rest: those further away.
+function listQuery(view: View) {
+  return view === "filtered" ? { ...viewQuery(view), near_miss: false } : viewQuery(view);
 }
 // The count of a view: the tabs show it, and the navigation the one of the pending offers.
 export function offerCountQuery(view: View) {
@@ -63,7 +69,7 @@ export function InboxPage() {
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const { data, error } = await api.GET("/api/v1/offers", {
-        params: { query: { ...viewQuery(view), limit: PAGE_SIZE, offset: pageParam } },
+        params: { query: { ...listQuery(view), limit: PAGE_SIZE, offset: pageParam } },
       });
       if (error) throw error;
       return data;
@@ -77,6 +83,18 @@ export function InboxPage() {
     queryKey: ["job-boards"],
     queryFn: async () => {
       const { data, error } = await api.GET("/api/v1/job-boards", {
+        params: { query: { limit: 100 } },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+  });
+
+  // The profiles say what each rule asks, for the cells of the strip.
+  const profiles = useQuery({
+    queryKey: ["search-profiles", "all"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/api/v1/search-profiles", {
         params: { query: { limit: 100 } },
       });
       if (error) throw error;
@@ -107,8 +125,11 @@ export function InboxPage() {
 
   const pages = offers.data?.pages ?? [];
   const items = pages.flatMap((page) => page.items);
-  const total = pages[0]?.total ?? 0;
-  const heading = VIEWS.find(({ value }) => value === view)?.heading;
+  const listed = pages[0]?.total ?? 0;
+  const viewIndex = VIEWS.findIndex(({ value }) => value === view);
+  const total = counts[viewIndex]?.data ?? 0;
+  const heading = VIEWS[viewIndex]?.heading;
+  const context = { jobBoards: jobBoards.data ?? [], profiles: profiles.data ?? [] };
 
   return (
     <>
@@ -151,11 +172,14 @@ export function InboxPage() {
         />
       </Box>
 
-      {offers.isSuccess && (
+      {view === "filtered" && <NearMissGroups {...context} onPromote={setPromoting} />}
+
+      {offers.isSuccess && (view !== "filtered" || listed > 0 || total === 0) && (
         <OfferList
           view={view}
           offers={items}
-          jobBoards={jobBoards.data ?? []}
+          {...context}
+          single={view === "filtered" ? { title: "Further away", count: listed } : undefined}
           onDiscard={setDiscarding}
           onPromote={setPromoting}
           onRestore={(offer) => restore.mutate(offer.id)}
@@ -173,6 +197,8 @@ export function InboxPage() {
           </Button>
         </Box>
       )}
+
+      {view === "pending" && <MaybeGroup {...context} onPromote={setPromoting} />}
 
       <AddOfferDialog
         open={dialog === "add"}
