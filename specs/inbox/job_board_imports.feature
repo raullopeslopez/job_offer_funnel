@@ -22,6 +22,10 @@ Feature: Job board imports
   To respect each source's terms, a job board can be imported at most once every 6 hours,
   and its pending imported offers that are no longer in its feed or RSS are discarded as
   expired, except Jobicy's.
+  A feed, RSS or ATS board that is not available is a normal outcome, not a mistake of ours:
+  the sources are outside services we do not control. The periodic import (every 6 hours)
+  reports it as skipped, adds nothing and tries again in the next run, so the run does
+  not fail. Any other error, such as our own API failing, does make the run fail.
 
   Background:
     Given the time is 2026-03-10 09:00

@@ -13,6 +13,8 @@ Feature: ATS companies
   Every imported offer is for the watched company, keeps the link to the original posting
   and the watched company as source. The pending offers of a watched company that are no
   longer on its board are discarded as expired.
+  A board that is not available is a normal outcome, not a mistake of ours: the periodic
+  import (specs/inbox/job_board_imports.feature) skips it and tries again in the next run.
 
   Background:
     Given the time is 2026-03-10 09:00

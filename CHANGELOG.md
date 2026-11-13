@@ -146,6 +146,8 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Scheduled imports no longer fail the whole run when a feed, RSS or ATS board is down
+  (`feed-unavailable`, `board-unavailable`): it is skipped and tried again in the next run.
 - Importing Jobicy no longer loses most of its offers nor discards open ones: its feed
   only publishes its latest offers (a few hours of postings), so an import now reads up
   to 300 of them instead of 50, and its pending offers are no longer discarded as
