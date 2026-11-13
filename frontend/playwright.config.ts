@@ -15,6 +15,9 @@ export default defineConfig({
   testDir,
   workers: 1, // one database for every scenario
   forbidOnly: Boolean(process.env.CI),
+  // One retry in CI: a slow runner can miss the 5 s waits once (run 43477597086). A scenario
+  // that passes only on its retry is reported as flaky, and its trace is uploaded.
+  retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   // Short waits: a missing element fails in seconds, not after the 30 s test timeout.
   expect: { timeout: 5_000 },
