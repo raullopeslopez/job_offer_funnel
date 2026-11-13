@@ -104,6 +104,11 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Plantilla de la URL del RSS de un portal (con `{query}`, donde va cada título de los perfiles) | `rss_url_template` |
 | Importación de un portal | `import` |
 | Oferta filtrada (importada, pendiente y sin encaje con ningún perfil) | `filtered` |
+| Regla del encaje con un perfil | `rule`: `title` · `keywords` · `excluded` · `work_mode` · `location` · `stable` |
+| Resultado de una regla | `passed` · `unknown` (la lectura no lo dice o no hay lectura) · `failed` |
+| Perfil de referencia de una oferta (el que menos reglas incumple; empate: el primero por nombre) | `reference profile` |
+| Motivo del filtrado (resultado de cada regla frente al perfil de referencia) | `filter reason` |
+| Casi: filtrada que pasa el título y falla una sola regla | `near miss` (`near_miss`) |
 | Empresa vigilada (por su ATS) | `watched company` |
 | Alerta por email (método de importación `email` de un portal) | `email alert`: `linkedin` |
 | Lectura de una oferta (lo que dice su descripción, para una ubicación de un perfil) | `reading` |
