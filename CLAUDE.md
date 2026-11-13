@@ -47,6 +47,32 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - Generalizar a partir del tercer caso, no del primero.
 - Ante la duda entre dos diseños, el que tenga menos piezas. Si una propuesta añade complejidad, justificar qué problema actual resuelve.
 
+## Criterio de producto: calidad de las ofertas
+
+Dirección acordada el 2026-11-13 para todo lo que toque la Bandeja, los perfiles y las fuentes. Es criterio, no alcance: cada pieza entra con su spec por el ciclo SDD.
+
+**Objetivo**: lo que llega a Pending merece mi tiempo, y lo que merece mi tiempo llega a Pending.
+
+**Resultados clave** (sin metas hasta medir la línea base en producción):
+
+1. **Precisión**: promovidas ÷ (promovidas + descartadas) de Pending, sin las caducadas.
+2. **Pérdidas**: de los *casi* de Filtered (encajan por título y fallan una sola regla), % que se rescata.
+3. **Ruido por causa**: descartes agrupados por motivo; cada iteración ataca el motivo nº 1.
+4. **Caudal**: ofertas nuevas que encajan por semana y por fuente. Es el freno: impide mejorar la precisión filtrando de más.
+5. **Resultado real**: de las promovidas, % que llegan a `applied` y % con respuesta, por fuente.
+
+**Ciclo de mejora**: ver (KR 1, 2 y 4) → entender (KR 3) → cambiar (un criterio por iteración) → comprobar. Un cambio de criterio se acepta si, contra el historial, no filtra ninguna oferta promovida y quita al menos una descartada.
+
+**Inputs del usuario**: solo dos gestos, de un clic: promover y descartar con motivo (lista corta ligada a reglas, con "sin más" siempre disponible). Todo lo demás se deriva y nunca se pregunta: el rescate (promover una oferta que estaba filtrada), el motivo del filtrado, las metas y el efecto de cada cambio.
+
+**Reglas de diseño**:
+
+- Se itera desde la oferta, no desde el formulario del perfil: la app traduce "esta sobra" o "esta debería estar" a un cambio de criterio.
+- El filtro son reglas del usuario, explicables y recalculadas al instante. La IA extrae hechos con su evidencia y propone cambios; nunca decide sola, y la app funciona sin ella.
+- Toda oferta filtrada dice qué regla la filtró. Nada se pierde: lo filtrado se puede ver y rescatar.
+- El efecto de un cambio se ve antes de confirmarlo, en el mismo paso.
+- Sin señales pasivas (abrir el enlace, tiempo sin tocar) para medir los resultados clave.
+
 ## Stack
 
 Backend: Python 3.14 (fijado en `backend/.python-version`) · uv · FastAPI (async) · Pydantic v2 · PostgreSQL · SQLAlchemy 2 async + asyncpg · Alembic · ruff · mypy strict · import-linter · pytest (asyncio, bdd, xdist, cov) + testcontainers + httpx2 · just · Docker Compose · pre-commit · structlog · GitHub Actions. Frontend: ver `docs/frontend.md`. Un solo usuario con auth simple; sin integraciones externas en el MVP; deploy local (`just up`) y en Render + Neon (`render.yaml`).
