@@ -41,6 +41,7 @@ from funnel.modules.inbox.domain import (
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
 UNIQUE_READING_INDEX = "uq_offer_readings_offer_id_location"
+UNIQUE_DISMISSED_INDEX = "uq_dismissed_suggestions_profile_lower_word"
 # Their violation means "the job board does not exist": the repository translates it.
 JOB_BOARD_FOREIGN_KEY = "fk_offers_job_board_id_job_boards"
 
@@ -89,6 +90,29 @@ class CriteriaChangeRow(Base):
         .correlate_except(_search_profiles)
         .scalar_subquery()
     )
+
+
+class DismissedSuggestionRow(Base):
+    """A suggested exclusion the user said "Not now" to: it is not suggested again."""
+
+    __tablename__ = "dismissed_suggestions"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
+    search_profile_id: Mapped[UUID] = mapped_column(
+        ForeignKey("search_profiles.id", ondelete="CASCADE")
+    )
+    word: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# Once per profile and word, ignoring case; search_profile_id leads it, so it also serves
+# as the index of the foreign key.
+Index(
+    UNIQUE_DISMISSED_INDEX,
+    DismissedSuggestionRow.search_profile_id,
+    func.lower(DismissedSuggestionRow.word),
+    unique=True,
+)
 
 
 class WatchedCompanyRow(Base):

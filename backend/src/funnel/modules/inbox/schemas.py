@@ -226,6 +226,28 @@ class CriteriaChangeRead(BaseModel):
     created_at: datetime
 
 
+class CriteriaSuggestionRead(BaseModel):
+    search_profile_id: UUID
+    search_profile_name: str
+    word: str = Field(description="The word to exclude, as the titles write it.")
+    excluded_keywords: list[str] = Field(
+        description="The profile's excluded keywords with the word: the change to make."
+    )
+    offer_ids: list[UUID] = Field(description="The discarded offers with the word.")
+    discarded: int = Field(description="All the discarded offers, expired ones left out.")
+    preview: CriteriaPreviewRead = Field(description="What excluding the word would do.")
+
+
+class DismissalCreate(BaseModel):
+    search_profile_id: UUID
+    word: Text
+
+
+class DismissalRead(BaseModel):
+    search_profile_id: UUID
+    word: str
+
+
 class CriteriaPreviewRead(BaseModel):
     entering_pending: int = Field(description="Pending offers filtered now that would not be.")
     leaving_pending: int = Field(description="Pending offers not filtered now that would be.")

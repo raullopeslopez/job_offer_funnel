@@ -178,6 +178,51 @@ def is_title_word(word: str, title: str) -> bool:
     return re.search(rf"(?<!\w){re.escape(word)}(?!\w)", title, flags=re.IGNORECASE) is not None
 
 
+# --- Criteria suggestions (specs/inbox/criteria_suggestions.feature) ---
+
+SUGGESTION_MIN_DISCARDS: Final = 3
+_TITLE_WORD: Final = re.compile(r"\w[\w+#]*")
+
+
+@dataclass(frozen=True)
+class WordInDiscards:
+    """A word of the titles (as first seen) and the discarded offers that have it."""
+
+    word: str
+    offer_ids: Sequence[UUID]
+
+
+def exclusion_candidates(
+    discarded: Sequence[tuple[UUID, str]], promoted_titles: Sequence[str]
+) -> list[WordInDiscards]:
+    """Words in enough discarded titles and in no promoted one, the most frequent first."""
+    in_promoted = {
+        word.casefold() for title in promoted_titles for word in _TITLE_WORD.findall(title)
+    }
+    seen: dict[str, str] = {}
+    offers: dict[str, list[UUID]] = {}
+    for offer_id, title in discarded:
+        for word in dict.fromkeys(word.casefold() for word in _TITLE_WORD.findall(title)):
+            offers.setdefault(word, []).append(offer_id)
+        for word in _TITLE_WORD.findall(title):
+            seen.setdefault(word.casefold(), word)
+    candidates = [
+        WordInDiscards(seen[word], ids)
+        for word, ids in offers.items()
+        if len(ids) >= SUGGESTION_MIN_DISCARDS and word not in in_promoted
+    ]
+    return sorted(candidates, key=lambda c: (-len(c.offer_ids), c.word.casefold()))
+
+
+def can_exclude(word: str, terms: SearchTerms) -> bool:
+    """Not excluded by the profile yet, and not part of what the profile looks for."""
+    excluded = {keyword.casefold() for keyword in terms.excluded_keywords}
+    wanted = [*terms.titles, *terms.keywords]
+    return word.casefold() not in excluded and not any(
+        is_title_word(word, phrase) for phrase in wanted
+    )
+
+
 # Feeds that publish only their latest offers: one that left them may still be open, so
 # their offers are not expired (Jobicy's 100 newest are a few hours of postings).
 LATEST_ONLY_FEEDS: Final = frozenset({Feed.JOBICY})
