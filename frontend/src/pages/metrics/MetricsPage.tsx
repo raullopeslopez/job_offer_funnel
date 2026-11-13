@@ -11,13 +11,17 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
 import { ConversionSection, formatRate } from "./ConversionSection";
+import { OfferQualityPanel } from "./OfferQualityPanel";
 import { StatTile } from "./StatTile";
 
 async function fetchMetrics() {
@@ -32,33 +36,48 @@ async function fetchMetrics() {
   return { conversion: conversion.data, byChannel: byChannel.data, pipeline: pipeline.data };
 }
 
+type View = "offers" | "funnel";
+
+// Two views (specs/ui/metrics.feature): the offer quality, first, and the funnel.
 export function MetricsPage() {
+  const [params, setParams] = useSearchParams();
+  const view: View = params.get("view") === "funnel" ? "funnel" : "offers";
+
+  return (
+    <>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Metrics
+      </Typography>
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={view}
+        aria-label="Metrics view"
+        onChange={(_event, chosen: View | null) => {
+          if (chosen) setParams(chosen === "funnel" ? { view: chosen } : {});
+        }}
+        sx={{ mb: 3 }}
+      >
+        <ToggleButton value="offers">Offers</ToggleButton>
+        <ToggleButton value="funnel">Funnel</ToggleButton>
+      </ToggleButtonGroup>
+      {view === "offers" ? <OfferQualityPanel /> : <FunnelMetrics />}
+    </>
+  );
+}
+
+function FunnelMetrics() {
   const metrics = useQuery({ queryKey: ["metrics"], queryFn: fetchMetrics });
 
-  const title = (
-    <Typography variant="h4" component="h1" gutterBottom>
-      Metrics
-    </Typography>
-  );
-  if (metrics.isPending) return title;
+  if (metrics.isPending) return null;
   if (metrics.isError) {
-    return (
-      <>
-        {title}
-        <Alert severity="error">The metrics could not be loaded</Alert>
-      </>
-    );
+    return <Alert severity="error">The metrics could not be loaded</Alert>;
   }
 
   const { conversion, byChannel, pipeline } = metrics.data;
   // Every application reaches the first stage, so its count is the number of applications.
   if (conversion.steps[0]?.reached_from === 0) {
-    return (
-      <>
-        {title}
-        <Alert severity="info">No applications yet: add one to see your metrics</Alert>
-      </>
-    );
+    return <Alert severity="info">No applications yet: add one to see your metrics</Alert>;
   }
 
   const inStage = (name: string) =>
@@ -67,7 +86,6 @@ export function MetricsPage() {
 
   return (
     <>
-      {title}
       <Box
         sx={{
           display: "grid",
