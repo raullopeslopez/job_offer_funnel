@@ -695,6 +695,238 @@
         "title": "ConversionStepRead",
         "type": "object"
       },
+      "CriteriaChangeCreate": {
+        "description": "One rule of the profile, with its new value; the name cannot be changed here.",
+        "properties": {
+          "excluded_keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded Keywords"
+          },
+          "keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keywords"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "offer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The offer it came from.",
+            "title": "Offer Id"
+          },
+          "search_profile_id": {
+            "format": "uuid",
+            "title": "Search Profile Id",
+            "type": "string"
+          },
+          "titles": {
+            "anyOf": [
+              {
+                "examples": [
+                  [
+                    "Backend Engineer",
+                    "Python Developer"
+                  ]
+                ],
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titles"
+          },
+          "work_modes": {
+            "anyOf": [
+              {
+                "description": "Accepted work modes; empty means any.",
+                "items": {
+                  "$ref": "#/components/schemas/WorkMode"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Modes"
+          }
+        },
+        "required": [
+          "search_profile_id"
+        ],
+        "title": "CriteriaChangeCreate",
+        "type": "object"
+      },
+      "CriteriaChangeRead": {
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "discarded_filtered": {
+            "description": "Discarded offers it would have filtered.",
+            "title": "Discarded Filtered",
+            "type": "integer"
+          },
+          "entering_pending": {
+            "description": "Pending offers it brought in when applied.",
+            "title": "Entering Pending",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "leaving_pending": {
+            "description": "Pending offers it took out when applied.",
+            "title": "Leaving Pending",
+            "type": "integer"
+          },
+          "offer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offer Id"
+          },
+          "promoted_filtered": {
+            "description": "Promoted offers it would have filtered.",
+            "title": "Promoted Filtered",
+            "type": "integer"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/ProfileRule"
+          },
+          "search_profile_id": {
+            "format": "uuid",
+            "title": "Search Profile Id",
+            "type": "string"
+          },
+          "search_profile_name": {
+            "title": "Search Profile Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "search_profile_id",
+          "search_profile_name",
+          "offer_id",
+          "rule",
+          "before",
+          "after",
+          "entering_pending",
+          "leaving_pending",
+          "promoted_filtered",
+          "discarded_filtered",
+          "created_at"
+        ],
+        "title": "CriteriaChangeRead",
+        "type": "object"
+      },
       "CriteriaPreviewCreate": {
         "description": "The changes editing the profile would take, saving nothing. Its name changes nothing.",
         "properties": {
@@ -879,6 +1111,23 @@
         ],
         "title": "DiscardReason",
         "type": "string"
+      },
+      "DiscardReasonCountRead": {
+        "properties": {
+          "offers": {
+            "title": "Offers",
+            "type": "integer"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/DiscardReason"
+          }
+        },
+        "required": [
+          "reason",
+          "offers"
+        ],
+        "title": "DiscardReasonCountRead",
+        "type": "object"
       },
       "EmailAlert": {
         "description": "Job alert emails the app can read, one format each (see docs/fase0.md).",
@@ -1460,6 +1709,63 @@
         "title": "OfferCreate",
         "type": "object"
       },
+      "OfferQualityRead": {
+        "properties": {
+          "discard_reasons": {
+            "description": "Discards by reason, the most frequent first; expired ones left out.",
+            "items": {
+              "$ref": "#/components/schemas/DiscardReasonCountRead"
+            },
+            "title": "Discard Reasons",
+            "type": "array"
+          },
+          "fitting_per_week": {
+            "description": "Fitting offers a week, on average.",
+            "title": "Fitting Per Week",
+            "type": "number"
+          },
+          "near_misses_left": {
+            "description": "Pending near misses not reviewed yet.",
+            "title": "Near Misses Left",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceQualityRead"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "starts_on": {
+            "description": "First day of the 4 weeks, which end today.",
+            "format": "date",
+            "title": "Starts On",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/QualityFiguresRead"
+          },
+          "weeks": {
+            "description": "The 4 weeks, the oldest first.",
+            "items": {
+              "$ref": "#/components/schemas/WeekQualityRead"
+            },
+            "title": "Weeks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "starts_on",
+          "total",
+          "weeks",
+          "fitting_per_week",
+          "near_misses_left",
+          "discard_reasons",
+          "sources"
+        ],
+        "title": "OfferQualityRead",
+        "type": "object"
+      },
       "OfferRead": {
         "properties": {
           "application_id": {
@@ -1731,6 +2037,37 @@
         "title": "Page[CompanyRead]",
         "type": "object"
       },
+      "Page_CriteriaChangeRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CriteriaChangeRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[CriteriaChangeRead]",
+        "type": "object"
+      },
       "Page_JobBoardRead_": {
         "properties": {
           "items": {
@@ -1907,6 +2244,18 @@
         "title": "ProblemRead",
         "type": "object"
       },
+      "ProfileRule": {
+        "description": "The rules of a search profile a criteria change edits, one at a time. Source of\ntruth: specs/inbox/criteria_changes.feature.",
+        "enum": [
+          "titles",
+          "keywords",
+          "excluded_keywords",
+          "location",
+          "work_modes"
+        ],
+        "title": "ProfileRule",
+        "type": "string"
+      },
       "ProfileSearchesRead": {
         "properties": {
           "job_boards": {
@@ -1948,6 +2297,86 @@
           }
         },
         "title": "PromotionCreate",
+        "type": "object"
+      },
+      "QualityFiguresRead": {
+        "properties": {
+          "answered": {
+            "description": "Of the promoted, applications that reached `screening`.",
+            "title": "Answered",
+            "type": "integer"
+          },
+          "applied": {
+            "description": "Of the promoted, applications that reached `applied`.",
+            "title": "Applied",
+            "type": "integer"
+          },
+          "decided": {
+            "description": "Offers decided from Pending: promoted or discarded, without rescues and expired ones.",
+            "title": "Decided",
+            "type": "integer"
+          },
+          "fitting": {
+            "description": "Imported offers that fit the profiles as they are now.",
+            "title": "Fitting",
+            "type": "integer"
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "rescued \u00f7 reviewed near misses, in %.",
+            "title": "Losses"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "promoted_from_pending \u00f7 decided, in %.",
+            "title": "Precision"
+          },
+          "promoted": {
+            "description": "Promoted offers, rescues included.",
+            "title": "Promoted",
+            "type": "integer"
+          },
+          "promoted_from_pending": {
+            "title": "Promoted From Pending",
+            "type": "integer"
+          },
+          "rescued_near_misses": {
+            "title": "Rescued Near Misses",
+            "type": "integer"
+          },
+          "reviewed_near_misses": {
+            "description": "Near misses rescued or rightly filtered.",
+            "title": "Reviewed Near Misses",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "decided",
+          "promoted_from_pending",
+          "precision",
+          "reviewed_near_misses",
+          "rescued_near_misses",
+          "losses",
+          "fitting",
+          "promoted",
+          "applied",
+          "answered"
+        ],
+        "title": "QualityFiguresRead",
         "type": "object"
       },
       "ReadingBatchRead": {
@@ -2408,6 +2837,41 @@
         "title": "SearchProfileUpdate",
         "type": "object"
       },
+      "SourceQualityRead": {
+        "properties": {
+          "discarded": {
+            "description": "Discarded by the user: expired ones are left out.",
+            "title": "Discarded",
+            "type": "integer"
+          },
+          "fitting": {
+            "title": "Fitting",
+            "type": "integer"
+          },
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "promoted": {
+            "title": "Promoted",
+            "type": "integer"
+          },
+          "source": {
+            "description": "The job board or watched company the offers came from.",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "imported",
+          "fitting",
+          "promoted",
+          "discarded"
+        ],
+        "title": "SourceQualityRead",
+        "type": "object"
+      },
       "Stage": {
         "description": "Funnel stages, in order. `discovered` arrives with phase 0 (out of the MVP).",
         "enum": [
@@ -2642,6 +3106,92 @@
           "created_at"
         ],
         "title": "WatchedCompanyRead",
+        "type": "object"
+      },
+      "WeekQualityRead": {
+        "properties": {
+          "answered": {
+            "description": "Of the promoted, applications that reached `screening`.",
+            "title": "Answered",
+            "type": "integer"
+          },
+          "applied": {
+            "description": "Of the promoted, applications that reached `applied`.",
+            "title": "Applied",
+            "type": "integer"
+          },
+          "decided": {
+            "description": "Offers decided from Pending: promoted or discarded, without rescues and expired ones.",
+            "title": "Decided",
+            "type": "integer"
+          },
+          "fitting": {
+            "description": "Imported offers that fit the profiles as they are now.",
+            "title": "Fitting",
+            "type": "integer"
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "rescued \u00f7 reviewed near misses, in %.",
+            "title": "Losses"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "promoted_from_pending \u00f7 decided, in %.",
+            "title": "Precision"
+          },
+          "promoted": {
+            "description": "Promoted offers, rescues included.",
+            "title": "Promoted",
+            "type": "integer"
+          },
+          "promoted_from_pending": {
+            "title": "Promoted From Pending",
+            "type": "integer"
+          },
+          "rescued_near_misses": {
+            "title": "Rescued Near Misses",
+            "type": "integer"
+          },
+          "reviewed_near_misses": {
+            "description": "Near misses rescued or rightly filtered.",
+            "title": "Reviewed Near Misses",
+            "type": "integer"
+          },
+          "starts_on": {
+            "format": "date",
+            "title": "Starts On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decided",
+          "promoted_from_pending",
+          "precision",
+          "reviewed_near_misses",
+          "rescued_near_misses",
+          "losses",
+          "fitting",
+          "promoted",
+          "applied",
+          "answered",
+          "starts_on"
+        ],
+        "title": "WeekQualityRead",
         "type": "object"
       },
       "WorkMode": {
@@ -3686,6 +4236,215 @@
         ]
       }
     },
+    "/api/v1/criteria-changes": {
+      "get": {
+        "description": "The changes, from the most recent.",
+        "operationId": "list_criteria_changes_api_v1_criteria_changes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CriteriaChangeRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Criteria Changes",
+        "tags": [
+          "inbox"
+        ]
+      },
+      "post": {
+        "description": "Change one rule of a search profile, logged with what it did when applied.",
+        "operationId": "make_criteria_change_api_v1_criteria_changes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriteriaChangeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CriteriaChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "The profile or the offer does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Make Criteria Change",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/criteria-changes/{change_id}": {
+      "delete": {
+        "description": "Undo a change: its rule goes back as it was and the change leaves the log.",
+        "operationId": "undo_criteria_change_api_v1_criteria_changes__change_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Change Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Change does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "A later change edited the same rule (`rule-changed-since`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Undo Criteria Change",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
     "/api/v1/email-alerts/imports": {
       "post": {
         "description": "Add every offer of a job alert email to the inbox, as pending, with the job board\nthat imports the alert (import method `email`) as their source; the ones that fit no\nsearch profile are filtered. Any LinkedIn job alert is read, whatever its search.\n\nDuplicates are skipped. Each offer links to the posting without the email's tracking.\nOffers of alerts never expire and there is no limit: an alert lists only new offers.",
@@ -4678,6 +5437,53 @@
           }
         ],
         "summary": "Count Filtered Offers",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/quality": {
+      "get": {
+        "description": "Whether what reaches Pending is worth your time, and whether what is worth your time\nreaches Pending: the offers added in the last 4 weeks, in total and week by week.",
+        "operationId": "read_offer_quality_api_v1_offers_quality_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferQualityRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Offer Quality",
         "tags": [
           "inbox"
         ]

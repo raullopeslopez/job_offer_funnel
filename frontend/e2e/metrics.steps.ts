@@ -40,7 +40,7 @@ Given("these applications for {string}:", async ({ api }, company: string, table
 // --- When ---
 
 When("I open the metrics", async ({ page }) => {
-  await page.goto("/metrics");
+  await page.goto("/metrics?view=funnel");
   await expect(page.getByRole("heading", { name: "Metrics", level: 1 })).toBeVisible();
 });
 

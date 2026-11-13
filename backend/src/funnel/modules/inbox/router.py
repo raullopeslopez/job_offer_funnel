@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from dataclasses import asdict
 from http import HTTPStatus
 from typing import Annotated, Any
 from uuid import UUID
@@ -22,6 +23,7 @@ from funnel.modules.inbox.domain import OfferFilter, OfferStatus, Rule
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.reader import OfferReader
 from funnel.modules.inbox.repository import (
+    CriteriaChangeRepository,
     FeedImportRepository,
     OfferRepository,
     ReadingRepository,
@@ -31,19 +33,27 @@ from funnel.modules.inbox.schemas import (
     AlertEmailCreate,
     AlertImportRead,
     BoardImportRead,
+    CriteriaChangeCreate,
+    CriteriaChangeRead,
     CriteriaPreviewCreate,
     CriteriaPreviewRead,
     DiscardCreate,
+    DiscardReasonCountRead,
     FilteredCountsRead,
     ImportRead,
     OfferCreate,
+    OfferQualityRead,
     OfferRead,
     PromotionCreate,
+    QualityFiguresRead,
     ReadingBatchRead,
+    SourceQualityRead,
     WatchedCompanyCreate,
     WatchedCompanyRead,
+    WeekQualityRead,
 )
 from funnel.modules.inbox.service import (
+    CriteriaChangeService,
     EmailAlertService,
     FeedImportService,
     OfferReadingService,
@@ -210,6 +220,35 @@ async def preview_criteria(preview: CriteriaPreviewCreate, service: Service) -> 
     changes = preview.model_dump(exclude_unset=True, exclude={"search_profile_id", "name"})
     result = await service.preview(preview.search_profile_id, changes)
     return CriteriaPreviewRead.model_validate(result, from_attributes=True)
+
+
+@offers_router.get("/quality")
+async def read_offer_quality(
+    service: Service, clock: Annotated[Clock, Depends(get_clock)]
+) -> OfferQualityRead:
+    """Whether what reaches Pending is worth your time, and whether what is worth your time
+    reaches Pending: the offers added in the last 4 weeks, in total and week by week."""
+    quality = await service.quality(clock.now())
+    return OfferQualityRead(
+        starts_on=quality.starts_on,
+        total=QualityFiguresRead.model_validate(quality.total, from_attributes=True),
+        weeks=[
+            WeekQualityRead.model_validate(
+                {"starts_on": starts_on, **asdict(figures)}, from_attributes=True
+            )
+            for starts_on, figures in quality.weeks
+        ],
+        fitting_per_week=quality.fitting_per_week,
+        near_misses_left=quality.near_misses_left,
+        discard_reasons=[
+            DiscardReasonCountRead(reason=reason, offers=offers)
+            for reason, offers in quality.discard_reasons
+        ],
+        sources=[
+            SourceQualityRead.model_validate(source, from_attributes=True)
+            for source in quality.sources
+        ],
+    )
 
 
 @offers_router.get("/{offer_id}", responses=_NOT_FOUND)
@@ -501,7 +540,70 @@ async def import_email_alert(
     )
 
 
+criteria_changes_router = APIRouter(prefix="/criteria-changes", tags=["inbox"])
+
+
+def get_criteria_change_service(
+    session: SessionDep, offers: Annotated[OfferService, Depends(get_offer_service)]
+) -> CriteriaChangeService:
+    return CriteriaChangeService(
+        CriteriaChangeRepository(session), offers, build_search_profile_service(session)
+    )
+
+
+ChangeService = Annotated[CriteriaChangeService, Depends(get_criteria_change_service)]
+
+
+@criteria_changes_router.post(
+    "",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.NOT_FOUND: {
+            "model": ProblemRead,
+            "description": "The profile or the offer does not exist",
+        }
+    },
+)
+async def make_criteria_change(
+    change: CriteriaChangeCreate, service: ChangeService
+) -> CriteriaChangeRead:
+    """Change one rule of a search profile, logged with what it did when applied."""
+    made = await service.make(change)
+    return CriteriaChangeRead.model_validate(made, from_attributes=True)
+
+
+@criteria_changes_router.get("")
+async def list_criteria_changes(
+    page: Annotated[PageParams, Depends(get_page_params)], service: ChangeService
+) -> Page[CriteriaChangeRead]:
+    """The changes, from the most recent."""
+    changes, total = await service.list_page(page)
+    return Page(
+        items=[CriteriaChangeRead.model_validate(row, from_attributes=True) for row in changes],
+        total=total,
+        limit=page.limit,
+        offset=page.offset,
+    )
+
+
+@criteria_changes_router.delete(
+    "/{change_id}",
+    status_code=HTTPStatus.NO_CONTENT,
+    responses={
+        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Change does not exist"},
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "A later change edited the same rule (`rule-changed-since`)",
+        },
+    },
+)
+async def undo_criteria_change(change_id: UUID, service: ChangeService) -> None:
+    """Undo a change: its rule goes back as it was and the change leaves the log."""
+    await service.undo(change_id)
+
+
 router = APIRouter()
+router.include_router(criteria_changes_router)
 router.include_router(offers_router)
 router.include_router(imports_router)
 router.include_router(email_alerts_router)

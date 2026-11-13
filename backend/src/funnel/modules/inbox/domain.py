@@ -9,13 +9,15 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from http import HTTPStatus
 from typing import Final
 from uuid import UUID
 
 from funnel.core.exceptions import AppError, DomainError
+from funnel.modules.applications.domain import Stage
 from funnel.modules.discovery.domain import Feed, SearchTerms, WorkMode
 
 
@@ -388,6 +390,25 @@ class InvalidOfferStatusError(DomainError):
     status = HTTPStatus.CONFLICT
 
 
+class ProfileRule(StrEnum):
+    """The rules of a search profile a criteria change edits, one at a time. Source of
+    truth: specs/inbox/criteria_changes.feature."""
+
+    TITLES = "titles"
+    KEYWORDS = "keywords"
+    EXCLUDED_KEYWORDS = "excluded_keywords"
+    LOCATION = "location"
+    WORK_MODES = "work_modes"
+
+
+class RuleChangedSinceError(DomainError):
+    """A later change edited the same rule: undoing this one would undo that one too."""
+
+    slug = "rule-changed-since"
+    title = "Rule changed since"
+    status = HTTPStatus.CONFLICT
+
+
 class OfferNotFilteredError(DomainError):
     """Only a filtered offer (pending, imported and fitting no profile) can be reviewed."""
 
@@ -471,3 +492,160 @@ class UnknownJobBoardError(AppError):
     slug = "unknown-job-board"
     title = "Unknown job board"
     status = HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+# --- Offer quality (specs/inbox/offer_quality.feature) ---
+
+QUALITY_WEEKS: Final = 4
+_WEEK_DAYS: Final = 7
+_ONE_DECIMAL: Final = Decimal("0.1")
+
+
+@dataclass(frozen=True)
+class QualityOffer:
+    """An offer as the quality reads it. `stage` is its application's, if promoted."""
+
+    added_on: date
+    status: OfferStatus
+    is_imported: bool
+    fits: bool
+    source: str | None = None
+    discard_reason: DiscardReason | None = None
+    review: Review | None = None
+    review_rules: Sequence[Rule] = ()
+    stage: Stage | None = None
+
+    @property
+    def is_decided_from_pending(self) -> bool:
+        return self.review is not Review.RESCUED and (
+            self.status is OfferStatus.PROMOTED
+            or (self.status is OfferStatus.DISCARDED and self.discard_reason is not EXPIRED_REASON)
+        )
+
+    @property
+    def is_reviewed_near_miss(self) -> bool:
+        return self.review is not None and is_near_miss(self.review_rules)
+
+    @property
+    def is_discarded(self) -> bool:
+        return self.status is OfferStatus.DISCARDED and self.discard_reason is not EXPIRED_REASON
+
+
+@dataclass(frozen=True)
+class QualityFigures:
+    """The figures of a set of offers: all 4 weeks, or one of them."""
+
+    decided: int
+    promoted_from_pending: int
+    precision: float | None
+    reviewed_near_misses: int
+    rescued_near_misses: int
+    losses: float | None
+    fitting: int
+    promoted: int
+    applied: int
+    answered: int
+
+
+@dataclass(frozen=True)
+class SourceQuality:
+    source: str
+    imported: int
+    fitting: int
+    promoted: int
+    discarded: int
+
+
+@dataclass(frozen=True)
+class OfferQuality:
+    starts_on: date
+    total: QualityFigures
+    weeks: Sequence[tuple[date, QualityFigures]]
+    fitting_per_week: float
+    near_misses_left: int
+    discard_reasons: Sequence[tuple[DiscardReason, int]]
+    sources: Sequence[SourceQuality]
+
+
+def rate(part: int, whole: int) -> float | None:
+    """A percentage with one decimal, rounding half up; None with nothing to divide by."""
+    if whole == 0:
+        return None
+    return float((Decimal(part) * 100 / Decimal(whole)).quantize(_ONE_DECIMAL, ROUND_HALF_UP))
+
+
+def quality_starts_on(today: date) -> date:
+    return today - timedelta(days=QUALITY_WEEKS * _WEEK_DAYS - 1)
+
+
+def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
+    decided = [offer for offer in offers if offer.is_decided_from_pending]
+    promoted_from_pending = sum(offer.status is OfferStatus.PROMOTED for offer in decided)
+    reviewed = [offer for offer in offers if offer.is_reviewed_near_miss]
+    rescued = sum(offer.review is Review.RESCUED for offer in reviewed)
+    promoted = [offer for offer in offers if offer.status is OfferStatus.PROMOTED]
+    stages = list(Stage)
+    reached = [stages.index(offer.stage) for offer in promoted if offer.stage is not None]
+    return QualityFigures(
+        decided=len(decided),
+        promoted_from_pending=promoted_from_pending,
+        precision=rate(promoted_from_pending, len(decided)),
+        reviewed_near_misses=len(reviewed),
+        rescued_near_misses=rescued,
+        losses=rate(rescued, len(reviewed)),
+        fitting=sum(offer.is_imported and offer.fits for offer in offers),
+        promoted=len(promoted),
+        applied=sum(index >= stages.index(Stage.APPLIED) for index in reached),
+        answered=sum(index >= stages.index(Stage.SCREENING) for index in reached),
+    )
+
+
+def _sources(offers: Sequence[QualityOffer]) -> list[SourceQuality]:
+    by_source: dict[str, list[QualityOffer]] = {}
+    for offer in offers:
+        if offer.is_imported and offer.source is not None:
+            by_source.setdefault(offer.source, []).append(offer)
+    return [
+        SourceQuality(
+            source=source,
+            imported=len(found),
+            fitting=sum(offer.fits for offer in found),
+            promoted=sum(offer.status is OfferStatus.PROMOTED for offer in found),
+            discarded=sum(offer.is_discarded for offer in found),
+        )
+        for source, found in sorted(by_source.items(), key=lambda item: item[0].casefold())
+    ]
+
+
+def offer_quality(
+    offers: Iterable[QualityOffer], today: date, near_misses_left: int
+) -> OfferQuality:
+    """The quality of the offers added in the 4 weeks up to today, and week by week."""
+    starts_on = quality_starts_on(today)
+    window = [offer for offer in offers if starts_on <= offer.added_on <= today]
+    week_starts = [starts_on + timedelta(days=_WEEK_DAYS * week) for week in range(QUALITY_WEEKS)]
+    weeks = [
+        (
+            start,
+            _figures(
+                [o for o in window if start <= o.added_on < start + timedelta(days=_WEEK_DAYS)]
+            ),
+        )
+        for start in week_starts
+    ]
+    total = _figures(window)
+    reasons = Counter(
+        offer.discard_reason
+        for offer in window
+        if offer.is_discarded and offer.discard_reason is not None
+    )
+    per_week = (Decimal(total.fitting) / QUALITY_WEEKS).quantize(_ONE_DECIMAL, ROUND_HALF_UP)
+    return OfferQuality(
+        starts_on=starts_on,
+        total=total,
+        weeks=weeks,
+        fitting_per_week=float(per_week),
+        near_misses_left=near_misses_left,
+        discard_reasons=sorted(reasons.items(), key=lambda item: (-item[1], item[0])),
+        sources=_sources(window),
+    )

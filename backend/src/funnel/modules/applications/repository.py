@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, func, select
@@ -6,7 +6,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from funnel.core.pagination import PageParams
-from funnel.modules.applications.domain import Application, Transition, UnknownCompanyError
+from funnel.modules.applications.domain import (
+    Application,
+    Stage,
+    Transition,
+    UnknownCompanyError,
+)
 from funnel.modules.applications.models import COMPANY_FOREIGN_KEY, ApplicationRow, TransitionRow
 from funnel.modules.applications.schemas import ApplicationFilters
 
@@ -25,6 +30,14 @@ class ApplicationRepository:
         await self._session.flush()
         await self._session.refresh(row)  # loads created_at, set by the database
         return row
+
+    async def stages(self, application_ids: Collection[UUID]) -> dict[UUID, Stage]:
+        rows = await self._session.execute(
+            select(ApplicationRow.id, ApplicationRow.stage).where(
+                ApplicationRow.id.in_(application_ids)
+            )
+        )
+        return {application_id: Stage(stage) for application_id, stage in rows}
 
     async def get(self, application_id: UUID) -> Application | None:
         row = await self._session.get(ApplicationRow, application_id)

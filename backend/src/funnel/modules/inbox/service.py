@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, time
 from typing import Any
 from uuid import UUID
 
@@ -13,7 +13,7 @@ from funnel.modules.applications.domain import Channel
 from funnel.modules.applications.schemas import ApplicationCreate
 from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
-from funnel.modules.discovery.domain import Feed, ImportMethod, next_import_at
+from funnel.modules.discovery.domain import Feed, ImportMethod, WorkMode, next_import_at
 from funnel.modules.discovery.service import JobBoardService, SearchProfileService
 from funnel.modules.inbox.alerts import read_alert
 from funnel.modules.inbox.ats import BoardReader
@@ -33,30 +33,40 @@ from funnel.modules.inbox.domain import (
     OfferAction,
     OfferFilter,
     OfferNotFilteredError,
+    OfferQuality,
     OfferReaderError,
     OfferReaderUnavailableError,
     OfferStatus,
     OfferText,
+    ProfileRule,
     Review,
+    RuleChangedSinceError,
     WordNotInTitleError,
     count_filtered,
     duplicate_key,
     is_title_word,
     next_status,
+    offer_quality,
     plain_text,
     preview_criteria,
+    quality_starts_on,
     supported,
 )
 from funnel.modules.inbox.feeds import FeedReader
-from funnel.modules.inbox.models import OfferRow, WatchedCompanyRow
+from funnel.modules.inbox.models import CriteriaChangeRow, OfferRow, WatchedCompanyRow
 from funnel.modules.inbox.reader import OfferReader
 from funnel.modules.inbox.repository import (
+    CriteriaChangeRepository,
     FeedImportRepository,
     OfferRepository,
     ReadingRepository,
     WatchedCompanyRepository,
 )
-from funnel.modules.inbox.schemas import OfferCreate, WatchedCompanyCreate
+from funnel.modules.inbox.schemas import (
+    CriteriaChangeCreate,
+    OfferCreate,
+    WatchedCompanyCreate,
+)
 
 _logger = structlog.get_logger(__name__)
 
@@ -102,6 +112,21 @@ class OfferService:
         return count_filtered(
             await self._repository.all_reasons(profiles), await self._repository.all_reviews()
         )
+
+    async def quality(self, now: datetime) -> OfferQuality:
+        """The offer quality of the 4 weeks up to now, with the applications of the promoted."""
+        starts_on = quality_starts_on(now.date())
+        since = datetime.combine(starts_on, time(), now.tzinfo)
+        added = await self._repository.added_since(since, await self._profiles.all_terms())
+        stages = await self._applications.stages(
+            [application_id for _, application_id in added if application_id is not None]
+        )
+        offers = [
+            replace(offer, stage=stages.get(application_id)) if application_id else offer
+            for offer, application_id in added
+        ]
+        counts = await self.count_filtered()
+        return offer_quality(offers, now.date(), counts.near_misses)
 
     async def preview(self, profile_id: UUID, changes: Mapping[str, Any]) -> CriteriaPreview:
         """What editing the profile with these changes would do to the offers; saves nothing."""
@@ -161,6 +186,65 @@ class OfferService:
         offer.status = status
         offer.application_id = application.id
         return await self._repository.save(offer, await self._profiles.all_terms())
+
+
+class CriteriaChangeService:
+    """Changes one rule of a profile through its service, logged with what it did."""
+
+    def __init__(
+        self,
+        repository: CriteriaChangeRepository,
+        offers: OfferService,
+        profiles: SearchProfileService,
+    ) -> None:
+        self._repository = repository
+        self._offers = offers
+        self._profiles = profiles
+
+    async def make(self, change: CriteriaChangeCreate) -> CriteriaChangeRow:
+        ((rule, value),) = change.rules().items()
+        profile_id, offer_id = change.search_profile_id, change.offer_id
+        profile = await self._profiles.get(profile_id)
+        if offer_id is not None:
+            await self._offers.get(offer_id)
+        before = _as_json(getattr(profile, rule))
+        preview = await self._offers.preview(profile_id, {rule: _as_terms(rule, value)})
+        await self._profiles.update(profile_id, {rule: value})
+        return await self._repository.add(
+            CriteriaChangeRow(
+                search_profile_id=profile_id,
+                offer_id=offer_id,
+                rule=rule,
+                before=before,
+                after=value,
+                entering_pending=preview.entering_pending,
+                leaving_pending=preview.leaving_pending,
+                promoted_filtered=preview.promoted_filtered,
+                discarded_filtered=preview.discarded_filtered,
+            )
+        )
+
+    async def undo(self, change_id: UUID) -> None:
+        change = await self._repository.get(change_id)
+        if change is None:
+            raise NotFoundError(f"Criteria change {change_id} does not exist")
+        if await self._repository.is_changed_since(change):
+            raise RuleChangedSinceError(f"The {change.rule} changed after change {change_id}")
+        await self._profiles.update(change.search_profile_id, {change.rule: change.before})
+        await self._repository.delete(change)
+
+    async def list_page(self, page: PageParams) -> tuple[list[CriteriaChangeRow], int]:
+        return await self._repository.list_page(page)
+
+
+def _as_json(value: Any) -> Any:
+    """A rule's value as the log keeps it: lists of plain strings, or the location."""
+    return [str(item) for item in value] if isinstance(value, list) else value
+
+
+def _as_terms(rule: ProfileRule, value: Any) -> Any:
+    """The value as a profile's terms take it: work modes as their enum."""
+    return [WorkMode(mode) for mode in value] if rule is ProfileRule.WORK_MODES else value
 
 
 def _failed_rules(offer: OfferRow) -> list[str]:

@@ -3,13 +3,51 @@ Feature: Metrics screen
   I want to see in one screen how my applications convert and what I have in progress
   So that I know where I lose applications and which channels work best without opening the API docs
 
-  The rules of the metrics are those of specs/metrics/funnel_metrics.feature.
-  This screen only shows them: each section has a table with the figures and a chart
-  of the same figures. A rate is shown as a percentage with one decimal, and as "—"
-  when no application reached the first stage of the step.
+  The screen has two views, "Offers" (the one it opens on) and "Funnel". "Offers" shows
+  the offer quality of specs/inbox/offer_quality.feature: under "Offer quality", four
+  cards (Precision, Losses, Flow and Real result) with the figure, a bar per week and a
+  sentence, each a link to where the figure comes from; then "Why you discard", a bar per
+  reason, and "By source", a table. A card without data shows "—", never 0%.
+  "Funnel" shows the rules of specs/metrics/funnel_metrics.feature: each section has a
+  table with the figures and a chart of the same figures. A rate is shown as a
+  percentage with one decimal, and as "—" when no application reached the first stage of
+  the step. The scenarios below without a view are on "Funnel".
 
   Background:
     Given I am signed in with a valid token
+
+  Rule: "Offers" shows the offer quality of the last 4 weeks
+
+    @component
+    Scenario: The four key results, each linked to where it comes from
+      Given the offer quality has a precision of 33.3% from 3 decided offers
+      When I open the metrics
+      Then the card "Precision" says "33.3%" and "1 promoted of 3 decided from Pending"
+      And the card "Precision" links to the inbox
+
+    @component
+    Scenario: A card without data shows a dash
+      Given there is no offer quality yet
+      When I open the metrics
+      Then each card says "—"
+
+    # "Changes to your criteria" lists the changes of specs/inbox/criteria_changes.feature,
+    # the most recent first: what changed ("Excluded “Lead”") and what it did ("Today ·
+    # took 6 out of Pending · lost 0 promoted"), each with "Undo".
+
+    @component
+    Scenario: Each change to the criteria with what it did, and undoing it
+      Given the change "Excluded “Lead”" was made today and took 6 offers out of Pending
+      When I open the metrics
+      Then "Changes to your criteria" lists "Excluded “Lead”" with "Today · took 6 out of Pending · lost 0 promoted"
+      And undoing it leaves "No changes yet."
+
+    @component
+    Scenario: Discards by reason and the sources
+      Given the offer quality has the discards "Stack" 2 and "Location" 1 and the source "Remote OK"
+      When I open the metrics
+      Then "Why you discard" lists "Stack", then "Location"
+      And "By source" shows "Remote OK" with 5 imported, 3 that fit, 1 promoted and 1 discarded
 
   Rule: With applications, the screen shows their conversion and the active pipeline
 

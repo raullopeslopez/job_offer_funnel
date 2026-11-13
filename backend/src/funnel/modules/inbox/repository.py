@@ -1,5 +1,6 @@
 from collections.abc import Collection, Sequence
 from dataclasses import replace
+from datetime import datetime
 from typing import Any, cast
 from uuid import UUID, uuid7
 
@@ -33,6 +34,7 @@ from funnel.modules.inbox.domain import (
     OfferFilter,
     OfferStatus,
     ProfileMatch,
+    QualityOffer,
     Reading,
     Review,
     ReviewMade,
@@ -45,6 +47,7 @@ from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
     UNIQUE_DUPLICATE_KEY,
     UNIQUE_WATCHED_NAME_INDEX,
+    CriteriaChangeRow,
     OfferReadingRow,
     OfferRow,
     WatchedCompanyRow,
@@ -246,6 +249,51 @@ class OfferRepository:
         )
         return [FitChange(*row) for row in rows]
 
+    async def added_since(
+        self, since: datetime, profiles: Sequence[SearchTerms]
+    ) -> list[tuple[QualityOffer, UUID | None]]:
+        """The offers added since then, as the quality reads them, with their application."""
+        rows = await self._session.execute(
+            select(
+                OfferRow.created_at,
+                OfferRow.status,
+                OfferRow.description.is_not(None),
+                _fits_any(profiles),
+                func.coalesce(OfferRow.job_board_name, OfferRow.watched_company_name),
+                OfferRow.discard_reason,
+                OfferRow.review,
+                OfferRow.review_rules,
+                OfferRow.application_id,
+            ).where(OfferRow.created_at >= since)
+        )
+        zone = since.tzinfo
+        return [
+            (
+                QualityOffer(
+                    added_on=created_at.astimezone(zone).date(),
+                    status=status,
+                    is_imported=is_imported,
+                    fits=fits,
+                    source=source,
+                    discard_reason=discard_reason,
+                    review=review,
+                    review_rules=[Rule(rule) for rule in review_rules],
+                ),
+                application_id,
+            )
+            for (
+                created_at,
+                status,
+                is_imported,
+                fits,
+                source,
+                discard_reason,
+                review,
+                review_rules,
+                application_id,
+            ) in rows
+        ]
+
     async def all_reviews(self) -> list[ReviewMade]:
         rows = await self._session.execute(
             select(OfferRow.review, OfferRow.review_rules).where(OfferRow.review.is_not(None))
@@ -311,6 +359,50 @@ class OfferRepository:
             ]
             conditions.append(OfferRow.id.in_(failing))
         return conditions
+
+
+class CriteriaChangeRepository:
+    """The log of criteria changes. Never commits: the request session does."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, change: CriteriaChangeRow) -> CriteriaChangeRow:
+        self._session.add(change)
+        await self._session.flush()
+        await self._session.refresh(change)  # loads created_at and the profile's name
+        return change
+
+    async def get(self, change_id: UUID) -> CriteriaChangeRow | None:
+        return await self._session.get(CriteriaChangeRow, change_id)
+
+    async def is_changed_since(self, change: CriteriaChangeRow) -> bool:
+        """Whether a later change edited the same rule of the same profile."""
+        later = await self._session.scalar(
+            select(
+                exists().where(
+                    CriteriaChangeRow.search_profile_id == change.search_profile_id,
+                    CriteriaChangeRow.rule == change.rule,
+                    CriteriaChangeRow.id > change.id,
+                )
+            )
+        )
+        return bool(later)
+
+    async def delete(self, change: CriteriaChangeRow) -> None:
+        await self._session.delete(change)
+        await self._session.flush()
+
+    async def list_page(self, page: PageParams) -> tuple[list[CriteriaChangeRow], int]:
+        # uuid7 ids follow the order the changes were made.
+        rows = await self._session.scalars(
+            select(CriteriaChangeRow)
+            .order_by(CriteriaChangeRow.id.desc())
+            .limit(page.limit)
+            .offset(page.offset)
+        )
+        total = await self._session.scalar(select(func.count()).select_from(CriteriaChangeRow))
+        return list(rows), total or 0
 
 
 class ReadingRepository:
