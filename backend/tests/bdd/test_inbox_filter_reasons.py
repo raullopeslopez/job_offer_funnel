@@ -343,7 +343,8 @@ def then_counts(
 ) -> None:
     body = _ok(state.last_response, 200)
     failing = {row["rule"]: int(row["offers"]) for row in _rows(datatable)}
-    assert body == {"filtered": filtered, "near_misses": near_misses, "failing": failing}
+    counted = {key: body[key] for key in ("filtered", "near_misses", "failing")}
+    assert counted == {"filtered": filtered, "near_misses": near_misses, "failing": failing}
 
 
 @then("it is rejected as invalid")

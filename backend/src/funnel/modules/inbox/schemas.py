@@ -7,7 +7,15 @@ from pydantic import BaseModel, Field, StringConstraints, model_validator
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Ats, DiscardReason, OfferStatus, Rule, RuleResult
+from funnel.modules.discovery.schemas import SearchProfileUpdate
+from funnel.modules.inbox.domain import (
+    Ats,
+    DiscardReason,
+    OfferStatus,
+    Review,
+    Rule,
+    RuleResult,
+)
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -166,6 +174,29 @@ class FilteredCountsRead(BaseModel):
     failing: dict[Rule, int] = Field(
         description="Filtered offers failing each rule; an offer counts in each it fails."
     )
+    reviewed_near_misses: int = Field(
+        description="Offers ever reviewed (rescued or marked rightly filtered) while they "
+        "were near misses, whatever their status now."
+    )
+    rescued_near_misses: int = Field(description="Of those, the ones rescued.")
+
+
+class CriteriaPreviewCreate(SearchProfileUpdate):
+    """The changes editing the profile would take, saving nothing. Its name changes nothing."""
+
+    search_profile_id: UUID
+
+
+class CriteriaPreviewRead(BaseModel):
+    entering_pending: int = Field(description="Pending offers filtered now that would not be.")
+    leaving_pending: int = Field(description="Pending offers not filtered now that would be.")
+    promoted_filtered: int = Field(
+        description="Promoted offers that fit the profiles now and would not with the change."
+    )
+    discarded_filtered: int = Field(
+        description="Discarded offers, not expired, that fit the profiles now and would not "
+        "with the change."
+    )
 
 
 class OfferRead(BaseModel):
@@ -190,6 +221,11 @@ class OfferRead(BaseModel):
     discard_reason: DiscardReason | None = Field(description="Set while the offer is discarded.")
     discard_word: str | None = Field(description="The word of the title, with `title_word`.")
     application_id: UUID | None = Field(description="Set once the offer is promoted.")
+    review: Review | None = Field(
+        description="`rescued`: promoted while filtered; `rightly_filtered`: marked so while "
+        "filtered, and no longer a near miss."
+    )
+    review_rules: list[Rule] = Field(description="The rules that filtered it when reviewed.")
     watched_company_id: UUID | None = Field(
         description="The watched company it was imported from, if still watched."
     )

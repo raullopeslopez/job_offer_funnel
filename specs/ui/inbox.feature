@@ -189,6 +189,23 @@ Feature: Inbox screen
     When I promote anyway the near miss "Backend Engineer" through "portal"
     Then I see the message "Application created"
 
+  # "Rightly filtered" sits next to "Promote anyway": the offer stays filtered, is no longer
+  # a near miss (specs/inbox/rescues.feature) and leaves the group; "Undo" brings it back.
+
+  @component
+  Scenario Outline: Mark a near miss as rightly filtered
+    Given a near miss for "Acme" as "Backend Engineer"
+    And I am on the inbox showing the "<view>" offers
+    And the near miss "Backend Engineer" is listed in "<group>"
+    When I mark the near miss "Backend Engineer" as rightly filtered
+    Then I see the message "Marked as rightly filtered" with "Undo"
+    And "<group>" no longer lists "Backend Engineer"
+
+    Examples:
+      | view     | group                |
+      | pending  | Maybe                |
+      | filtered | A word you exclude   |
+
   @component
   Scenario: The filtered view groups the near misses by the rule that filtered them
     Given the near misses:
@@ -317,6 +334,39 @@ Feature: Inbox screen
     And I am on the inbox
     When I discard the offer "Senior Backend Engineer" because of the word "Senior"
     Then the "discarded" offers show "Senior Backend Engineer" with reason "A word in the title: Senior"
+
+  # An offer with a filter reason checks the word against its reference profile: "A word
+  # in the title" then proposes excluding the word from that profile, with what the change
+  # would do (specs/inbox/criteria_previews.feature), before discarding.
+
+  @component
+  Scenario Outline: A word in the title of an imported offer proposes excluding it from its profile
+    Given an imported offer for "Acme" as "Lead Backend Engineer" that fits the profile "Backend"
+    And excluding "Lead" from "Backend" would take <leaving> offers out of Pending and filter <promoted> I promoted and <discarded> I discarded
+    And I am on the inbox
+    When I choose "A word in the title" for the offer "Lead Backend Engineer" with the word "Lead"
+    Then it asks "Exclude “Lead” from the profile Backend?"
+    And it says "<effect>"
+    And it offers "Only discard this one" and "Discard and exclude “Lead”"
+
+    Examples:
+      | leaving | promoted | discarded | effect                                                                           |
+      | 3       | 0        | 2         | Takes 3 offers out of Pending. Loses none you promoted. 2 you discarded had it. |
+      | 1       | 1        | 0         | Takes 1 offer out of Pending. Would have filtered 1 you promoted. None you discarded had it. |
+
+  @component
+  Scenario Outline: Discard only the offer, or also exclude the word from the profile
+    Given an imported offer for "Acme" as "Lead Backend Engineer" that fits the profile "Backend"
+    And I am on the inbox
+    And I chose "A word in the title" for the offer "Lead Backend Engineer" with the word "Lead"
+    When I choose "<choice>"
+    Then the offer is discarded because of the word "Lead"
+    And the excluded keywords of "Backend" are <excluded>
+
+    Examples:
+      | choice                     | excluded         |
+      | Only discard this one      | "Senior"         |
+      | Discard and exclude “Lead” | "Senior", "Lead" |
 
   Scenario: A word in the title needs a word marked first
     Given an offer for "Acme" as "Senior Backend Engineer"

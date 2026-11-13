@@ -138,6 +138,8 @@ ignore_imports = [
     # Importing a feed filters it with a search profile.
     "funnel.modules.inbox.** -> funnel.modules.discovery.service",
     "funnel.modules.inbox.** -> funnel.modules.discovery.domain",
+    # A criteria preview takes the same changes as editing a search profile.
+    "funnel.modules.inbox.** -> funnel.modules.discovery.schemas",
 ]
 
 [dependency-groups]

@@ -52,7 +52,7 @@ export function offerCountQuery(view: View) {
 
 const PAGE_SIZE = 20;
 
-type Notice = { message: string; undoDiscardOf?: string };
+type Notice = { message: string; undo?: () => void };
 
 export function InboxPage() {
   const queryClient = useQueryClient();
@@ -120,6 +120,34 @@ export function InboxPage() {
     },
   });
 
+  // A near miss left filtered (specs/inbox/rescues.feature); undone from the notice.
+  const unmark = useMutation({
+    mutationFn: async (offerId: string) => {
+      const { error } = await api.DELETE("/api/v1/offers/{offer_id}/rightly-filtered", {
+        params: { path: { offer_id: offerId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: refresh,
+  });
+  const markRightlyFiltered = useMutation({
+    mutationFn: async (offer: Offer) => {
+      const { error } = await api.POST("/api/v1/offers/{offer_id}/rightly-filtered", {
+        params: { path: { offer_id: offer.id } },
+      });
+      if (error) throw error;
+      return offer;
+    },
+    onSuccess: async (offer) => {
+      await refresh();
+      setNotice({ message: "Marked as rightly filtered", undo: () => unmark.mutate(offer.id) });
+    },
+  });
+  const nearMissActions = {
+    onPromote: setPromoting,
+    onRightlyFiltered: (offer: Offer) => markRightlyFiltered.mutate(offer),
+  };
+
   const changeView = (next: View) => setParams(next === "pending" ? {} : { status: next });
 
   const pages = offers.data?.pages ?? [];
@@ -171,7 +199,7 @@ export function InboxPage() {
         />
       </Box>
 
-      {view === "filtered" && <NearMissGroups {...context} onPromote={setPromoting} />}
+      {view === "filtered" && <NearMissGroups {...context} {...nearMissActions} />}
 
       {offers.isSuccess && (view !== "filtered" || listed > 0 || total === 0) && (
         <OfferList
@@ -185,7 +213,7 @@ export function InboxPage() {
           onDiscarded={async (offer) => {
             setDiscarding(null);
             await refresh();
-            setNotice({ message: "Offer discarded", undoDiscardOf: offer.id });
+            setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
           }}
           onPromote={setPromoting}
           onRestore={(offer) => restore.mutate(offer.id)}
@@ -204,7 +232,7 @@ export function InboxPage() {
         </Box>
       )}
 
-      {view === "pending" && <MaybeGroup {...context} onPromote={setPromoting} />}
+      {view === "pending" && <MaybeGroup {...context} {...nearMissActions} />}
 
       <AddOfferDialog
         open={dialog === "add"}
@@ -232,14 +260,13 @@ export function InboxPage() {
         onClose={() => setNotice(null)}
         message={notice?.message}
         action={
-          notice?.undoDiscardOf && (
+          notice?.undo && (
             <Button
               color="inherit"
               size="small"
               onClick={() => {
-                const offerId = notice.undoDiscardOf;
+                notice.undo?.();
                 setNotice(null);
-                if (offerId) restore.mutate(offerId);
               }}
             >
               Undo

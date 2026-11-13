@@ -1,5 +1,7 @@
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import httpx2
@@ -19,6 +21,7 @@ from funnel.modules.inbox.domain import (
     LATEST_ONLY_FEEDS,
     READING_BATCH_SIZE,
     BoardUnavailableError,
+    CriteriaPreview,
     DiscardReason,
     EmailAlertNotImportedError,
     FeedCooldownError,
@@ -29,16 +32,19 @@ from funnel.modules.inbox.domain import (
     JobBoardNotImportedError,
     OfferAction,
     OfferFilter,
+    OfferNotFilteredError,
     OfferReaderError,
     OfferReaderUnavailableError,
     OfferStatus,
     OfferText,
+    Review,
     WordNotInTitleError,
     count_filtered,
     duplicate_key,
     is_title_word,
     next_status,
     plain_text,
+    preview_criteria,
     supported,
 )
 from funnel.modules.inbox.feeds import FeedReader
@@ -93,7 +99,35 @@ class OfferService:
 
     async def count_filtered(self) -> FilteredCounts:
         profiles = await self._profiles.all_terms()
-        return count_filtered(await self._repository.all_reasons(profiles))
+        return count_filtered(
+            await self._repository.all_reasons(profiles), await self._repository.all_reviews()
+        )
+
+    async def preview(self, profile_id: UUID, changes: Mapping[str, Any]) -> CriteriaPreview:
+        """What editing the profile with these changes would do to the offers; saves nothing."""
+        await self._profiles.get(profile_id)
+        current = await self._profiles.all_terms()
+        changed = [
+            replace(terms, **changes) if terms.search_profile_id == profile_id else terms
+            for terms in current
+        ]
+        return preview_criteria(await self._repository.fit_changes(current, changed))
+
+    async def mark_rightly_filtered(self, offer_id: UUID) -> OfferRow:
+        offer = await self.get(offer_id)
+        failed = _failed_rules(offer)
+        if not failed:
+            raise OfferNotFilteredError(f"Offer {offer_id} is not filtered")
+        offer.review = Review.RIGHTLY_FILTERED
+        offer.review_rules = failed
+        return await self._repository.save(offer, await self._profiles.all_terms())
+
+    async def unmark_rightly_filtered(self, offer_id: UUID) -> None:
+        offer = await self.get(offer_id)
+        if offer.review is Review.RIGHTLY_FILTERED:
+            offer.review = None
+            offer.review_rules = []
+            await self._repository.save(offer, await self._profiles.all_terms())
 
     async def discard(self, offer_id: UUID, reason: DiscardReason, word: str | None) -> OfferRow:
         offer = await self.get(offer_id)
@@ -120,9 +154,18 @@ class OfferService:
                 company_id=company.id, role=offer.title, channel=channel, url=offer.url
             )
         )
+        # Promoting a filtered offer is a rescue: it keeps the rules that filtered it.
+        failed = _failed_rules(offer)
+        offer.review = Review.RESCUED if failed else None
+        offer.review_rules = failed
         offer.status = status
         offer.application_id = application.id
         return await self._repository.save(offer, await self._profiles.all_terms())
+
+
+def _failed_rules(offer: OfferRow) -> list[str]:
+    """The rules that filter the offer now; none if it is not filtered."""
+    return [str(rule) for rule in offer.filter_reason.failed] if offer.filter_reason else []
 
 
 @dataclass(frozen=True)

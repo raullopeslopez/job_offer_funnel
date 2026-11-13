@@ -2,6 +2,11 @@ import { defineConfig } from "@playwright/test";
 import { defineBddConfig } from "playwright-bdd";
 import { API_PORT, API_URL, E2E_TOKEN, WEB_PORT } from "./e2e/support/env";
 
+// The API's days are the user's (TIMEZONE in backend/src/funnel/core/config.py): the steps
+// (Node) and the browser count "today" in the same zone, or near midnight UTC they disagree.
+const TIME_ZONE = "Europe/Madrid";
+process.env.TZ = TIME_ZONE;
+
 // E2E against the real API with its own throwaway database (backend/tests/support/e2e_server.py).
 const testDir = defineBddConfig({
   features: "../specs/ui/*.feature",
@@ -23,6 +28,7 @@ export default defineConfig({
   expect: { timeout: 5_000 },
   use: {
     baseURL: `http://127.0.0.1:${WEB_PORT}`,
+    timezoneId: TIME_ZONE,
     actionTimeout: 5_000,
     trace: "retain-on-failure",
   },

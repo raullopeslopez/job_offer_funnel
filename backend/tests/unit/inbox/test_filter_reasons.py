@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from funnel.modules.discovery.domain import SearchTerms, WorkMode
@@ -5,6 +7,8 @@ from funnel.modules.inbox.domain import (
     FilterReason,
     ProfileMatch,
     Reading,
+    Review,
+    ReviewMade,
     Rule,
     RuleCheck,
     RuleResult,
@@ -180,7 +184,7 @@ def test_counts_the_filtered_offers_in_each_rule_they_fail() -> None:
     ]
 
     # Act
-    counts = count_filtered(reasons)
+    counts = count_filtered(reasons, [])
 
     # Assert
     assert (counts.filtered, counts.near_misses, counts.failing) == (
@@ -188,3 +192,34 @@ def test_counts_the_filtered_offers_in_each_rule_they_fail() -> None:
         1,
         {Rule.KEYWORDS: 2, Rule.TITLE: 1},
     )
+
+
+@pytest.mark.unit
+def test_a_near_miss_marked_rightly_filtered_is_no_longer_one() -> None:
+    # Arrange
+    reason = replace(
+        _reason((Rule.TITLE, PASSED), (Rule.KEYWORDS, FAILED)), is_rightly_filtered=True
+    )
+
+    # Act
+    result = reason.near_miss
+
+    # Assert
+    assert result is False
+
+
+@pytest.mark.unit
+def test_counts_the_reviews_made_on_near_misses_and_the_rescues_among_them() -> None:
+    # Arrange
+    reviews = [
+        ReviewMade(Review.RESCUED, [Rule.KEYWORDS]),
+        ReviewMade(Review.RIGHTLY_FILTERED, [Rule.LOCATION]),
+        ReviewMade(Review.RESCUED, [Rule.TITLE]),
+        ReviewMade(Review.RESCUED, [Rule.KEYWORDS, Rule.STABLE]),
+    ]
+
+    # Act
+    counts = count_filtered([], reviews)
+
+    # Assert
+    assert (counts.reviewed_near_misses, counts.rescued_near_misses) == (2, 1)

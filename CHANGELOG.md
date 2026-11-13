@@ -10,6 +10,23 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Criteria previews: `POST /api/v1/offers/criteria-previews` takes a search profile and the
+  same changes as editing it, saves nothing, and says how many pending offers would come
+  into Pending (`entering_pending`) and leave it (`leaving_pending`), and how many promoted
+  and discarded offers the change would have filtered (`promoted_filtered`,
+  `discarded_filtered`; expired offers do not count).
+- Inbox: discarding an imported offer because of "A word in the title" proposes excluding
+  the word from its profile, with what the change would do, and "Only discard this one" or
+  "Discard and exclude" it.
+- Rescues and rightly filtered offers: promoting a filtered offer records it as a rescue
+  (`review: rescued`) with the rules that filtered it then (`review_rules`).
+  `POST /api/v1/offers/{offer_id}/rightly-filtered` marks a filtered offer as reviewed
+  (`review: rightly_filtered`): it stays filtered but is no longer a near miss
+  (`offer-not-filtered` if it is not filtered); `DELETE` on the same path undoes it.
+  `GET /api/v1/offers/filtered-counts` also counts the near misses ever reviewed
+  (`reviewed_near_misses`) and those rescued (`rescued_near_misses`).
+- Inbox: "Rightly filtered" next to "Promote anyway" in "Maybe" and in the groups of the
+  filtered view takes the offer out of the group, with "Undo" in the notice.
 - Inbox: every imported offer shows its five rules (Title, Keywords, Mode, Location,
   Contract) with the value that passed each one, "Not stated" when unknown, "Any" when the
   profile does not ask for it, or the value against what the profile asks and the sentence

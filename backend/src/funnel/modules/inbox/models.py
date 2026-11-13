@@ -3,6 +3,7 @@ from enum import StrEnum
 from uuid import UUID, uuid7
 
 from sqlalchemy import (
+    ARRAY,
     Boolean,
     DateTime,
     Enum,
@@ -14,6 +15,7 @@ from sqlalchemy import (
     func,
     select,
     table,
+    text,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -25,7 +27,7 @@ from sqlalchemy.orm import (
 
 from funnel.core.db import Base
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Ats, DiscardReason, FilterReason, OfferStatus
+from funnel.modules.inbox.domain import Ats, DiscardReason, FilterReason, OfferStatus, Review
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
@@ -117,6 +119,10 @@ class OfferRow(Base):
         _enum_column_type(DiscardReason, "discard_reason")
     )
     discard_word: Mapped[str | None] = mapped_column(String(200))
+    # Set when a filtered offer is promoted (a rescue) or marked rightly filtered, with
+    # the rules that filtered it then: they say whether it was a near miss.
+    review: Mapped[Review | None] = mapped_column(_enum_column_type(Review, "review"))
+    review_rules: Mapped[list[str]] = mapped_column(ARRAY(String(32)), server_default=text("'{}'"))
     application_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("applications.id", ondelete="SET NULL"), index=True
     )

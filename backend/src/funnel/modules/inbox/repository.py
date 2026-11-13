@@ -1,4 +1,5 @@
 from collections.abc import Collection, Sequence
+from dataclasses import replace
 from typing import Any, cast
 from uuid import UUID, uuid7
 
@@ -28,10 +29,14 @@ from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import (
     EXPIRED_REASON,
     FilterReason,
+    FitChange,
     OfferFilter,
     OfferStatus,
     ProfileMatch,
     Reading,
+    Review,
+    ReviewMade,
+    Rule,
     UnknownJobBoardError,
     WordHits,
     filter_reason,
@@ -128,12 +133,16 @@ def _reading(row: OfferReadingRow) -> Reading:
 _HAS_REASON = and_(OfferRow.status == OfferStatus.PENDING, OfferRow.description.is_not(None))
 
 
+def _fits_any(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
+    return or_(false(), *(_fits(terms) for terms in profiles))
+
+
 def filtered(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
     """Pending, imported (only those have a description) and fitting no profile."""
     return and_(
         OfferRow.status == OfferStatus.PENDING,
         OfferRow.description.is_not(None),
-        not_(or_(false(), *(_fits(terms) for terms in profiles))),
+        not_(_fits_any(profiles)),
     )
 
 
@@ -191,9 +200,12 @@ class OfferRepository:
         """The filter reason of each pending imported offer the condition selects. The
         database finds the words; the domain decides the rules and the reference profile."""
         words = await self._session.execute(
-            select(OfferRow.id, OfferRow.description != "", *_word_columns(profiles)).where(
-                _HAS_REASON, condition
-            )
+            select(
+                OfferRow.id,
+                OfferRow.description != "",
+                OfferRow.review.is_not_distinct_from(Review.RIGHTLY_FILTERED),
+                *_word_columns(profiles),
+            ).where(_HAS_REASON, condition)
         )
         readings = {
             (row.offer_id, row.location): _reading(row)
@@ -204,15 +216,45 @@ class OfferRepository:
             )
         }
         return {
-            offer_id: filter_reason(
-                [
-                    ProfileMatch(terms, hits, readings.get((offer_id, terms.location)))
-                    for terms, hits in zip(profiles, _word_hits(profiles, flags), strict=True)
-                ],
-                has_description=has_description,
+            offer_id: replace(
+                filter_reason(
+                    [
+                        ProfileMatch(terms, hits, readings.get((offer_id, terms.location)))
+                        for terms, hits in zip(profiles, _word_hits(profiles, flags), strict=True)
+                    ],
+                    has_description=has_description,
+                ),
+                is_rightly_filtered=is_rightly_filtered,
             )
-            for offer_id, has_description, *flags in words
+            for offer_id, has_description, is_rightly_filtered, *flags in words
         }
+
+    async def fit_changes(
+        self, current: Sequence[SearchTerms], changed: Sequence[SearchTerms]
+    ) -> list[FitChange]:
+        """The imported offers, not expired, grouped by status and whether they fit each set
+        of profiles, with the same rules that filter the pending ones."""
+        fits_now = _fits_any(current).label("fits_now")
+        fits_after = _fits_any(changed).label("fits_after")
+        rows = await self._session.execute(
+            select(OfferRow.status, fits_now, fits_after, func.count())
+            .where(
+                OfferRow.description.is_not(None),
+                OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON),
+            )
+            .group_by(OfferRow.status, fits_now, fits_after)
+        )
+        return [FitChange(*row) for row in rows]
+
+    async def all_reviews(self) -> list[ReviewMade]:
+        rows = await self._session.execute(
+            select(OfferRow.review, OfferRow.review_rules).where(OfferRow.review.is_not(None))
+        )
+        return [
+            # The query leaves out the offers without a review.
+            ReviewMade(cast(Review, review), [Rule(rule) for rule in rules])
+            for review, rules in rows
+        ]
 
     async def save(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
         await self._session.flush()

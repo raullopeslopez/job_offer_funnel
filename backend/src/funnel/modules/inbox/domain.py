@@ -71,6 +71,8 @@ class FilterReason:
     search_profile_name: str | None
     has_description: bool
     rules: Sequence[RuleCheck]
+    # Marked rightly filtered: reviewed, so no longer worth a second look.
+    is_rightly_filtered: bool = False
 
     @property
     def failed(self) -> list[Rule]:
@@ -78,10 +80,27 @@ class FilterReason:
 
     @property
     def near_miss(self) -> bool:
-        title_passes = any(
-            check.rule is Rule.TITLE and check.result is RuleResult.PASSED for check in self.rules
-        )
-        return title_passes and len(self.failed) == 1
+        return is_near_miss(self.failed) and not self.is_rightly_filtered
+
+
+def is_near_miss(failed: Sequence[Rule]) -> bool:
+    """Filtered by a single rule, and not by its title (a title is never unknown)."""
+    return len(failed) == 1 and Rule.TITLE not in failed
+
+
+class Review(StrEnum):
+    """What the user did with a filtered offer: promoted it, or left it filtered."""
+
+    RESCUED = "rescued"
+    RIGHTLY_FILTERED = "rightly_filtered"
+
+
+@dataclass(frozen=True)
+class ReviewMade:
+    """A review and the rules that filtered the offer when it was made."""
+
+    review: Review
+    rules: Sequence[Rule]
 
 
 @dataclass(frozen=True)
@@ -99,6 +118,42 @@ class FilteredCounts:
     filtered: int
     near_misses: int
     failing: Mapping[Rule, int]
+    reviewed_near_misses: int
+    rescued_near_misses: int
+
+
+@dataclass(frozen=True)
+class FitChange:
+    """How many imported offers in a status fit the profiles now and with a change."""
+
+    status: OfferStatus
+    fits_now: bool
+    fits_after: bool
+    offers: int
+
+
+@dataclass(frozen=True)
+class CriteriaPreview:
+    """What a change to a profile would do. Source of truth:
+    specs/inbox/criteria_previews.feature."""
+
+    entering_pending: int
+    leaving_pending: int
+    promoted_filtered: int
+    discarded_filtered: int
+
+
+def preview_criteria(changes: Iterable[FitChange]) -> CriteriaPreview:
+    counts: Counter[tuple[OfferStatus, bool]] = Counter()
+    for change in changes:
+        if change.fits_now != change.fits_after:
+            counts[change.status, change.fits_after] += change.offers
+    return CriteriaPreview(
+        entering_pending=counts[OfferStatus.PENDING, True],
+        leaving_pending=counts[OfferStatus.PENDING, False],
+        promoted_filtered=counts[OfferStatus.PROMOTED, False],
+        discarded_filtered=counts[OfferStatus.DISCARDED, False],
+    )
 
 
 class DiscardReason(StrEnum):
@@ -274,13 +329,18 @@ def filter_reason(matches: Sequence[ProfileMatch], *, has_description: bool) -> 
     return FilterReason(terms.search_profile_id, terms.name, has_description, rules)
 
 
-def count_filtered(reasons: Iterable[FilterReason]) -> FilteredCounts:
+def count_filtered(
+    reasons: Iterable[FilterReason], reviews: Iterable[ReviewMade]
+) -> FilteredCounts:
     filtered = [reason for reason in reasons if reason.failed]
     failing = Counter(rule for reason in filtered for rule in reason.failed)
+    reviewed = [made.review for made in reviews if is_near_miss(made.rules)]
     return FilteredCounts(
         filtered=len(filtered),
         near_misses=sum(reason.near_miss for reason in filtered),
         failing=dict(failing),
+        reviewed_near_misses=len(reviewed),
+        rescued_near_misses=reviewed.count(Review.RESCUED),
     )
 
 
@@ -325,6 +385,14 @@ def duplicate_key(company: str, title: str) -> str:
 class InvalidOfferStatusError(DomainError):
     slug = "invalid-offer-status"
     title = "Invalid offer status"
+    status = HTTPStatus.CONFLICT
+
+
+class OfferNotFilteredError(DomainError):
+    """Only a filtered offer (pending, imported and fitting no profile) can be reviewed."""
+
+    slug = "offer-not-filtered"
+    title = "Offer not filtered"
     status = HTTPStatus.CONFLICT
 
 
