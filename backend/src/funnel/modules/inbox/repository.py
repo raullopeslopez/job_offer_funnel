@@ -1,4 +1,5 @@
 from collections.abc import Collection, Sequence
+from dataclasses import replace
 from typing import Any, cast
 from uuid import UUID, uuid7
 
@@ -32,6 +33,9 @@ from funnel.modules.inbox.domain import (
     OfferStatus,
     ProfileMatch,
     Reading,
+    Review,
+    ReviewMade,
+    Rule,
     UnknownJobBoardError,
     WordHits,
     filter_reason,
@@ -191,9 +195,12 @@ class OfferRepository:
         """The filter reason of each pending imported offer the condition selects. The
         database finds the words; the domain decides the rules and the reference profile."""
         words = await self._session.execute(
-            select(OfferRow.id, OfferRow.description != "", *_word_columns(profiles)).where(
-                _HAS_REASON, condition
-            )
+            select(
+                OfferRow.id,
+                OfferRow.description != "",
+                OfferRow.review.is_not_distinct_from(Review.RIGHTLY_FILTERED),
+                *_word_columns(profiles),
+            ).where(_HAS_REASON, condition)
         )
         readings = {
             (row.offer_id, row.location): _reading(row)
@@ -204,15 +211,26 @@ class OfferRepository:
             )
         }
         return {
-            offer_id: filter_reason(
-                [
-                    ProfileMatch(terms, hits, readings.get((offer_id, terms.location)))
-                    for terms, hits in zip(profiles, _word_hits(profiles, flags), strict=True)
-                ],
-                has_description=has_description,
+            offer_id: replace(
+                filter_reason(
+                    [
+                        ProfileMatch(terms, hits, readings.get((offer_id, terms.location)))
+                        for terms, hits in zip(profiles, _word_hits(profiles, flags), strict=True)
+                    ],
+                    has_description=has_description,
+                ),
+                is_rightly_filtered=is_rightly_filtered,
             )
-            for offer_id, has_description, *flags in words
+            for offer_id, has_description, is_rightly_filtered, *flags in words
         }
+
+    async def all_reviews(self) -> list[ReviewMade]:
+        rows = await self._session.execute(
+            select(OfferRow.review, OfferRow.review_rules).where(OfferRow.review.is_not(None))
+        )
+        return [
+            ReviewMade(Review(review), [Rule(rule) for rule in rules]) for review, rules in rows
+        ]
 
     async def save(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
         await self._session.flush()

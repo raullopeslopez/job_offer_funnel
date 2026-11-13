@@ -851,12 +851,24 @@
             "description": "Filtered offers that are near misses.",
             "title": "Near Misses",
             "type": "integer"
+          },
+          "rescued_near_misses": {
+            "description": "Of those, the ones rescued.",
+            "title": "Rescued Near Misses",
+            "type": "integer"
+          },
+          "reviewed_near_misses": {
+            "description": "Offers ever reviewed (rescued or marked rightly filtered) while they were near misses, whatever their status now.",
+            "title": "Reviewed Near Misses",
+            "type": "integer"
           }
         },
         "required": [
           "filtered",
           "near_misses",
-          "failing"
+          "failing",
+          "reviewed_near_misses",
+          "rescued_near_misses"
         ],
         "title": "FilteredCountsRead",
         "type": "object"
@@ -1415,6 +1427,25 @@
             "title": "Readings",
             "type": "array"
           },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Review"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`rescued`: promoted while filtered; `rightly_filtered`: marked so while filtered, and no longer a near miss."
+          },
+          "review_rules": {
+            "description": "The rules that filtered it when reviewed.",
+            "items": {
+              "$ref": "#/components/schemas/Rule"
+            },
+            "title": "Review Rules",
+            "type": "array"
+          },
           "status": {
             "$ref": "#/components/schemas/OfferStatus"
           },
@@ -1466,6 +1497,8 @@
           "discard_reason",
           "discard_word",
           "application_id",
+          "review",
+          "review_rules",
           "watched_company_id",
           "watched_company_name",
           "created_at"
@@ -1894,6 +1927,15 @@
         ],
         "title": "ReadingRead",
         "type": "object"
+      },
+      "Review": {
+        "description": "What the user did with a filtered offer: promoted it, or left it filtered.",
+        "enum": [
+          "rescued",
+          "rightly_filtered"
+        ],
+        "title": "Review",
+        "type": "string"
       },
       "Rule": {
         "description": "The rules an imported offer is checked against to fit a search profile.",
@@ -4807,6 +4849,145 @@
           }
         ],
         "summary": "Promote Offer",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/{offer_id}/rightly-filtered": {
+      "delete": {
+        "description": "Undo the mark; nothing changes if the offer is not marked rightly filtered.",
+        "operationId": "unmark_rightly_filtered_api_v1_offers__offer_id__rightly_filtered_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Offer does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unmark Rightly Filtered",
+        "tags": [
+          "inbox"
+        ]
+      },
+      "post": {
+        "description": "Keep a filtered offer filtered, as reviewed: it is no longer a near miss.",
+        "operationId": "mark_rightly_filtered_api_v1_offers__offer_id__rightly_filtered_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Offer does not exist"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "The offer is not filtered (`offer-not-filtered`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark Rightly Filtered",
         "tags": [
           "inbox"
         ]

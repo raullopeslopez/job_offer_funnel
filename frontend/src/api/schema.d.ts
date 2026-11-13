@@ -450,6 +450,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/{offer_id}/rightly-filtered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Rightly Filtered
+         * @description Keep a filtered offer filtered, as reviewed: it is no longer a near miss.
+         */
+        post: operations["mark_rightly_filtered_api_v1_offers__offer_id__rightly_filtered_post"];
+        /**
+         * Unmark Rightly Filtered
+         * @description Undo the mark; nothing changes if the offer is not marked rightly filtered.
+         */
+        delete: operations["unmark_rightly_filtered_api_v1_offers__offer_id__rightly_filtered_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/search-profiles": {
         parameters: {
             query?: never;
@@ -984,6 +1008,16 @@ export interface components {
              * @description Filtered offers that are near misses.
              */
             near_misses: number;
+            /**
+             * Rescued Near Misses
+             * @description Of those, the ones rescued.
+             */
+            rescued_near_misses: number;
+            /**
+             * Reviewed Near Misses
+             * @description Offers ever reviewed (rescued or marked rightly filtered) while they were near misses, whatever their status now.
+             */
+            reviewed_near_misses: number;
         };
         /** GeneratedSearchRead */
         GeneratedSearchRead: {
@@ -1209,6 +1243,13 @@ export interface components {
              * @description What its description says, once read, for each profile location.
              */
             readings: components["schemas"]["ReadingRead"][];
+            /** @description `rescued`: promoted while filtered; `rightly_filtered`: marked so while filtered, and no longer a near miss. */
+            review: components["schemas"]["Review"] | null;
+            /**
+             * Review Rules
+             * @description The rules that filtered it when reviewed.
+             */
+            review_rules: components["schemas"]["Rule"][];
             status: components["schemas"]["OfferStatus"];
             /** Title */
             title: string;
@@ -1396,6 +1437,12 @@ export interface components {
             /** Work Mode Evidence */
             work_mode_evidence: string | null;
         };
+        /**
+         * Review
+         * @description What the user did with a filtered offer: promoted it, or left it filtered.
+         * @enum {string}
+         */
+        Review: "rescued" | "rightly_filtered";
         /**
          * Rule
          * @description The rules an imported offer is checked against to fit a search profile.
@@ -3168,6 +3215,111 @@ export interface operations {
             };
             /** @description Not allowed in the offer's current status (`invalid-offer-status`) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    mark_rightly_filtered_api_v1_offers__offer_id__rightly_filtered_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Offer does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description The offer is not filtered (`offer-not-filtered`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    unmark_rightly_filtered_api_v1_offers__offer_id__rightly_filtered_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Offer does not exist */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

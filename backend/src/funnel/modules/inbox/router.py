@@ -189,7 +189,11 @@ async def count_filtered_offers(service: Service) -> FilteredCountsRead:
     each rule of their filter reason."""
     counts = await service.count_filtered()
     return FilteredCountsRead(
-        filtered=counts.filtered, near_misses=counts.near_misses, failing=dict(counts.failing)
+        filtered=counts.filtered,
+        near_misses=counts.near_misses,
+        failing=dict(counts.failing),
+        reviewed_near_misses=counts.reviewed_near_misses,
+        rescued_near_misses=counts.rescued_near_misses,
     )
 
 
@@ -226,6 +230,33 @@ async def discard_offer(offer_id: UUID, discard: DiscardCreate, service: Service
 async def restore_offer(offer_id: UUID, service: Service) -> None:
     """Undo the discard: the offer is pending again."""
     await service.restore(offer_id)
+
+
+@offers_router.post(
+    "/{offer_id}/rightly-filtered",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        **_NOT_FOUND,
+        HTTPStatus.CONFLICT: {
+            "model": ProblemRead,
+            "description": "The offer is not filtered (`offer-not-filtered`)",
+        },
+    },
+)
+async def mark_rightly_filtered(offer_id: UUID, service: Service) -> OfferRead:
+    """Keep a filtered offer filtered, as reviewed: it is no longer a near miss."""
+    marked = await service.mark_rightly_filtered(offer_id)
+    return OfferRead.model_validate(marked, from_attributes=True)
+
+
+@offers_router.delete(
+    "/{offer_id}/rightly-filtered",
+    status_code=HTTPStatus.NO_CONTENT,
+    responses=_NOT_FOUND,
+)
+async def unmark_rightly_filtered(offer_id: UUID, service: Service) -> None:
+    """Undo the mark; nothing changes if the offer is not marked rightly filtered."""
+    await service.unmark_rightly_filtered(offer_id)
 
 
 @offers_router.post(
