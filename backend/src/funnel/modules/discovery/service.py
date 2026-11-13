@@ -54,6 +54,8 @@ class SearchProfileService:
                 row.excluded_keywords,
                 row.location,
                 [WorkMode(mode) for mode in row.work_modes],
+                row.id,
+                row.name,
             )
             for row in await self._repository.list_all()
         ]

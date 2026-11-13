@@ -6,7 +6,8 @@ specs/inbox/offer_readings.feature.
 
 import html
 import re
-from collections.abc import Mapping, Sequence
+from collections import Counter
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -15,7 +16,7 @@ from typing import Final
 from uuid import UUID
 
 from funnel.core.exceptions import AppError, DomainError
-from funnel.modules.discovery.domain import Feed, WorkMode
+from funnel.modules.discovery.domain import Feed, SearchTerms, WorkMode
 
 
 class OfferStatus(StrEnum):
@@ -166,6 +167,101 @@ def supported(answer: Reading, text: str, *, asked_location: bool) -> Reading:
         admits_location_evidence=admits if answer.admits_location is not None else None,
         stable=answer.stable if stable else None,
         stable_evidence=stable if answer.stable is not None else None,
+    )
+
+
+@dataclass(frozen=True)
+class WordHits:
+    """The words of a search profile that appear in an offer, as the database finds them:
+    titles and excluded keywords in its title, keywords in its title or description."""
+
+    titles: Sequence[str] = ()
+    keywords: Sequence[str] = ()
+    excluded: Sequence[str] = ()
+
+
+@dataclass(frozen=True)
+class ProfileMatch:
+    """An offer against one search profile: its words and its reading for the profile's
+    location, if it was read for it."""
+
+    terms: SearchTerms
+    hits: WordHits
+    reading: Reading | None = None
+
+
+def _result(passes: bool | None) -> RuleResult:
+    if passes is None:
+        return RuleResult.UNKNOWN
+    return RuleResult.PASSED if passes else RuleResult.FAILED
+
+
+def check_rules(match: ProfileMatch) -> list[RuleCheck]:
+    """The rules the profile asks for: title and stable always, the others when it has
+    some. Only what the reading says can fail a reading rule."""
+    terms, hits, reading = match.terms, match.hits, match.reading or Reading()
+    checks = [RuleCheck(Rule.TITLE, _result(bool(hits.titles)), found=hits.titles)]
+    if terms.keywords:
+        missing = [keyword for keyword in terms.keywords if keyword not in hits.keywords]
+        checks.append(
+            RuleCheck(Rule.KEYWORDS, _result(not missing), found=hits.keywords, missing=missing)
+        )
+    if terms.excluded_keywords:
+        checks.append(RuleCheck(Rule.EXCLUDED, _result(not hits.excluded), found=hits.excluded))
+    if terms.work_modes:
+        mode = reading.work_mode
+        checks.append(
+            RuleCheck(
+                Rule.WORK_MODE,
+                _result(None if mode is None else mode in terms.work_modes),
+                value=mode,
+                evidence=reading.work_mode_evidence,
+            )
+        )
+    if terms.location is not None:
+        admits = reading.admits_location
+        checks.append(
+            RuleCheck(
+                Rule.LOCATION,
+                _result(admits),
+                value=admits,
+                evidence=reading.admits_location_evidence,
+            )
+        )
+    checks.append(
+        RuleCheck(
+            Rule.STABLE,
+            _result(reading.stable),
+            value=reading.stable,
+            evidence=reading.stable_evidence,
+        )
+    )
+    return checks
+
+
+def filter_reason(matches: Sequence[ProfileMatch], *, has_description: bool) -> FilterReason:
+    """Against the reference profile: the one whose rules the offer fails the fewest times;
+    on a tie, the first by name. Without profiles, the title fails."""
+    if not matches:
+        return FilterReason(None, None, has_description, [RuleCheck(Rule.TITLE, RuleResult.FAILED)])
+    checked = [(match.terms, check_rules(match)) for match in matches]
+    terms, rules = min(
+        checked,
+        key=lambda pair: (
+            sum(check.result is RuleResult.FAILED for check in pair[1]),
+            pair[0].name.casefold(),
+        ),
+    )
+    return FilterReason(terms.search_profile_id, terms.name, has_description, rules)
+
+
+def count_filtered(reasons: Iterable[FilterReason]) -> FilteredCounts:
+    filtered = [reason for reason in reasons if reason.failed]
+    failing = Counter(rule for reason in filtered for rule in reason.failed)
+    return FilteredCounts(
+        filtered=len(filtered),
+        near_misses=sum(reason.near_miss for reason in filtered),
+        failing=dict(failing),
     )
 
 

@@ -32,6 +32,7 @@ from funnel.modules.inbox.domain import (
     OfferReaderUnavailableError,
     OfferStatus,
     OfferText,
+    count_filtered,
     duplicate_key,
     next_status,
     plain_text,
@@ -85,12 +86,11 @@ class OfferService:
         self, offer_filter: OfferFilter, page: PageParams
     ) -> tuple[list[OfferRow], int]:
         profiles = await self._profiles.all_terms()
-        return await self._repository.list_page(
-            offer_filter.status, offer_filter.is_filtered, page, profiles
-        )
+        return await self._repository.list_page(offer_filter, page, profiles)
 
     async def count_filtered(self) -> FilteredCounts:
-        raise NotImplementedError
+        profiles = await self._profiles.all_terms()
+        return count_filtered(await self._repository.all_reasons(profiles))
 
     async def discard(self, offer_id: UUID, reason: str | None) -> OfferRow:
         offer = await self.get(offer_id)

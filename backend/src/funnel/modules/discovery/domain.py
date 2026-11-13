@@ -10,6 +10,7 @@ from enum import StrEnum
 from http import HTTPStatus
 from typing import Final
 from urllib.parse import quote
+from uuid import UUID
 
 from funnel.core.exceptions import AppError
 
@@ -91,6 +92,9 @@ class SearchTerms:
     excluded_keywords: Sequence[str]  # none of them
     location: str | None = None
     work_modes: Sequence[WorkMode] = ()  # any of them; none means any
+    # Which profile: an offer's filter reason names the one it is checked against.
+    search_profile_id: UUID | None = None
+    name: str = ""
 
 
 @dataclass(frozen=True)

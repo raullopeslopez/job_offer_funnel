@@ -10,6 +10,14 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Filter reasons: every pending imported offer has a `filter_reason` with the result of
+  each rule (`title`, `keywords`, `excluded`, `work_mode`, `location`, `stable`: `passed`,
+  `unknown` or `failed`) against its reference profile, the one whose rules it fails the
+  fewest times, with what explains it: the words found and missing, or the value read and
+  its evidence. It also says whether the offer has a description, and whether it is a
+  `near_miss` (filtered, its title passes and it fails a single rule). The offers can be
+  listed by `near_miss` and by `failed_rule`, and `GET /api/v1/offers/filtered-counts`
+  counts the filtered offers, the near misses and the offers failing each rule.
 - Offer readings: `POST /api/v1/offers/readings` has an offer reader (a language model)
   read the description of up to 5 pending imported offers that fit a search profile by
   its words, and answers how many it read, failed on and left. A reading says the offer's

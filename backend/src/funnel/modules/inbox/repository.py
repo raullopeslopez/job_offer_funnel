@@ -13,6 +13,7 @@ from sqlalchemy import (
     not_,
     or_,
     select,
+    true,
     update,
 )
 from sqlalchemy.dialects.postgresql import insert
@@ -26,9 +27,14 @@ from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import (
     EXPIRED_REASON,
+    FilterReason,
+    OfferFilter,
     OfferStatus,
+    ProfileMatch,
     Reading,
     UnknownJobBoardError,
+    WordHits,
+    filter_reason,
 )
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
@@ -62,19 +68,64 @@ def _fits(terms: SearchTerms) -> ColumnElement[bool]:
     return and_(_fits_words(terms), not_(_contradicted(terms)))
 
 
+def _in_title(word: str) -> ColumnElement[bool]:
+    return OfferRow.title.icontains(word, autoescape=True)
+
+
+def _in_text(word: str) -> ColumnElement[bool]:
+    text = OfferRow.title + " " + func.coalesce(OfferRow.description, "")
+    return text.icontains(word, autoescape=True)
+
+
 def _fits_words(terms: SearchTerms) -> ColumnElement[bool]:
     """A title in the offer's title, every keyword in title or description, no exclusion
     in the title; ignoring case. Exclusions skip the description: a passing mention of an
     excluded word there would drop good offers."""
-    text = OfferRow.title + " " + func.coalesce(OfferRow.description, "")
     return and_(
-        or_(false(), *(OfferRow.title.icontains(title, autoescape=True) for title in terms.titles)),
-        *(text.icontains(keyword, autoescape=True) for keyword in terms.keywords),
-        *(
-            not_(OfferRow.title.icontains(excluded, autoescape=True))
-            for excluded in terms.excluded_keywords
-        ),
+        or_(false(), *(_in_title(title) for title in terms.titles)),
+        *(_in_text(keyword) for keyword in terms.keywords),
+        *(not_(_in_title(excluded)) for excluded in terms.excluded_keywords),
     )
+
+
+def _word_columns(profiles: Sequence[SearchTerms]) -> list[ColumnElement[bool]]:
+    """Whether each word of each profile is in the offer, in the order _word_hits reads."""
+    return [
+        column
+        for terms in profiles
+        for column in (
+            *(_in_title(title) for title in terms.titles),
+            *(_in_text(keyword) for keyword in terms.keywords),
+            *(_in_title(excluded) for excluded in terms.excluded_keywords),
+        )
+    ]
+
+
+def _word_hits(profiles: Sequence[SearchTerms], flags: Sequence[bool]) -> list[WordHits]:
+    found = iter(flags)
+    return [
+        WordHits(
+            titles=[title for title in terms.titles if next(found)],
+            keywords=[keyword for keyword in terms.keywords if next(found)],
+            excluded=[excluded for excluded in terms.excluded_keywords if next(found)],
+        )
+        for terms in profiles
+    ]
+
+
+def _reading(row: OfferReadingRow) -> Reading:
+    return Reading(
+        work_mode=row.work_mode,
+        work_mode_evidence=row.work_mode_evidence,
+        admits_location=row.admits_location,
+        admits_location_evidence=row.admits_location_evidence,
+        stable=row.stable,
+        stable_evidence=row.stable_evidence,
+    )
+
+
+# Only pending imported offers have a filter reason.
+_HAS_REASON = and_(OfferRow.status == OfferStatus.PENDING, OfferRow.description.is_not(None))
 
 
 def filtered(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
@@ -120,7 +171,48 @@ class OfferRepository:
         found: OfferRow | None = await self._session.scalar(
             _select_offers(profiles).where(OfferRow.id == offer_id)
         )
+        if found is not None:
+            await self._set_reasons([found], profiles)
         return found
+
+    async def all_reasons(self, profiles: Sequence[SearchTerms]) -> list[FilterReason]:
+        return list((await self._reasons(true(), profiles)).values())
+
+    async def _set_reasons(
+        self, offers: Sequence[OfferRow], profiles: Sequence[SearchTerms]
+    ) -> None:
+        reasons = await self._reasons(OfferRow.id.in_([offer.id for offer in offers]), profiles)
+        for offer in offers:
+            offer.filter_reason = reasons.get(offer.id)
+
+    async def _reasons(
+        self, condition: ColumnElement[bool], profiles: Sequence[SearchTerms]
+    ) -> dict[UUID, FilterReason]:
+        """The filter reason of each pending imported offer the condition selects. The
+        database finds the words; the domain decides the rules and the reference profile."""
+        words = await self._session.execute(
+            select(OfferRow.id, OfferRow.description != "", *_word_columns(profiles)).where(
+                _HAS_REASON, condition
+            )
+        )
+        readings = {
+            (row.offer_id, row.location): _reading(row)
+            for row in await self._session.scalars(
+                select(OfferReadingRow)
+                .join(OfferRow, OfferRow.id == OfferReadingRow.offer_id)
+                .where(_HAS_REASON, condition)
+            )
+        }
+        return {
+            offer_id: filter_reason(
+                [
+                    ProfileMatch(terms, hits, readings.get((offer_id, terms.location)))
+                    for terms, hits in zip(profiles, _word_hits(profiles, flags), strict=True)
+                ],
+                has_description=has_description,
+            )
+            for offer_id, has_description, *flags in words
+        }
 
     async def save(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
         await self._session.flush()
@@ -133,30 +225,50 @@ class OfferRepository:
         assert reloaded is not None
         return reloaded
 
-    async def list_page(  # noqa: PLR0913, PLR0917  # two filters, the page and the profiles
-        self,
-        status: OfferStatus | None,
-        is_filtered: bool | None,
-        page: PageParams,
-        profiles: Sequence[SearchTerms],
+    async def list_page(
+        self, offer_filter: OfferFilter, page: PageParams, profiles: Sequence[SearchTerms]
     ) -> tuple[list[OfferRow], int]:
-        conditions: list[ColumnElement[bool]] = []
-        if status is not None:
-            conditions.append(OfferRow.status == status)
-        if is_filtered is not None:
-            condition = filtered(profiles)
-            conditions.append(condition if is_filtered else not_(condition))
-        rows = await self._session.scalars(
-            _select_offers(profiles)
-            .where(*conditions)
-            .order_by(OfferRow.created_at.desc(), OfferRow.id.desc())
-            .limit(page.limit)
-            .offset(page.offset)
+        conditions = await self._conditions(offer_filter, profiles)
+        rows = list(
+            await self._session.scalars(
+                _select_offers(profiles)
+                .where(*conditions)
+                .order_by(OfferRow.created_at.desc(), OfferRow.id.desc())
+                .limit(page.limit)
+                .offset(page.offset)
+            )
         )
+        await self._set_reasons(rows, profiles)
         total = await self._session.scalar(
             select(func.count()).select_from(OfferRow).where(*conditions)
         )
-        return list(rows), total or 0
+        return rows, total or 0
+
+    async def _conditions(
+        self, offer_filter: OfferFilter, profiles: Sequence[SearchTerms]
+    ) -> list[ColumnElement[bool]]:
+        conditions: list[ColumnElement[bool]] = []
+        if offer_filter.status is not None:
+            conditions.append(OfferRow.status == offer_filter.status)
+        if offer_filter.is_filtered is not None:
+            condition = filtered(profiles)
+            conditions.append(condition if offer_filter.is_filtered else not_(condition))
+        if offer_filter.is_near_miss is None and offer_filter.failed_rule is None:
+            return conditions
+        # Near misses and failed rules are decided by the domain, so they filter by id.
+        reasons = await self._reasons(true(), profiles)
+        if offer_filter.is_near_miss is not None:
+            near_misses = [offer_id for offer_id, reason in reasons.items() if reason.near_miss]
+            in_near_misses = OfferRow.id.in_(near_misses)
+            conditions.append(in_near_misses if offer_filter.is_near_miss else not_(in_near_misses))
+        if offer_filter.failed_rule is not None:
+            failing = [
+                offer_id
+                for offer_id, reason in reasons.items()
+                if offer_filter.failed_rule in reason.failed
+            ]
+            conditions.append(OfferRow.id.in_(failing))
+        return conditions
 
 
 class ReadingRepository:

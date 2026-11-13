@@ -288,6 +288,10 @@ def then_no_reading_for(client: TestClient, title: str, location: str) -> None:
 def then_filtered(state: ScenarioState, which: str) -> None:
     assert state.offer is not None
     assert state.offer["filtered"] is (which == "filtered")
+    # The filter reason never contradicts it (specs/inbox/filter_reasons.feature).
+    reason = state.offer["filter_reason"]
+    failed = reason is not None and any(r["result"] == "failed" for r in reason["rules"])
+    assert failed is state.offer["filtered"]
 
 
 @then("it is rejected because the offer reader is not available")
