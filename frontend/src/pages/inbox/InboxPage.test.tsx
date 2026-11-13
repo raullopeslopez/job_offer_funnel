@@ -1,6 +1,6 @@
 import { ThemeProvider } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -51,6 +51,8 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   discard_reason: null,
   discard_word: null,
   application_id: null,
+  review: null,
+  review_rules: [],
   watched_company_id: null,
   watched_company_name: null,
   created_at: new Date().toISOString(),
@@ -505,6 +507,48 @@ describe("InboxPage maybe", () => {
     // Assert
     expect(await screen.findByText("Application created")).toBeInTheDocument();
     expect(promoted).toEqual({ offerId: candidate.id, channel: "portal" });
+  });
+});
+
+// specs/ui/inbox.feature: "Mark a near miss as rightly filtered".
+describe("InboxPage rightly filtered", () => {
+  type User = ReturnType<typeof userEvent.setup>;
+  const shown = async () => {};
+  const showGroup = (user: User, region: HTMLElement) =>
+    user.click(within(region).getByRole("button", { name: "Show" }));
+  it.each([
+    ["Maybe", "/inbox", shown],
+    ["A word you exclude", "/inbox?status=filtered", showGroup],
+  ])("marks a near miss in %s as rightly filtered", async (group, path, open) => {
+    // Arrange
+    const user = userEvent.setup();
+    const candidate = nearMiss(
+      "Junior Backend Engineer",
+      rule("excluded", "failed", { found: ["Junior"] }),
+    );
+    inboxWith([candidate]);
+    let marked: unknown = null;
+    server.use(
+      http.post("/api/v1/offers/:offerId/rightly-filtered", ({ params }) => {
+        marked = params.offerId;
+        if (candidate.filter_reason) candidate.filter_reason.near_miss = false;
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderInbox(path);
+    const region = await screen.findByRole("region", { name: group });
+    await open(user, region);
+
+    // Act
+    await user.click(within(region).getByRole("button", { name: "Rightly filtered" }));
+
+    // Assert
+    expect(await screen.findByText("Marked as rightly filtered")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+    expect(marked).toBe(candidate.id);
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: group })).not.toBeInTheDocument(),
+    );
   });
 });
 

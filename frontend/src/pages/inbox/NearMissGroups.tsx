@@ -8,7 +8,7 @@ import { RuleCell } from "../../components/RuleCell";
 import { SourceTag } from "../../components/SourceTag";
 import { mono, offerShape } from "../../theme";
 import { breakdown, NEAR_MISS_GROUPS, ruleCells } from "./filterRules";
-import { nearMissesQuery } from "./MaybeGroup";
+import { type NearMissActions, NearMissButtons, nearMissesQuery } from "./MaybeGroup";
 import type { OfferContext } from "./OfferList";
 import { Evidence } from "./OfferStrip";
 import type { Offer } from "./types";
@@ -25,10 +25,10 @@ export const filteredCountsQuery = {
   },
 };
 
-type Props = OfferContext & { onPromote: (offer: Offer) => void };
+type Props = OfferContext & NearMissActions;
 
 // "One rule away": the near misses grouped by the rule that filtered them.
-export function NearMissGroups({ onPromote, ...context }: Props) {
+export function NearMissGroups({ onPromote, onRightlyFiltered, ...context }: Props) {
   const counts = useQuery(filteredCountsQuery);
   const groups = useQueries({
     queries: NEAR_MISS_GROUPS.map(({ rule }) => nearMissesQuery(GROUP_LIMIT, rule)),
@@ -49,7 +49,7 @@ export function NearMissGroups({ onPromote, ...context }: Props) {
               breakdown={breakdown(page.items, rule, context.profiles)}
               offers={page.items}
               context={context}
-              onPromote={onPromote}
+              actions={{ onPromote, onRightlyFiltered }}
             />
           );
         })}
@@ -64,10 +64,10 @@ type GroupProps = {
   breakdown: string;
   offers: Offer[];
   context: OfferContext;
-  onPromote: (offer: Offer) => void;
+  actions: NearMissActions;
 };
 
-function NearMissGroup({ label, total, breakdown, offers, context, onPromote }: GroupProps) {
+function NearMissGroup({ label, total, breakdown, offers, context, actions }: GroupProps) {
   const [open, setOpen] = useState(false);
   return (
     <Box
@@ -96,7 +96,7 @@ function NearMissGroup({ label, total, breakdown, offers, context, onPromote }: 
       {open && (
         <Stack spacing={1} sx={{ mt: 2 }}>
           {offers.map((offer) => (
-            <NearMissRow key={offer.id} offer={offer} context={context} onPromote={onPromote} />
+            <NearMissRow key={offer.id} offer={offer} context={context} actions={actions} />
           ))}
         </Stack>
       )}
@@ -104,10 +104,10 @@ function NearMissGroup({ label, total, breakdown, offers, context, onPromote }: 
   );
 }
 
-type RowProps = { offer: Offer; context: OfferContext; onPromote: (offer: Offer) => void };
+type RowProps = { offer: Offer; context: OfferContext; actions: NearMissActions };
 
 // A near miss in a compact row: its source, title and company, the cell of its rule.
-function NearMissRow({ offer, context, onPromote }: RowProps) {
+function NearMissRow({ offer, context, actions }: RowProps) {
   const reason = offer.filter_reason;
   const profile = context.profiles.find((p) => p.id === reason?.search_profile_id);
   const cells = reason ? ruleCells(reason, profile) : [];
@@ -143,9 +143,9 @@ function NearMissRow({ offer, context, onPromote }: RowProps) {
             <RuleCell label={failed.label} value={failed.value} state={failed.state} />
           </Box>
         )}
-        <Button variant="outlined" onClick={() => onPromote(offer)}>
-          Promote anyway
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <NearMissButtons offer={offer} {...actions} />
+        </Stack>
       </Stack>
       <Evidence cells={cells} />
     </Box>

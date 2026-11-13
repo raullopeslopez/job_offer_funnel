@@ -10,6 +10,15 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Rescues and rightly filtered offers: promoting a filtered offer records it as a rescue
+  (`review: rescued`) with the rules that filtered it then (`review_rules`).
+  `POST /api/v1/offers/{offer_id}/rightly-filtered` marks a filtered offer as reviewed
+  (`review: rightly_filtered`): it stays filtered but is no longer a near miss
+  (`offer-not-filtered` if it is not filtered); `DELETE` on the same path undoes it.
+  `GET /api/v1/offers/filtered-counts` also counts the near misses ever reviewed
+  (`reviewed_near_misses`) and those rescued (`rescued_near_misses`).
+- Inbox: "Rightly filtered" next to "Promote anyway" in "Maybe" and in the groups of the
+  filtered view takes the offer out of the group, with "Undo" in the notice.
 - Inbox: every imported offer shows its five rules (Title, Keywords, Mode, Location,
   Contract) with the value that passed each one, "Not stated" when unknown, "Any" when the
   profile does not ask for it, or the value against what the profile asks and the sentence

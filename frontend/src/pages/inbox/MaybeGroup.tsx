@@ -33,10 +33,31 @@ export function nearMissesQuery(limit: number, failedRule?: Rule) {
   };
 }
 
-type Props = OfferContext & { onPromote: (offer: Offer) => void };
+export type NearMissActions = {
+  onPromote: (offer: Offer) => void;
+  onRightlyFiltered: (offer: Offer) => void;
+};
+
+/** What can be done with a near miss: promote it anyway, or leave it rightly filtered. */
+export function NearMissButtons({
+  offer,
+  onPromote,
+  onRightlyFiltered,
+}: NearMissActions & { offer: Offer }) {
+  return (
+    <>
+      <Button variant="outlined" onClick={() => onPromote(offer)}>
+        Promote anyway
+      </Button>
+      <Button onClick={() => onRightlyFiltered(offer)}>Rightly filtered</Button>
+    </>
+  );
+}
+
+type Props = OfferContext & NearMissActions;
 
 // The last group of the pending view: the three most recent near misses.
-export function MaybeGroup({ onPromote, ...context }: Props) {
+export function MaybeGroup({ onPromote, onRightlyFiltered, ...context }: Props) {
   const nearMisses = useQuery(nearMissesQuery(SHOWN));
   const page = nearMisses.data;
   if (!page || page.total === 0) return null;
@@ -63,9 +84,11 @@ export function MaybeGroup({ onPromote, ...context }: Props) {
             offer={offer}
             {...context}
             actions={
-              <Button variant="outlined" onClick={() => onPromote(offer)}>
-                Promote anyway
-              </Button>
+              <NearMissButtons
+                offer={offer}
+                onPromote={onPromote}
+                onRightlyFiltered={onRightlyFiltered}
+              />
             }
           />
         ))}
