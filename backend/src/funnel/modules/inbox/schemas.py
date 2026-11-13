@@ -1,13 +1,13 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Ats, OfferStatus, Rule, RuleResult
+from funnel.modules.inbox.domain import Ats, DiscardReason, OfferStatus, Rule, RuleResult
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -21,7 +21,23 @@ class OfferCreate(BaseModel):
 
 
 class DiscardCreate(BaseModel):
-    reason: Text | None = Field(default=None, examples=["Not remote"])
+    reason: DiscardReason = Field(
+        default=DiscardReason.NONE, description="Any but `expired`, which only the imports set."
+    )
+    word: Text | None = Field(
+        default=None,
+        description="With `title_word`, and only with it: the word of the title that does not "
+        "fit, ignoring case.",
+        examples=["Senior"],
+    )
+
+    @model_validator(mode="after")
+    def _check_reason(self) -> Self:
+        if self.reason is DiscardReason.EXPIRED:
+            raise ValueError("only the imports discard an offer as expired")
+        if (self.reason is DiscardReason.TITLE_WORD) != (self.word is not None):
+            raise ValueError("a word goes with the reason title_word, and only with it")
+        return self
 
 
 class PromotionCreate(BaseModel):
@@ -171,7 +187,8 @@ class OfferRead(BaseModel):
     readings: list[ReadingRead] = Field(
         description="What its description says, once read, for each profile location."
     )
-    discard_reason: str | None = Field(description="Set while the offer is discarded.")
+    discard_reason: DiscardReason | None = Field(description="Set while the offer is discarded.")
+    discard_word: str | None = Field(description="The word of the title, with `title_word`.")
     application_id: UUID | None = Field(description="Set once the offer is promoted.")
     watched_company_id: UUID | None = Field(
         description="The watched company it was imported from, if still watched."

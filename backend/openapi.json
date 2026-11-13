@@ -698,6 +698,11 @@
       "DiscardCreate": {
         "properties": {
           "reason": {
+            "$ref": "#/components/schemas/DiscardReason",
+            "default": "none",
+            "description": "Any but `expired`, which only the imports set."
+          },
+          "word": {
             "anyOf": [
               {
                 "maxLength": 200,
@@ -708,14 +713,29 @@
                 "type": "null"
               }
             ],
+            "description": "With `title_word`, and only with it: the word of the title that does not fit, ignoring case.",
             "examples": [
-              "Not remote"
+              "Senior"
             ],
-            "title": "Reason"
+            "title": "Word"
           }
         },
         "title": "DiscardCreate",
         "type": "object"
+      },
+      "DiscardReason": {
+        "description": "Why an offer was discarded. EXPIRED is only set by the imports.",
+        "enum": [
+          "title_word",
+          "stack",
+          "location",
+          "contract",
+          "company",
+          "none",
+          "expired"
+        ],
+        "title": "DiscardReason",
+        "type": "string"
       },
       "EmailAlert": {
         "description": "Job alert emails the app can read, one format each (see docs/fase0.md).",
@@ -1312,14 +1332,25 @@
           "discard_reason": {
             "anyOf": [
               {
+                "$ref": "#/components/schemas/DiscardReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set while the offer is discarded."
+          },
+          "discard_word": {
+            "anyOf": [
+              {
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Set while the offer is discarded.",
-            "title": "Discard Reason"
+            "description": "The word of the title, with `title_word`.",
+            "title": "Discard Word"
           },
           "filter_reason": {
             "anyOf": [
@@ -1433,6 +1464,7 @@
           "filter_reason",
           "readings",
           "discard_reason",
+          "discard_word",
           "application_id",
           "watched_company_id",
           "watched_company_name",
@@ -4596,7 +4628,7 @@
         ]
       },
       "post": {
-        "description": "Discard a pending offer, with an optional reason.",
+        "description": "Discard a pending offer with its reason; `none` when no other is given.",
         "operationId": "discard_offer_api_v1_offers__offer_id__discard_post",
         "parameters": [
           {
@@ -4665,11 +4697,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ValidationProblemRead"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationProblemRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemRead"
+                    }
+                  ],
+                  "title": "Response 422 Discard Offer Api V1 Offers  Offer Id  Discard Post"
                 }
               }
             },
-            "description": "Invalid request (`validation-error`)"
+            "description": "Invalid body (`validation-error`), or the word is not a word of the title (`word-not-in-title`)"
           }
         },
         "security": [

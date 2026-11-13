@@ -202,11 +202,19 @@ async def read_offer(offer_id: UUID, service: Service) -> OfferRead:
 @offers_router.post(
     "/{offer_id}/discard",
     status_code=HTTPStatus.CREATED,
-    responses={**_NOT_FOUND, **_WRONG_STATUS},
+    responses={
+        **_NOT_FOUND,
+        **_WRONG_STATUS,
+        HTTPStatus.UNPROCESSABLE_CONTENT: {
+            "model": ValidationProblemRead | ProblemRead,
+            "description": "Invalid body (`validation-error`), or the word is not a word of "
+            "the title (`word-not-in-title`)",
+        },
+    },
 )
 async def discard_offer(offer_id: UUID, discard: DiscardCreate, service: Service) -> OfferRead:
-    """Discard a pending offer, with an optional reason."""
-    discarded = await service.discard(offer_id, discard.reason)
+    """Discard a pending offer with its reason; `none` when no other is given."""
+    discarded = await service.discard(offer_id, discard.reason, discard.word)
     return OfferRead.model_validate(discarded, from_attributes=True)
 
 
