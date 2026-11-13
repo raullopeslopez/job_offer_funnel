@@ -688,9 +688,9 @@ describe("InboxPage exclusion proposal", () => {
   });
 
   it.each([
-    ["Only discard this one", []],
-    ["Discard and exclude “Lead”", [{ excluded_keywords: ["Senior", "Lead"] }]],
-  ])("%s discards the offer because of the word", async (choice, edits) => {
+    ["Only discard this one", false],
+    ["Discard and exclude “Lead”", true],
+  ])("%s discards the offer because of the word", async (choice, excludes) => {
     // Arrange
     const user = userEvent.setup();
     const candidate = lead();
@@ -703,11 +703,21 @@ describe("InboxPage exclusion proposal", () => {
         discarded.push({ offerId: params.offerId, ...((await request.json()) as object) });
         return HttpResponse.json({}, { status: 201 });
       }),
-      http.patch("/api/v1/search-profiles/:profileId", async ({ request }) => {
+      http.post("/api/v1/criteria-changes", async ({ request }) => {
         edited.push(await request.json());
-        return HttpResponse.json(BACKEND);
+        return HttpResponse.json({}, { status: 201 });
       }),
     );
+    // Through the change log (specs/inbox/criteria_changes.feature), from this offer.
+    const edits = excludes
+      ? [
+          {
+            search_profile_id: PROFILE_ID,
+            excluded_keywords: ["Senior", "Lead"],
+            offer_id: candidate.id,
+          },
+        ]
+      : [];
     renderInbox();
     await chooseWord(user, "Lead Backend Engineer", "Lead");
 

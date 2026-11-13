@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Annotated, Self
+from typing import Annotated, Any, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
@@ -12,6 +12,7 @@ from funnel.modules.inbox.domain import (
     Ats,
     DiscardReason,
     OfferStatus,
+    ProfileRule,
     Review,
     Rule,
     RuleResult,
@@ -185,6 +186,44 @@ class CriteriaPreviewCreate(SearchProfileUpdate):
     """The changes editing the profile would take, saving nothing. Its name changes nothing."""
 
     search_profile_id: UUID
+
+
+class CriteriaChangeCreate(CriteriaPreviewCreate):
+    """One rule of the profile, with its new value; the name cannot be changed here."""
+
+    offer_id: UUID | None = Field(default=None, description="The offer it came from.")
+
+    @model_validator(mode="after")
+    def _check_one_rule(self) -> Self:
+        if len(self.rules()) != 1 or "name" in self.model_fields_set:
+            raise ValueError(f"exactly one of {', '.join(ProfileRule)} changes")
+        return self
+
+    def rules(self) -> dict[ProfileRule, Any]:
+        """The rule sent, with its value as JSON."""
+        sent = self.model_dump(
+            mode="json", include={str(rule) for rule in ProfileRule}, exclude_unset=True
+        )
+        return {ProfileRule(rule): value for rule, value in sent.items()}
+
+
+# The value of a rule: a list of words or modes, or the location.
+RuleValue = list[str] | str | None
+
+
+class CriteriaChangeRead(BaseModel):
+    id: UUID
+    search_profile_id: UUID
+    search_profile_name: str
+    offer_id: UUID | None
+    rule: ProfileRule
+    before: RuleValue
+    after: RuleValue
+    entering_pending: int = Field(description="Pending offers it brought in when applied.")
+    leaving_pending: int = Field(description="Pending offers it took out when applied.")
+    promoted_filtered: int = Field(description="Promoted offers it would have filtered.")
+    discarded_filtered: int = Field(description="Discarded offers it would have filtered.")
+    created_at: datetime
 
 
 class CriteriaPreviewRead(BaseModel):

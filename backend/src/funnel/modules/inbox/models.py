@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 from uuid import UUID, uuid7
 
 from sqlalchemy import (
@@ -17,6 +18,7 @@ from sqlalchemy import (
     table,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     Mapped,
     column_property,
@@ -27,7 +29,14 @@ from sqlalchemy.orm import (
 
 from funnel.core.db import Base
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Ats, DiscardReason, FilterReason, OfferStatus, Review
+from funnel.modules.inbox.domain import (
+    Ats,
+    DiscardReason,
+    FilterReason,
+    OfferStatus,
+    ProfileRule,
+    Review,
+)
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
@@ -37,6 +46,7 @@ JOB_BOARD_FOREIGN_KEY = "fk_offers_job_board_id_job_boards"
 
 # Other modules' tables by name only: modules never import each other's models.
 _job_boards = table("job_boards", column("id"), column("name"))
+_search_profiles = table("search_profiles", column("id"), column("name"))
 
 
 def _enum_column_type(enum: type[StrEnum], column: str) -> Enum:
@@ -48,6 +58,36 @@ def _enum_column_type(enum: type[StrEnum], column: str) -> Enum:
         length=32,
         name=column,
         values_callable=lambda members: [member.value for member in members],
+    )
+
+
+class CriteriaChangeRow(Base):
+    """A change to one rule of a search profile, with what it did when applied."""
+
+    __tablename__ = "criteria_changes"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
+    search_profile_id: Mapped[UUID] = mapped_column(
+        ForeignKey("search_profiles.id", ondelete="CASCADE"), index=True
+    )
+    offer_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("offers.id", ondelete="SET NULL"), index=True
+    )
+    rule: Mapped[ProfileRule] = mapped_column(_enum_column_type(ProfileRule, "rule"))
+    # A list of words or modes, or the location (a string or null).
+    before: Mapped[Any] = mapped_column(JSONB(none_as_null=False))
+    after: Mapped[Any] = mapped_column(JSONB(none_as_null=False))
+    entering_pending: Mapped[int]
+    leaving_pending: Mapped[int]
+    promoted_filtered: Mapped[int]
+    discarded_filtered: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    search_profile_name: Mapped[str] = column_property(
+        select(_search_profiles.c.name)
+        .where(_search_profiles.c.id == search_profile_id)
+        .correlate_except(_search_profiles)
+        .scalar_subquery()
     )
 
 

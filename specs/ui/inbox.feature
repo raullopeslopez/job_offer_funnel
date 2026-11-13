@@ -337,7 +337,8 @@ Feature: Inbox screen
 
   # An offer with a filter reason checks the word against its reference profile: "A word
   # in the title" then proposes excluding the word from that profile, with what the change
-  # would do (specs/inbox/criteria_previews.feature), before discarding.
+  # would do (specs/inbox/criteria_previews.feature), before discarding. Excluding it is a
+  # criteria change made from the offer (specs/inbox/criteria_changes.feature).
 
   @component
   Scenario Outline: A word in the title of an imported offer proposes excluding it from its profile

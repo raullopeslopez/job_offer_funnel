@@ -10,6 +10,15 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Criteria changes: `POST /api/v1/criteria-changes` changes one rule of a search profile
+  (and only one: `validation-error` otherwise) and logs it with the rule before and after,
+  what it did when applied (the counts of a preview) and, with `offer_id`, the offer it
+  came from. `GET /api/v1/criteria-changes` lists them from the most recent;
+  `DELETE /api/v1/criteria-changes/{change_id}` undoes one, putting the rule back
+  (`rule-changed-since` if a later change edited the same rule). Editing a profile
+  directly is not logged.
+- Metrics: "Changes to your criteria" lists each change with what it did, and "Undo".
+  "Discard and exclude" in the inbox is logged as a change from that offer.
 - Offer quality: `GET /api/v1/offers/quality` measures the offers added in the last 4
   weeks, in total and week by week: precision (promoted ÷ decided from Pending, without
   rescues and expired offers), losses (near misses rescued ÷ reviewed, and how many are

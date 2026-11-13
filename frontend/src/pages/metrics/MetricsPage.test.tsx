@@ -1,12 +1,14 @@
 import { ThemeProvider } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter } from "react-router";
 import type { components } from "../../api/schema";
 import { server } from "../../test/server";
 import { theme } from "../../theme";
 import { formatRate } from "./ConversionSection";
+import { describeChange } from "./CriteriaChanges";
 import { MetricsPage } from "./MetricsPage";
 
 // specs/ui/metrics.feature: the funnel figures and the empty state are covered by the E2E;
@@ -158,8 +160,31 @@ function qualityOf(total: Figures, fields: Partial<Quality> = {}) {
     sources: [],
     ...fields,
   };
-  server.use(http.get("/api/v1/offers/quality", () => HttpResponse.json(quality)));
+  server.use(
+    http.get("/api/v1/offers/quality", () => HttpResponse.json(quality)),
+    http.get("/api/v1/criteria-changes", () => HttpResponse.json(changesPage([]))),
+  );
 }
+
+type Change = components["schemas"]["CriteriaChangeRead"];
+
+const changesPage = (items: Change[]) => ({ items, total: items.length, limit: 100, offset: 0 });
+
+const change = (fields: Partial<Change>): Change => ({
+  id: "0193a000-0000-7000-8000-000000000001",
+  search_profile_id: "0193a000-0000-7000-8000-000000000002",
+  search_profile_name: "Backend",
+  offer_id: null,
+  rule: "excluded_keywords",
+  before: ["Senior"],
+  after: ["Senior", "Lead"],
+  entering_pending: 0,
+  leaving_pending: 6,
+  promoted_filtered: 0,
+  discarded_filtered: 2,
+  created_at: new Date().toISOString(),
+  ...fields,
+});
 
 const card = async (label: string) => screen.findByRole("link", { name: label });
 
@@ -233,5 +258,54 @@ describe("MetricsPage offer quality", () => {
     ]);
     const row = within(screen.getByRole("table", { name: "By source" })).getAllByRole("row")[1];
     expect(row).toHaveTextContent("Remote OK5311");
+  });
+});
+
+describe("describeChange", () => {
+  it.each([
+    [change({}), "Excluded “Lead”"],
+    [change({ before: ["Senior", "Lead"], after: ["Senior"] }), "Stopped excluding “Lead”"],
+    [change({ rule: "titles", before: ["A"], after: ["A", "B"] }), "Added the title “B”"],
+    [change({ rule: "keywords", before: ["Go"], after: [] }), "Removed the keyword “Go”"],
+    [change({ rule: "location", before: null, after: "Spain" }), "Location: Spain"],
+    [change({ rule: "work_modes", before: ["remote"], after: [] }), "Any work mode"],
+  ])("describes %o as %s", (given, described) => {
+    // Act
+    const result = describeChange(given);
+
+    // Assert
+    expect(result).toBe(described);
+  });
+});
+
+// specs/ui/metrics.feature: "Changes to your criteria".
+describe("MetricsPage criteria changes", () => {
+  it("lists each change with what it did, and undoes it", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    qualityOf(figures());
+    const undone: unknown[] = [];
+    let changes = [change({})];
+    server.use(
+      http.get("/api/v1/criteria-changes", () => HttpResponse.json(changesPage(changes))),
+      http.delete("/api/v1/criteria-changes/:changeId", ({ params }) => {
+        undone.push(params.changeId);
+        changes = [];
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderPage("/metrics");
+    const list = await screen.findByRole("list", { name: "Changes to your criteria" });
+    expect(await within(list).findByText("Excluded “Lead”")).toBeInTheDocument();
+    expect(
+      within(list).getByText("Today · took 6 out of Pending · lost 0 promoted"),
+    ).toBeInTheDocument();
+
+    // Act
+    await user.click(within(list).getByRole("button", { name: "Undo" }));
+
+    // Assert
+    expect(undone).toEqual([change({}).id]);
+    expect(await screen.findByText("No changes yet.")).toBeInTheDocument();
   });
 });

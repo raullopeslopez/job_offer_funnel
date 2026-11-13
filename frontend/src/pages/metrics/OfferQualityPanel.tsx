@@ -17,6 +17,7 @@ import type { components } from "../../api/schema";
 import { mono } from "../../theme";
 import { DISCARD_REASON_LABELS } from "../inbox/discardReasons";
 import { formatRate } from "./ConversionSection";
+import { CriteriaChanges } from "./CriteriaChanges";
 
 type Quality = components["schemas"]["OfferQualityRead"];
 type Week = components["schemas"]["WeekQualityRead"];
@@ -178,6 +179,8 @@ export function OfferQualityPanel() {
           </Link>
         ))}
       </Paper>
+
+      <CriteriaChanges />
 
       <Typography variant="h6" component="h3" gutterBottom>
         Why you discard

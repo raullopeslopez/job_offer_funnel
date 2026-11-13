@@ -390,6 +390,25 @@ class InvalidOfferStatusError(DomainError):
     status = HTTPStatus.CONFLICT
 
 
+class ProfileRule(StrEnum):
+    """The rules of a search profile a criteria change edits, one at a time. Source of
+    truth: specs/inbox/criteria_changes.feature."""
+
+    TITLES = "titles"
+    KEYWORDS = "keywords"
+    EXCLUDED_KEYWORDS = "excluded_keywords"
+    LOCATION = "location"
+    WORK_MODES = "work_modes"
+
+
+class RuleChangedSinceError(DomainError):
+    """A later change edited the same rule: undoing this one would undo that one too."""
+
+    slug = "rule-changed-since"
+    title = "Rule changed since"
+    status = HTTPStatus.CONFLICT
+
+
 class OfferNotFilteredError(DomainError):
     """Only a filtered offer (pending, imported and fitting no profile) can be reviewed."""
 

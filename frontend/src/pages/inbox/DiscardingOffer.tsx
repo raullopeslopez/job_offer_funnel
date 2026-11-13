@@ -38,18 +38,25 @@ export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onD
     { reason: DiscardReason; exclude?: boolean }
   >({
     mutationFn: async ({ reason, exclude = false }) => {
+      // The change first, so its log counts this offer among those leaving Pending
+      // (specs/inbox/criteria_changes.feature).
+      if (exclude && profile && word !== null) {
+        const { error } = await api.POST("/api/v1/criteria-changes", {
+          body: {
+            search_profile_id: profile.id,
+            excluded_keywords: excludingWord(profile, word),
+            offer_id: offer.id,
+          },
+        });
+        if (error) throw error;
+        await queryClient.invalidateQueries({ queryKey: ["search-profiles"] });
+        await queryClient.invalidateQueries({ queryKey: ["criteria-changes"] });
+      }
       const { error } = await api.POST("/api/v1/offers/{offer_id}/discard", {
         params: { path: { offer_id: offer.id } },
         body: reason === "title_word" ? { reason, word } : { reason },
       });
       if (error) throw error;
-      if (!exclude || !profile || word === null) return;
-      const { error: excludeError } = await api.PATCH("/api/v1/search-profiles/{profile_id}", {
-        params: { path: { profile_id: profile.id } },
-        body: { excluded_keywords: excludingWord(profile, word) },
-      });
-      if (excludeError) throw excludeError;
-      await queryClient.invalidateQueries({ queryKey: ["search-profiles"] });
     },
     onSuccess: () => onDiscarded(offer),
   });

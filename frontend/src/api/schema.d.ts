@@ -151,6 +151,50 @@ export interface paths {
         patch: operations["update_company_api_v1_companies__company_id__patch"];
         trace?: never;
     };
+    "/api/v1/criteria-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Criteria Changes
+         * @description The changes, from the most recent.
+         */
+        get: operations["list_criteria_changes_api_v1_criteria_changes_get"];
+        put?: never;
+        /**
+         * Make Criteria Change
+         * @description Change one rule of a search profile, logged with what it did when applied.
+         */
+        post: operations["make_criteria_change_api_v1_criteria_changes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/criteria-changes/{change_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Undo Criteria Change
+         * @description Undo a change: its rule goes back as it was and the change leaves the log.
+         */
+        delete: operations["undo_criteria_change_api_v1_criteria_changes__change_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/email-alerts/imports": {
         parameters: {
             query?: never;
@@ -967,6 +1011,81 @@ export interface components {
             to_stage: components["schemas"]["Stage"];
         };
         /**
+         * CriteriaChangeCreate
+         * @description One rule of the profile, with its new value; the name cannot be changed here.
+         */
+        CriteriaChangeCreate: {
+            /** Excluded Keywords */
+            excluded_keywords?: string[] | null;
+            /** Keywords */
+            keywords?: string[] | null;
+            /** Location */
+            location?: string | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * Offer Id
+             * @description The offer it came from.
+             */
+            offer_id?: string | null;
+            /**
+             * Search Profile Id
+             * Format: uuid
+             */
+            search_profile_id: string;
+            /** Titles */
+            titles?: string[] | null;
+            /** Work Modes */
+            work_modes?: components["schemas"]["WorkMode"][] | null;
+        };
+        /** CriteriaChangeRead */
+        CriteriaChangeRead: {
+            /** After */
+            after: string[] | string | null;
+            /** Before */
+            before: string[] | string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Discarded Filtered
+             * @description Discarded offers it would have filtered.
+             */
+            discarded_filtered: number;
+            /**
+             * Entering Pending
+             * @description Pending offers it brought in when applied.
+             */
+            entering_pending: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Leaving Pending
+             * @description Pending offers it took out when applied.
+             */
+            leaving_pending: number;
+            /** Offer Id */
+            offer_id: string | null;
+            /**
+             * Promoted Filtered
+             * @description Promoted offers it would have filtered.
+             */
+            promoted_filtered: number;
+            rule: components["schemas"]["ProfileRule"];
+            /**
+             * Search Profile Id
+             * Format: uuid
+             */
+            search_profile_id: string;
+            /** Search Profile Name */
+            search_profile_name: string;
+        };
+        /**
          * CriteriaPreviewCreate
          * @description The changes editing the profile would take, saving nothing. Its name changes nothing.
          */
@@ -1421,6 +1540,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[CriteriaChangeRead] */
+        Page_CriteriaChangeRead_: {
+            /** Items */
+            items: components["schemas"]["CriteriaChangeRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
         /** Page[JobBoardRead] */
         Page_JobBoardRead_: {
             /** Items */
@@ -1489,6 +1619,13 @@ export interface components {
             /** Type */
             type: string;
         };
+        /**
+         * ProfileRule
+         * @description The rules of a search profile a criteria change edits, one at a time. Source of
+         *     truth: specs/inbox/criteria_changes.feature.
+         * @enum {string}
+         */
+        ProfileRule: "titles" | "keywords" | "excluded_keywords" | "location" | "work_modes";
         /** ProfileSearchesRead */
         ProfileSearchesRead: {
             /**
@@ -2544,6 +2681,154 @@ export interface operations {
                 };
             };
             /** @description Another company already has that name (`already-exists`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    list_criteria_changes_api_v1_criteria_changes_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CriteriaChangeRead_"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    make_criteria_change_api_v1_criteria_changes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriteriaChangeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CriteriaChangeRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description The profile or the offer does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    undo_criteria_change_api_v1_criteria_changes__change_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Change does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description A later change edited the same rule (`rule-changed-since`) */
             409: {
                 headers: {
                     [name: string]: unknown;
