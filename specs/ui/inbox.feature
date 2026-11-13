@@ -11,9 +11,25 @@ Feature: Inbox screen
   their own view.
 
   Every offer is a piece with the same parts, wherever it came from: its source,
-  company and age, its title, its actions and a strip with what its description
-  says of the mode, the location and the contract (specs/inbox/offer_readings.feature).
-  The pieces are grouped by the day they were added: Today, Yesterday and Earlier.
+  company and age, its title, its actions and a strip of rules. The pieces are
+  grouped by the day they were added: Today, Yesterday and Earlier.
+
+  An imported pending offer has a filter reason (specs/inbox/filter_reasons.feature),
+  and its strip has five cells, one per rule of its reference profile: Title,
+  Keywords, Mode, Location and Contract. The Title cell also holds the excluded
+  keywords. Each cell says the value that passed the rule, "Not stated" when it is
+  unknown, or, when the rule filtered the offer, the value against what the profile
+  asks, marked "filtered it". A cell whose rule the profile does not ask for says
+  "Any". Only filtered offers have a failed cell, so it only shows in "Maybe" and in
+  the filtered view. Without a description to read, Mode, Location and Contract merge
+  into one cell that says why. Offers with no filter reason (added by hand, discarded
+  or promoted) keep the strip of what their reading says of the mode, the location
+  and the contract (specs/inbox/offer_readings.feature).
+
+  The near misses (a filtered offer whose title passes and that fails exactly one rule)
+  are the filtered offers worth a second look: the last group of the pending view,
+  "Maybe", shows the three most recent, and the filtered view groups them all by the
+  rule that filtered them.
 
   Background:
     Given I am signed in with a valid token
@@ -57,36 +73,92 @@ Feature: Inbox screen
     When I ask to see more offers
     Then I see 21 offers listed
 
-  # --- What the description says ---
+  # --- The strip of rules ---
 
-  Scenario: An offer without a reading says so
+  Scenario: An offer added by hand says it has nothing to read
     Given an offer for "Acme" as "Backend Engineer"
     When I open the inbox
-    Then the offer "Backend Engineer" shows "Not read yet, or no description to read"
+    Then the offer "Backend Engineer" shows "Mode, location and contract unknown: you added it by hand"
 
-  # @component: only the external reader makes readings, and the E2E tests cannot reach it.
+  # @component: only an import gives an offer a filter reason, only the external reader
+  # makes readings, and the E2E tests cannot reach the feeds nor the reader.
 
   @component
-  Scenario Outline: The strip shows what the reading says
-    Given an offer for "Acme" as "Backend Engineer" whose reading says the mode is "<mode>"
+  Scenario: An offer without a filter reason shows what its reading says
+    Given an offer for "Acme" as "Backend Engineer" that was discarded
+    And its reading says the mode is "hybrid", the location "Spain" is admitted and the contract is stable
+    When I open the inbox showing the "discarded" offers
+    Then the offer "Backend Engineer" shows the cells:
+      | rule     | state | value    |
+      | Mode     | pass  | Hybrid   |
+      | Location | pass  | Spain    |
+      | Contract | pass  | Stable   |
+
+  @component
+  Scenario Outline: Each cell of an imported offer says the value that passed its rule
+    Given a search profile named "Backend" with:
+      | titles     | Backend Engineer |
+      | keywords   | Python, Django   |
+      | location   | Spain            |
+      | work_modes | remote           |
+    And an imported offer for "Acme" as "Backend Engineer" whose filter reason gives "<rule>" as "<result>" with "<value>"
     When I open the inbox
-    Then the offer "Backend Engineer" shows "<shown>" as its mode
+    Then the offer "Backend Engineer" shows "<shown>" in its "<cell>" cell, as "<state>"
 
     Examples:
-      | mode   | shown      |
-      | remote | Remote     |
-      | hybrid | Hybrid     |
-      | none   | Not stated |
-
-  # @component: only an import makes filtered offers, and the E2E tests cannot reach the feeds.
+      | rule      | result  | value            | cell     | shown            | state   |
+      | title     | passed  | Backend Engineer | Title    | Backend Engineer | pass    |
+      | keywords  | passed  | Python, Django   | Keywords | Python, Django   | pass    |
+      | work_mode | passed  | remote           | Mode     | Remote           | pass    |
+      | work_mode | unknown |                  | Mode     | Not stated       | unknown |
+      | location  | passed  | yes              | Location | Spain            | pass    |
+      | stable    | passed  | yes              | Contract | Stable           | pass    |
+      | stable    | unknown |                  | Contract | Not stated       | unknown |
 
   @component
-  Scenario: The filtered offers have their own view
+  Scenario: A rule the profile does not ask for says "Any"
     Given a search profile named "Backend" with the title "Backend Engineer"
-    And the job board "Remote OK" was imported with an offer for "Acme" as "Backend Engineer"
-    And the job board "Remote OK" was imported with an offer for "Globex" as "Data Engineer"
+    And an imported offer for "Acme" as "Backend Engineer" that fits it
+    When I open the inbox
+    Then the offer "Backend Engineer" shows "Any" in its "Keywords", "Mode" and "Location" cells
+
+  @component
+  Scenario Outline: An offer with no description to read merges the rules of its reading
+    Given a search profile named "Backend" with the title "Backend Engineer"
+    And an offer for "Acme" as "Backend Engineer" imported through <method>, without a description
+    When I open the inbox
+    Then the offer "Backend Engineer" shows "Backend Engineer" in its "Title" cell
+    And the offer "Backend Engineer" shows "<merged>"
+
+    Examples:
+      | method   | merged                                                                                  |
+      | an email | Mode, location and contract unknown: email alerts arrive without a description to read |
+      | a feed   | Mode, location and contract unknown: the offer has no description to read              |
+
+  # --- Filtered offers ---
+  # @component: only an import makes filtered offers.
+
+  @component
+  Scenario Outline: A failed cell says the value against what the profile asks
+    Given a search profile named "Backend" with:
+      | titles            | Backend Engineer |
+      | keywords          | Python, Django   |
+      | excluded_keywords | Senior           |
+      | location          | Spain            |
+      | work_modes        | remote           |
+    And a filtered offer for "Acme" as "<title>" that fails "<rule>" with "<value>" and the evidence "<evidence>"
     When I open the inbox showing the "filtered" offers
-    Then I see the offers, in order: "Data Engineer"
+    Then the offer "<title>" shows "<shown>" in its "<cell>" cell, marked "filtered it"
+    And the offer "<title>" shows the evidence "<evidence>"
+
+    Examples:
+      | title                   | rule      | value  | evidence                 | cell     | shown                    |
+      | Senior Backend Engineer | excluded  | Senior |                          | Title    | "Senior", you exclude it |
+      | Backend Engineer        | keywords  | Django |                          | Keywords | Missing: Django          |
+      | Backend Engineer        | work_mode | hybrid | Two days in the office   | Mode     | Hybrid, you ask Remote   |
+      | Backend Engineer        | location  | no     | Only residents of the US | Location | Not from Spain           |
+      | Backend Engineer        | stable    | no     | A six-month contract     | Contract | Not stable               |
+      | Data Engineer           | title     |        |                          | Title    | No title of yours        |
 
   @component
   Scenario: The pending view leaves out the filtered offers
@@ -95,6 +167,61 @@ Feature: Inbox screen
     And the job board "Remote OK" was imported with an offer for "Globex" as "Data Engineer"
     When I open the inbox
     Then I see the offers, in order: "Backend Engineer"
+
+  @component
+  Scenario: "Maybe" closes the pending view with the three most recent near misses
+    Given 5 near misses and a filtered offer that fails two rules
+    When I open the inbox
+    Then the last group is "Maybe · 3 of 5 near misses"
+    And it says "Filtered by a single rule. Promoting one tells the app the rule was too strict."
+    And it shows the three most recent near misses, each with its failed cell and "Promote anyway"
+
+  @component
+  Scenario: Without near misses there is no "Maybe"
+    Given a filtered offer that fails two rules
+    When I open the inbox
+    Then there is no "Maybe" group
+
+  @component
+  Scenario: Promote a near miss anyway
+    Given a near miss for "Acme" as "Backend Engineer"
+    And I am on the inbox
+    When I promote anyway the near miss "Backend Engineer" through "portal"
+    Then I see the message "Application created"
+
+  @component
+  Scenario: The filtered view groups the near misses by the rule that filtered them
+    Given the near misses:
+      | title                   | rule      | value  |
+      | Junior Backend Engineer | excluded  | Junior |
+      | Junior Python Developer | excluded  | Junior |
+      | Backend Intern          | excluded  | Intern |
+      | Backend Engineer        | work_mode | hybrid |
+    And a filtered offer that fails two rules
+    When I open the inbox showing the "filtered" offers
+    Then I see "One rule away · 4 offers"
+    And I see the groups, in order:
+      | group              | count | breakdown           |
+      | A word you exclude | 3     | Junior 2 · Intern 1 |
+      | Mode               | 1     | Hybrid 1            |
+    And I see "Further away · 1 offer"
+
+  @component
+  Scenario: A group of near misses opens to show its offers
+    Given the near misses:
+      | title                   | rule     | value  |
+      | Junior Backend Engineer | excluded | Junior |
+    And I am on the inbox showing the "filtered" offers
+    When I show the group "A word you exclude"
+    Then the group lists "Junior Backend Engineer" with its source, its company, its failed cell and "Promote anyway"
+
+  @component
+  Scenario: The offers further away are listed with their strip
+    Given a filtered offer for "Globex" as "Data Engineer" that fails the title
+    And a near miss for "Acme" as "Junior Backend Engineer"
+    When I open the inbox showing the "filtered" offers
+    Then the block "Further away" lists the offers, in order: "Data Engineer"
+    And the offer "Data Engineer" shows "No title of yours" in its "Title" cell, marked "filtered it"
 
   Scenario: An empty inbox says so
     When I open the inbox
