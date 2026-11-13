@@ -30,11 +30,17 @@ async function addOffer(page: Page, fields: Record<string, string>) {
   await dialog.getByRole("button", { name: "Add" }).click();
 }
 
-async function discard(page: Page, title: string, reason?: string) {
+const reasons = (page: Page) => page.getByRole("group", { name: "Discard because" });
+
+async function startDiscarding(page: Page, title: string) {
   await row(page, title).getByRole("button", { name: "Discard" }).click();
-  const dialog = page.getByRole("dialog");
-  if (reason) await dialog.getByLabel("Reason").fill(reason);
-  await dialog.getByRole("button", { name: "Discard" }).click();
+}
+
+async function discard(page: Page, title: string, reason: string, word?: string) {
+  await startDiscarding(page, title);
+  const piece = row(page, title);
+  if (word) await piece.getByRole("button", { name: word, exact: true }).click();
+  await reasons(page).getByRole("button", { name: reason, exact: true }).click();
 }
 
 // --- Given ---
@@ -87,9 +93,17 @@ Given("I am on the inbox showing the {string} offers", async ({ page }, status: 
   await openInbox(page, status);
 });
 
-Given("I discarded the offer {string}", async ({ page }, title: string) => {
-  await discard(page, title);
-  await expect(page.getByText("Offer discarded")).toBeVisible();
+Given(
+  "I discarded the offer {string} because {string}",
+  async ({ page }, title: string, reason: string) => {
+    await discard(page, title, reason);
+    await expect(page.getByText("Offer discarded")).toBeVisible();
+  },
+);
+
+Given("I started discarding the offer {string}", async ({ page }, title: string) => {
+  await startDiscarding(page, title);
+  await expect(reasons(page)).toBeVisible();
 });
 
 // --- When ---
@@ -126,6 +140,21 @@ When(
     await discard(page, title, reason);
   },
 );
+
+When(
+  "I discard the offer {string} because of the word {string}",
+  async ({ page }, title: string, word: string) => {
+    await discard(page, title, "A word in the title", word);
+  },
+);
+
+When("I start discarding the offer {string}", async ({ page }, title: string) => {
+  await startDiscarding(page, title);
+});
+
+When("I cancel the discard", async ({ page }) => {
+  await reasons(page).getByRole("button", { name: "Cancel" }).click();
+});
 
 When("I ask to see more offers", async ({ page }) => {
   await expect(titles(page)).toHaveCount(20);
@@ -213,6 +242,47 @@ Then(
 Then("the {string} offers show {string}", async ({ page }, status: Status, title: string) => {
   await page.getByRole("tab", { name: STATUS_TABS[status] }).click();
   await expect(row(page, title)).toBeVisible();
+});
+
+Then(
+  "the offer shows the words {string}, {string} and {string} as buttons",
+  async ({ page }, first: string, second: string, third: string) => {
+    const heading = pieces(page).getByRole("heading", { level: 3 });
+    await expect(heading.getByRole("button")).toHaveText([first, second, third]);
+    await expect(heading.getByRole("button").first()).toHaveAttribute("aria-pressed", "false");
+  },
+);
+
+Then(
+  "it shows {string} with the reasons {string}, {string}, {string}, {string}, {string} and {string}",
+  async (
+    { page },
+    label: string,
+    first: string,
+    second: string,
+    third: string,
+    fourth: string,
+    fifth: string,
+    sixth: string,
+  ) => {
+    const group = page.getByRole("group", { name: label });
+    await expect(group.getByRole("button").filter({ hasNotText: "Cancel" })).toHaveText([
+      first,
+      second,
+      third,
+      fourth,
+      fifth,
+      sixth,
+    ]);
+  },
+);
+
+Then("the reason {string} cannot be chosen yet", async ({ page }, reason: string) => {
+  await expect(reasons(page).getByRole("button", { name: reason, exact: true })).toBeDisabled();
+});
+
+Then("the offer shows no reasons", async ({ page }) => {
+  await expect(reasons(page)).toHaveCount(0);
 });
 
 Then("the offer {string} cannot be discarded or promoted", async ({ page }, title: string) => {

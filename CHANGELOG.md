@@ -133,6 +133,16 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Discard reasons: the reason of a discard is now one of a closed list (`title_word`,
+  `stack`, `location`, `contract`, `company`, `none`, plus `expired`, set only by the
+  imports), and `none` when none is given. With `title_word`, `word` says the word of the
+  title that does not fit (`discard_word` in the offer); a word the title does not have is
+  rejected (`word-not-in-title`). The free-text reasons already saved became `none`, their
+  text kept at the end of the offer's notes. Breaking in `/v1`: `reason` no longer takes
+  free text.
+- Inbox: "Discard" opens the offer itself instead of a dialog. The words of its title
+  become buttons and, after "Discard because", one click on a reason discards it ("A word
+  in the title" once a word is marked). The discarded offers show their reason.
 - Web app: a new "ink and signal" look in light mode. Ink and neutrals for the interface,
   Geist for every heading, pill-shaped buttons with 44px touch targets and thin borders
   instead of shadows. The dark mode keeps its current colors for now.

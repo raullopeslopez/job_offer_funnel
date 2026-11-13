@@ -11,7 +11,6 @@ import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
 import { SegmentedTabs } from "../../components/SegmentedTabs";
 import { AddOfferDialog } from "./AddOfferDialog";
-import { DiscardDialog } from "./DiscardDialog";
 import { ImportJobBoardDialog } from "./ImportJobBoardDialog";
 import { MaybeGroup } from "./MaybeGroup";
 import { NearMissGroups } from "./NearMissGroups";
@@ -181,6 +180,13 @@ export function InboxPage() {
           {...context}
           single={view === "filtered" ? { title: "Further away", count: listed } : undefined}
           onDiscard={setDiscarding}
+          discardingId={discarding?.id}
+          onCancelDiscard={() => setDiscarding(null)}
+          onDiscarded={async (offer) => {
+            setDiscarding(null);
+            await refresh();
+            setNotice({ message: "Offer discarded", undoDiscardOf: offer.id });
+          }}
           onPromote={setPromoting}
           onRestore={(offer) => restore.mutate(offer.id)}
         />
@@ -210,15 +216,6 @@ export function InboxPage() {
         }}
       />
       <ImportJobBoardDialog open={dialog === "import"} onClose={() => setDialog(null)} />
-      <DiscardDialog
-        offer={discarding}
-        onClose={() => setDiscarding(null)}
-        onDiscarded={async (offer) => {
-          setDiscarding(null);
-          await refresh();
-          setNotice({ message: "Offer discarded", undoDiscardOf: offer.id });
-        }}
-      />
       <PromoteDialog
         offer={promoting}
         onClose={() => setPromoting(null)}
