@@ -8,7 +8,7 @@ Responder siempre en español, aunque el código, las specs y la salida de las h
 
 ## Estado actual
 
-Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidaturas (con las transiciones en el detalle), métricas y ajustes (empresas y portales), y E2E con Playwright sobre `specs/ui/` (reglas en `.claude/rules/frontend.md`). Backend con `core` completo (config, sesión por request, contrato de errores, auth por token, logging, `Clock`) y tres módulos de **referencia**: `applications` (dominio: transiciones de fase, más alta, edición, detalle con historial y listado filtrado), `companies` (CRUD: alta, detalle, listado paginado) y `metrics` (solo lectura, SQL directo: conversión por fase y por canal, pipeline activo). Actualizar esta sección al cerrar cada hito.
+Frontend en `frontend/` con seis pantallas en dos grupos: «Offers» (Inbox, Profiles y Sources: portales y empresas vigiladas) y «Pipeline» (Applications, con las transiciones en el detalle, Metrics y Companies), y E2E con Playwright sobre `specs/ui/` (reglas en `.claude/rules/frontend.md`). Backend con `core` completo (config, sesión por request, contrato de errores, auth por token, logging, `Clock`) y tres módulos de **referencia**: `applications` (dominio: transiciones de fase, más alta, edición, detalle con historial y listado filtrado), `companies` (CRUD: alta, detalle, listado paginado) y `metrics` (solo lectura, SQL directo: conversión por fase y por canal, pipeline activo). Actualizar esta sección al cerrar cada hito.
 
 - [x] Concepto, stack, convenciones, harness
 - [x] Alcance del MVP: `docs/mvp.md` (solo API; las features fuera del MVP no se implementan)
@@ -27,18 +27,19 @@ Frontend en `frontend/` con las pantallas de la bandeja, búsquedas y candidatur
 - [x] Alcance del frontend: `docs/frontend.md` (stack, tooling, una pantalla por PR)
 - [x] `chore/frontend-setup`: `frontend/` (React + Vite + MUI), pantalla del token, layout, tipos generados, servicio `web`, CI
 - [x] Pantalla 1: `specs/ui/inbox.feature` (Bandeja; entran MUI X DataGrid y Playwright + playwright-bdd)
-- [x] Pantalla 2: `specs/ui/searches.feature` (Búsquedas)
+- [x] Pantalla 2: `specs/ui/searches.feature` (Búsquedas; hoy `profiles.feature`)
 - [x] Pantalla 3: `specs/ui/applications.feature` (Candidaturas)
 - [x] Pantalla 4: `specs/ui/stage_transitions.feature` (Transiciones en el detalle)
 - [x] Pantalla 5: `specs/ui/metrics.feature` (Métricas; entra MUI X Charts)
-- [x] Pantalla 6: `specs/ui/settings.feature` (Ajustes: empresas y portales)
-- [x] Pantalla 7: `specs/ui/watched_companies.feature` (Empresas vigiladas)
+- [x] Pantalla 6: `specs/ui/settings.feature` (Ajustes: empresas y portales; hoy `companies.feature` y `sources.feature`)
+- [x] Pantalla 7: `specs/ui/watched_companies.feature` (Empresas vigiladas; hoy en `sources.feature`)
 - [x] Alcance de la fase 1: `docs/fase1.md` (importación amplia y periódica, nuevas fuentes, CVs por oferta en formato Harvard)
 - [x] Fase 1, filas 1 a 3: importación amplia con filtradas (`inbox/filtered_offers`), importación periódica cada 6 h y el portal como único catálogo de fuentes (`inbox/job_board_imports`: método de importación y feed en el portal, que es el origen de las ofertas importadas)
 - [x] Fase 1, fila 4: importación por RSS (método `rss` con `rss_url_template`; solo Evenbreak, por condiciones y por la empresa en el RSS: `docs/fase0.md`)
 - [x] Fase 1, fila 5: alertas por email de LinkedIn (método `email` con `email_alert`, `inbox/email_alerts`; el buzón dedicado se lee por IMAP en el script de cada 6 h)
 - [x] Fase 1, segundo filtro: lectura de ofertas (`inbox/offer_readings`): un lector externo (Groq, `GROQ_API_KEY`) saca de la descripción la modalidad, si se puede hacer desde la ubicación del perfil y si el puesto es estable, con su frase literal; el encaje lo sigue calculando la app
 - [x] Rediseño visual (Epic #30): tema premium v2 claro/oscuro, responsive y anclas visuales en todas las pantallas; componentes compartidos en `frontend/src/components/`
+- [ ] Epic #74 (calidad de ofertas y rediseño de la Bandeja): hechas #75 (tema v3, tinta y señal) y #76 (navegación en seis apartados)
 
 ## Criterio: evitar la sobreingeniería
 

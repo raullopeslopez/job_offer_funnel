@@ -31,6 +31,20 @@ function viewQuery(view: View): { status: OfferStatus; filtered?: boolean } {
   if (view === "filtered") return { status: "pending", filtered: true };
   return view === "pending" ? { status: view, filtered: false } : { status: view };
 }
+// The count of a view: the tabs show it, and the navigation the one of the pending offers.
+export function offerCountQuery(view: View) {
+  return {
+    queryKey: ["offers", "count", view],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/api/v1/offers", {
+        params: { query: { ...viewQuery(view), limit: 1 } },
+      });
+      if (error) throw error;
+      return data.total;
+    },
+  };
+}
+
 const PAGE_SIZE = 20;
 
 type Notice = { message: string; undoDiscardOf?: string };
@@ -67,16 +81,7 @@ export function InboxPage() {
   });
 
   const counts = useQueries({
-    queries: VIEWS.map(({ value }) => ({
-      queryKey: ["offers", "count", value],
-      queryFn: async () => {
-        const { data, error } = await api.GET("/api/v1/offers", {
-          params: { query: { ...viewQuery(value), limit: 1 } },
-        });
-        if (error) throw error;
-        return data.total;
-      },
-    })),
+    queries: VIEWS.map(({ value }) => offerCountQuery(value)),
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["offers"] });

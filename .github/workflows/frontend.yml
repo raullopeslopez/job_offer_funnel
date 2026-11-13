@@ -56,3 +56,12 @@ jobs:
         working-directory: frontend
       - name: Run E2E
         run: just frontend-e2e
+      # The traces of the failed or flaky scenarios (trace: retain-on-failure).
+      - name: Upload E2E traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces
+          path: frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
