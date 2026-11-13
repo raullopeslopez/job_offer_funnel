@@ -18,7 +18,7 @@ from funnel.modules.discovery.service import (
     build_search_profile_service,
 )
 from funnel.modules.inbox.ats import BoardReader
-from funnel.modules.inbox.domain import OfferStatus
+from funnel.modules.inbox.domain import OfferFilter, OfferStatus, Rule
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.reader import OfferReader
 from funnel.modules.inbox.repository import (
@@ -32,6 +32,7 @@ from funnel.modules.inbox.schemas import (
     AlertImportRead,
     BoardImportRead,
     DiscardCreate,
+    FilteredCountsRead,
     ImportRead,
     OfferCreate,
     OfferRead,
@@ -137,9 +138,17 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
     filtered: Annotated[
         bool | None, Query(description="Only the filtered offers (true) or the others (false).")
     ] = None,
+    near_miss: Annotated[
+        bool | None, Query(description="Only the near misses (true) or the others (false).")
+    ] = None,
+    failed_rule: Annotated[
+        Rule | None, Query(description="Only the offers whose filter reason fails this rule.")
+    ] = None,
 ) -> Page[OfferRead]:
     """Offers from the most recently added."""
-    offers, total = await service.list_page(status, filtered, page)
+    offers, total = await service.list_page(
+        OfferFilter(status, filtered, near_miss, failed_rule), page
+    )
     return Page(
         items=[OfferRead.model_validate(row, from_attributes=True) for row in offers],
         total=total,
@@ -172,6 +181,16 @@ async def read_offers(
     """
     batch = await service.read_pending()
     return ReadingBatchRead(read=batch.read, failed=batch.failed, left=batch.left)
+
+
+@offers_router.get("/filtered-counts")
+async def count_filtered_offers(service: Service) -> FilteredCountsRead:
+    """How many pending offers are filtered, how many are near misses and how many fail
+    each rule of their filter reason."""
+    counts = await service.count_filtered()
+    return FilteredCountsRead(
+        filtered=counts.filtered, near_misses=counts.near_misses, failing=dict(counts.failing)
+    )
 
 
 @offers_router.get("/{offer_id}", responses=_NOT_FOUND)

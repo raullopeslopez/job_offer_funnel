@@ -6,12 +6,13 @@ specs/inbox/offer_readings.feature.
 
 import html
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from http import HTTPStatus
 from typing import Final
+from uuid import UUID
 
 from funnel.core.exceptions import AppError, DomainError
 from funnel.modules.discovery.domain import Feed, WorkMode
@@ -29,6 +30,74 @@ class Ats(StrEnum):
     ASHBY = "ashby"
     GREENHOUSE = "greenhouse"
     LEVER = "lever"
+
+
+class Rule(StrEnum):
+    """The rules an imported offer is checked against to fit a search profile."""
+
+    TITLE = "title"
+    KEYWORDS = "keywords"
+    EXCLUDED = "excluded"
+    WORK_MODE = "work_mode"
+    LOCATION = "location"
+    STABLE = "stable"
+
+
+class RuleResult(StrEnum):
+    PASSED = "passed"
+    UNKNOWN = "unknown"  # the offer has not been read, or its reading does not say
+    FAILED = "failed"
+
+
+@dataclass(frozen=True)
+class RuleCheck:
+    """One rule of a search profile against an offer, with what explains its result."""
+
+    rule: Rule
+    result: RuleResult
+    found: Sequence[str] = ()
+    missing: Sequence[str] = ()
+    value: WorkMode | bool | None = None
+    evidence: str | None = None
+
+
+@dataclass(frozen=True)
+class FilterReason:
+    """Each rule of the reference profile against an offer. Source of truth:
+    specs/inbox/filter_reasons.feature."""
+
+    search_profile_id: UUID | None
+    search_profile_name: str | None
+    has_description: bool
+    rules: Sequence[RuleCheck]
+
+    @property
+    def failed(self) -> list[Rule]:
+        return [check.rule for check in self.rules if check.result is RuleResult.FAILED]
+
+    @property
+    def near_miss(self) -> bool:
+        title_passes = any(
+            check.rule is Rule.TITLE and check.result is RuleResult.PASSED for check in self.rules
+        )
+        return title_passes and len(self.failed) == 1
+
+
+@dataclass(frozen=True)
+class OfferFilter:
+    """Which offers to list; None means either."""
+
+    status: OfferStatus | None = None
+    is_filtered: bool | None = None
+    is_near_miss: bool | None = None
+    failed_rule: Rule | None = None
+
+
+@dataclass(frozen=True)
+class FilteredCounts:
+    filtered: int
+    near_misses: int
+    failing: Mapping[Rule, int]
 
 
 EXPIRED_REASON: Final = "expired"

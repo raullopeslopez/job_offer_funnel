@@ -70,6 +70,7 @@ Feature: Filter reasons
     When I view the offer "Backend Engineer"
     Then the filter reason is against the profile "Remote in Spain" with:
       | rule      | result          | value       | evidence             |
+      | title     | passed          |             |                      |
       | work_mode | <mode_result>   | <work_mode> | <work_mode_evidence> |
       | location  | <loc_result>    | <admits>    | <admits_evidence>    |
       | stable    | <stable_result> | <stable>    | <stable_evidence>    |
@@ -143,8 +144,11 @@ Feature: Filter reasons
     And I edit the profile "Backend" to have the keywords "Python"
     When I view the offer "Backend Engineer"
     Then the filter reason is against the profile "Backend" with:
-      | rule     | result | found  | missing |
-      | keywords | passed | Python |         |
+      | rule     | result  | found            | missing |
+      | title    | passed  | Backend Engineer |         |
+      | keywords | passed  | Python           |         |
+      | excluded | passed  |                  |         |
+      | stable   | unknown |                  |         |
 
   # --- Near misses ---
 

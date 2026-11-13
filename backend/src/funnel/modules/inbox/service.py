@@ -23,9 +23,11 @@ from funnel.modules.inbox.domain import (
     FeedCooldownError,
     FeedOffer,
     FeedUnavailableError,
+    FilteredCounts,
     ImportedByEmailError,
     JobBoardNotImportedError,
     OfferAction,
+    OfferFilter,
     OfferReaderError,
     OfferReaderUnavailableError,
     OfferStatus,
@@ -80,10 +82,15 @@ class OfferService:
         return offer
 
     async def list_page(
-        self, status: OfferStatus | None, filtered: bool | None, page: PageParams
+        self, offer_filter: OfferFilter, page: PageParams
     ) -> tuple[list[OfferRow], int]:
         profiles = await self._profiles.all_terms()
-        return await self._repository.list_page(status, filtered, page, profiles)
+        return await self._repository.list_page(
+            offer_filter.status, offer_filter.is_filtered, page, profiles
+        )
+
+    async def count_filtered(self) -> FilteredCounts:
+        raise NotImplementedError
 
     async def discard(self, offer_id: UUID, reason: str | None) -> OfferRow:
         offer = await self.get(offer_id)

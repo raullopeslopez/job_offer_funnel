@@ -339,6 +339,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/filtered-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count Filtered Offers
+         * @description How many pending offers are filtered, how many are near misses and how many fail
+         *     each rule of their filter reason.
+         */
+        get: operations["count_filtered_offers_api_v1_offers_filtered_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/offers/readings": {
         parameters: {
             query?: never;
@@ -907,6 +928,51 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** FilterReasonRead */
+        FilterReasonRead: {
+            /**
+             * Has Description
+             * @description Whether there is a description to read: tells an unknown rule apart from an offer with nothing to read.
+             */
+            has_description: boolean;
+            /**
+             * Near Miss
+             * @description Filtered, its title passes and it fails exactly one rule.
+             */
+            near_miss: boolean;
+            /**
+             * Rules
+             * @description The rules the reference profile asks for: title and stable always, the others when the profile has some. The offer is filtered exactly when one fails.
+             */
+            rules: components["schemas"]["RuleRead"][];
+            /**
+             * Search Profile Id
+             * @description The reference profile: the one whose rules the offer fails the fewest times; on a tie, the first by name. Null without search profiles.
+             */
+            search_profile_id: string | null;
+            /** Search Profile Name */
+            search_profile_name: string | null;
+        };
+        /** FilteredCountsRead */
+        FilteredCountsRead: {
+            /**
+             * Failing
+             * @description Filtered offers failing each rule; an offer counts in each it fails.
+             */
+            failing: {
+                [key: string]: number;
+            };
+            /**
+             * Filtered
+             * @description Pending offers that are filtered.
+             */
+            filtered: number;
+            /**
+             * Near Misses
+             * @description Filtered offers that are near misses.
+             */
+            near_misses: number;
+        };
         /** GeneratedSearchRead */
         GeneratedSearchRead: {
             /**
@@ -1106,6 +1172,8 @@ export interface components {
              * @description Set while the offer is discarded.
              */
             discard_reason: string | null;
+            /** @description Each rule against the reference profile; only for pending imported offers. */
+            filter_reason: components["schemas"]["FilterReasonRead"] | null;
             /**
              * Filtered
              * @description Pending, imported and fitting none of the current search profiles, by its words or by what its readings say.
@@ -1314,6 +1382,42 @@ export interface components {
             /** Work Mode Evidence */
             work_mode_evidence: string | null;
         };
+        /**
+         * Rule
+         * @description The rules an imported offer is checked against to fit a search profile.
+         * @enum {string}
+         */
+        Rule: "title" | "keywords" | "excluded" | "work_mode" | "location" | "stable";
+        /** RuleRead */
+        RuleRead: {
+            /**
+             * Evidence
+             * @description The sentence of the description behind `value`.
+             */
+            evidence: string | null;
+            /**
+             * Found
+             * @description title: the profile's title in the offer's title; keywords: those found in the title or the description; excluded: the excluded keyword in the title.
+             */
+            found: string[];
+            /**
+             * Missing
+             * @description keywords: those not found.
+             */
+            missing: string[];
+            result: components["schemas"]["RuleResult"];
+            rule: components["schemas"]["Rule"];
+            /**
+             * Value
+             * @description work_mode: the work mode read; location: whether it can be done living in the profile's location; stable: whether it is a stable job. Null when unknown.
+             */
+            value: components["schemas"]["WorkMode"] | boolean | null;
+        };
+        /**
+         * RuleResult
+         * @enum {string}
+         */
+        RuleResult: "passed" | "unknown" | "failed";
         /** SearchProfileCreate */
         SearchProfileCreate: {
             /**
@@ -2661,6 +2765,10 @@ export interface operations {
                 status?: components["schemas"]["OfferStatus"] | null;
                 /** @description Only the filtered offers (true) or the others (false). */
                 filtered?: boolean | null;
+                /** @description Only the near misses (true) or the others (false). */
+                near_miss?: boolean | null;
+                /** @description Only the offers whose filter reason fails this rule. */
+                failed_rule?: components["schemas"]["Rule"] | null;
                 limit?: number;
                 offset?: number;
             };
@@ -2746,6 +2854,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationProblemRead"] | components["schemas"]["ProblemRead"];
+                };
+            };
+        };
+    };
+    count_filtered_offers_api_v1_offers_filtered_counts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilteredCountsRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
                 };
             };
         };
