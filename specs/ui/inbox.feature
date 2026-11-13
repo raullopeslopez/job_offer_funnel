@@ -189,6 +189,23 @@ Feature: Inbox screen
     When I promote anyway the near miss "Backend Engineer" through "portal"
     Then I see the message "Application created"
 
+  # "Rightly filtered" sits next to "Promote anyway": the offer stays filtered, is no longer
+  # a near miss (specs/inbox/rescues.feature) and leaves the group; "Undo" brings it back.
+
+  @component
+  Scenario Outline: Mark a near miss as rightly filtered
+    Given a near miss for "Acme" as "Backend Engineer"
+    And I am on the inbox showing the "<view>" offers
+    And the near miss "Backend Engineer" is listed in "<group>"
+    When I mark the near miss "Backend Engineer" as rightly filtered
+    Then I see the message "Marked as rightly filtered" with "Undo"
+    And "<group>" no longer lists "Backend Engineer"
+
+    Examples:
+      | view     | group                |
+      | pending  | Maybe                |
+      | filtered | A word you exclude   |
+
   @component
   Scenario: The filtered view groups the near misses by the rule that filtered them
     Given the near misses:
