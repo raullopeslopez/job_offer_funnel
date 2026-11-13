@@ -31,6 +31,39 @@ describe("theme tones", () => {
     expect(tone).toEqual({ bg, fg });
   });
 
+  it.each([
+    ["light", "api", "oklch(0.58 0.17 255)", "oklch(0.955 0.03 255)", "oklch(0.44 0.17 255)"],
+    ["light", "manual", "#8a8d98", "#eeeef1", "#4a4d57"],
+    ["dark", "email", "oklch(0.5 0.2 300)", "oklch(0.3 0.05 300)", "oklch(0.85 0.08 300)"],
+  ] as const)("defines the %s %s source color", (scheme, source, solid, tint, text) => {
+    // Arrange
+    const palette = (theme as unknown as CssVarsTheme).colorSchemes[scheme]?.palette;
+
+    // Act
+    const colors = palette?.source[source];
+
+    // Assert
+    expect(colors).toEqual({ solid, tint, text });
+  });
+
+  it.each([
+    ["primary.main", "#111318"],
+    ["background.default", "#f7f7f8"],
+    ["text.secondary", "#60636e"],
+    ["divider", "#e6e6ea"],
+  ] as const)("uses the ink neutral %s in light", (path, color) => {
+    // Arrange
+    const palette = (theme as unknown as CssVarsTheme).colorSchemes.light?.palette;
+
+    // Act
+    const value = path
+      .split(".")
+      .reduce<unknown>((node, key) => (node as Record<string, unknown>)[key], palette);
+
+    // Assert
+    expect(value).toBe(color);
+  });
+
   it("resolves sx tones through CSS variables that change with the color scheme", async () => {
     // Arrange
     render(
@@ -49,5 +82,6 @@ describe("theme tones", () => {
     expect(sample).toBeInTheDocument();
     expect(theme.vars?.palette.tone.blue.bg).toContain("var(--mui-palette-tone-blue-bg");
     expect(toneOf.interviewing).toBe("amber");
+    expect(theme.vars?.palette.source.api.tint).toContain("var(--mui-palette-source-api-tint");
   });
 });

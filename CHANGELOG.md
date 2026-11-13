@@ -118,6 +118,9 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Web app: a new "ink and signal" look in light mode. Ink and neutrals for the interface,
+  Geist for every heading, pill-shaped buttons with 44px touch targets and thin borders
+  instead of shadows. The dark mode keeps its current colors for now.
 - **Breaking:** importing a feed or a watched company no longer takes a search profile
   (no request body): it adds every offer the source returns, skipping duplicates. The
   import summary reports how many of the added ones are `filtered` instead of `matching`.
