@@ -10,6 +10,14 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Criteria previews: `POST /api/v1/offers/criteria-previews` takes a search profile and the
+  same changes as editing it, saves nothing, and says how many pending offers would come
+  into Pending (`entering_pending`) and leave it (`leaving_pending`), and how many promoted
+  and discarded offers the change would have filtered (`promoted_filtered`,
+  `discarded_filtered`; expired offers do not count).
+- Inbox: discarding an imported offer because of "A word in the title" proposes excluding
+  the word from its profile, with what the change would do, and "Only discard this one" or
+  "Discard and exclude" it.
 - Rescues and rightly filtered offers: promoting a filtered offer records it as a rescue
   (`review: rescued`) with the rules that filtered it then (`review_rules`).
   `POST /api/v1/offers/{offer_id}/rightly-filtered` marks a filtered offer as reviewed

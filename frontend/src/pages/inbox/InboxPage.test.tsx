@@ -622,3 +622,101 @@ describe("InboxPage filtered by rule", () => {
     expect(title).toHaveAttribute("data-state", "failed");
   });
 });
+
+// specs/ui/inbox.feature: "A word in the title of an imported offer proposes excluding it
+// from its profile" and "Discard only the offer, or also exclude the word from the profile".
+describe("InboxPage exclusion proposal", () => {
+  type User = ReturnType<typeof userEvent.setup>;
+  type Preview = components["schemas"]["CriteriaPreviewRead"];
+
+  const lead = () => imported("Lead Backend Engineer", rulesWith());
+
+  function previewing(preview: Partial<Preview> = {}) {
+    const asked: unknown[] = [];
+    server.use(
+      http.post("/api/v1/offers/criteria-previews", async ({ request }) => {
+        asked.push(await request.json());
+        return HttpResponse.json({
+          entering_pending: 0,
+          leaving_pending: 1,
+          promoted_filtered: 0,
+          discarded_filtered: 0,
+          ...preview,
+        });
+      }),
+    );
+    return asked;
+  }
+
+  async function chooseWord(user: User, title: string, word: string) {
+    const piece = await screen.findByRole("article", { name: title });
+    await user.click(within(piece).getByRole("button", { name: "Discard" }));
+    // Discarding opens another piece for the same offer.
+    const opened = await screen.findByRole("article", { name: title });
+    await user.click(within(opened).getByRole("button", { name: word }));
+    const reasons = screen.getByRole("group", { name: "Discard because" });
+    await user.click(within(reasons).getByRole("button", { name: "A word in the title" }));
+  }
+
+  it.each([
+    [
+      { leaving_pending: 3, promoted_filtered: 0, discarded_filtered: 2 },
+      "Takes 3 offers out of Pending. Loses none you promoted. 2 you discarded had it.",
+    ],
+    [
+      { leaving_pending: 1, promoted_filtered: 1, discarded_filtered: 0 },
+      "Takes 1 offer out of Pending. Would have filtered 1 you promoted. None you discarded had it.",
+    ],
+  ])("proposes excluding the word with the effect %o", async (preview, effect) => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([lead()]);
+    const asked = previewing(preview);
+    renderInbox();
+
+    // Act
+    await chooseWord(user, "Lead Backend Engineer", "Lead");
+
+    // Assert
+    expect(screen.getByText("Exclude “Lead” from the profile Backend?")).toBeInTheDocument();
+    expect(await screen.findByText(effect)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Only discard this one" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Discard and exclude “Lead”" })).toBeInTheDocument();
+    expect(asked).toEqual([
+      { search_profile_id: PROFILE_ID, excluded_keywords: ["Senior", "Lead"] },
+    ]);
+  });
+
+  it.each([
+    ["Only discard this one", []],
+    ["Discard and exclude “Lead”", [{ excluded_keywords: ["Senior", "Lead"] }]],
+  ])("%s discards the offer because of the word", async (choice, edits) => {
+    // Arrange
+    const user = userEvent.setup();
+    const candidate = lead();
+    inboxWith([candidate]);
+    previewing();
+    const discarded: unknown[] = [];
+    const edited: unknown[] = [];
+    server.use(
+      http.post("/api/v1/offers/:offerId/discard", async ({ params, request }) => {
+        discarded.push({ offerId: params.offerId, ...((await request.json()) as object) });
+        return HttpResponse.json({}, { status: 201 });
+      }),
+      http.patch("/api/v1/search-profiles/:profileId", async ({ request }) => {
+        edited.push(await request.json());
+        return HttpResponse.json(BACKEND);
+      }),
+    );
+    renderInbox();
+    await chooseWord(user, "Lead Backend Engineer", "Lead");
+
+    // Act
+    await user.click(screen.getByRole("button", { name: choice }));
+
+    // Assert
+    expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
+    expect(discarded).toEqual([{ offerId: candidate.id, reason: "title_word", word: "Lead" }]);
+    expect(edited).toEqual(edits);
+  });
+});
