@@ -31,6 +31,17 @@ Feature: Metrics screen
       When I open the metrics
       Then each card says "—"
 
+    # "Changes to your criteria" lists the changes of specs/inbox/criteria_changes.feature,
+    # the most recent first: what changed ("Excluded “Lead”") and what it did ("Today ·
+    # took 6 out of Pending · lost 0 promoted"), each with "Undo".
+
+    @component
+    Scenario: Each change to the criteria with what it did, and undoing it
+      Given the change "Excluded “Lead”" was made today and took 6 offers out of Pending
+      When I open the metrics
+      Then "Changes to your criteria" lists "Excluded “Lead”" with "Today · took 6 out of Pending · lost 0 promoted"
+      And undoing it leaves "No changes yet."
+
     @component
     Scenario: Discards by reason and the sources
       Given the offer quality has the discards "Stack" 2 and "Location" 1 and the source "Remote OK"
