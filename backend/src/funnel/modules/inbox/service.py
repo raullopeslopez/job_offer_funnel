@@ -1,5 +1,7 @@
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import httpx2
@@ -19,6 +21,7 @@ from funnel.modules.inbox.domain import (
     LATEST_ONLY_FEEDS,
     READING_BATCH_SIZE,
     BoardUnavailableError,
+    CriteriaPreview,
     DiscardReason,
     EmailAlertNotImportedError,
     FeedCooldownError,
@@ -41,6 +44,7 @@ from funnel.modules.inbox.domain import (
     is_title_word,
     next_status,
     plain_text,
+    preview_criteria,
     supported,
 )
 from funnel.modules.inbox.feeds import FeedReader
@@ -98,6 +102,16 @@ class OfferService:
         return count_filtered(
             await self._repository.all_reasons(profiles), await self._repository.all_reviews()
         )
+
+    async def preview(self, profile_id: UUID, changes: Mapping[str, Any]) -> CriteriaPreview:
+        """What editing the profile with these changes would do to the offers; saves nothing."""
+        await self._profiles.get(profile_id)
+        current = await self._profiles.all_terms()
+        changed = [
+            replace(terms, **changes) if terms.search_profile_id == profile_id else terms
+            for terms in current
+        ]
+        return preview_criteria(await self._repository.fit_changes(current, changed))
 
     async def mark_rightly_filtered(self, offer_id: UUID) -> OfferRow:
         offer = await self.get(offer_id)

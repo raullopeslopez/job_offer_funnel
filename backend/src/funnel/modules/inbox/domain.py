@@ -122,6 +122,40 @@ class FilteredCounts:
     rescued_near_misses: int
 
 
+@dataclass(frozen=True)
+class FitChange:
+    """How many imported offers in a status fit the profiles now and with a change."""
+
+    status: OfferStatus
+    fits_now: bool
+    fits_after: bool
+    offers: int
+
+
+@dataclass(frozen=True)
+class CriteriaPreview:
+    """What a change to a profile would do. Source of truth:
+    specs/inbox/criteria_previews.feature."""
+
+    entering_pending: int
+    leaving_pending: int
+    promoted_filtered: int
+    discarded_filtered: int
+
+
+def preview_criteria(changes: Iterable[FitChange]) -> CriteriaPreview:
+    counts: Counter[tuple[OfferStatus, bool]] = Counter()
+    for change in changes:
+        if change.fits_now != change.fits_after:
+            counts[change.status, change.fits_after] += change.offers
+    return CriteriaPreview(
+        entering_pending=counts[OfferStatus.PENDING, True],
+        leaving_pending=counts[OfferStatus.PENDING, False],
+        promoted_filtered=counts[OfferStatus.PROMOTED, False],
+        discarded_filtered=counts[OfferStatus.DISCARDED, False],
+    )
+
+
 class DiscardReason(StrEnum):
     """Why an offer was discarded. EXPIRED is only set by the imports."""
 

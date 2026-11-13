@@ -695,6 +695,149 @@
         "title": "ConversionStepRead",
         "type": "object"
       },
+      "CriteriaPreviewCreate": {
+        "description": "The changes editing the profile would take, saving nothing. Its name changes nothing.",
+        "properties": {
+          "excluded_keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded Keywords"
+          },
+          "keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keywords"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "search_profile_id": {
+            "format": "uuid",
+            "title": "Search Profile Id",
+            "type": "string"
+          },
+          "titles": {
+            "anyOf": [
+              {
+                "examples": [
+                  [
+                    "Backend Engineer",
+                    "Python Developer"
+                  ]
+                ],
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titles"
+          },
+          "work_modes": {
+            "anyOf": [
+              {
+                "description": "Accepted work modes; empty means any.",
+                "items": {
+                  "$ref": "#/components/schemas/WorkMode"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Modes"
+          }
+        },
+        "required": [
+          "search_profile_id"
+        ],
+        "title": "CriteriaPreviewCreate",
+        "type": "object"
+      },
+      "CriteriaPreviewRead": {
+        "properties": {
+          "discarded_filtered": {
+            "description": "Discarded offers, not expired, that fit the profiles now and would not with the change.",
+            "title": "Discarded Filtered",
+            "type": "integer"
+          },
+          "entering_pending": {
+            "description": "Pending offers filtered now that would not be.",
+            "title": "Entering Pending",
+            "type": "integer"
+          },
+          "leaving_pending": {
+            "description": "Pending offers not filtered now that would be.",
+            "title": "Leaving Pending",
+            "type": "integer"
+          },
+          "promoted_filtered": {
+            "description": "Promoted offers that fit the profiles now and would not with the change.",
+            "title": "Promoted Filtered",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "entering_pending",
+          "leaving_pending",
+          "promoted_filtered",
+          "discarded_filtered"
+        ],
+        "title": "CriteriaPreviewRead",
+        "type": "object"
+      },
       "DiscardCreate": {
         "properties": {
           "reason": {
@@ -4421,6 +4564,73 @@
           }
         ],
         "summary": "Create Offer",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/criteria-previews": {
+      "post": {
+        "description": "What editing a search profile would do to the offers, saving nothing (hence 200).",
+        "operationId": "preview_criteria_api_v1_offers_criteria_previews_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriteriaPreviewCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CriteriaPreviewRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Profile does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Preview Criteria",
         "tags": [
           "inbox"
         ]

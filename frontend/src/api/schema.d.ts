@@ -339,6 +339,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/criteria-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Criteria
+         * @description What editing a search profile would do to the offers, saving nothing (hence 200).
+         */
+        post: operations["preview_criteria_api_v1_offers_criteria_previews_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/offers/filtered-counts": {
         parameters: {
             query?: never;
@@ -924,6 +944,52 @@ export interface components {
             reached_to: number;
             /** @description The stage right after `from_stage`. */
             to_stage: components["schemas"]["Stage"];
+        };
+        /**
+         * CriteriaPreviewCreate
+         * @description The changes editing the profile would take, saving nothing. Its name changes nothing.
+         */
+        CriteriaPreviewCreate: {
+            /** Excluded Keywords */
+            excluded_keywords?: string[] | null;
+            /** Keywords */
+            keywords?: string[] | null;
+            /** Location */
+            location?: string | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * Search Profile Id
+             * Format: uuid
+             */
+            search_profile_id: string;
+            /** Titles */
+            titles?: string[] | null;
+            /** Work Modes */
+            work_modes?: components["schemas"]["WorkMode"][] | null;
+        };
+        /** CriteriaPreviewRead */
+        CriteriaPreviewRead: {
+            /**
+             * Discarded Filtered
+             * @description Discarded offers, not expired, that fit the profiles now and would not with the change.
+             */
+            discarded_filtered: number;
+            /**
+             * Entering Pending
+             * @description Pending offers filtered now that would not be.
+             */
+            entering_pending: number;
+            /**
+             * Leaving Pending
+             * @description Pending offers not filtered now that would be.
+             */
+            leaving_pending: number;
+            /**
+             * Promoted Filtered
+             * @description Promoted offers that fit the profiles now and would not with the change.
+             */
+            promoted_filtered: number;
         };
         /** DiscardCreate */
         DiscardCreate: {
@@ -2915,6 +2981,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationProblemRead"] | components["schemas"]["ProblemRead"];
+                };
+            };
+        };
+    };
+    preview_criteria_api_v1_offers_criteria_previews_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriteriaPreviewCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CriteriaPreviewRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Profile does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
                 };
             };
         };

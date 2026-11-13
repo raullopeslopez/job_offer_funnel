@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, StringConstraints, model_validator
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
 from funnel.modules.discovery.domain import WorkMode
+from funnel.modules.discovery.schemas import SearchProfileUpdate
 from funnel.modules.inbox.domain import (
     Ats,
     DiscardReason,
@@ -178,6 +179,24 @@ class FilteredCountsRead(BaseModel):
         "were near misses, whatever their status now."
     )
     rescued_near_misses: int = Field(description="Of those, the ones rescued.")
+
+
+class CriteriaPreviewCreate(SearchProfileUpdate):
+    """The changes editing the profile would take, saving nothing. Its name changes nothing."""
+
+    search_profile_id: UUID
+
+
+class CriteriaPreviewRead(BaseModel):
+    entering_pending: int = Field(description="Pending offers filtered now that would not be.")
+    leaving_pending: int = Field(description="Pending offers not filtered now that would be.")
+    promoted_filtered: int = Field(
+        description="Promoted offers that fit the profiles now and would not with the change."
+    )
+    discarded_filtered: int = Field(
+        description="Discarded offers, not expired, that fit the profiles now and would not "
+        "with the change."
+    )
 
 
 class OfferRead(BaseModel):

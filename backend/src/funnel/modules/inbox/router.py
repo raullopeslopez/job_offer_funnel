@@ -31,6 +31,8 @@ from funnel.modules.inbox.schemas import (
     AlertEmailCreate,
     AlertImportRead,
     BoardImportRead,
+    CriteriaPreviewCreate,
+    CriteriaPreviewRead,
     DiscardCreate,
     FilteredCountsRead,
     ImportRead,
@@ -195,6 +197,19 @@ async def count_filtered_offers(service: Service) -> FilteredCountsRead:
         reviewed_near_misses=counts.reviewed_near_misses,
         rescued_near_misses=counts.rescued_near_misses,
     )
+
+
+@offers_router.post(
+    "/criteria-previews",
+    responses={
+        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Profile does not exist"}
+    },
+)
+async def preview_criteria(preview: CriteriaPreviewCreate, service: Service) -> CriteriaPreviewRead:
+    """What editing a search profile would do to the offers, saving nothing (hence 200)."""
+    changes = preview.model_dump(exclude_unset=True, exclude={"search_profile_id", "name"})
+    result = await service.preview(preview.search_profile_id, changes)
+    return CriteriaPreviewRead.model_validate(result, from_attributes=True)
 
 
 @offers_router.get("/{offer_id}", responses=_NOT_FOUND)
