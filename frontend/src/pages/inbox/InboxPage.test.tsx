@@ -27,6 +27,7 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   notes: null,
   status: "pending",
   filtered: false,
+  filter_reason: null,
   readings: [],
   discard_reason: null,
   application_id: null,

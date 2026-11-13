@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, StringConstraints
 from funnel.core.fields import HttpUrlText
 from funnel.modules.applications.domain import Channel
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Ats, OfferStatus
+from funnel.modules.inbox.domain import Ats, OfferStatus, Rule, RuleResult
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -112,6 +112,46 @@ class ReadingBatchRead(BaseModel):
     left: int = Field(description="Readings still to be made, the failed ones included.")
 
 
+class RuleRead(BaseModel):
+    rule: Rule
+    result: RuleResult
+    found: list[str] = Field(
+        description="title: the profile's title in the offer's title; keywords: those found "
+        "in the title or the description; excluded: the excluded keyword in the title."
+    )
+    missing: list[str] = Field(description="keywords: those not found.")
+    value: WorkMode | bool | None = Field(
+        description="work_mode: the work mode read; location: whether it can be done living "
+        "in the profile's location; stable: whether it is a stable job. Null when unknown."
+    )
+    evidence: str | None = Field(description="The sentence of the description behind `value`.")
+
+
+class FilterReasonRead(BaseModel):
+    search_profile_id: UUID | None = Field(
+        description="The reference profile: the one whose rules the offer fails the fewest "
+        "times; on a tie, the first by name. Null without search profiles."
+    )
+    search_profile_name: str | None
+    has_description: bool = Field(
+        description="Whether there is a description to read: tells an unknown rule apart "
+        "from an offer with nothing to read."
+    )
+    near_miss: bool = Field(description="Filtered, its title passes and it fails exactly one rule.")
+    rules: list[RuleRead] = Field(
+        description="The rules the reference profile asks for: title and stable always, "
+        "the others when the profile has some. The offer is filtered exactly when one fails."
+    )
+
+
+class FilteredCountsRead(BaseModel):
+    filtered: int = Field(description="Pending offers that are filtered.")
+    near_misses: int = Field(description="Filtered offers that are near misses.")
+    failing: dict[Rule, int] = Field(
+        description="Filtered offers failing each rule; an offer counts in each it fails."
+    )
+
+
 class OfferRead(BaseModel):
     id: UUID
     url: str
@@ -124,6 +164,9 @@ class OfferRead(BaseModel):
     filtered: bool = Field(
         description="Pending, imported and fitting none of the current search profiles, "
         "by its words or by what its readings say."
+    )
+    filter_reason: FilterReasonRead | None = Field(
+        description="Each rule against the reference profile; only for pending imported offers."
     )
     readings: list[ReadingRead] = Field(
         description="What its description says, once read, for each profile location."

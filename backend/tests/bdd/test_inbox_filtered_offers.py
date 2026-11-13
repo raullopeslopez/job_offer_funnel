@@ -213,6 +213,10 @@ def when_act(client: TestClient, state: ScenarioState, action: str, title: str) 
 def then_filtered(state: ScenarioState, which: str) -> None:
     assert state.offer is not None
     assert state.offer["filtered"] is (which == "filtered")
+    # The filter reason never contradicts it (specs/inbox/filter_reasons.feature).
+    reason = state.offer["filter_reason"]
+    failed = reason is not None and any(r["result"] == "failed" for r in reason["rules"])
+    assert failed is state.offer["filtered"]
 
 
 @then(parsers.parse("the offers are, in order: {titles}"))

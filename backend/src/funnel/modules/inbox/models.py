@@ -25,7 +25,7 @@ from sqlalchemy.orm import (
 
 from funnel.core.db import Base
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Ats, OfferStatus
+from funnel.modules.inbox.domain import Ats, FilterReason, OfferStatus
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
@@ -96,6 +96,7 @@ Index(
 
 class OfferRow(Base):
     __tablename__ = "offers"
+    __allow_unmapped__ = True  # filter_reason
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
     url: Mapped[str] = mapped_column(String(2048))
@@ -131,6 +132,9 @@ class OfferRow(Base):
     job_board_name: Mapped[str | None] = column_property(
         select(_job_boards.c.name).where(_job_boards.c.id == job_board_id).scalar_subquery()
     )
+    # Not a column: it depends on the current search profiles, and the repository sets it
+    # on each read, for pending imported offers.
+    filter_reason: FilterReason | None = None
     readings: Mapped[list[OfferReadingRow]] = relationship(
         lazy="selectin", order_by=(OfferReadingRow.created_at, OfferReadingRow.id), viewonly=True
     )

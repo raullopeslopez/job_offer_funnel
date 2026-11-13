@@ -754,6 +754,93 @@
         "title": "FieldErrorRead",
         "type": "object"
       },
+      "FilterReasonRead": {
+        "properties": {
+          "has_description": {
+            "description": "Whether there is a description to read: tells an unknown rule apart from an offer with nothing to read.",
+            "title": "Has Description",
+            "type": "boolean"
+          },
+          "near_miss": {
+            "description": "Filtered, its title passes and it fails exactly one rule.",
+            "title": "Near Miss",
+            "type": "boolean"
+          },
+          "rules": {
+            "description": "The rules the reference profile asks for: title and stable always, the others when the profile has some. The offer is filtered exactly when one fails.",
+            "items": {
+              "$ref": "#/components/schemas/RuleRead"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "search_profile_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The reference profile: the one whose rules the offer fails the fewest times; on a tie, the first by name. Null without search profiles.",
+            "title": "Search Profile Id"
+          },
+          "search_profile_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Profile Name"
+          }
+        },
+        "required": [
+          "search_profile_id",
+          "search_profile_name",
+          "has_description",
+          "near_miss",
+          "rules"
+        ],
+        "title": "FilterReasonRead",
+        "type": "object"
+      },
+      "FilteredCountsRead": {
+        "properties": {
+          "failing": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Filtered offers failing each rule; an offer counts in each it fails.",
+            "propertyNames": {
+              "$ref": "#/components/schemas/Rule"
+            },
+            "title": "Failing",
+            "type": "object"
+          },
+          "filtered": {
+            "description": "Pending offers that are filtered.",
+            "title": "Filtered",
+            "type": "integer"
+          },
+          "near_misses": {
+            "description": "Filtered offers that are near misses.",
+            "title": "Near Misses",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "filtered",
+          "near_misses",
+          "failing"
+        ],
+        "title": "FilteredCountsRead",
+        "type": "object"
+      },
       "GeneratedSearchRead": {
         "properties": {
           "query": {
@@ -1234,6 +1321,17 @@
             "description": "Set while the offer is discarded.",
             "title": "Discard Reason"
           },
+          "filter_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilterReasonRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Each rule against the reference profile; only for pending imported offers."
+          },
           "filtered": {
             "description": "Pending, imported and fitting none of the current search profiles, by its words or by what its readings say.",
             "title": "Filtered",
@@ -1332,6 +1430,7 @@
           "notes",
           "status",
           "filtered",
+          "filter_reason",
           "readings",
           "discard_reason",
           "application_id",
@@ -1763,6 +1862,91 @@
         ],
         "title": "ReadingRead",
         "type": "object"
+      },
+      "Rule": {
+        "description": "The rules an imported offer is checked against to fit a search profile.",
+        "enum": [
+          "title",
+          "keywords",
+          "excluded",
+          "work_mode",
+          "location",
+          "stable"
+        ],
+        "title": "Rule",
+        "type": "string"
+      },
+      "RuleRead": {
+        "properties": {
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The sentence of the description behind `value`.",
+            "title": "Evidence"
+          },
+          "found": {
+            "description": "title: the profile's title in the offer's title; keywords: those found in the title or the description; excluded: the excluded keyword in the title.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Found",
+            "type": "array"
+          },
+          "missing": {
+            "description": "keywords: those not found.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "result": {
+            "$ref": "#/components/schemas/RuleResult"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/Rule"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkMode"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "work_mode: the work mode read; location: whether it can be done living in the profile's location; stable: whether it is a stable job. Null when unknown.",
+            "title": "Value"
+          }
+        },
+        "required": [
+          "rule",
+          "result",
+          "found",
+          "missing",
+          "value",
+          "evidence"
+        ],
+        "title": "RuleRead",
+        "type": "object"
+      },
+      "RuleResult": {
+        "enum": [
+          "passed",
+          "unknown",
+          "failed"
+        ],
+        "title": "RuleResult",
+        "type": "string"
       },
       "SearchProfileCreate": {
         "properties": {
@@ -3993,6 +4177,42 @@
             }
           },
           {
+            "description": "Only the near misses (true) or the others (false).",
+            "in": "query",
+            "name": "near_miss",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the near misses (true) or the others (false).",
+              "title": "Near Miss"
+            }
+          },
+          {
+            "description": "Only the offers whose filter reason fails this rule.",
+            "in": "query",
+            "name": "failed_rule",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Rule"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the offers whose filter reason fails this rule.",
+              "title": "Failed Rule"
+            }
+          },
+          {
             "in": "query",
             "name": "limit",
             "required": false,
@@ -4127,6 +4347,53 @@
           }
         ],
         "summary": "Create Offer",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/filtered-counts": {
+      "get": {
+        "description": "How many pending offers are filtered, how many are near misses and how many fail\neach rule of their filter reason.",
+        "operationId": "count_filtered_offers_api_v1_offers_filtered_counts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilteredCountsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Count Filtered Offers",
         "tags": [
           "inbox"
         ]
