@@ -8,10 +8,30 @@ from funnel.modules.inbox.domain import (
     OfferAction,
     OfferStatus,
     duplicate_key,
+    is_title_word,
     next_status,
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize(
+    ("word", "title", "expected"),
+    [
+        pytest.param("Senior", "Senior Backend Engineer", True, id="first-word"),
+        pytest.param("senior", "Senior Backend Engineer", True, id="ignores-case"),
+        pytest.param("C++", "Senior C++ Developer", True, id="symbols"),
+        pytest.param("Django", "Python Developer (Django)", True, id="in-parentheses"),
+        pytest.param("Back", "Senior Backend Engineer", False, id="part-of-a-word"),
+        pytest.param("Junior", "Senior Backend Engineer", False, id="not-in-title"),
+    ],
+)
+def test_is_title_word_matches_whole_words_ignoring_case(
+    word: str, title: str, *, expected: bool
+) -> None:
+    # Act / Assert
+    assert is_title_word(word, title) is expected
+
 
 # Copied from the spec: the status each action starts from and leads to.
 ALLOWED = [

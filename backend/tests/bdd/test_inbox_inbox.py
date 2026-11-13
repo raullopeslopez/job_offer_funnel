@@ -203,9 +203,32 @@ def when_list_with_status(client: TestClient, state: ScenarioState, status: str)
     state.response = client.get(URL, params={"status": status})
 
 
-@when(parsers.parse('I discard it because "{reason}"'))
+def _discard(client: TestClient, state: ScenarioState, body: dict[str, str]) -> httpx2.Response:
+    return client.post(f"{URL}/{state.offer_id}/discard", json=body)
+
+
+@when(parsers.re(r'I discard it because "(?P<reason>[^"]*)"$'))
 def when_discard_because(client: TestClient, state: ScenarioState, reason: str) -> None:
-    state.response = client.post(f"{URL}/{state.offer_id}/discard", json={"reason": reason})
+    state.response = _discard(client, state, {"reason": reason})
+
+
+@when(parsers.re(r'I discard it because "(?P<reason>[^"]*)" with the word "(?P<word>[^"]*)"$'))
+def when_discard_with_word(
+    client: TestClient, state: ScenarioState, reason: str, word: str
+) -> None:
+    body = {"reason": reason} | ({"word": word} if word else {})
+    state.response = _discard(client, state, body)
+
+
+@when(parsers.parse('I discard it because of the word "{word}"'))
+def when_discard_word(client: TestClient, state: ScenarioState, word: str) -> None:
+    state.response = _discard(client, state, {"reason": "title_word", "word": word})
+
+
+@given(parsers.parse('I discarded it because of the word "{word}"'))
+def given_discarded_word(client: TestClient, state: ScenarioState, word: str) -> None:
+    response = _discard(client, state, {"reason": "title_word", "word": word})
+    assert response.status_code == 201, response.text
 
 
 @when(parsers.re(r"I (?P<action>discard|restore|promote) it$"))
@@ -251,18 +274,33 @@ def then_no_job_board(client: TestClient, state: ScenarioState) -> None:
     assert (offer["job_board_id"], offer["job_board_name"]) == (None, None)
 
 
-@then(parsers.parse('the offer is "{status}" with reason "{reason}"'))
+def _discard_of(client: TestClient, state: ScenarioState) -> tuple[str, str | None, str | None]:
+    offer = _read_offer(client, state)
+    return offer["status"], offer["discard_reason"], offer["discard_word"]
+
+
+@then(parsers.parse('the offer is "{status}" with reason "{reason}" and no word'))
 def then_offer_with_reason(
     client: TestClient, state: ScenarioState, status: str, reason: str
 ) -> None:
-    offer = _read_offer(client, state)
-    assert (offer["status"], offer["discard_reason"]) == (status, reason)
+    assert _discard_of(client, state) == (status, reason, None)
 
 
-@then(parsers.parse('the offer is "{status}" without a reason'))
+@then(parsers.parse('the offer is "{status}" with reason "{reason}" and word "{word}"'))
+def then_offer_with_word(
+    client: TestClient, state: ScenarioState, status: str, reason: str, word: str
+) -> None:
+    assert _discard_of(client, state) == (status, reason, word)
+
+
+@then(parsers.parse('the offer is "{status}" with no reason and no word'))
 def then_offer_without_reason(client: TestClient, state: ScenarioState, status: str) -> None:
-    offer = _read_offer(client, state)
-    assert (offer["status"], offer["discard_reason"]) == (status, None)
+    assert _discard_of(client, state) == (status, None, None)
+
+
+@then("it is rejected because the word is not in the title")
+def then_word_not_in_title(state: ScenarioState) -> None:
+    _assert_problem(state, 422, "word-not-in-title")
 
 
 @then("it is rejected as invalid")

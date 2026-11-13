@@ -122,7 +122,7 @@ Feature: Inbox
     When I discard it
     Then the offer is "discarded" with reason "none" and no word
 
-  Scenario Outline: A discard needs a reason of the list, and a word of the title only with title_word
+  Scenario Outline: A discard needs a reason of the list, and a word only with title_word
     Given an offer for "Acme" as "Senior Backend Engineer"
     When I discard it because "<reason>" with the word "<word>"
     Then it is rejected as invalid
@@ -132,8 +132,12 @@ Feature: Inbox
       | Not remote |        |
       | expired    |        |
       | title_word |        |
-      | title_word | Junior |
       | stack      | Senior |
+
+  Scenario: The word of a discard must be a word of the title
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    When I discard it because of the word "Junior"
+    Then it is rejected because the word is not in the title
 
   Scenario: A discarded offer can go back to pending, without its reason
     Given an offer for "Acme" as "Senior Backend Engineer"
