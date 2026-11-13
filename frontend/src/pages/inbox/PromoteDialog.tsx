@@ -12,7 +12,7 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { api } from "../../api/client";
 import { CHANNELS, type Channel } from "../applications/options";
-import type { Offer } from "./OffersGrid";
+import type { Offer } from "./types";
 
 type Props = { offer: Offer | null; onClose: () => void; onPromoted: () => void };
 

@@ -6,12 +6,10 @@ import { fieldLabel, quoted } from "./support/form";
 const STATUS_TABS = { pending: "Pending", discarded: "Discarded", promoted: "Promoted" } as const;
 type Status = keyof typeof STATUS_TABS;
 
-const grid = (page: Page) => page.getByRole("grid");
-const titles = (page: Page) => grid(page).getByRole("link");
+const pieces = (page: Page) => page.getByRole("article");
+const titles = (page: Page) => pieces(page).getByRole("heading", { level: 3 }).getByRole("link");
 const row = (page: Page, title: string): Locator =>
-  grid(page)
-    .getByRole("row")
-    .filter({ has: page.getByRole("link", { name: title, exact: true }) });
+  page.getByRole("article", { name: title, exact: true });
 
 async function openInbox(page: Page, status: Status = "pending") {
   await page.goto("/inbox");
@@ -75,6 +73,12 @@ Given(
   },
 );
 
+Given("{int} offers for {string}", async ({ api }, count: number, company: string) => {
+  for (let i = 1; i <= count; i++) {
+    await api.addOffer(company, `Offer ${i}`, `https://jobs.example/${i}`);
+  }
+});
+
 Given("I am on the inbox", async ({ page }) => {
   await openInbox(page);
 });
@@ -123,6 +127,11 @@ When(
   },
 );
 
+When("I ask to see more offers", async ({ page }) => {
+  await expect(titles(page)).toHaveCount(20);
+  await page.getByRole("button", { name: "Show more" }).click();
+});
+
 When("I undo the discard", async ({ page }) => {
   await page.getByRole("button", { name: "Undo" }).click();
 });
@@ -149,8 +158,24 @@ Then(/^I see the offers, in order: (".*")$/, async ({ page }, list: string) => {
   await expect(titles(page)).toHaveText(quoted(list));
 });
 
-Then("I see {int} offers in total", async ({ page }, total: number) => {
-  await expect(page.getByText(new RegExp(`^${total} offers?$`))).toBeVisible();
+Then("the inbox says {string}", async ({ page }, heading: string) => {
+  await expect(page.getByRole("heading", { level: 1, includeHidden: true })).toHaveText(heading);
+});
+
+Then("I see {int} offers listed", async ({ page }, count: number) => {
+  await expect(titles(page)).toHaveCount(count);
+  await expect(page.getByRole("button", { name: "Show more" })).toHaveCount(0);
+});
+
+Then("the offer {string} shows {string}", async ({ page }, title: string, text: string) => {
+  await expect(row(page, title)).toContainText(text);
+});
+
+Then("the offer {string} links to its application", async ({ page }, title: string) => {
+  await expect(row(page, title).getByRole("link", { name: "View application" })).toHaveAttribute(
+    "href",
+    /^\/applications\/[0-9a-f-]{36}$/,
+  );
 });
 
 Then("I see that there are no offers", async ({ page }) => {
@@ -172,7 +197,9 @@ Then(
 
 Then("the offer is not added", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByText("0 offers", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, includeHidden: true })).toHaveText(
+    "0 to decide",
+  );
 });
 
 Then(

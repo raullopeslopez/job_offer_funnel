@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { api } from "../../api/client";
-import type { Offer } from "./OffersGrid";
+import type { Offer } from "./types";
 
 type Props = { offer: Offer | null; onClose: () => void; onDiscarded: (offer: Offer) => void };
 
