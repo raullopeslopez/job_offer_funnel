@@ -22,12 +22,38 @@ declare module "@mui/material/styles" {
   interface Palette {
     tone: Tones;
     source: Sources;
+    // Neutral fill of a passing rule cell. Used in sx as "fill".
+    fill: string;
   }
   interface PaletteOptions {
     tone?: Tones;
     source?: Sources;
+    fill?: string;
   }
 }
+
+// Shape and type of the offer pieces (Epic #74, section 3). Radii and gaps as strings,
+// so sx does not multiply them by shape.borderRadius or spacing.
+export const offerShape = {
+  tagHeight: 26,
+  tagRadius: "7px",
+  pieceGap: "3px",
+  pieceRadius: "6px",
+  groupRadius: "20px",
+  ruleGap: "6px",
+  iconSize: 13,
+} as const;
+
+export const offerType = {
+  tag: { fontSize: "0.78125rem", fontWeight: 500 },
+  cellLabel: {
+    fontSize: "0.65625rem",
+    fontWeight: 500,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  cellValue: { fontSize: "0.8125rem" },
+} as const;
 
 const lightTones: Tones = {
   neutral: { bg: "#eeeff2", fg: "#4a4c57" },
@@ -115,6 +141,7 @@ export const theme = createTheme({
         action: { hover: "rgba(17,19,24,0.04)", selected: "rgba(17,19,24,0.07)" },
         tone: lightTones,
         source: lightSources,
+        fill: "#efeff2",
       },
     },
     dark: {
@@ -128,6 +155,7 @@ export const theme = createTheme({
         action: { hover: "rgba(255,255,255,0.05)", selected: "rgba(140,151,230,0.14)" },
         tone: darkTones,
         source: darkSources,
+        fill: "#24252b",
       },
     },
   },

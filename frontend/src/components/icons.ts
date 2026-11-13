@@ -4,14 +4,18 @@ import ArrowUpwardOutlined from "@mui/icons-material/ArrowUpwardOutlined";
 import BlockOutlined from "@mui/icons-material/BlockOutlined";
 import CallOutlined from "@mui/icons-material/CallOutlined";
 import CallReceivedOutlined from "@mui/icons-material/CallReceivedOutlined";
+import CodeOutlined from "@mui/icons-material/CodeOutlined";
 import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
 import DoNotDisturbOnOutlined from "@mui/icons-material/DoNotDisturbOnOutlined";
 import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import EditOutlined from "@mui/icons-material/EditOutlined";
 import ExploreOutlined from "@mui/icons-material/ExploreOutlined";
 import GroupsOutlined from "@mui/icons-material/GroupsOutlined";
 import HandshakeOutlined from "@mui/icons-material/HandshakeOutlined";
 import HubOutlined from "@mui/icons-material/HubOutlined";
 import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
+import MailOutlineOutlined from "@mui/icons-material/MailOutlineOutlined";
+import RssFeedOutlined from "@mui/icons-material/RssFeedOutlined";
 import ScheduleOutlined from "@mui/icons-material/ScheduleOutlined";
 import SendOutlined from "@mui/icons-material/SendOutlined";
 import TravelExploreOutlined from "@mui/icons-material/TravelExploreOutlined";
@@ -21,6 +25,7 @@ import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
 import WorkspacePremiumOutlined from "@mui/icons-material/WorkspacePremiumOutlined";
 import type { components } from "../api/schema";
+import type { Source } from "../theme";
 
 export const stageIcons: Record<string, SvgIconComponent> = {
   discovered: ExploreOutlined,
@@ -51,6 +56,15 @@ export const channelIcons: Record<string, SvgIconComponent> = {
   recruiter_inbound: CallReceivedOutlined,
   direct: SendOutlined,
   networking: HubOutlined,
+};
+
+// Where an offer came from: always shown with its source color and label.
+export const sourceIcons: Record<Source, SvgIconComponent> = {
+  api: CodeOutlined,
+  rss: RssFeedOutlined,
+  email: MailOutlineOutlined,
+  watched: VisibilityOutlined,
+  manual: EditOutlined,
 };
 
 type Offer = components["schemas"]["OfferRead"];
