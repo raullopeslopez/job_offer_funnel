@@ -4,9 +4,20 @@ import { mono, offerShape } from "../theme";
 
 type Props = { title: string; count: number; children: ReactNode };
 
+const r = offerShape.groupRadius;
+
+// A column of pieces 3px apart, round at the ends of the group and tighter between.
+export const groupedPiecesSx = {
+  display: "flex",
+  flexDirection: "column",
+  gap: offerShape.pieceGap,
+  "& > *": { borderRadius: offerShape.pieceRadius },
+  "& > :first-of-type": { borderTopLeftRadius: r, borderTopRightRadius: r },
+  "& > :last-of-type": { borderBottomLeftRadius: r, borderBottomRightRadius: r },
+} as const;
+
 // A titled group of pieces: 3px apart, round at the ends of the group and tighter between.
 export function GroupedList({ title, count, children }: Props) {
-  const r = offerShape.groupRadius;
   return (
     <Box component="section" aria-label={title}>
       <Typography variant="h6" component="h2" sx={{ mb: 1.5 }}>
@@ -16,18 +27,7 @@ export function GroupedList({ title, count, children }: Props) {
         </Box>{" "}
         {count === 1 ? "offer" : "offers"}
       </Typography>
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: offerShape.pieceGap,
-          "& > *": { borderRadius: offerShape.pieceRadius },
-          "& > :first-of-type": { borderTopLeftRadius: r, borderTopRightRadius: r },
-          "& > :last-of-type": { borderBottomLeftRadius: r, borderBottomRightRadius: r },
-        }}
-      >
-        {children}
-      </Box>
+      <Box sx={groupedPiecesSx}>{children}</Box>
     </Box>
   );
 }

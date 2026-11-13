@@ -35,7 +35,7 @@ Feature: Sources screen
     Given a job board named "Indeed"
     And I am on the sources
     When I open the searches of the job board "Indeed"
-    Then I am on the profiles
+    Then I see the profiles
 
   # --- Job boards ---
 

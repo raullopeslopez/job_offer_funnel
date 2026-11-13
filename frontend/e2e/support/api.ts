@@ -50,6 +50,16 @@ export class Api {
     });
   }
 
+  addRssJobBoard(name: string, rssUrlTemplate: string): Promise<Schemas["JobBoardRead"]> {
+    return this.post("/job-boards", {
+      name,
+      search_url_template: "https://jobs.example/search?q={query}",
+      syntax: "keywords",
+      import_method: "rss",
+      rss_url_template: rssUrlTemplate,
+    });
+  }
+
   addSearchProfile(
     name: string,
     fields: Partial<Schemas["SearchProfileCreate"]> = {},

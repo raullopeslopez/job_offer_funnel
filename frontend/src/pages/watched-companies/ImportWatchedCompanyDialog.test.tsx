@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { server } from "../../test/server";
+import type { WatchedCompany } from "../sources/types";
 import { ImportWatchedCompanyDialog } from "./ImportWatchedCompanyDialog";
-import type { WatchedCompany } from "./WatchedCompaniesPage";
 
 // specs/ui/sources.feature, @component scenarios of the watched companies: the E2E tests cannot reach the ATS.
 

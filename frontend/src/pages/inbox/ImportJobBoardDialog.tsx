@@ -32,9 +32,12 @@ function inTime(seconds: number): string {
     : relative.format(minutes, "minute");
 }
 
-type Props = { open: boolean; onClose: () => void };
+type JobBoard = Pick<components["schemas"]["JobBoardRead"], "id" | "name">;
 
-export function ImportJobBoardDialog({ open, onClose }: Props) {
+// Without `jobBoard` the dialog asks which job board to import; with it, imports that one.
+type Props = { open: boolean; onClose: () => void; jobBoard?: JobBoard };
+
+export function ImportJobBoardDialog({ open, onClose, jobBoard }: Props) {
   const queryClient = useQueryClient();
   const [result, setResult] = useState<ImportResult | null>(null);
   const {
@@ -43,12 +46,12 @@ export function ImportJobBoardDialog({ open, onClose }: Props) {
     setError,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ defaultValues: { job_board_id: "" } });
+  } = useForm<Values>({ defaultValues: { job_board_id: jobBoard?.id ?? "" } });
 
   // Only the job boards with an import method can be imported.
   const jobBoards = useQuery({
     queryKey: ["job-boards", "imported"],
-    enabled: open,
+    enabled: open && !jobBoard,
     queryFn: async () => {
       const { data, error } = await api.GET("/api/v1/job-boards", {
         params: { query: { limit: PAGE_LIMIT } },
@@ -67,7 +70,7 @@ export function ImportJobBoardDialog({ open, onClose }: Props) {
   };
 
   const onSubmit = handleSubmit(async ({ job_board_id }) => {
-    const name = jobBoards.data?.find((jobBoard) => jobBoard.id === job_board_id)?.name;
+    const name = jobBoard?.name ?? jobBoards.data?.find((board) => board.id === job_board_id)?.name;
     if (!name) {
       setError("job_board_id", { message: "Choose a job board" });
       return;
@@ -93,7 +96,7 @@ export function ImportJobBoardDialog({ open, onClose }: Props) {
   return (
     <Dialog open={open} onClose={close} fullWidth>
       <form onSubmit={onSubmit} noValidate>
-        <DialogTitle>Import job board</DialogTitle>
+        <DialogTitle>{jobBoard ? `Import “${jobBoard.name}”` : "Import job board"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             {errors.root && <Alert severity="warning">{errors.root.message}</Alert>}
@@ -103,26 +106,28 @@ export function ImportJobBoardDialog({ open, onClose }: Props) {
                 {result.already_in_inbox} already in the inbox, {result.expired} expired
               </Alert>
             )}
-            <Controller
-              name="job_board_id"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  select
-                  label="Job board"
-                  fullWidth
-                  error={Boolean(errors.job_board_id)}
-                  helperText={errors.job_board_id?.message}
-                >
-                  {(jobBoards.data ?? []).map(({ id, name }) => (
-                    <MenuItem key={id} value={id}>
-                      {name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
+            {!jobBoard && (
+              <Controller
+                name="job_board_id"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    select
+                    label="Job board"
+                    fullWidth
+                    error={Boolean(errors.job_board_id)}
+                    helperText={errors.job_board_id?.message}
+                  >
+                    {(jobBoards.data ?? []).map(({ id, name }) => (
+                      <MenuItem key={id} value={id}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
