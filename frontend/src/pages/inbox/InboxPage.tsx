@@ -1,7 +1,6 @@
-import { Box, Button, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
-import type { GridPaginationModel } from "@mui/x-data-grid";
+import { Box, Button, Snackbar, Stack, Typography } from "@mui/material";
 import {
-  keepPreviousData,
+  useInfiniteQuery,
   useMutation,
   useQueries,
   useQuery,
@@ -10,21 +9,22 @@ import {
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
-import { TabLabel } from "../../components/TabLabel";
+import { SegmentedTabs } from "../../components/SegmentedTabs";
 import { AddOfferDialog } from "./AddOfferDialog";
 import { DiscardDialog } from "./DiscardDialog";
 import { ImportJobBoardDialog } from "./ImportJobBoardDialog";
-import { type Offer, type OfferStatus, OffersGrid, type OfferView } from "./OffersGrid";
+import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
+import type { Offer, OfferStatus, OfferView } from "./types";
 
 // The pending offers are split: those that fit a search profile and the filtered ones
 // (specs/inbox/filtered_offers.feature).
 type View = OfferView;
-const VIEWS: { value: View; label: string }[] = [
-  { value: "pending", label: "Pending" },
-  { value: "filtered", label: "Filtered" },
-  { value: "discarded", label: "Discarded" },
-  { value: "promoted", label: "Promoted" },
+const VIEWS: { value: View; label: string; heading: string }[] = [
+  { value: "pending", label: "Pending", heading: "to decide" },
+  { value: "filtered", label: "Filtered", heading: "filtered" },
+  { value: "discarded", label: "Discarded", heading: "discarded" },
+  { value: "promoted", label: "Promoted", heading: "promoted" },
 ];
 
 function viewQuery(view: View): { status: OfferStatus; filtered?: boolean } {
@@ -53,31 +53,35 @@ export function InboxPage() {
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const view = (params.get("status") as View | null) ?? "pending";
-  const [pagination, setPagination] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: PAGE_SIZE,
-  });
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
   const [discarding, setDiscarding] = useState<Offer | null>(null);
   const [promoting, setPromoting] = useState<Offer | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  const offers = useQuery({
-    queryKey: ["offers", view, pagination.page, pagination.pageSize],
-    queryFn: async () => {
+  const offers = useInfiniteQuery({
+    queryKey: ["offers", view],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
       const { data, error } = await api.GET("/api/v1/offers", {
-        params: {
-          query: {
-            ...viewQuery(view),
-            limit: pagination.pageSize,
-            offset: pagination.page * pagination.pageSize,
-          },
-        },
+        params: { query: { ...viewQuery(view), limit: PAGE_SIZE, offset: pageParam } },
       });
       if (error) throw error;
       return data;
     },
-    placeholderData: keepPreviousData,
+    getNextPageParam: (last) =>
+      last.offset + last.items.length < last.total ? last.offset + last.items.length : undefined,
+  });
+
+  // The import method of each job board tells the source of its offers.
+  const jobBoards = useQuery({
+    queryKey: ["job-boards"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/api/v1/job-boards", {
+        params: { query: { limit: 100 } },
+      });
+      if (error) throw error;
+      return data.items;
+    },
   });
 
   const counts = useQueries({
@@ -99,54 +103,76 @@ export function InboxPage() {
     },
   });
 
-  const changeView = (next: View) => {
-    setParams(next === "pending" ? {} : { status: next });
-    setPagination((current) => ({ ...current, page: 0 }));
-  };
+  const changeView = (next: View) => setParams(next === "pending" ? {} : { status: next });
 
-  const total = offers.data?.total ?? 0;
+  const pages = offers.data?.pages ?? [];
+  const items = pages.flatMap((page) => page.items);
+  const total = pages[0]?.total ?? 0;
+  const heading = VIEWS.find(({ value }) => value === view)?.heading;
 
   return (
     <>
-      <Stack direction="row" sx={{ alignItems: "center", mb: 2 }} spacing={2}>
-        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-          Inbox
-        </Typography>
-        <Button variant="outlined" onClick={() => setDialog("import")}>
-          Import job board
-        </Button>
-        <Button variant="contained" onClick={() => setDialog("add")}>
-          Add offer
-        </Button>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        sx={{ alignItems: { sm: "flex-end" }, mb: 3 }}
+        spacing={2}
+      >
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h4" component="h1">
+            {total} {heading}
+          </Typography>
+          {view === "pending" && (
+            <Typography color="text.secondary" sx={{ mt: 1 }}>
+              Each offer shows the rules of your profile it passed. Promote it, or discard it and
+              say why.
+            </Typography>
+          )}
+        </Box>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" onClick={() => setDialog("import")}>
+            Import job board
+          </Button>
+          <Button variant="contained" onClick={() => setDialog("add")}>
+            Add offer
+          </Button>
+        </Stack>
       </Stack>
 
-      <Tabs value={view} onChange={(_, next: View) => changeView(next)} sx={{ mb: 2 }}>
-        {VIEWS.map(({ value, label }, index) => (
-          <Tab
-            key={value}
-            value={value}
-            label={<TabLabel label={label} count={counts[index]?.data ?? 0} />}
-          />
-        ))}
-      </Tabs>
+      <Box sx={{ mb: 3 }}>
+        <SegmentedTabs
+          aria-label="Offers"
+          value={view}
+          onChange={changeView}
+          items={VIEWS.map(({ value, label }, index) => ({
+            value,
+            label,
+            count: counts[index]?.data ?? 0,
+          }))}
+        />
+      </Box>
 
-      <Typography color="text.secondary" sx={{ mb: 1 }}>
-        {total === 1 ? "1 offer" : `${total} offers`}
-      </Typography>
-
-      <Box>
-        <OffersGrid
-          status={view}
-          offers={offers.data?.items ?? []}
-          total={total}
-          loading={offers.isFetching}
-          pagination={pagination}
-          onPaginationChange={setPagination}
+      {offers.isSuccess && (
+        <OfferList
+          view={view}
+          offers={items}
+          jobBoards={jobBoards.data ?? []}
           onDiscard={setDiscarding}
           onPromote={setPromoting}
           onRestore={(offer) => restore.mutate(offer.id)}
         />
-      </Box>
+      )}
+
+      {offers.hasNextPage && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+          <Button
+            variant="outlined"
+            loading={offers.isFetchingNextPage}
+            onClick={() => offers.fetchNextPage()}
+          >
+            Show more
+          </Button>
+        </Box>
+      )}
 
       <AddOfferDialog
         open={dialog === "add"}
