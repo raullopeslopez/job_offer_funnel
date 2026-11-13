@@ -40,7 +40,7 @@ Feature: Criteria previews
       | excluded_keywords | Senior, Lead                    | 0        | 1       |
       | excluded_keywords |                                 | 1        | 0       |
       | keywords          | Python, Django                  | 0        | 2       |
-      | work_modes        | on_site                         | 0        | 0       |
+      | work_modes        | onsite                          | 0        | 0       |
 
   Scenario: An offer that still fits another profile does not leave Pending
     Given a search profile named "Leads" with:
