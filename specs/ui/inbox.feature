@@ -10,6 +10,11 @@ Feature: Inbox screen
   most recent first; the filtered ones (specs/inbox/filtered_offers.feature) have
   their own view.
 
+  Every offer is a piece with the same parts, wherever it came from: its source,
+  company and age, its title, its actions and a strip with what its description
+  says of the mode, the location and the contract (specs/inbox/offer_readings.feature).
+  The pieces are grouped by the day they were added: Today, Yesterday and Earlier.
+
   Background:
     Given I am signed in with a valid token
 
@@ -20,7 +25,7 @@ Feature: Inbox screen
     And an offer for "Acme" as "Discarded one" that was discarded
     When I open the inbox
     Then I see the offers, in order: "C", "B", "A"
-    And I see 3 offers in total
+    And the inbox says "3 to decide"
 
   Scenario Outline: Show the offers of another status
     Given an offer for "Acme" as "Pending one"
@@ -28,12 +33,50 @@ Feature: Inbox screen
     And an offer for "Acme" as "Promoted one" that was promoted
     When I open the inbox showing the "<status>" offers
     Then I see the offers, in order: "<title>"
+    And the inbox says "<heading>"
 
     Examples:
-      | status    | title         |
-      | pending   | Pending one   |
-      | discarded | Discarded one |
-      | promoted  | Promoted one  |
+      | status    | title         | heading     |
+      | pending   | Pending one   | 1 to decide |
+      | discarded | Discarded one | 1 discarded |
+      | promoted  | Promoted one  | 1 promoted  |
+
+  # @component: the E2E tests add every offer today; a component test dates them.
+
+  @component
+  Scenario: The offers are grouped by the day they were added
+    Given an offer for "Acme" as "New one" added today
+    And an offer for "Acme" as "Recent one" added yesterday
+    And an offer for "Acme" as "Old one" added a week ago
+    When I open the inbox
+    Then I see the groups, in order: "Today", "Yesterday", "Earlier"
+
+  Scenario: More offers are shown on demand
+    Given 21 offers for "Acme"
+    And I am on the inbox
+    When I ask to see more offers
+    Then I see 21 offers listed
+
+  # --- What the description says ---
+
+  Scenario: An offer without a reading says so
+    Given an offer for "Acme" as "Backend Engineer"
+    When I open the inbox
+    Then the offer "Backend Engineer" shows "Not read yet, or no description to read"
+
+  # @component: only the external reader makes readings, and the E2E tests cannot reach it.
+
+  @component
+  Scenario Outline: The strip shows what the reading says
+    Given an offer for "Acme" as "Backend Engineer" whose reading says the mode is "<mode>"
+    When I open the inbox
+    Then the offer "Backend Engineer" shows "<shown>" as its mode
+
+    Examples:
+      | mode   | shown      |
+      | remote | Remote     |
+      | hybrid | Hybrid     |
+      | none   | Not stated |
 
   # @component: only an import makes filtered offers, and the E2E tests cannot reach the feeds.
 
@@ -87,7 +130,7 @@ Feature: Inbox screen
     And I am on the inbox
     When I add an offer for "ACME" as "backend engineer"
     Then I see the message "The offer already exists"
-    And I see 1 offers in total
+    And the inbox says "1 to decide"
 
   # --- Importing job boards ---
   # @component: the E2E tests cannot reach the public feeds; component tests cover these.
@@ -151,6 +194,11 @@ Feature: Inbox screen
       | channel  |
       | portal   |
       | referral |
+
+  Scenario: A promoted offer opens its application
+    Given an offer for "Acme" as "Backend Engineer" that was promoted
+    When I open the inbox showing the "promoted" offers
+    Then the offer "Backend Engineer" links to its application
 
   Scenario: Only pending offers can be discarded or promoted
     Given an offer for "Acme" as "Backend Engineer" that was promoted
