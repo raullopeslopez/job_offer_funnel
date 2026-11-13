@@ -47,12 +47,14 @@ Una pantalla por PR, en orden de uso:
 | # | Spec | Pantalla | Endpoints |
 |---|------|----------|-----------|
 | 1 | `specs/ui/inbox.feature` | **Bandeja**: listado de ofertas, alta manual, importar portales, descartar y deshacer, pasar a candidatura | `offers`, `job-boards` |
-| 2 | `specs/ui/searches.feature` | **Búsquedas**: perfiles (CRUD) y, por perfil, las búsquedas generadas con su enlace al portal | `search-profiles`, `searches` |
+| 2 | `specs/ui/profiles.feature` (antes `searches.feature`) | **Perfiles** (antes Búsquedas): perfiles (CRUD) y, por perfil, las búsquedas generadas con su enlace al portal | `search-profiles`, `searches` |
 | 3 | `specs/ui/applications.feature` | **Candidaturas**: listado con filtros, alta, edición y detalle con historial | `applications` |
 | 4 | `specs/ui/stage_transitions.feature` | **Transiciones** en el detalle: avanzar de fase, salidas y deshacer la última | `transitions` |
 | 5 | `specs/ui/metrics.feature` | **Métricas**: conversión por fase y por canal, pipeline activo | `metrics` |
-| 6 | `specs/ui/settings.feature` | **Ajustes**: empresas y portales (CRUD) | `companies`, `job-boards` |
-| 7 | `specs/ui/watched_companies.feature` | **Empresas vigiladas**: alta, listado, dejar de vigilar e importar para un perfil | `watched-companies`, `search-profiles` |
+| 6 | `specs/ui/companies.feature` y `specs/ui/sources.feature` (antes `settings.feature`) | **Ajustes**: empresas y portales (CRUD); hoy **Empresas** y la primera sección de **Fuentes** | `companies`, `job-boards` |
+| 7 | `specs/ui/sources.feature` (antes `watched_companies.feature`) | **Empresas vigiladas**, hoy la segunda sección de **Fuentes**: alta, listado, dejar de vigilar e importar para un perfil | `watched-companies`, `search-profiles` |
+
+**Navegación** (Epic #74, #76): seis pantallas en dos grupos, sin Home (`/` lleva a la Bandeja). «Offers»: Inbox (`/inbox`, con el número de pendientes), Profiles (`/profiles`) y Sources (`/sources`: portales y, debajo, empresas vigiladas). «Pipeline»: Applications (`/applications`), Metrics (`/metrics`) y Companies (`/companies`). Los grupos están en `frontend/src/layout/navItems.ts`.
 
 ## Fuera (con disparador)
 

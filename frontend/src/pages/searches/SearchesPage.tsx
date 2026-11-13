@@ -44,7 +44,7 @@ export function SearchesPage() {
     <>
       <Stack direction="row" sx={{ alignItems: "center", mb: 2 }}>
         <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-          Searches
+          Profiles
         </Typography>
         <Button variant="contained" onClick={() => setEditing("new")}>
           New profile

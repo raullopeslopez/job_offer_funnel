@@ -6,7 +6,7 @@ import { server } from "../../test/server";
 import { ImportWatchedCompanyDialog } from "./ImportWatchedCompanyDialog";
 import type { WatchedCompany } from "./WatchedCompaniesPage";
 
-// specs/ui/watched_companies.feature, @component scenarios: the E2E tests cannot reach the ATS.
+// specs/ui/sources.feature, @component scenarios of the watched companies: the E2E tests cannot reach the ATS.
 
 const COMPANY: WatchedCompany = {
   id: "6f1c1d2e-0000-4000-8000-000000000004",

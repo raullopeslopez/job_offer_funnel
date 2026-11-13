@@ -3,16 +3,16 @@ import type { DataTable } from "playwright-bdd";
 import { Given, Then, When } from "./support/fixtures";
 import { fieldLabel, quoted } from "./support/form";
 
-// Both sections work alike: the spec says "company" or "job board", the app shows a tab.
+// Companies (specs/ui/companies.feature) and job boards (specs/ui/sources.feature) work alike;
+// the job boards screen is opened by sources.steps.ts.
 type Section = "companies" | "job boards";
-const TABS: Record<Section, string> = { companies: "Companies", "job boards": "Job boards" };
 const NEW_BUTTONS: Record<Section, string> = {
   companies: "New company",
   "job boards": "New job board",
 };
 const SELECTS = new Set(["syntax", "feed"]);
 
-// See searches.steps.ts: the name cells are found by their column, outside getByRole("grid").
+// See profiles.steps.ts: the name cells are found by their column, outside getByRole("grid").
 const nameCells = (page: Page) => page.locator('[role="gridcell"][data-field="name"]');
 // The name cell has two lines (name, then website or syntax): the name is its first line.
 const row = (page: Page, name: string): Locator =>
@@ -20,11 +20,6 @@ const row = (page: Page, name: string): Locator =>
     .getByRole("grid")
     .getByRole("row")
     .filter({ has: page.locator('[data-field="name"]').getByText(name, { exact: true }) });
-
-async function openSection(page: Page, section: Section) {
-  await page.goto("/settings");
-  await page.getByRole("tab", { name: TABS[section] }).click();
-}
 
 async function fill(page: Page, fields: Record<string, string>) {
   const dialog = page.getByRole("dialog");
@@ -94,22 +89,14 @@ Given(
   },
 );
 
-Given("I am on the companies in the settings", async ({ page }) => {
-  await openSection(page, "companies");
-});
-
-Given("I am on the job boards in the settings", async ({ page }) => {
-  await openSection(page, "job boards");
+Given("I am on the companies", async ({ page }) => {
+  await page.goto("/companies");
 });
 
 // --- When ---
 
-When("I open the companies in the settings", async ({ page }) => {
-  await openSection(page, "companies");
-});
-
-When("I open the job boards in the settings", async ({ page }) => {
-  await openSection(page, "job boards");
+When("I open the companies", async ({ page }) => {
+  await page.goto("/companies");
 });
 
 When(

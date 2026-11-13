@@ -18,9 +18,11 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
-import { navItems } from "./navItems";
+import { offerCountQuery } from "../pages/inbox/InboxPage";
+import { navGroups } from "./navItems";
 
 const DRAWER_WIDTH = 240;
 
@@ -31,6 +33,7 @@ export function Layout() {
   const dark = colorScheme === "dark";
   const ThemeIcon = dark ? LightModeOutlined : DarkModeOutlined;
   const themeLabel = dark ? "Light theme" : "Dark theme";
+  const pending = useQuery(offerCountQuery("pending"));
 
   const nav = (
     <Box
@@ -43,26 +46,52 @@ export function Layout() {
           Job Offer Funnel
         </Typography>
       </Toolbar>
-      <List sx={{ flex: 1 }}>
-        {navItems.map(({ path, label, icon: Icon }) => (
-          <ListItemButton
-            key={path}
-            component={NavLink}
-            to={path}
-            end
-            onClick={() => setNavOpen(false)}
-            sx={{
-              "& .MuiListItemIcon-root": { color: "text.secondary" },
-              "&.active .MuiListItemIcon-root": { color: "primary.main" },
-            }}
+      <Box sx={{ flex: 1 }}>
+        {navGroups.map((group) => (
+          <List
+            key={group.label}
+            aria-labelledby={`nav-${group.label}`}
+            subheader={
+              <Typography
+                id={`nav-${group.label}`}
+                variant="overline"
+                color="text.secondary"
+                component="div"
+                sx={{ px: 2, pt: 1 }}
+              >
+                {group.label}
+              </Typography>
+            }
           >
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <Icon aria-hidden="true" sx={{ fontSize: 20 }} />
-            </ListItemIcon>
-            <ListItemText primary={label} />
-          </ListItemButton>
+            {group.items.map(({ path, label, icon: Icon }) => (
+              <ListItemButton
+                key={path}
+                component={NavLink}
+                to={path}
+                onClick={() => setNavOpen(false)}
+                sx={{
+                  "& .MuiListItemIcon-root": { color: "text.secondary" },
+                  "&.active .MuiListItemIcon-root": { color: "primary.main" },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  <Icon aria-hidden="true" sx={{ fontSize: 20 }} />
+                </ListItemIcon>
+                <ListItemText primary={label} />
+                {path === "/inbox" && pending.data !== undefined && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    aria-label={`${pending.data} pending`}
+                  >
+                    {pending.data}
+                  </Typography>
+                )}
+              </ListItemButton>
+            ))}
+          </List>
         ))}
-      </List>
+      </Box>
       <Divider />
       <Box
         sx={{

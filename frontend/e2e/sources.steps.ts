@@ -40,14 +40,14 @@ Given(
   },
 );
 
-Given("I am on the watched companies", async ({ page }) => {
-  await page.goto("/watched-companies");
+Given("I am on the sources", async ({ page }) => {
+  await page.goto("/sources");
 });
 
 // --- When ---
 
-When("I open the watched companies", async ({ page }) => {
-  await page.goto("/watched-companies");
+When("I open the sources", async ({ page }) => {
+  await page.goto("/sources");
 });
 
 When(

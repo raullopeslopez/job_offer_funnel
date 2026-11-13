@@ -90,7 +90,7 @@ export function WatchedCompaniesPage() {
   return (
     <>
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h5" component="h2">
           Watched companies
         </Typography>
         <Button variant="contained" onClick={() => setWatching(true)}>

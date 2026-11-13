@@ -22,8 +22,8 @@ const row = (page: Page, name: string): Locator =>
 const board = (page: Page, name: string) =>
   page.getByRole("dialog").getByRole("region", { name, exact: true });
 
-async function openSearches(page: Page) {
-  await page.goto("/searches");
+async function openProfiles(page: Page) {
+  await page.goto("/profiles");
 }
 
 async function fillProfile(page: Page, fields: Record<string, string>) {
@@ -113,14 +113,14 @@ Given(
   },
 );
 
-Given("I am on the searches", async ({ page }) => {
-  await openSearches(page);
+Given("I am on the profiles", async ({ page }) => {
+  await openProfiles(page);
 });
 
 // --- When ---
 
-When("I open the searches", async ({ page }) => {
-  await openSearches(page);
+When("I open the profiles", async ({ page }) => {
+  await openProfiles(page);
 });
 
 When("I create a profile with:", async ({ page }, table: DataTable) => {
