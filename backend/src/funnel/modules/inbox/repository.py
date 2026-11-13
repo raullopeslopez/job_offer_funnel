@@ -229,7 +229,9 @@ class OfferRepository:
             select(OfferRow.review, OfferRow.review_rules).where(OfferRow.review.is_not(None))
         )
         return [
-            ReviewMade(Review(review), [Rule(rule) for rule in rules]) for review, rules in rows
+            # The query leaves out the offers without a review.
+            ReviewMade(cast(Review, review), [Rule(rule) for rule in rules])
+            for review, rules in rows
         ]
 
     async def save(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
