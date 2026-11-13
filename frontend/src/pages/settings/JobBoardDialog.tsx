@@ -13,7 +13,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { api } from "../../api/client";
 import { fieldErrors, isProblem } from "../../api/problems";
 import type { components } from "../../api/schema";
-import type { JobBoard } from "./JobBoardsSection";
+import type { JobBoard } from "../sources/types";
 
 type Syntax = components["schemas"]["Syntax"];
 const SYNTAXES: Syntax[] = ["boolean", "minus", "keywords"];

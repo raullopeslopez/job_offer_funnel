@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import type { WatchedCompany } from "./WatchedCompaniesPage";
+import type { WatchedCompany } from "../sources/types";
 
 type Props = { company: WatchedCompany | null; onClose: () => void; onStopped: () => void };
 

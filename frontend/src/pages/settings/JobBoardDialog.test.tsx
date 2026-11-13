@@ -2,8 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { server } from "../../test/server";
+import type { JobBoard } from "../sources/types";
 import { JobBoardDialog } from "./JobBoardDialog";
-import type { JobBoard } from "./JobBoardsSection";
 
 const JOB_BOARD: JobBoard = {
   id: "6f1c1d2e-0000-4000-8000-000000000004",

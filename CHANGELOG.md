@@ -131,6 +131,10 @@ While the version is `0.x`, the API may change without a major version bump.
   age, and a strip with what its description says of the mode, the location and the
   contract ("Not stated" when it does not say). The heading counts the offers to decide,
   "Show more" loads the next ones, and a promoted offer links to its application.
+- Web app: the sources are grouped in five blocks by how offers reach the inbox: API
+  import, Watched companies, RSS import, Email alerts and Added by hand, with a generated
+  search. Each block says what the app does and what you do. Job boards imported by API
+  or RSS have "Import now", and those added by hand link to their searches in Profiles.
 - **Breaking:** importing a feed or a watched company no longer takes a search profile
   (no request body): it adds every offer the source returns, skipping duplicates. The
   import summary reports how many of the added ones are `filtered` instead of `matching`.

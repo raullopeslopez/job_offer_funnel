@@ -4,7 +4,7 @@ import { Given, Then, When } from "./support/fixtures";
 import { fieldLabel, quoted } from "./support/form";
 
 // Companies (specs/ui/companies.feature) and job boards (specs/ui/sources.feature) work alike;
-// the job boards screen is opened by sources.steps.ts.
+// the sources screen is opened by sources.steps.ts.
 type Section = "companies" | "job boards";
 const NEW_BUTTONS: Record<Section, string> = {
   companies: "New company",
@@ -12,14 +12,13 @@ const NEW_BUTTONS: Record<Section, string> = {
 };
 const SELECTS = new Set(["syntax", "feed"]);
 
-// See profiles.steps.ts: the name cells are found by their column, outside getByRole("grid").
-const nameCells = (page: Page) => page.locator('[role="gridcell"][data-field="name"]');
-// The name cell has two lines (name, then website or syntax): the name is its first line.
+// Every company or job board has an Edit button labelled with its name.
+const editButtons = (page: Page) => page.locator('button[aria-label^="Edit “"]');
+// A company is a row of the grid; a job board, an item of its block on the sources.
 const row = (page: Page, name: string): Locator =>
   page
-    .getByRole("grid")
-    .getByRole("row")
-    .filter({ has: page.locator('[data-field="name"]').getByText(name, { exact: true }) });
+    .locator('[role="grid"] [role="row"], li')
+    .filter({ has: page.getByText(name, { exact: true }) });
 
 async function fill(page: Page, fields: Record<string, string>) {
   const dialog = page.getByRole("dialog");
@@ -164,29 +163,29 @@ When(/^I delete the (?:company|job board) "(.*)" and cancel$/, async ({ page }, 
 
 Then(/^I see the (?:companies|job boards), in order: (".*")$/, async ({ page }, list: string) => {
   // The name cell also holds the avatar initial and a second line: read the names from the
-  // Edit buttons, one per row, labelled with the name.
+  // Edit buttons, one per row, labelled with the name. On the sources, the blocks keep the
+  // job boards of each import method alphabetically.
   const names = () =>
-    page
-      .locator('[role="grid"] button[aria-label^="Edit “"]')
-      .evaluateAll((buttons) =>
-        buttons.map((button) => button.getAttribute("aria-label")?.slice("Edit “".length, -1)),
-      );
+    editButtons(page).evaluateAll((buttons) =>
+      buttons.map((button) => button.getAttribute("aria-label")?.slice("Edit “".length, -1)),
+    );
   await expect.poll(names).toEqual(quoted(list));
 });
 
 Then("I see that there are no companies", async ({ page }) => {
   await expect(page.getByText("No companies", { exact: true })).toBeVisible();
-  await expect(nameCells(page)).toHaveCount(0);
+  await expect(editButtons(page)).toHaveCount(0);
 });
 
 Then("I see that there are no job boards", async ({ page }) => {
-  await expect(page.getByText("No job boards", { exact: true })).toBeVisible();
-  await expect(nameCells(page)).toHaveCount(0);
+  // Each block of job boards says so.
+  await expect(page.getByText("No job boards", { exact: true })).toHaveCount(4);
+  await expect(editButtons(page)).toHaveCount(0);
 });
 
 Then(/^the (?:company|job board) is not created$/, async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(nameCells(page)).toHaveCount(0);
+  await expect(editButtons(page)).toHaveCount(0);
 });
 
 Then(

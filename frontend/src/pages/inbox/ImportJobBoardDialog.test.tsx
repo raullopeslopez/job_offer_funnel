@@ -122,3 +122,59 @@ describe("ImportJobBoardDialog", () => {
     expect(options.map((option) => option.textContent)).toEqual(["Remote OK"]);
   });
 });
+
+// specs/ui/sources.feature, @component scenarios: "Import now" on a job board of the sources.
+describe("ImportJobBoardDialog with a job board chosen", () => {
+  const imported = HttpResponse.json(
+    {
+      job_board_id: REMOTE_OK_ID,
+      imported_at: "2026-03-10T09:00:00Z",
+      found: 1,
+      added: 1,
+      filtered: 0,
+      already_in_inbox: 0,
+      expired: 0,
+    },
+    { status: 201 },
+  );
+  // Imported 1 minute ago: 6 hours of cooldown, minus that minute.
+  const coolingDown = HttpResponse.json(
+    {
+      type: "/problems/feed-cooldown",
+      title: "Feed imported too recently",
+      status: 429,
+      detail: "remoteok can be imported again at 2026-03-10T15:00:00+00:00",
+    },
+    { status: 429, headers: { "Retry-After": String(6 * 60 * 60 - 60) } },
+  );
+
+  it.each([
+    [
+      "the summary of the import",
+      imported,
+      "1 found, 1 added, 0 filtered, 0 already in the inbox, 0 expired",
+    ],
+    ["when it can be imported again", coolingDown, "Remote OK can be imported again in 6 hours"],
+  ])("shows %s", async (_case, response, expected) => {
+    // Arrange
+    server.use(http.post(IMPORTS_URL, () => response.clone()));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ImportJobBoardDialog
+          open
+          onClose={() => {}}
+          jobBoard={{ id: REMOTE_OK_ID, name: "Remote OK" }}
+        />
+      </QueryClientProvider>,
+    );
+    const user = userEvent.setup();
+
+    // Act
+    await user.click(screen.getByRole("button", { name: "Import" }));
+
+    // Assert
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Job board" })).not.toBeInTheDocument();
+  });
+});

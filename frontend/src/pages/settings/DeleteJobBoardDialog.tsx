@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import type { JobBoard } from "./JobBoardsSection";
+import type { JobBoard } from "../sources/types";
 
 type Props = { jobBoard: JobBoard | null; onClose: () => void; onDeleted: () => void };
 

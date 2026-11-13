@@ -6,11 +6,36 @@ Feature: Sources screen
   The rules of job boards are those of specs/discovery/job_boards.feature; those of the
   watched companies and their imports, of specs/inbox/ats_companies.feature. This screen
   only shows them: every rejection appears as a message, next to its field when it belongs
-  to one. The sources have two sections, one below the other: job boards, listed
-  alphabetically, and watched companies, listed by name.
+  to one. The sources are grouped by how their offers reach the inbox, in five blocks, in
+  this order: "API import", "Watched companies", "RSS import", "Email alerts" and "Added by
+  hand, with a generated search". Each job board is in the block of its import method; the
+  job boards are listed alphabetically and the watched companies by name.
 
   Background:
     Given I am signed in with a valid token
+
+  # --- Blocks ---
+
+  Scenario: The sources are grouped in five blocks by how offers arrive
+    When I open the sources
+    Then I see the blocks, in order: "API import", "Watched companies", "RSS import", "Email alerts", "Added by hand, with a generated search"
+
+  Scenario: Each job board is in the block of its import method
+    Given a job board named "Remote OK" imported from the feed "remoteok"
+    And a job board named "Evenbreak" imported from the RSS "https://www.evenbreak.com/jobsrss/?keywords={query}"
+    And a job board named "LinkedIn" imported from the email alert "linkedin"
+    And a job board named "Indeed"
+    When I open the sources
+    Then the block "API import" lists the job boards: "Remote OK"
+    And the block "RSS import" lists the job boards: "Evenbreak"
+    And the block "Email alerts" lists the job boards: "LinkedIn"
+    And the block "Added by hand, with a generated search" lists the job boards: "Indeed"
+
+  Scenario: A job board added by hand links to its searches in the profiles
+    Given a job board named "Indeed"
+    And I am on the sources
+    When I open the searches of the job board "Indeed"
+    Then I see the profiles
 
   # --- Job boards ---
 
@@ -19,7 +44,7 @@ Feature: Sources screen
     When I open the sources
     Then I see the job boards, in order: "Indeed", "LinkedIn", "tecnoempleo"
 
-  Scenario: Without job boards the section says so
+  Scenario: Without job boards the blocks say so
     When I open the sources
     Then I see that there are no job boards
 
@@ -99,6 +124,25 @@ Feature: Sources screen
     And I am on the sources
     When I delete the job board "LinkedIn" and cancel
     Then I see the job boards, in order: "LinkedIn"
+
+  # --- Job boards: importing now ---
+  # @component: the E2E tests cannot reach the feeds; component tests cover these.
+
+  @component
+  Scenario: Import a job board now
+    Given a search profile named "Backend" with the title "Backend Engineer"
+    And a job board named "Remote OK" imported from the feed "remoteok"
+    And the feed "remoteok" publishes an offer as "Backend Engineer"
+    And I am on the sources
+    When I import the job board "Remote OK" now
+    Then I see the import summary: 1 found, 1 added, 0 filtered, 0 already in the inbox, 0 expired
+
+  @component
+  Scenario: A job board imported a moment ago says when it can be imported again
+    Given a job board named "Remote OK" imported from the feed "remoteok" 1 minute ago
+    And I am on the sources
+    When I import the job board "Remote OK" now
+    Then I see the message "Remote OK can be imported again in 6 hours"
 
   # --- Watched companies: viewing ---
 

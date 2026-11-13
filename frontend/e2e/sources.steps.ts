@@ -3,7 +3,8 @@ import type { components } from "../src/api/schema";
 import { Given, Then, When } from "./support/fixtures";
 import { fieldLabel, quoted } from "./support/form";
 
-// The @component scenarios (importing) are covered by WatchedCompaniesPage.test.tsx.
+// The @component scenarios (importing) are covered by ImportJobBoardDialog.test.tsx and
+// ImportWatchedCompanyDialog.test.tsx.
 
 type Ats = components["schemas"]["Ats"];
 
@@ -13,8 +14,7 @@ const stopButtons = (page: Page) =>
   page.getByRole("button", { name: /^Stop watching “/, includeHidden: true });
 const row = (page: Page, name: string): Locator =>
   page
-    .getByRole("grid")
-    .getByRole("row")
+    .getByRole("listitem")
     .filter({ has: page.getByRole("button", { name: stopLabel(name), exact: true }) });
 
 async function stopWatching(page: Page, name: string, answer: "Stop watching" | "Cancel") {
@@ -44,7 +44,18 @@ Given("I am on the sources", async ({ page }) => {
   await page.goto("/sources");
 });
 
+Given(
+  "a job board named {string} imported from the RSS {string}",
+  async ({ api }, name: string, template: string) => {
+    await api.addRssJobBoard(name, template);
+  },
+);
+
 // --- When ---
+
+When("I open the searches of the job board {string}", async ({ page }, name: string) => {
+  await page.getByRole("link", { name: `Searches of “${name}” in Profiles` }).click();
+});
 
 When("I open the sources", async ({ page }) => {
   await page.goto("/sources");
@@ -72,6 +83,24 @@ When("I stop watching the company {string} and cancel", async ({ page }, name: s
 });
 
 // --- Then ---
+
+Then(/^I see the blocks, in order: (".*")$/, async ({ page }, list: string) => {
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText(quoted(list));
+});
+
+Then(
+  /^the block "(.*)" lists the job boards: (".*")$/,
+  async ({ page }, block: string, list: string) => {
+    const edits = page.getByRole("region", { name: block }).locator('button[aria-label^="Edit “"]');
+    await expect
+      .poll(() => edits.evaluateAll((els) => els.map((el) => el.getAttribute("aria-label"))))
+      .toEqual(quoted(list).map((name) => `Edit “${name}”`));
+  },
+);
+
+Then("I see the profiles", async ({ page }) => {
+  await expect(page).toHaveURL(/\/profiles$/);
+});
 
 Then(/^I see the watched companies, in order: (".*")$/, async ({ page }, list: string) => {
   await expect

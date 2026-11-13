@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { api } from "../../api/client";
 import { isProblem } from "../../api/problems";
 import type { components } from "../../api/schema";
-import type { WatchedCompany } from "./WatchedCompaniesPage";
+import type { WatchedCompany } from "../sources/types";
 
 type ImportResult = components["schemas"]["BoardImportRead"];
 
