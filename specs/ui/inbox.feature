@@ -288,17 +288,54 @@ Feature: Inbox screen
 
   # --- Discarding and restoring ---
 
-  Scenario: Discard an offer with a reason
+  # Discarding happens inside the piece: "Discard" opens it, the words of the title
+  # become buttons and, after "Discard because", the reasons show as pills: "A word in
+  # the title", "Stack", "Location", "Contract", "Company" and "No reason". Choosing a
+  # reason discards; "A word in the title" needs a word marked first.
+
+  Scenario: Discarding opens the piece with the reasons
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    And I am on the inbox
+    When I start discarding the offer "Senior Backend Engineer"
+    Then the offer shows the words "Senior", "Backend" and "Engineer" as buttons
+    And it shows "Discard because" with the reasons "A word in the title", "Stack", "Location", "Contract", "Company" and "No reason"
+
+  Scenario Outline: Discard an offer with a reason
     Given an offer for "Acme" as "Backend Engineer"
     And I am on the inbox
-    When I discard the offer "Backend Engineer" because "Not remote"
+    When I discard the offer "Backend Engineer" because "<reason>"
     Then I see that there are no offers
-    And the "discarded" offers show "Backend Engineer" with reason "Not remote"
+    And the "discarded" offers show "Backend Engineer" with reason "<shown>"
+
+    Examples:
+      | reason    | shown     |
+      | Stack     | Stack     |
+      | No reason | No reason |
+
+  Scenario: Discard an offer because of a word in its title
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    And I am on the inbox
+    When I discard the offer "Senior Backend Engineer" because of the word "Senior"
+    Then the "discarded" offers show "Senior Backend Engineer" with reason "A word in the title: Senior"
+
+  Scenario: A word in the title needs a word marked first
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    And I am on the inbox
+    When I start discarding the offer "Senior Backend Engineer"
+    Then the reason "A word in the title" cannot be chosen yet
+
+  Scenario: Cancel a discard
+    Given an offer for "Acme" as "Backend Engineer"
+    And I am on the inbox
+    And I started discarding the offer "Backend Engineer"
+    When I cancel the discard
+    Then I see the offers, in order: "Backend Engineer"
+    And the offer shows no reasons
 
   Scenario: Undo a discard right away
     Given an offer for "Acme" as "Backend Engineer"
     And I am on the inbox
-    And I discarded the offer "Backend Engineer"
+    And I discarded the offer "Backend Engineer" because "No reason"
     When I undo the discard
     Then I see the offers, in order: "Backend Engineer"
 

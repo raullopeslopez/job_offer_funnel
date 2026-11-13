@@ -101,7 +101,26 @@ class FilteredCounts:
     failing: Mapping[Rule, int]
 
 
-EXPIRED_REASON: Final = "expired"
+class DiscardReason(StrEnum):
+    """Why an offer was discarded. EXPIRED is only set by the imports."""
+
+    TITLE_WORD = "title_word"
+    STACK = "stack"
+    LOCATION = "location"
+    CONTRACT = "contract"
+    COMPANY = "company"
+    NONE = "none"
+    EXPIRED = "expired"
+
+
+EXPIRED_REASON: Final = DiscardReason.EXPIRED
+
+
+def is_title_word(word: str, title: str) -> bool:
+    """A whole word of the title, ignoring case: "C++" is one of "Senior C++ Developer"."""
+    return re.search(rf"(?<!\w){re.escape(word)}(?!\w)", title, flags=re.IGNORECASE) is not None
+
+
 # Feeds that publish only their latest offers: one that left them may still be open, so
 # their offers are not expired (Jobicy's 100 newest are a few hours of postings).
 LATEST_ONLY_FEEDS: Final = frozenset({Feed.JOBICY})
@@ -307,6 +326,14 @@ class InvalidOfferStatusError(DomainError):
     slug = "invalid-offer-status"
     title = "Invalid offer status"
     status = HTTPStatus.CONFLICT
+
+
+class WordNotInTitleError(DomainError):
+    """A discard because of a word of the title names a word the title does not have."""
+
+    slug = "word-not-in-title"
+    title = "Word not in the title"
+    status = HTTPStatus.UNPROCESSABLE_CONTENT
 
 
 class JobBoardNotImportedError(DomainError):

@@ -11,7 +11,9 @@ import { EmptyState } from "../../components/EmptyState";
 import { GroupedList } from "../../components/GroupedList";
 import { OfferPiece } from "../../components/OfferPiece";
 import { offerSourceKind } from "../../components/offerSource";
+import { DiscardingOffer } from "./DiscardingOffer";
 import { groupByDay } from "./dayGroups";
+import { discardReasonText } from "./discardReasons";
 import type { SearchProfile } from "./filterRules";
 import { OfferStrip } from "./OfferStrip";
 import type { Offer, OfferView } from "./types";
@@ -33,6 +35,10 @@ type Props = OfferContext &
     offers: Offer[];
     /** One titled group of all the offers, instead of a group per day. */
     single?: { title: string; count: number };
+    /** The offer open to discard, if any. */
+    discardingId?: string | null;
+    onCancelDiscard?: () => void;
+    onDiscarded?: (offer: Offer) => void;
   };
 
 const EMPTY: Record<OfferView, { icon: SvgIconComponent; text: string }> = {
@@ -67,7 +73,7 @@ export function InboxOffer({
       footer={
         offer.status === "discarded" && (
           <Typography variant="body2" color="text.secondary">
-            Reason: {offer.discard_reason || "—"}
+            Reason: {discardReasonText(offer)}
           </Typography>
         )
       }
@@ -83,22 +89,36 @@ export function OfferList({
   profiles,
   now = new Date(),
   single,
+  discardingId,
+  onCancelDiscard = () => {},
+  onDiscarded = () => {},
   ...actions
 }: Props) {
   if (offers.length === 0) {
     const empty = EMPTY[view];
     return <EmptyState icon={empty.icon} title="No offers" text={empty.text} />;
   }
-  const piece = (offer: Offer) => (
-    <InboxOffer
-      key={offer.id}
-      offer={offer}
-      jobBoards={jobBoards}
-      profiles={profiles}
-      now={now}
-      actions={<Actions offer={offer} {...actions} />}
-    />
-  );
+  const piece = (offer: Offer) =>
+    offer.id === discardingId ? (
+      <DiscardingOffer
+        key={offer.id}
+        offer={offer}
+        jobBoards={jobBoards}
+        profiles={profiles}
+        now={now}
+        onCancel={onCancelDiscard}
+        onDiscarded={onDiscarded}
+      />
+    ) : (
+      <InboxOffer
+        key={offer.id}
+        offer={offer}
+        jobBoards={jobBoards}
+        profiles={profiles}
+        now={now}
+        actions={<Actions offer={offer} {...actions} />}
+      />
+    );
   if (single) {
     return (
       <GroupedList title={single.title} count={single.count}>

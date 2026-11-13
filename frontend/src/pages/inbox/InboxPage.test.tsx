@@ -49,6 +49,7 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   filter_reason: null,
   readings: [],
   discard_reason: null,
+  discard_word: null,
   application_id: null,
   watched_company_id: null,
   watched_company_name: null,

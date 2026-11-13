@@ -16,12 +16,14 @@ type Props = {
   actions?: ReactNode;
   strip?: ReactNode;
   footer?: ReactNode;
+  /** Shown in place of the title's link, inside the same heading. */
+  heading?: ReactNode;
   now?: Date;
 };
 
 // One offer: where it came from, company and age, the title as a link, and slots for its
 // actions, its rule strip and a footer.
-export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: Props) {
+export function OfferPiece({ offer, sourceKind, actions, strip, footer, heading, now }: Props) {
   const sourceName = sourceKind === "watched" ? undefined : offer.job_board_name;
   return (
     <Box
@@ -56,9 +58,11 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: P
             </span>
           </Box>
           <Typography variant="h6" component="h3" sx={{ mt: 1 }}>
-            <Link href={offer.url} target="_blank" rel="noopener noreferrer" color="inherit">
-              {offer.title}
-            </Link>
+            {heading ?? (
+              <Link href={offer.url} target="_blank" rel="noopener noreferrer" color="inherit">
+                {offer.title}
+              </Link>
+            )}
           </Typography>
         </Box>
         {actions && <Box sx={{ display: "flex", gap: 1, flexShrink: 0 }}>{actions}</Box>}

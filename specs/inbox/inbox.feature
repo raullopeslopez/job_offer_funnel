@@ -5,8 +5,11 @@ Feature: Inbox
 
   An offer has the URL of the posting, the company and the job title as text,
   optionally the job board it came from, and optional notes. It is "pending" until
-  it is "discarded" (with an optional reason; it can go back to pending) or
+  it is "discarded" (with a reason; it can go back to pending) or
   "promoted" to an application. Offers do not count in the funnel metrics.
+  The reason for a discard is one of a closed list: "title_word" (with the word of the
+  title that does not fit), "stack", "location", "contract", "company" or "none", the
+  one given when no other is. "expired" is only set by the imports.
   The same company and title, ignoring case and extra spaces, is the same offer,
   even if it was discarded: the same posting found in another job board is rejected.
   Promoting creates an application in stage "evaluated" with the offer's URL and the
@@ -96,20 +99,51 @@ Feature: Inbox
 
   # --- Discarding ---
 
-  Scenario: Discard an offer with a reason
+  Scenario Outline: Discard an offer with a reason
     Given an offer for "Acme" as "Backend Engineer"
-    When I discard it because "Not remote"
-    Then the offer is "discarded" with reason "Not remote"
+    When I discard it because "<reason>"
+    Then the offer is "discarded" with reason "<reason>" and no word
 
-  Scenario: Discard an offer without a reason
+    Examples:
+      | reason   |
+      | stack    |
+      | location |
+      | contract |
+      | company  |
+      | none     |
+
+  Scenario: Discard an offer because of a word in its title
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    When I discard it because of the word "Senior"
+    Then the offer is "discarded" with reason "title_word" and word "Senior"
+
+  Scenario: Discard an offer without saying why
     Given an offer for "Acme" as "Backend Engineer"
     When I discard it
-    Then the offer is "discarded" without a reason
+    Then the offer is "discarded" with reason "none" and no word
 
-  Scenario: A discarded offer can go back to pending
-    Given an offer for "Acme" as "Backend Engineer" that was discarded
+  Scenario Outline: A discard needs a reason of the list, and a word only with title_word
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    When I discard it because "<reason>" with the word "<word>"
+    Then it is rejected as invalid
+
+    Examples:
+      | reason     | word   |
+      | Not remote |        |
+      | expired    |        |
+      | title_word |        |
+      | stack      | Senior |
+
+  Scenario: The word of a discard must be a word of the title
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    When I discard it because of the word "Junior"
+    Then it is rejected because the word is not in the title
+
+  Scenario: A discarded offer can go back to pending, without its reason
+    Given an offer for "Acme" as "Senior Backend Engineer"
+    And I discarded it because of the word "Senior"
     When I restore it
-    Then the offer is "pending"
+    Then the offer is "pending" with no reason and no word
 
   Scenario Outline: Only a pending offer can be discarded, and only a discarded one restored
     Given an offer for "Acme" as "Backend Engineer" that was <state>

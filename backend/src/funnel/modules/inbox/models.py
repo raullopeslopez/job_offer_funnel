@@ -25,7 +25,7 @@ from sqlalchemy.orm import (
 
 from funnel.core.db import Base
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Ats, FilterReason, OfferStatus
+from funnel.modules.inbox.domain import Ats, DiscardReason, FilterReason, OfferStatus
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
@@ -113,7 +113,10 @@ class OfferRow(Base):
     )
     notes: Mapped[str | None] = mapped_column(Text)
     status: Mapped[OfferStatus] = mapped_column(_enum_column_type(OfferStatus, "status"))
-    discard_reason: Mapped[str | None] = mapped_column(String(200))
+    discard_reason: Mapped[DiscardReason | None] = mapped_column(
+        _enum_column_type(DiscardReason, "discard_reason")
+    )
+    discard_word: Mapped[str | None] = mapped_column(String(200))
     application_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("applications.id", ondelete="SET NULL"), index=True
     )

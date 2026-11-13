@@ -414,7 +414,7 @@ export interface paths {
         put?: never;
         /**
          * Discard Offer
-         * @description Discard a pending offer, with an optional reason.
+         * @description Discard a pending offer with its reason; `none` when no other is given.
          */
         post: operations["discard_offer_api_v1_offers__offer_id__discard_post"];
         /**
@@ -904,11 +904,23 @@ export interface components {
         /** DiscardCreate */
         DiscardCreate: {
             /**
-             * Reason
-             * @example Not remote
+             * @description Any but `expired`, which only the imports set.
+             * @default none
              */
-            reason?: string | null;
+            reason: components["schemas"]["DiscardReason"];
+            /**
+             * Word
+             * @description With `title_word`, and only with it: the word of the title that does not fit, ignoring case.
+             * @example Senior
+             */
+            word?: string | null;
         };
+        /**
+         * DiscardReason
+         * @description Why an offer was discarded. EXPIRED is only set by the imports.
+         * @enum {string}
+         */
+        DiscardReason: "title_word" | "stack" | "location" | "contract" | "company" | "none" | "expired";
         /**
          * EmailAlert
          * @description Job alert emails the app can read, one format each (see docs/fase0.md).
@@ -1167,11 +1179,13 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** @description Set while the offer is discarded. */
+            discard_reason: components["schemas"]["DiscardReason"] | null;
             /**
-             * Discard Reason
-             * @description Set while the offer is discarded.
+             * Discard Word
+             * @description The word of the title, with `title_word`.
              */
-            discard_reason: string | null;
+            discard_word: string | null;
             /** @description Each rule against the reference profile; only for pending imported offers. */
             filter_reason: components["schemas"]["FilterReasonRead"] | null;
             /**
@@ -3043,13 +3057,13 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description Invalid request (`validation-error`) */
+            /** @description Invalid body (`validation-error`), or the word is not a word of the title (`word-not-in-title`) */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ValidationProblemRead"];
+                    "application/json": components["schemas"]["ValidationProblemRead"] | components["schemas"]["ProblemRead"];
                 };
             };
         };

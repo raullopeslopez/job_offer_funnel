@@ -19,6 +19,7 @@ from funnel.modules.inbox.domain import (
     LATEST_ONLY_FEEDS,
     READING_BATCH_SIZE,
     BoardUnavailableError,
+    DiscardReason,
     EmailAlertNotImportedError,
     FeedCooldownError,
     FeedOffer,
@@ -32,8 +33,10 @@ from funnel.modules.inbox.domain import (
     OfferReaderUnavailableError,
     OfferStatus,
     OfferText,
+    WordNotInTitleError,
     count_filtered,
     duplicate_key,
+    is_title_word,
     next_status,
     plain_text,
     supported,
@@ -92,16 +95,20 @@ class OfferService:
         profiles = await self._profiles.all_terms()
         return count_filtered(await self._repository.all_reasons(profiles))
 
-    async def discard(self, offer_id: UUID, reason: str | None) -> OfferRow:
+    async def discard(self, offer_id: UUID, reason: DiscardReason, word: str | None) -> OfferRow:
         offer = await self.get(offer_id)
         offer.status = next_status(offer.status, OfferAction.DISCARD)
+        if word is not None and not is_title_word(word, offer.title):
+            raise WordNotInTitleError(f"{word!r} is not a word of {offer.title!r}")
         offer.discard_reason = reason
+        offer.discard_word = word
         return await self._repository.save(offer, await self._profiles.all_terms())
 
     async def restore(self, offer_id: UUID) -> None:
         offer = await self.get(offer_id)
         offer.status = next_status(offer.status, OfferAction.RESTORE)
         offer.discard_reason = None
+        offer.discard_word = None
         await self._repository.save(offer, await self._profiles.all_terms())
 
     async def promote(self, offer_id: UUID, channel: Channel) -> OfferRow:
