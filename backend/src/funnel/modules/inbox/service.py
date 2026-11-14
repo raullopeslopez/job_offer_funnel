@@ -281,12 +281,13 @@ class CriteriaSuggestion:
     search_profile_id: UUID
     search_profile_name: str
     word: str
-    excluded_keywords: list[str]
+    after: list[str]
     offer_ids: list[UUID]
     discarded: int
     preview: CriteriaPreview
     source: SuggestionSource = SuggestionSource.COUNT
     why: str | None = None
+    rule: ProfileRule = ProfileRule.EXCLUDED_KEYWORDS
 
 
 class CriteriaSuggestionService:
@@ -396,6 +397,7 @@ class TriageBatch:
     left: int
     ok: int = 0
     ko: int = 0
+    to_rescue: int = 0
 
 
 class OfferTriageService:

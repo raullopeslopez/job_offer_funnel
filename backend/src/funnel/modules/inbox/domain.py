@@ -165,6 +165,7 @@ class CriteriaPreview:
     leaving_pending: int
     promoted_filtered: int
     discarded_filtered: int
+    discarded_fitting: int = 0
 
 
 def preview_criteria(changes: Iterable[FitChange]) -> CriteriaPreview:
@@ -756,6 +757,12 @@ class QualityFigures:
     triaged_discarded: int
     missed_discards: int
     triager_misses: float | None
+    ok_near_misses_reviewed: int = 0
+    ok_near_misses_rescued: int = 0
+    triager_rescues: float | None = None
+    triaged_near_misses_rescued: int = 0
+    lost_rescues: int = 0
+    triager_lost_rescues: float | None = None
 
 
 @dataclass(frozen=True)
