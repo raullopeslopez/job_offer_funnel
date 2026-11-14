@@ -116,11 +116,9 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Lector de ofertas (servicio externo que lee la descripción) | `offer reader` |
 | Triaje de una pendiente (un modelo la compara con mis decisiones, leyendo su descripción; no confundir con la fase `screening`) | `triage` |
 | Triador de ofertas (servicio externo que hace el triaje) | `offer triager` |
-| Veredicto del triaje (si la oferta encaja con lo que decidí antes, con su porqué) | `verdict`: `fits` · `does_not_fit` |
-| Porqué del veredicto (una frase del triador, con sus palabras) | `why` |
-| Descarte sugerido (veredicto `does_not_fit` con motivo y evidencia que se sostiene; nunca se aplica solo) | `suggested discard` |
+| Descarte sugerido (resultado del triaje, con motivo y evidencia; nunca se aplica solo) | `suggested discard` |
 | Sugerencia rechazada (descarte sugerido de una oferta que promoví) | `rejected suggestion` |
-| Descarte no visto (oferta que el triador dijo que encaja y que descarté) | `missed discard` |
+| Descarte no visto (oferta triada sin descarte sugerido que descarté) | `missed discard` |
 | Modalidad que dice la oferta | `work_mode` (los mismos valores que en el perfil) |
 | Se puede hacer viviendo en la ubicación del perfil | `admits_location` (sí o no; en las specs `yes` · `no`) |
 | Puesto estable (jornada completa y sin fecha de fin, como empleado o como contractor; no por tareas, por horas, temporal ni a media jornada) | `stable` (sí o no; en las specs `yes` · `no`) |

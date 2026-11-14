@@ -15,9 +15,7 @@ Feature: Criteria suggestions
   offers the word is, out of all of them, which offers those are and what excluding it
   would do (specs/inbox/criteria_previews.feature). "Not now" hides a suggestion for good;
   accepting it is a criteria change (specs/inbox/criteria_changes.feature). Nothing is
-  ever applied on its own. The offer triager may also suggest excluding a word, with why
-  (specs/inbox/offer_triages.feature): those join the list, marked as from the triager,
-  after the counted ones.
+  ever applied on its own.
 
   Background:
     Given a job board named "Remote OK" imported from the feed "remoteok"
