@@ -18,6 +18,7 @@ import { mono } from "../../theme";
 import { DISCARD_REASON_LABELS } from "../inbox/discardReasons";
 import { formatRate } from "./ConversionSection";
 import { CriteriaChanges } from "./CriteriaChanges";
+import { SuggestedExclusions } from "./SuggestedExclusions";
 
 type Quality = components["schemas"]["OfferQualityRead"];
 type Week = components["schemas"]["WeekQualityRead"];
@@ -187,6 +188,7 @@ export function OfferQualityPanel() {
       </Typography>
       <Box sx={{ mb: 4 }}>
         <DiscardBars reasons={quality.data.discard_reasons} />
+        <SuggestedExclusions />
       </Box>
 
       <Typography variant="h6" component="h3" gutterBottom>

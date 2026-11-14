@@ -1,6 +1,6 @@
 import { ThemeProvider } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter } from "react-router";
@@ -163,6 +163,9 @@ function qualityOf(total: Figures, fields: Partial<Quality> = {}) {
   server.use(
     http.get("/api/v1/offers/quality", () => HttpResponse.json(quality)),
     http.get("/api/v1/criteria-changes", () => HttpResponse.json(changesPage([]))),
+    http.get("/api/v1/criteria-suggestions", () =>
+      HttpResponse.json({ items: [], total: 0, limit: 100, offset: 0 }),
+    ),
   );
 }
 
@@ -307,5 +310,70 @@ describe("MetricsPage criteria changes", () => {
     // Assert
     expect(undone).toEqual([change({}).id]);
     expect(await screen.findByText("No changes yet.")).toBeInTheDocument();
+  });
+});
+
+// specs/ui/metrics.feature: "A suggested exclusion, with "Not now" and "Exclude it"".
+describe("MetricsPage suggested exclusions", () => {
+  type Suggestion = components["schemas"]["CriteriaSuggestionRead"];
+  const suggestion: Suggestion = {
+    search_profile_id: "0193a000-0000-7000-8000-000000000002",
+    search_profile_name: "Backend",
+    word: "Lead",
+    excluded_keywords: ["Senior", "Lead"],
+    offer_ids: ["0193a000-0000-7000-8000-00000000000a", "0193a000-0000-7000-8000-00000000000b"],
+    discarded: 5,
+    preview: {
+      entering_pending: 0,
+      leaving_pending: 3,
+      promoted_filtered: 0,
+      discarded_filtered: 2,
+    },
+  };
+
+  it.each([
+    [
+      "Not now",
+      "/api/v1/criteria-suggestions/dismissals",
+      { search_profile_id: suggestion.search_profile_id, word: "Lead" },
+    ],
+    [
+      "Exclude it",
+      "/api/v1/criteria-changes",
+      { search_profile_id: suggestion.search_profile_id, excluded_keywords: ["Senior", "Lead"] },
+    ],
+  ])("%s sends what the suggestion says and hides it", async (button, url, body) => {
+    // Arrange
+    const user = userEvent.setup();
+    qualityOf(figures(), { discard_reasons: [{ reason: "title_word", offers: 5 }] });
+    let suggestions = [suggestion];
+    const sent: unknown[] = [];
+    server.use(
+      http.get("/api/v1/criteria-suggestions", () =>
+        HttpResponse.json({ items: suggestions, total: suggestions.length, limit: 100, offset: 0 }),
+      ),
+      http.post(url, async ({ request }) => {
+        sent.push(await request.json());
+        suggestions = [];
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderPage("/metrics");
+    const list = await screen.findByRole("list", { name: "Suggestions" });
+    expect(within(list).getByText("Suggested: exclude “Lead” from Backend")).toBeInTheDocument();
+    expect(
+      within(list).getByText(
+        "In 2 of the 5. Takes 3 offers out of Pending, loses none you promoted.",
+      ),
+    ).toBeInTheDocument();
+
+    // Act
+    await user.click(within(list).getByRole("button", { name: button }));
+
+    // Assert
+    expect(sent).toEqual([body]);
+    await waitFor(() =>
+      expect(screen.queryByRole("list", { name: "Suggestions" })).not.toBeInTheDocument(),
+    );
   });
 });
