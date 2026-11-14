@@ -21,6 +21,8 @@ from funnel.modules.inbox.domain import (
     OfferStatus,
     OfferText,
     OfferTriagerError,
+    Rule,
+    RuleCheck,
     TriageAnswer,
     TriageContext,
     TriageMistake,
@@ -47,6 +49,9 @@ from the title.
 - stack, location, contract or company: the evidence is one short excerpt copied character \
 by character from the description that shows it.
 Reasons: {", ".join(sorted(SUGGESTED_REASONS))}; for an ok, null reason and evidence.
+Some new offers are near misses: their filters stopped them, by the one rule told with \
+each. For those, ok is a false negative (the rule stopped an offer worth their time) and \
+ko means rightly filtered; give no reason for them.
 Then, to make their filters better, you may suggest words to exclude from a profile: a \
 word that is in the ko offers you name and in the offers they discarded, and in none they \
 promoted. Give the profile's name, the word, why, and the numbers of those ko offers. \
@@ -114,6 +119,21 @@ def _mistake(mistake: TriageMistake) -> str:
     return f"- you suggested {mistake.reason} and they promoted it: {mistake.title}"
 
 
+def _filtered_by(check: RuleCheck | None) -> str:
+    """The rule that stopped a near miss, with what explains it."""
+    if check is None:
+        return ""
+    if check.rule is Rule.EXCLUDED:
+        why = f"it has the excluded word {_listed(check.found)}"
+    elif check.rule is Rule.KEYWORDS:
+        why = f"it lacks the keywords {_listed(check.missing)}"
+    else:
+        why = f"its description says {check.value}" + (
+            f' ("{check.evidence}")' if check.evidence else ""
+        )
+    return f"Near miss, filtered by {check.rule}: {why}\n"
+
+
 def _listed(words: Sequence[str]) -> str:
     return ", ".join(words) or "none"
 
@@ -126,7 +146,7 @@ def _question(offers: Sequence[OfferText], context: TriageContext) -> str:
     ]
     new = [
         f"Offer {number}\nTitle: {offer.title}\nCompany: {offer.company}\n"
-        f"Description:\n{_excerpt(offer.description)}"
+        f"{_filtered_by(offer.filtered_by)}Description:\n{_excerpt(offer.description)}"
         for number, offer in enumerate(offers)
     ]
     sections = (

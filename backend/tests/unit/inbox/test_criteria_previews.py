@@ -16,6 +16,7 @@ def test_counts_only_the_offers_whose_fit_changes() -> None:
         FitChange(PROMOTED, fits_now=False, fits_after=True, offers=5),
         FitChange(DISCARDED, fits_now=True, fits_after=False, offers=4),
         FitChange(DISCARDED, fits_now=False, fits_after=False, offers=9),
+        FitChange(DISCARDED, fits_now=False, fits_after=True, offers=6),
     ]
 
     # Act
@@ -23,5 +24,9 @@ def test_counts_only_the_offers_whose_fit_changes() -> None:
 
     # Assert
     assert preview == CriteriaPreview(
-        entering_pending=2, leaving_pending=3, promoted_filtered=1, discarded_filtered=4
+        entering_pending=2,
+        leaving_pending=3,
+        promoted_filtered=1,
+        discarded_filtered=4,
+        discarded_fitting=6,
     )

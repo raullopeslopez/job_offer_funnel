@@ -227,7 +227,8 @@ export interface paths {
         put?: never;
         /**
          * Dismiss Criteria Suggestion
-         * @description "Not now": the word is not suggested again for the profile. Saying it twice is once.
+         * @description "Not now": the change of that word in that rule is not suggested again for the
+         *     profile. Saying it twice is once.
          */
         post: operations["dismiss_criteria_suggestion_api_v1_criteria_suggestions_dismissals_post"];
         delete?: never;
@@ -568,7 +569,9 @@ export interface paths {
          *     in a single request, with your promoted and discarded offers and its own mistakes. It
          *     marks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,
          *     with a reason and its evidence. It may also suggest excluding a word from a profile,
-         *     which joins the criteria suggestions if it holds the rule. Nothing is applied.
+         *     which joins the criteria suggestions if it holds the rule. Then the near misses go, the
+         *     same way: `ok` is a false negative (`to_rescue`), and it may suggest relaxing the rule
+         *     that filtered it. Nothing is applied.
          *
          *     An offer is triaged once. Call it again while `left` is not 0; the offers the triager
          *     does not answer for are left to triage.
@@ -1225,6 +1228,11 @@ export interface components {
              */
             discarded_filtered: number;
             /**
+             * Discarded Fitting
+             * @description Discarded offers, not expired, that do not fit the profiles now and would with the change.
+             */
+            discarded_fitting: number;
+            /**
              * Entering Pending
              * @description Pending offers filtered now that would not be.
              */
@@ -1243,22 +1251,24 @@ export interface components {
         /** CriteriaSuggestionRead */
         CriteriaSuggestionRead: {
             /**
+             * After
+             * @description The rule's value with the change: the change to make.
+             */
+            after: string[] | string | null;
+            /**
              * Discarded
              * @description All the discarded offers, expired ones left out.
              */
             discarded: number;
             /**
-             * Excluded Keywords
-             * @description The profile's excluded keywords with the word: the change to make.
-             */
-            excluded_keywords: string[];
-            /**
              * Offer Ids
-             * @description Counted: the discarded offers with the word. From the triager: the `ko` offers it comes from; accepting it from one is a criteria change with its `offer_id`.
+             * @description Counted: the discarded offers with the word. From the triager: the offers it comes from (`ko` offers, or an `ok` near miss to relax its rule); accepting it from one is a criteria change with its `offer_id`.
              */
             offer_ids: string[];
             /** @description What excluding the word would do. */
             preview: components["schemas"]["CriteriaPreviewRead"];
+            /** @description The rule it changes: `excluded_keywords` (exclude a word, or stop excluding it), `keywords` (stop asking for one) or `work_modes` (accept one). */
+            rule: components["schemas"]["ProfileRule"];
             /**
              * Search Profile Id
              * Format: uuid
@@ -1275,7 +1285,7 @@ export interface components {
             why: string | null;
             /**
              * Word
-             * @description The word to exclude, as the titles write it.
+             * @description The word or work mode it adds or takes out.
              */
             word: string;
         };
@@ -1308,6 +1318,11 @@ export interface components {
         /** DismissalCreate */
         DismissalCreate: {
             /**
+             * @description The rule of the suggestion.
+             * @default excluded_keywords
+             */
+            rule: components["schemas"]["ProfileRule"];
+            /**
              * Search Profile Id
              * Format: uuid
              */
@@ -1317,6 +1332,7 @@ export interface components {
         };
         /** DismissalRead */
         DismissalRead: {
+            rule: components["schemas"]["ProfileRule"];
             /**
              * Search Profile Id
              * Format: uuid
@@ -1903,10 +1919,25 @@ export interface components {
              */
             losses: number | null;
             /**
+             * Lost Rescues
+             * @description Of those, the ones the triager marked `ko`.
+             */
+            lost_rescues: number;
+            /**
              * Missed Discards
              * @description Of those, the ones marked `ok`.
              */
             missed_discards: number;
+            /**
+             * Ok Near Misses Rescued
+             * @description Of those, the ones rescued.
+             */
+            ok_near_misses_rescued: number;
+            /**
+             * Ok Near Misses Reviewed
+             * @description Near misses the triager marked `ok` that were rescued or rightly filtered.
+             */
+            ok_near_misses_reviewed: number;
             /**
              * Precision
              * @description promoted_from_pending ÷ decided, in %.
@@ -1942,6 +1973,16 @@ export interface components {
              */
             triaged_discarded: number;
             /**
+             * Triaged Near Misses Rescued
+             * @description Near misses triaged and rescued.
+             */
+            triaged_near_misses_rescued: number;
+            /**
+             * Triager Lost Rescues
+             * @description lost_rescues ÷ triaged_near_misses_rescued, in %.
+             */
+            triager_lost_rescues: number | null;
+            /**
              * Triager Misses
              * @description missed_discards ÷ triaged_discarded, in %.
              */
@@ -1951,6 +1992,11 @@ export interface components {
              * @description suggested_discarded ÷ suggested_decided, in %.
              */
             triager_precision: number | null;
+            /**
+             * Triager Rescues
+             * @description ok_near_misses_rescued ÷ ok_near_misses_reviewed, in %.
+             */
+            triager_rescues: number | null;
         };
         /** ReadingBatchRead */
         ReadingBatchRead: {
@@ -2216,6 +2262,11 @@ export interface components {
              */
             ok: number;
             /**
+             * To Rescue
+             * @description Near misses triaged now and marked `ok`: false negatives, worth rescuing.
+             */
+            to_rescue: number;
+            /**
              * Triaged
              * @description Offers triaged now: each has a verdict.
              */
@@ -2325,10 +2376,25 @@ export interface components {
              */
             losses: number | null;
             /**
+             * Lost Rescues
+             * @description Of those, the ones the triager marked `ko`.
+             */
+            lost_rescues: number;
+            /**
              * Missed Discards
              * @description Of those, the ones marked `ok`.
              */
             missed_discards: number;
+            /**
+             * Ok Near Misses Rescued
+             * @description Of those, the ones rescued.
+             */
+            ok_near_misses_rescued: number;
+            /**
+             * Ok Near Misses Reviewed
+             * @description Near misses the triager marked `ok` that were rescued or rightly filtered.
+             */
+            ok_near_misses_reviewed: number;
             /**
              * Precision
              * @description promoted_from_pending ÷ decided, in %.
@@ -2369,6 +2435,16 @@ export interface components {
              */
             triaged_discarded: number;
             /**
+             * Triaged Near Misses Rescued
+             * @description Near misses triaged and rescued.
+             */
+            triaged_near_misses_rescued: number;
+            /**
+             * Triager Lost Rescues
+             * @description lost_rescues ÷ triaged_near_misses_rescued, in %.
+             */
+            triager_lost_rescues: number | null;
+            /**
              * Triager Misses
              * @description missed_discards ÷ triaged_discarded, in %.
              */
@@ -2378,6 +2454,11 @@ export interface components {
              * @description suggested_discarded ÷ suggested_decided, in %.
              */
             triager_precision: number | null;
+            /**
+             * Triager Rescues
+             * @description ok_near_misses_rescued ÷ ok_near_misses_reviewed, in %.
+             */
+            triager_rescues: number | null;
         };
         /**
          * WorkMode

@@ -795,7 +795,7 @@ describe("InboxPage triage", () => {
 
   /** An available triager answering these batches in order, the last one again after. */
   function triagerAnswering(
-    ...batches: { triaged: number; ok: number; ko: number; left: number }[]
+    ...batches: { triaged: number; ok: number; ko: number; to_rescue?: number; left: number }[]
   ) {
     let call = 0;
     server.use(
@@ -806,7 +806,7 @@ describe("InboxPage triage", () => {
       http.post("/api/v1/offers/triages", () => {
         const batch = batches[Math.min(call, batches.length - 1)];
         call += 1;
-        return HttpResponse.json({ failed: 0, ...batch }, { status: 201 });
+        return HttpResponse.json({ failed: 0, to_rescue: 0, ...batch }, { status: 201 });
       }),
     );
   }
@@ -819,8 +819,9 @@ describe("InboxPage triage", () => {
         search_profile_name: "Backend",
         source: "triager",
         why: "You discard lead roles.",
+        rule: "excluded_keywords",
         word: "Lead",
-        excluded_keywords: ["Senior", "Lead"],
+        after: ["Senior", "Lead"],
         offer_ids: offerIds,
         discarded: 5,
         preview: {
@@ -828,6 +829,7 @@ describe("InboxPage triage", () => {
           leaving_pending: 3,
           promoted_filtered: 0,
           discarded_filtered: 2,
+          discarded_fitting: 0,
         },
       },
     ];
@@ -860,6 +862,13 @@ describe("InboxPage triage", () => {
         { triaged: 0, ok: 0, ko: 0, left: 2 },
       ],
       "Triaged 3 · 1 OK · 2 KO · 2 left. Try again later.",
+    ],
+    [
+      [
+        { triaged: 5, ok: 2, ko: 3, to_rescue: 0, left: 4 },
+        { triaged: 4, ok: 1, ko: 1, to_rescue: 2, left: 0 },
+      ],
+      "Triaged 9 · 3 OK · 4 KO · 2 to rescue · 0 left",
     ],
   ])("triages batch after batch until none is left or one triages none", async (batches, said) => {
     // Arrange
@@ -983,7 +992,7 @@ describe("InboxPage triage", () => {
     [
       "Not now",
       "/api/v1/criteria-suggestions/dismissals",
-      { search_profile_id: PROFILE_ID, word: "Lead" },
+      { search_profile_id: PROFILE_ID, rule: "excluded_keywords", word: "Lead" },
     ],
     [
       "Exclude it",
@@ -1010,5 +1019,89 @@ describe("InboxPage triage", () => {
     await waitFor(() =>
       expect(screen.queryByRole("region", { name: "AI suggestion" })).not.toBeInTheDocument(),
     );
+  });
+
+  it("shows the verdict of a near miss and relaxes its rule from it", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const nearMiss = offer("Senior Backend Engineer", {
+      company: "Initech",
+      filtered: true,
+      filter_reason: {
+        search_profile_id: PROFILE_ID,
+        search_profile_name: "Backend",
+        has_description: true,
+        near_miss: true,
+        rules: [
+          {
+            rule: "title",
+            result: "passed",
+            found: ["Backend Engineer"],
+            missing: [],
+            value: null,
+            evidence: null,
+          },
+          {
+            rule: "excluded",
+            result: "failed",
+            found: ["Senior"],
+            missing: [],
+            value: null,
+            evidence: null,
+          },
+        ],
+      },
+      triage: { verdict: "ok", why: "Worth it." },
+    });
+    inboxWith([nearMiss]);
+    let suggestions: Suggestion[] = [
+      {
+        search_profile_id: PROFILE_ID,
+        search_profile_name: "Backend",
+        source: "triager",
+        why: "Worth it.",
+        rule: "excluded_keywords",
+        word: "Senior",
+        after: [],
+        offer_ids: [nearMiss.id],
+        discarded: 5,
+        preview: {
+          entering_pending: 1,
+          leaving_pending: 0,
+          promoted_filtered: 0,
+          discarded_filtered: 0,
+          discarded_fitting: 0,
+        },
+      },
+    ];
+    const sent: unknown[] = [];
+    server.use(
+      http.get("/api/v1/offers/triager", () => HttpResponse.json({ is_available: true })),
+      http.get("/api/v1/criteria-suggestions", () =>
+        HttpResponse.json({ items: suggestions, total: suggestions.length, limit: 100, offset: 0 }),
+      ),
+      http.post("/api/v1/criteria-changes", async ({ request }) => {
+        sent.push(await request.json());
+        suggestions = [];
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderInbox("/inbox?view=filtered");
+    const piece = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+    expect(within(piece).getByText("AI: OK — Worth it.")).toBeInTheDocument();
+    expect(
+      await within(piece).findByText("Improve the filter: stop excluding “Senior” in Backend"),
+    ).toBeInTheDocument();
+    expect(
+      within(piece).getByText("Brings 1 into Pending, none you discarded."),
+    ).toBeInTheDocument();
+
+    // Act
+    await user.click(within(piece).getByRole("button", { name: "Relax it" }));
+
+    // Assert
+    expect(sent).toEqual([
+      { search_profile_id: PROFILE_ID, excluded_keywords: [], offer_id: nearMiss.id },
+    ]);
   });
 });

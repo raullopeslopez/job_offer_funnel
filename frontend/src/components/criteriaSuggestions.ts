@@ -7,8 +7,36 @@ type Choice = "dismiss" | "exclude";
 
 const offers = (count: number) => (count === 1 ? "1 offer" : `${count} offers`);
 
-/** What excluding the word would do (specs/ui/metrics.feature, specs/ui/inbox.feature). */
-export function suggestionEffect({ preview }: CriteriaSuggestion): string {
+/** Whether it lets more offers in: all but excluding a word the profile does not exclude. */
+export function isRelaxing({ rule, word, after }: CriteriaSuggestion): boolean {
+  return rule !== "excluded_keywords" || !(Array.isArray(after) && after.includes(word));
+}
+
+/** The change, as "Improve the filter" or "AI suggests" says it (specs/ui/inbox.feature). */
+export function suggestionChange(suggestion: CriteriaSuggestion): string {
+  const { rule, word, search_profile_name: profile } = suggestion;
+  if (rule === "keywords") return `stop asking for the keyword “${word}” in ${profile}`;
+  if (rule === "work_modes") return `accept the work mode “${word}” in ${profile}`;
+  return isRelaxing(suggestion)
+    ? `stop excluding “${word}” in ${profile}`
+    : `exclude “${word}” from ${profile}`;
+}
+
+/** "Exclude it" to tighten the filter, "Relax it" to let more offers in. */
+export function acceptLabel(suggestion: CriteriaSuggestion): string {
+  return isRelaxing(suggestion) ? "Relax it" : "Exclude it";
+}
+
+/** What the change would do (specs/ui/metrics.feature, specs/ui/inbox.feature). */
+export function suggestionEffect(suggestion: CriteriaSuggestion): string {
+  const { preview } = suggestion;
+  if (isRelaxing(suggestion)) {
+    const discarded =
+      preview.discarded_fitting === 0
+        ? "none you discarded"
+        : `${preview.discarded_fitting} you discarded`;
+    return `Brings ${preview.entering_pending} into Pending, ${discarded}.`;
+  }
   const promoted =
     preview.promoted_filtered === 0
       ? "loses none you promoted"
@@ -42,16 +70,16 @@ export function useSuggestionChoice() {
     { suggestion: CriteriaSuggestion; choice: Choice; offerId?: string }
   >({
     mutationFn: async ({ suggestion, choice, offerId }) => {
-      const { search_profile_id, word, excluded_keywords } = suggestion;
+      const { search_profile_id, rule, word, after } = suggestion;
       const { error } =
         choice === "dismiss"
           ? await api.POST("/api/v1/criteria-suggestions/dismissals", {
-              body: { search_profile_id, word },
+              body: { search_profile_id, rule, word },
             })
           : await api.POST("/api/v1/criteria-changes", {
               body: {
                 search_profile_id,
-                excluded_keywords,
+                [rule]: after,
                 ...(offerId ? { offer_id: offerId } : {}),
               },
             });

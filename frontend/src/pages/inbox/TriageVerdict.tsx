@@ -2,6 +2,8 @@ import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import {
+  acceptLabel,
+  suggestionChange,
   suggestionEffect,
   useCriteriaSuggestions,
   useSuggestionChoice,
@@ -9,7 +11,7 @@ import {
 import { DISCARD_REASON_LABELS } from "./discardReasons";
 import type { Offer } from "./types";
 
-type Props = { offer: Offer; onDiscarded: (offer: Offer) => void };
+type Props = { offer: Offer; onDiscarded?: (offer: Offer) => void };
 
 /** "AI: OK — why", or "AI: KO — why" with the suggested discard if its evidence holds. */
 export function verdictText({ triage, suggested_discard }: Offer): string {
@@ -20,14 +22,14 @@ export function verdictText({ triage, suggested_discard }: Offer): string {
   return `${said} ${DISCARD_REASON_LABELS[reason]} — “${evidence}”`;
 }
 
-// What the offer triager says of a pending offer (specs/ui/inbox.feature): its verdict and
-// why; "Discard as suggested" with a suggested discard (with title_word the evidence is the
-// word); and, for a KO offer a criteria suggestion comes from, "Improve the filter", whose
-// "Exclude it" is a criteria change made from this offer.
+// What the offer triager says of a pending offer or a near miss (specs/ui/inbox.feature):
+// its verdict and why; "Discard as suggested" with a suggested discard (with title_word the
+// evidence is the word); and, for an offer a criteria suggestion comes from (a KO offer, or
+// an OK near miss), "Improve the filter", a criteria change made from this offer.
 export function TriageVerdict({ offer, onDiscarded }: Props) {
   const suggestion = offer.suggested_discard;
-  const isKo = offer.triage?.verdict === "ko";
-  const suggestions = useCriteriaSuggestions(isKo);
+  const canImprove = offer.triage?.verdict === (offer.filtered ? "ok" : "ko");
+  const suggestions = useCriteriaSuggestions(canImprove);
   const improvement = suggestions.data?.find(
     (s) => s.source === "triager" && s.offer_ids.includes(offer.id),
   );
@@ -42,7 +44,7 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
       });
       if (error) throw error;
     },
-    onSuccess: () => onDiscarded(offer),
+    onSuccess: () => onDiscarded?.(offer),
   });
 
   if (!offer.triage) return null;
@@ -70,8 +72,7 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
         <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
           <Box>
             <Typography variant="body2">
-              Improve the filter: exclude “{improvement.word}” from{" "}
-              {improvement.search_profile_name}
+              Improve the filter: {suggestionChange(improvement)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {suggestionEffect(improvement)}
@@ -86,7 +87,7 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
             }
             sx={{ ml: "auto" }}
           >
-            Exclude it
+            {acceptLabel(improvement)}
           </Button>
         </Box>
       )}

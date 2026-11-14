@@ -36,6 +36,7 @@ from funnel.modules.inbox.domain import (
     OfferFilter,
     OfferStatus,
     ProfileMatch,
+    ProfileRule,
     QualityOffer,
     Reading,
     Review,
@@ -461,14 +462,16 @@ class SuggestionRepository:
         )
         return list(rows)
 
-    async def dismissed(self) -> set[tuple[UUID, str]]:
-        """Each profile and word dismissed, the word in lower case."""
+    async def dismissed(self) -> set[tuple[UUID, ProfileRule, str]]:
+        """Each profile, rule and word dismissed, the word in lower case."""
         rows = await self._session.execute(
             select(
-                DismissedSuggestionRow.search_profile_id, func.lower(DismissedSuggestionRow.word)
+                DismissedSuggestionRow.search_profile_id,
+                DismissedSuggestionRow.rule,
+                func.lower(DismissedSuggestionRow.word),
             )
         )
-        return {(profile_id, word) for profile_id, word in rows}
+        return {(profile_id, rule, word) for profile_id, rule, word in rows}
 
     async def triager_suggestions(self) -> list[TriagerSuggestionRow]:
         rows = await self._session.scalars(
@@ -477,20 +480,30 @@ class SuggestionRepository:
         return list(rows)
 
     async def keep_triager_suggestion(  # noqa: PLR0913, PLR0917  # the parts of a suggestion
-        self, profile_id: UUID, word: str, why: str, offer_ids: Sequence[UUID]
+        self,
+        profile_id: UUID,
+        rule: ProfileRule,
+        word: str,
+        why: str,
+        offer_ids: Sequence[UUID],
     ) -> None:
-        """Once per profile and word, ignoring case: suggested again, it takes the new why
-        and adds the offers it comes from."""
+        """Once per profile, rule and word, ignoring case: suggested again, it takes the new
+        why and adds the offers it comes from."""
         kept = await self._session.scalar(
             select(TriagerSuggestionRow).where(
                 TriagerSuggestionRow.search_profile_id == profile_id,
+                TriagerSuggestionRow.rule == rule,
                 func.lower(TriagerSuggestionRow.word) == word.casefold(),
             )
         )
         if kept is None:
             self._session.add(
                 TriagerSuggestionRow(
-                    search_profile_id=profile_id, word=word, why=why, offer_ids=list(offer_ids)
+                    search_profile_id=profile_id,
+                    rule=rule,
+                    word=word,
+                    why=why,
+                    offer_ids=list(offer_ids),
                 )
             )
         else:
@@ -498,11 +511,11 @@ class SuggestionRepository:
             kept.offer_ids = list(dict.fromkeys([*kept.offer_ids, *offer_ids]))
         await self._session.flush()
 
-    async def dismiss(self, profile_id: UUID, word: str) -> None:
-        # Once per profile and word: a second "Not now" changes nothing.
+    async def dismiss(self, profile_id: UUID, rule: ProfileRule, word: str) -> None:
+        # Once per profile, rule and word: a second "Not now" changes nothing.
         await self._session.execute(
             insert(DismissedSuggestionRow)
-            .values(id=uuid7(), search_profile_id=profile_id, word=word)
+            .values(id=uuid7(), search_profile_id=profile_id, rule=rule, word=word)
             .on_conflict_do_nothing()
         )
 

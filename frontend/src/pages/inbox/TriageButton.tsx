@@ -3,7 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../../api/client";
 
-type Progress = { triaged: number; ok: number; ko: number; left: number; isStopped: boolean };
+type Progress = {
+  triaged: number;
+  ok: number;
+  ko: number;
+  toRescue: number;
+  left: number;
+  isStopped: boolean;
+};
 
 // "Triage with AI" (specs/ui/inbox.feature): batch after batch until none is left, saying
 // how many are OK and KO, and it stops when a batch triages none (the triager's limits, or
@@ -23,13 +30,14 @@ export function TriageButton() {
 
   const triage = useMutation({
     mutationFn: async () => {
-      let [triaged, ok, ko] = [0, 0, 0];
+      let [triaged, ok, ko, toRescue] = [0, 0, 0, 0];
       for (;;) {
         const { data, error } = await api.POST("/api/v1/offers/triages");
         if (error) throw error;
         [triaged, ok, ko] = [triaged + data.triaged, ok + data.ok, ko + data.ko];
+        toRescue += data.to_rescue;
         const isStopped = data.triaged === 0 && data.left > 0;
-        setProgress({ triaged, ok, ko, left: data.left, isStopped });
+        setProgress({ triaged, ok, ko, toRescue, left: data.left, isStopped });
         for (const key of ["offers", "criteria-suggestions"]) {
           await queryClient.invalidateQueries({ queryKey: [key], exact: false });
         }
@@ -48,7 +56,9 @@ export function TriageButton() {
       )}
       {progress && (
         <Typography variant="body2" color="text.secondary" role="status">
-          Triaged {progress.triaged} · {progress.ok} OK · {progress.ko} KO · {progress.left} left
+          Triaged {progress.triaged} · {progress.ok} OK · {progress.ko} KO ·{" "}
+          {progress.toRescue > 0 && `${progress.toRescue} to rescue · `}
+          {progress.left} left
           {progress.isStopped ? ". Try again later." : ""}
         </Typography>
       )}

@@ -23,7 +23,9 @@ Feature: Offer quality
   - The triager (specs/inbox/offer_triages.feature), over the triaged offers I promoted or
     discarded: its precision, the suggested discards I discarded over the suggested
     discards I decided; and its misses, the missed discards (offers it marked OK) over the
-    triaged offers I discarded.
+    triaged offers I discarded. Over the near misses it triaged and I reviewed
+    (specs/inbox/near_miss_triages.feature): its rescues, the OK ones I rescued over the
+    OK ones I reviewed; and its lost rescues, the KO ones I rescued over those I rescued.
 
   Background:
     Given a job board named "Remote OK" imported from the feed "remoteok"
@@ -127,6 +129,22 @@ Feature: Offer quality
     When I view the offer quality
     Then the triager's precision is 50.0% of 2 suggested discards decided
     And the triager's misses are 50.0% of 2 triaged offers discarded
+
+  Scenario: The triager's rescues and lost rescues follow what I did with the near misses
+    Given the job board "Remote OK" was imported with:
+      | title            | company  | description | url                    |
+      | Backend Engineer | Wayne    | Go services | https://remoteok.com/5 |
+      | Backend Engineer | Umbrella | Go services | https://remoteok.com/6 |
+    And the offer triager says the offers of "Hooli" and "Wayne" are OK
+    And the offer triager says the offer of "Umbrella" is KO because "Not for you."
+    And I triaged the offers
+    And I triaged the offers again, past the first 5
+    And I promoted the offer of "Hooli"
+    And I marked the offer of "Wayne" as rightly filtered
+    And I promoted the offer of "Umbrella"
+    When I view the offer quality
+    Then the triager's rescues are 50.0% of 2 OK near misses reviewed
+    And the triager's lost rescues are 50.0% of 2 near misses rescued
 
   Scenario: Without triaged offers decided there are no triager figures
     Given I triaged the offers
