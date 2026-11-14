@@ -13,17 +13,27 @@ While the version is `0.x`, the API may change without a major version bump.
 - Offer triages: `POST /api/v1/offers/triages` has a language model (the offer triager,
   on Groq with `GROQ_API_KEY`) compare up to 5 pending imported offers that fit a profile,
   description included, with your last promoted and discarded offers and with its own
-  mistakes (suggestions you rejected by promoting, discards it missed). It may suggest a
-  discard with a reason of the list and its evidence (a word of the title, or a sentence of
-  the description letter for letter); nothing is discarded on its own. Each offer is
-  triaged once; it answers `{triaged, failed, left}`. `GET /api/v1/offers/triager` says
+  mistakes (suggestions you rejected by promoting, offers it marked OK that you
+  discarded). It marks each offer `ok` or `ko` (a false positive: it passed your filters
+  but you would discard it), with why in one sentence. A `ko` may suggest a discard with a
+  reason of the list and its evidence (a word of the title, or a sentence of the
+  description letter for letter); nothing is discarded on its own. It may also suggest
+  excluding a word from a profile, from the `ko` offers that have it: the suggestion joins
+  the criteria suggestions only if it would have filtered no offer you promoted and at
+  least one you discarded. Each offer is triaged once; it answers
+  `{triaged, ok, ko, failed, left}`. `GET /api/v1/offers/triager` says
   whether it is available; without it the triage answers 503 `offer-triager-unavailable`.
-- Offers have `suggested_discard` (`{reason, evidence}` or null).
+- Offers have `triage` (`{verdict, why}` or null) and `suggested_discard`
+  (`{reason, evidence}` or null).
 - Offer quality: the triager's precision (suggested discards you discarded of those you
-  decided) and misses (triaged offers you discarded without a suggestion), in total and
+  decided) and misses (offers it marked OK that you discarded), in total and
   week by week.
-- Inbox: "Triage with AI" in Pending triages batch after batch with its progress, and a
-  pending offer with a suggested discard shows it with "Discard as suggested". Metrics:
+- Inbox: "Triage with AI" in Pending triages batch after batch, saying how many are OK and
+  KO. Each triaged offer says "AI: OK" or "AI: KO" and why; with a suggested discard, it adds
+  the reason and its evidence and "Discard as suggested". A KO offer the triager's
+  suggestion comes from offers "Improve the filter" with what excluding the word would do
+  and "Exclude it", a criteria change made from that offer; the suggestion also shows above
+  the offers with "Not now" and "Exclude it". Metrics:
   "The AI triage" with the triager's precision and misses.
 - Frequent titles: `GET /api/v1/offers/frequent-titles?search_profile_id=` lists the
   titles of at least 2 filtered offers with none of the profile's titles (grouped
@@ -34,7 +44,8 @@ While the version is `0.x`, the API may change without a major version bump.
 - Criteria suggestions: `GET /api/v1/criteria-suggestions` suggests excluding a word from a
   search profile when it is in the titles of at least 3 discarded offers and of no
   promoted one, with the offers behind it and what excluding it would do; only counting,
-  no language model. `POST /api/v1/criteria-suggestions/dismissals` ("Not now") hides one
+  no language model. The offer triager's suggestions join them, with `source: triager`,
+  its `why` and the offers they come from. `POST /api/v1/criteria-suggestions/dismissals` ("Not now") hides one
   for good. Nothing is applied on its own.
 - Metrics: the suggestions show under "Why you discard", with "Not now" and "Exclude it".
 - Criteria changes: `POST /api/v1/criteria-changes` changes one rule of a search profile
