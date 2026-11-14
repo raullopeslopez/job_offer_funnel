@@ -409,6 +409,58 @@ Feature: Inbox screen
     When I restore the offer "Backend Engineer"
     Then the "pending" offers show "Backend Engineer"
 
+  # --- Triage ---
+
+  # With an offer triager (specs/inbox/offer_triages.feature), the pending view offers
+  # "Triage with AI": it triages batch after batch until none is left, saying how many it
+  # triaged and how many are left, and stops when a batch triages none. A pending offer
+  # with a suggested discard says it under its strip, and "Discard as suggested" discards
+  # it with that reason and word, like any discard.
+  # @component: the E2E tests cannot reach the triager.
+
+  Scenario: Without an offer triager there is no triage
+    Given an offer for "Acme" as "Backend Engineer"
+    When I open the inbox
+    Then there is no "Triage with AI"
+
+  @component
+  Scenario: The triage goes batch after batch until none is left
+    Given the offer triager has 7 pending offers to triage, 5 at a time
+    And I am on the inbox
+    When I triage the offers with AI
+    Then it says "Triaged 7 · 0 left"
+
+  @component
+  Scenario: A triage that triages none stops and says what is left
+    Given the offer triager triages 3 pending offers and then none, with 2 left
+    And I am on the inbox
+    When I triage the offers with AI
+    Then it says "Triaged 3 · 2 left. Try again later."
+
+  @component
+  Scenario Outline: A pending offer shows its suggested discard
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with a suggested discard because "<reason>" with "<evidence>"
+    When I open the inbox
+    Then the offer "Backend Engineer Lead" says "<shown>"
+
+    Examples:
+      | reason     | evidence                   | shown                                                 |
+      | contract   | Part-time, 20 hours a week | Suggested discard: Contract — “Part-time, 20 hours a week” |
+      | title_word | Lead                       | Suggested discard: A word in the title — “Lead”       |
+
+  @component
+  Scenario Outline: Discard an offer as suggested
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with a suggested discard because "<reason>" with "<evidence>"
+    And I am on the inbox
+    When I discard the offer "Backend Engineer Lead" as suggested
+    Then the offer is discarded because "<reason>" <word>
+    And I see the message "Offer discarded"
+
+    Examples:
+      | reason     | evidence                   | word                |
+      | contract   | Part-time, 20 hours a week | with no word        |
+      | title_word | Lead                       | with the word "Lead" |
+
   # --- Promoting ---
 
   Scenario Outline: Promote an offer to an application
