@@ -40,6 +40,7 @@ from funnel.modules.inbox.domain import (
     ReviewMade,
     Rule,
     UnknownJobBoardError,
+    UntitledOffer,
     WordHits,
     filter_reason,
 )
@@ -231,6 +232,24 @@ class OfferRepository:
             )
             for offer_id, has_description, is_rightly_filtered, *flags in words
         }
+
+    async def without_a_title_of(
+        self, terms: SearchTerms, profiles: Sequence[SearchTerms]
+    ) -> list[UntitledOffer]:
+        """The filtered offers with none of the profile's titles, the oldest first."""
+        rows = await self._session.execute(
+            select(
+                OfferRow.title,
+                and_(true(), *(_in_text(keyword) for keyword in terms.keywords)),
+                not_(_contradicted(terms)),
+            )
+            .where(
+                filtered(profiles),
+                not_(or_(false(), *(_in_title(title) for title in terms.titles))),
+            )
+            .order_by(OfferRow.created_at, OfferRow.id)
+        )
+        return [UntitledOffer(*row) for row in rows]
 
     async def fit_changes(
         self, current: Sequence[SearchTerms], changed: Sequence[SearchTerms]

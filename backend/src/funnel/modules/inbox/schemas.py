@@ -283,6 +283,25 @@ class OfferQualityRead(BaseModel):
     sources: list[SourceQualityRead]
 
 
+class FrequentTitleRead(BaseModel):
+    title: str = Field(description="As most often written.")
+    offers: int
+    with_keywords: int = Field(description="Offers with all the profile's keywords.")
+    reading_passes: int = Field(
+        description="Offers whose reading does not rule out the profile's work mode, "
+        "location or contract."
+    )
+    titles: list[str] = Field(description="The profile's titles with this one: the change.")
+    preview: CriteriaPreviewRead = Field(description="What adding the title would do.")
+
+
+class FrequentTitlesRead(BaseModel):
+    offers: int = Field(description="Filtered offers with none of the profile's titles.")
+    titles: list[FrequentTitleRead] = Field(
+        description="Titles of at least 2 of them, the most frequent first (up to 5)."
+    )
+
+
 class OfferRead(BaseModel):
     id: UUID
     url: str

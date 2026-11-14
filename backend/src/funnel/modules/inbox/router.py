@@ -40,6 +40,8 @@ from funnel.modules.inbox.schemas import (
     DiscardCreate,
     DiscardReasonCountRead,
     FilteredCountsRead,
+    FrequentTitleRead,
+    FrequentTitlesRead,
     ImportRead,
     OfferCreate,
     OfferQualityRead,
@@ -220,6 +222,31 @@ async def preview_criteria(preview: CriteriaPreviewCreate, service: Service) -> 
     changes = preview.model_dump(exclude_unset=True, exclude={"search_profile_id", "name"})
     result = await service.preview(preview.search_profile_id, changes)
     return CriteriaPreviewRead.model_validate(result, from_attributes=True)
+
+
+@offers_router.get(
+    "/frequent-titles",
+    responses={
+        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Profile does not exist"}
+    },
+)
+async def list_frequent_titles(
+    search_profile_id: Annotated[UUID, Query()], service: Service
+) -> FrequentTitlesRead:
+    """The titles that keep coming among the offers filtered with none of the profile's
+    titles, and what adding each would do."""
+    found = await service.frequent_titles(search_profile_id)
+    return FrequentTitlesRead(
+        offers=found.offers,
+        titles=[
+            FrequentTitleRead(
+                **asdict(title),
+                titles=adding,
+                preview=CriteriaPreviewRead.model_validate(preview, from_attributes=True),
+            )
+            for title, adding, preview in found.titles
+        ],
+    )
 
 
 @offers_router.get("/quality")

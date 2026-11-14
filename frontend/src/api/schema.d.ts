@@ -424,6 +424,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/frequent-titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Frequent Titles
+         * @description The titles that keep coming among the offers filtered with none of the profile's
+         *     titles, and what adding each would do.
+         */
+        get: operations["list_frequent_titles_api_v1_offers_frequent_titles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/offers/quality": {
         parameters: {
             query?: never;
@@ -1230,6 +1251,46 @@ export interface components {
              * @description Offers ever reviewed (rescued or marked rightly filtered) while they were near misses, whatever their status now.
              */
             reviewed_near_misses: number;
+        };
+        /** FrequentTitleRead */
+        FrequentTitleRead: {
+            /** Offers */
+            offers: number;
+            /** @description What adding the title would do. */
+            preview: components["schemas"]["CriteriaPreviewRead"];
+            /**
+             * Reading Passes
+             * @description Offers whose reading does not rule out the profile's work mode, location or contract.
+             */
+            reading_passes: number;
+            /**
+             * Title
+             * @description As most often written.
+             */
+            title: string;
+            /**
+             * Titles
+             * @description The profile's titles with this one: the change.
+             */
+            titles: string[];
+            /**
+             * With Keywords
+             * @description Offers with all the profile's keywords.
+             */
+            with_keywords: number;
+        };
+        /** FrequentTitlesRead */
+        FrequentTitlesRead: {
+            /**
+             * Offers
+             * @description Filtered offers with none of the profile's titles.
+             */
+            offers: number;
+            /**
+             * Titles
+             * @description Titles of at least 2 of them, the most frequent first (up to 5).
+             */
+            titles: components["schemas"]["FrequentTitleRead"][];
         };
         /** GeneratedSearchRead */
         GeneratedSearchRead: {
@@ -3518,6 +3579,55 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    list_frequent_titles_api_v1_offers_frequent_titles_get: {
+        parameters: {
+            query: {
+                search_profile_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrequentTitlesRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Profile does not exist */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

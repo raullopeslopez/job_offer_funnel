@@ -1265,6 +1265,74 @@
         "title": "FilteredCountsRead",
         "type": "object"
       },
+      "FrequentTitleRead": {
+        "properties": {
+          "offers": {
+            "title": "Offers",
+            "type": "integer"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/CriteriaPreviewRead",
+            "description": "What adding the title would do."
+          },
+          "reading_passes": {
+            "description": "Offers whose reading does not rule out the profile's work mode, location or contract.",
+            "title": "Reading Passes",
+            "type": "integer"
+          },
+          "title": {
+            "description": "As most often written.",
+            "title": "Title",
+            "type": "string"
+          },
+          "titles": {
+            "description": "The profile's titles with this one: the change.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
+          "with_keywords": {
+            "description": "Offers with all the profile's keywords.",
+            "title": "With Keywords",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "offers",
+          "with_keywords",
+          "reading_passes",
+          "titles",
+          "preview"
+        ],
+        "title": "FrequentTitleRead",
+        "type": "object"
+      },
+      "FrequentTitlesRead": {
+        "properties": {
+          "offers": {
+            "description": "Filtered offers with none of the profile's titles.",
+            "title": "Offers",
+            "type": "integer"
+          },
+          "titles": {
+            "description": "Titles of at least 2 of them, the most frequent first (up to 5).",
+            "items": {
+              "$ref": "#/components/schemas/FrequentTitleRead"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "offers",
+          "titles"
+        ],
+        "title": "FrequentTitlesRead",
+        "type": "object"
+      },
       "GeneratedSearchRead": {
         "properties": {
           "query": {
@@ -5437,6 +5505,75 @@
           }
         ],
         "summary": "Count Filtered Offers",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/frequent-titles": {
+      "get": {
+        "description": "The titles that keep coming among the offers filtered with none of the profile's\ntitles, and what adding each would do.",
+        "operationId": "list_frequent_titles_api_v1_offers_frequent_titles_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search_profile_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Search Profile Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrequentTitlesRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Profile does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Frequent Titles",
         "tags": [
           "inbox"
         ]
