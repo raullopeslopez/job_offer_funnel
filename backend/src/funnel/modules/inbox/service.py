@@ -1,7 +1,7 @@
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime, time
-from typing import Any
+from typing import Any, Final
 from uuid import UUID
 
 import httpx2
@@ -52,19 +52,26 @@ from funnel.modules.inbox.domain import (
     OfferTriagerError,
     OfferTriagerUnavailableError,
     ProfileRule,
+    Relaxing,
     Review,
     RuleChangedSinceError,
+    RuleCheck,
+    RuleResult,
     SuggestionSource,
+    Triage,
     TriageContext,
     TriageReply,
     TriagerSuggestion,
     Verdict,
     WordNotInTitleError,
+    can_change,
     can_exclude,
     count_filtered,
     duplicate_key,
     exclusion_candidates,
     frequent_titles,
+    holds_the_rule,
+    is_relaxing,
     is_title_word,
     kept_suggestion,
     kept_triage,
@@ -73,6 +80,8 @@ from funnel.modules.inbox.domain import (
     plain_text,
     preview_criteria,
     quality_starts_on,
+    relaxing,
+    rule_after,
     supported,
 )
 from funnel.modules.inbox.feeds import FeedReader
@@ -292,12 +301,13 @@ class CriteriaSuggestion:
     search_profile_id: UUID
     search_profile_name: str
     word: str
-    excluded_keywords: list[str]
+    after: list[str]
     offer_ids: list[UUID]
     discarded: int
     preview: CriteriaPreview
     source: SuggestionSource = SuggestionSource.COUNT
     why: str | None = None
+    rule: ProfileRule = ProfileRule.EXCLUDED_KEYWORDS
 
 
 class CriteriaSuggestionService:
@@ -322,7 +332,8 @@ class CriteriaSuggestionService:
             assert terms.search_profile_id is not None  # all_terms reads saved profiles
             for candidate in candidates:
                 word, profile_id = candidate.word, terms.search_profile_id
-                if (profile_id, word.casefold()) in dismissed or not can_exclude(word, terms):
+                key = (profile_id, ProfileRule.EXCLUDED_KEYWORDS, word.casefold())
+                if key in dismissed or not can_exclude(word, terms):
                     continue
                 excluding = [*terms.excluded_keywords, word]
                 preview = await self._offers.preview(profile_id, {"excluded_keywords": excluding})
@@ -343,41 +354,42 @@ class CriteriaSuggestionService:
     async def _from_triager(
         self,
         counted: Sequence[CriteriaSuggestion],
-        dismissed: Collection[tuple[UUID, str]],
+        dismissed: Collection[tuple[UUID, ProfileRule, str]],
         discarded: int,
     ) -> list[CriteriaSuggestion]:
         """The triager's suggestions that still hold the rule and were not counted too."""
         terms_by_id = {t.search_profile_id: t for t in await self._profiles.all_terms()}
-        seen = {(s.search_profile_id, s.word.casefold()) for s in counted}
+        seen = {(s.search_profile_id, s.rule, s.word.casefold()) for s in counted}
         suggestions: list[CriteriaSuggestion] = []
         for row in await self._repository.triager_suggestions():
-            key = (row.search_profile_id, row.word.casefold())
+            key = (row.search_profile_id, row.rule, row.word.casefold())
             terms = terms_by_id.get(row.search_profile_id)
-            if key in seen or key in dismissed or terms is None or not can_exclude(row.word, terms):
+            if key in seen or key in dismissed or terms is None:
                 continue
-            excluding = [*terms.excluded_keywords, row.word]
-            preview = await self._offers.preview(
-                row.search_profile_id, {"excluded_keywords": excluding}
-            )
-            if preview.promoted_filtered == 0 and preview.discarded_filtered > 0:
+            if not can_change(terms, row.rule, row.word):
+                continue
+            after = rule_after(terms, row.rule, row.word)
+            preview = await self._offers.preview(row.search_profile_id, {row.rule: after})
+            if holds_the_rule(preview, relaxing=is_relaxing(terms, row.rule, row.word)):
                 suggestions.append(
                     CriteriaSuggestion(
                         row.search_profile_id,
                         terms.name,
                         row.word,
-                        excluding,
+                        after,
                         list(row.offer_ids),
                         discarded,
                         preview,
                         SuggestionSource.TRIAGER,
                         row.why,
+                        row.rule,
                     )
                 )
         return suggestions
 
-    async def dismiss(self, profile_id: UUID, word: str) -> None:
+    async def dismiss(self, profile_id: UUID, rule: ProfileRule, word: str) -> None:
         await self._profiles.get(profile_id)
-        await self._repository.dismiss(profile_id, word)
+        await self._repository.dismiss(profile_id, rule, word)
 
 
 def _as_json(value: Any) -> Any:
@@ -442,6 +454,19 @@ class TriageBatch:
     left: int
     ok: int = 0
     ko: int = 0
+    to_rescue: int = 0
+
+
+# The near misses are decided by the domain: the triage reads them all.
+_ALL: Final = 100_000
+
+
+def _failed_check(offer: OfferRow) -> RuleCheck | None:
+    """The rule that filtered a near miss."""
+    reason = offer.filter_reason
+    return (
+        next((c for c in reason.rules if c.result is RuleResult.FAILED), None) if reason else None
+    )
 
 
 class OfferTriageService:
@@ -465,11 +490,22 @@ class OfferTriageService:
     def is_available(self) -> bool:
         return self._triager is not None
 
+    async def _near_misses(self) -> list[OfferRow]:
+        """The near misses with a description and no verdict, the most recent first."""
+        near_misses, _ = await self._offers.list_page(
+            OfferFilter(OfferStatus.PENDING, is_filtered=True, is_near_miss=True),
+            PageParams(limit=_ALL, offset=0),
+        )
+        return [o for o in near_misses if o.verdict is None and (o.description or "").strip()]
+
     async def triage_pending(self) -> TriageBatch:
         if self._triager is None:
             raise OfferTriagerUnavailableError("No offer triager is configured")
         profiles = await self._profiles.all_terms()
-        offers, total = await self._triages.list_untriaged(profiles, TRIAGE_BATCH_SIZE)
+        fitting, total = await self._triages.list_untriaged(profiles, TRIAGE_BATCH_SIZE)
+        near_misses = await self._near_misses()
+        offers = [*fitting, *near_misses[: TRIAGE_BATCH_SIZE - len(fitting)]]
+        total += len(near_misses)
         if not offers:
             return TriageBatch(triaged=0, failed=0, left=total)
         context = TriageContext(
@@ -478,8 +514,13 @@ class OfferTriageService:
             await self._triages.mistakes(TRIAGE_MISTAKES),
         )
         texts = [
-            OfferText(offer.title, offer.company, plain_text(offer.description or ""))
-            for offer in offers
+            OfferText(
+                offer.title,
+                offer.company,
+                plain_text(offer.description or ""),
+                _failed_check(offer) if number >= len(fitting) else None,
+            )
+            for number, offer in enumerate(offers)
         ]
         try:
             reply = await self._triager.triage(texts, context)
@@ -490,21 +531,60 @@ class OfferTriageService:
         verdicts: dict[int, Verdict] = {}
         for number, answer in reply.answers.items():
             triage = kept_triage(answer)
-            if triage is not None:
-                verdicts[number] = triage.verdict
-                discard = kept_suggestion(answer, texts[number])
-                await self._triages.save(offers[number], triage, discard)
+            if triage is None:
+                continue
+            verdicts[number] = triage.verdict
+            check = texts[number].filtered_by
+            # A near miss is never suggested for discard: KO is rightly filtered.
+            discard = None if check else kept_suggestion(answer, texts[number])
+            await self._triages.save(offers[number], triage, discard)
+            if check and triage.verdict is Verdict.OK:
+                await self._relax(offers[number], relaxing(check), triage)
         for suggestion in reply.suggestions:
             await self._keep(suggestion, profiles, offers, texts, verdicts)
-        ko = sum(verdict is Verdict.KO for verdict in verdicts.values())
+        said = [verdicts[n] for n in verdicts if n < len(fitting)]
+        to_rescue = sum(verdicts[n] is Verdict.OK for n in verdicts if n >= len(fitting))
         triaged = len(verdicts)
         return TriageBatch(
             triaged=triaged,
             failed=len(offers) - triaged,
             left=total - triaged,
-            ok=triaged - ko,
-            ko=ko,
+            ok=said.count(Verdict.OK),
+            ko=said.count(Verdict.KO),
+            to_rescue=to_rescue,
         )
+
+    async def _relax(self, offer: OfferRow, change: Relaxing | None, triage: Triage) -> None:
+        """Keep the suggestion to relax the rule that filtered an OK near miss, for its
+        reference profile, if it holds the rule for relaxing a criterion."""
+        reason = offer.filter_reason
+        if change is None or reason is None or reason.search_profile_id is None:
+            return
+        await self._keep_change(
+            reason.search_profile_id, change.rule, change.word, triage.why, [offer.id]
+        )
+
+    async def _keep_change(  # noqa: PLR0913, PLR0917  # the parts of a suggestion
+        self,
+        profile_id: UUID,
+        rule: ProfileRule,
+        word: str,
+        why: str,
+        offer_ids: Sequence[UUID],
+    ) -> None:
+        terms = next(
+            (t for t in await self._profiles.all_terms() if t.search_profile_id == profile_id),
+            None,
+        )
+        if terms is None or not can_change(terms, rule, word):
+            return
+        if (profile_id, rule, word.casefold()) in await self._suggestions.dismissed():
+            return
+        preview = await self._offers.preview(profile_id, {rule: rule_after(terms, rule, word)})
+        if holds_the_rule(preview, relaxing=is_relaxing(terms, rule, word)):
+            await self._suggestions.keep_triager_suggestion(
+                profile_id, rule, word, " ".join(why.split())[:WHY_LENGTH], offer_ids
+            )
 
     async def _keep(  # noqa: PLR0913, PLR0917  # what the batch knows of each offer
         self,
@@ -529,19 +609,13 @@ class OfferTriageService:
         if not word or terms is None or not from_offers or not can_exclude(word, terms):
             return
         assert terms.search_profile_id is not None  # all_terms reads saved profiles
-        if (terms.search_profile_id, word.casefold()) in await self._suggestions.dismissed():
-            return
-        excluding = [*terms.excluded_keywords, word]
-        preview = await self._offers.preview(
-            terms.search_profile_id, {"excluded_keywords": excluding}
+        await self._keep_change(
+            terms.search_profile_id,
+            ProfileRule.EXCLUDED_KEYWORDS,
+            word,
+            suggestion.why,
+            from_offers,
         )
-        if preview.promoted_filtered == 0 and preview.discarded_filtered > 0:
-            await self._suggestions.keep_triager_suggestion(
-                terms.search_profile_id,
-                word,
-                " ".join(suggestion.why.split())[:WHY_LENGTH],
-                from_offers,
-            )
 
 
 @dataclass(frozen=True)

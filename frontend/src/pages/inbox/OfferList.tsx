@@ -66,11 +66,11 @@ export function InboxOffer({
 }: OfferContext & {
   offer: Offer;
   actions: ReactNode;
-  /** Given, a pending offer with a verdict shows it, and can be discarded as suggested. */
+  /** Given, a pending offer with a suggested discard can be discarded as suggested. */
   onDiscarded?: (offer: Offer) => void;
 }) {
   const sourceKind = offerSourceKind(offer, jobBoards);
-  const isTriaged = offer.status === "pending" && offer.triage && onDiscarded;
+  const isTriaged = offer.status === "pending" && offer.triage;
   return (
     <OfferPiece
       offer={offer}

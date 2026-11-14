@@ -255,14 +255,21 @@ async def triage_offers(service: TriageService) -> TriageBatchRead:
     in a single request, with your promoted and discarded offers and its own mistakes. It
     marks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,
     with a reason and its evidence. It may also suggest excluding a word from a profile,
-    which joins the criteria suggestions if it holds the rule. Nothing is applied.
+    which joins the criteria suggestions if it holds the rule. Then the near misses go, the
+    same way: `ok` is a false negative (`to_rescue`), and it may suggest relaxing the rule
+    that filtered it. Nothing is applied.
 
     An offer is triaged once. Call it again while `left` is not 0; the offers the triager
     does not answer for are left to triage.
     """
     batch = await service.triage_pending()
     return TriageBatchRead(
-        triaged=batch.triaged, ok=batch.ok, ko=batch.ko, failed=batch.failed, left=batch.left
+        triaged=batch.triaged,
+        ok=batch.ok,
+        ko=batch.ko,
+        to_rescue=batch.to_rescue,
+        failed=batch.failed,
+        left=batch.left,
     )
 
 
@@ -740,9 +747,12 @@ async def list_criteria_suggestions(
 async def dismiss_criteria_suggestion(
     dismissal: DismissalCreate, service: SuggestionService
 ) -> DismissalRead:
-    """ "Not now": the word is not suggested again for the profile. Saying it twice is once."""
-    await service.dismiss(dismissal.search_profile_id, dismissal.word)
-    return DismissalRead(search_profile_id=dismissal.search_profile_id, word=dismissal.word)
+    """ "Not now": the change of that word in that rule is not suggested again for the
+    profile. Saying it twice is once."""
+    await service.dismiss(dismissal.search_profile_id, dismissal.rule, dismissal.word)
+    return DismissalRead(
+        search_profile_id=dismissal.search_profile_id, rule=dismissal.rule, word=dismissal.word
+    )
 
 
 router = APIRouter()

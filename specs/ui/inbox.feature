@@ -498,6 +498,41 @@ Feature: Inbox screen
       | contract   | Part-time, 20 hours a week | with no word        |
       | title_word | Lead                       | with the word "Lead" |
 
+  # --- Triage of the near misses ---
+
+  # The triage also marks the near misses (specs/inbox/near_miss_triages.feature), and
+  # says how many it marked OK as "{n} to rescue". A near miss with a verdict, in "Maybe"
+  # and in the filtered view, says it under its strip like any offer: "AI: OK" or "AI:
+  # KO", and why. An OK near miss with a suggestion to relax its rule says "Improve the
+  # filter: {change} in {profile}", the line "Brings {n} into Pending, none you
+  # discarded." and "Relax it" (a criteria change made from that offer). Rescuing it is
+  # promoting it, as always.
+
+  @component
+  Scenario: The triage says how many near misses are worth rescuing
+    Given the offer triager has 9 offers to triage, 5 at a time, and says 3 are OK and 2 near misses are OK
+    And I am on the inbox
+    When I triage the offers with AI
+    Then it says "Triaged 9 · 3 OK · 4 KO · 2 to rescue · 0 left"
+
+  @component
+  Scenario Outline: A near miss shows the verdict of the triage and the rule to relax
+    Given a near miss for "Initech" as "Senior Backend Engineer" filtered by "excluded" with the verdict "OK" because "Worth it."<suggested>
+    When I open the inbox showing the "filtered" offers
+    Then the offer "Senior Backend Engineer" says "<shown>"
+
+    Examples:
+      | suggested                                                                 | shown                                                                                               |
+      |                                                                           | AI: OK — Worth it.                                                                                  |
+      | , suggesting to stop excluding "Senior" in "Backend", bringing 1 offer in | Improve the filter: stop excluding “Senior” in Backend. Brings 1 into Pending, none you discarded. |
+
+  @component
+  Scenario: Relax the rule from the near miss
+    Given a near miss for "Initech" as "Senior Backend Engineer" filtered by "excluded" with the verdict "OK" because "Worth it.", suggesting to stop excluding "Senior" in "Backend", bringing 1 offer in
+    And I am on the inbox showing the "filtered" offers
+    When I choose "Relax it" on the offer "Senior Backend Engineer"
+    Then the app stops excluding "Senior" in "Backend", as a criteria change made from that offer
+
   # --- Promoting ---
 
   Scenario Outline: Promote an offer to an application

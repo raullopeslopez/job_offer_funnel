@@ -1,6 +1,8 @@
 import { Alert, Box, Button, Typography } from "@mui/material";
 import {
+  acceptLabel,
   type CriteriaSuggestion,
+  suggestionChange,
   suggestionEffect,
   useCriteriaSuggestions,
   useSuggestionChoice,
@@ -17,9 +19,9 @@ export function suggestionReason(suggestion: CriteriaSuggestion): string {
 }
 
 /** "Suggested" when counted, "AI suggests" when the offer triager suggests it. */
-export function suggestionTitle({ source, word, search_profile_name }: CriteriaSuggestion): string {
-  const who = source === "triager" ? "AI suggests" : "Suggested";
-  return `${who}: exclude “${word}” from ${search_profile_name}`;
+export function suggestionTitle(suggestion: CriteriaSuggestion): string {
+  const who = suggestion.source === "triager" ? "AI suggests" : "Suggested";
+  return `${who}: ${suggestionChange(suggestion)}`;
 }
 
 // Counted from your decisions or suggested by the offer triager
@@ -62,7 +64,7 @@ export function SuggestedExclusions() {
                 disabled={choose.isPending}
                 onClick={() => choose.mutate({ suggestion, choice: "exclude" })}
               >
-                Exclude it
+                {acceptLabel(suggestion)}
               </Button>
             </Box>
           </Box>

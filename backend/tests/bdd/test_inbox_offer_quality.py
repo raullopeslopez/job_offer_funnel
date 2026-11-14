@@ -133,8 +133,14 @@ def given_profile(client: TestClient, name: str, datatable: list[list[str]]) -> 
 @given(parsers.parse('the job board "Remote OK" was imported with:'))
 def given_imported(client: TestClient, state: ScenarioState, datatable: list[list[str]]) -> None:
     header, *rows = datatable
-    state.remoteok = [dict(zip(header, values, strict=True)) for values in rows]
+    is_again = bool(state.remoteok)
+    # The feed keeps publishing what it published before: those offers are not expired.
+    state.remoteok += [dict(zip(header, values, strict=True)) for values in rows]
+    if is_again:  # past the wait between imports
+        clock = FixedClock(datetime.now(UTC) + LATER)
+        cast(FastAPI, client.app).dependency_overrides[get_clock] = lambda: clock
     _ok(client.post(f"/api/v1/job-boards/{state.remoteok_id}/imports"))
+    cast(FastAPI, client.app).dependency_overrides.pop(get_clock, None)
 
 
 @given(
@@ -198,8 +204,15 @@ def given_answer(  # noqa: PLR0913, PLR0917  # one per part of the step
 
 
 @given("I triaged the offers")
+@given("I triaged the offers again, past the first 5")
 def given_triaged(client: TestClient) -> None:
     _ok(client.post(f"{OFFERS_URL}/triages"))
+
+
+@given(parsers.re(r"the offer triager says the offers of (?P<companies>.+) are OK$"))
+def given_ok_offers(state: ScenarioState, companies: str) -> None:
+    for company in re.findall(r'"([^"]+)"', companies):
+        state.answers[company] = TriageAnswer("ok", "Fits.")
 
 
 # --- When ---
@@ -313,3 +326,27 @@ def then_triager_misses(state: ScenarioState, misses: str, discarded: str) -> No
 def then_no_triager_figures(state: ScenarioState) -> None:
     total = state.quality["total"]
     assert (total["triager_precision"], total["triager_misses"]) == (None, None)
+
+
+@then(
+    parsers.re(
+        r"the triager's rescues are (?P<rescues>[\d.]+)% of (?P<reviewed>\d+) OK near misses "
+        r"reviewed"
+    )
+)
+def then_triager_rescues(state: ScenarioState, rescues: str, reviewed: str) -> None:
+    total = state.quality["total"]
+    found = (total["triager_rescues"], total["ok_near_misses_reviewed"])
+    assert found == (float(rescues), int(reviewed))
+
+
+@then(
+    parsers.re(
+        r"the triager's lost rescues are (?P<lost>[\d.]+)% of (?P<rescued>\d+) near misses "
+        r"rescued"
+    )
+)
+def then_triager_lost_rescues(state: ScenarioState, lost: str, rescued: str) -> None:
+    total = state.quality["total"]
+    found = (total["triager_lost_rescues"], total["triaged_near_misses_rescued"])
+    assert found == (float(lost), int(rescued))

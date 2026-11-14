@@ -143,6 +143,9 @@ class TriageBatchRead(BaseModel):
     triaged: int = Field(description="Offers triaged now: each has a verdict.")
     ok: int = Field(description="Of those, the ones marked `ok`.")
     ko: int = Field(description="Of those, the ones marked `ko`: false positives.")
+    to_rescue: int = Field(
+        description="Near misses triaged now and marked `ok`: false negatives, worth rescuing."
+    )
     failed: int = Field(description="Offers the triager did not answer for; left to triage.")
     left: int = Field(description="Offers still to triage, the failed ones included.")
 
@@ -268,13 +271,16 @@ class CriteriaSuggestionRead(BaseModel):
         "triager, with why."
     )
     why: str | None = Field(description="The triager's why; null for a counted suggestion.")
-    word: str = Field(description="The word to exclude, as the titles write it.")
-    excluded_keywords: list[str] = Field(
-        description="The profile's excluded keywords with the word: the change to make."
+    rule: ProfileRule = Field(
+        description="The rule it changes: `excluded_keywords` (exclude a word, or stop "
+        "excluding it), `keywords` (stop asking for one) or `work_modes` (accept one)."
     )
+    word: str = Field(description="The word or work mode it adds or takes out.")
+    after: RuleValue = Field(description="The rule's value with the change: the change to make.")
     offer_ids: list[UUID] = Field(
-        description="Counted: the discarded offers with the word. From the triager: the `ko` "
-        "offers it comes from; accepting it from one is a criteria change with its `offer_id`."
+        description="Counted: the discarded offers with the word. From the triager: the "
+        "offers it comes from (`ko` offers, or an `ok` near miss to relax its rule); accepting "
+        "it from one is a criteria change with its `offer_id`."
     )
     discarded: int = Field(description="All the discarded offers, expired ones left out.")
     preview: CriteriaPreviewRead = Field(description="What excluding the word would do.")
@@ -282,11 +288,15 @@ class CriteriaSuggestionRead(BaseModel):
 
 class DismissalCreate(BaseModel):
     search_profile_id: UUID
+    rule: ProfileRule = Field(
+        default=ProfileRule.EXCLUDED_KEYWORDS, description="The rule of the suggestion."
+    )
     word: Text
 
 
 class DismissalRead(BaseModel):
     search_profile_id: UUID
+    rule: ProfileRule
     word: str
 
 
@@ -299,6 +309,10 @@ class CriteriaPreviewRead(BaseModel):
     discarded_filtered: int = Field(
         description="Discarded offers, not expired, that fit the profiles now and would not "
         "with the change."
+    )
+    discarded_fitting: int = Field(
+        description="Discarded offers, not expired, that do not fit the profiles now and "
+        "would with the change."
     )
 
 
@@ -326,6 +340,18 @@ class QualityFiguresRead(BaseModel):
     triaged_discarded: int = Field(description="Triaged offers discarded, expired ones left out.")
     missed_discards: int = Field(description="Of those, the ones marked `ok`.")
     triager_misses: float | None = Field(description="missed_discards ÷ triaged_discarded, in %.")
+    ok_near_misses_reviewed: int = Field(
+        description="Near misses the triager marked `ok` that were rescued or rightly filtered."
+    )
+    ok_near_misses_rescued: int = Field(description="Of those, the ones rescued.")
+    triager_rescues: float | None = Field(
+        description="ok_near_misses_rescued ÷ ok_near_misses_reviewed, in %."
+    )
+    triaged_near_misses_rescued: int = Field(description="Near misses triaged and rescued.")
+    lost_rescues: int = Field(description="Of those, the ones the triager marked `ko`.")
+    triager_lost_rescues: float | None = Field(
+        description="lost_rescues ÷ triaged_near_misses_rescued, in %."
+    )
 
 
 class WeekQualityRead(QualityFiguresRead):

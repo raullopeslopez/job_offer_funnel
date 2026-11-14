@@ -106,6 +106,9 @@ class DismissedSuggestionRow(Base):
     search_profile_id: Mapped[UUID] = mapped_column(
         ForeignKey("search_profiles.id", ondelete="CASCADE")
     )
+    rule: Mapped[ProfileRule] = mapped_column(
+        _enum_column_type(ProfileRule, "dismissed_rule"), server_default="excluded_keywords"
+    )
     word: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -120,26 +123,33 @@ class TriagerSuggestionRow(Base):
     search_profile_id: Mapped[UUID] = mapped_column(
         ForeignKey("search_profiles.id", ondelete="CASCADE")
     )
+    # Excluding a word (or no longer, if the profile excludes it), or adding a keyword or a
+    # work mode.
+    rule: Mapped[ProfileRule] = mapped_column(
+        _enum_column_type(ProfileRule, "triager_rule"), server_default="excluded_keywords"
+    )
     word: Mapped[str] = mapped_column(String(200))
     why: Mapped[str] = mapped_column(Text)
     offer_ids: Mapped[list[UUID]] = mapped_column(ARRAY(Uuid))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
-# Once per profile and word, ignoring case, like the dismissed ones.
+# Once per profile, rule and word, ignoring case, like the dismissed ones.
 Index(
     UNIQUE_TRIAGER_SUGGESTION_INDEX,
     TriagerSuggestionRow.search_profile_id,
+    TriagerSuggestionRow.rule,
     func.lower(TriagerSuggestionRow.word),
     unique=True,
 )
 
 
-# Once per profile and word, ignoring case; search_profile_id leads it, so it also serves
-# as the index of the foreign key.
+# Once per profile, rule and word, ignoring case; search_profile_id leads it, so it also
+# serves as the index of the foreign key.
 Index(
     UNIQUE_DISMISSED_INDEX,
     DismissedSuggestionRow.search_profile_id,
+    DismissedSuggestionRow.rule,
     func.lower(DismissedSuggestionRow.word),
     unique=True,
 )
