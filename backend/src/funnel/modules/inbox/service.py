@@ -43,8 +43,10 @@ from funnel.modules.inbox.domain import (
     Review,
     RuleChangedSinceError,
     WordNotInTitleError,
+    can_exclude,
     count_filtered,
     duplicate_key,
+    exclusion_candidates,
     frequent_titles,
     is_title_word,
     next_status,
@@ -62,6 +64,7 @@ from funnel.modules.inbox.repository import (
     FeedImportRepository,
     OfferRepository,
     ReadingRepository,
+    SuggestionRepository,
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import (
@@ -259,6 +262,64 @@ class CriteriaChangeService:
 
     async def list_page(self, page: PageParams) -> tuple[list[CriteriaChangeRow], int]:
         return await self._repository.list_page(page)
+
+
+@dataclass(frozen=True)
+class CriteriaSuggestion:
+    """Excluding a word from a profile, with the discards behind it and what it would do."""
+
+    search_profile_id: UUID
+    search_profile_name: str
+    word: str
+    excluded_keywords: list[str]
+    offer_ids: list[UUID]
+    discarded: int
+    preview: CriteriaPreview
+
+
+class CriteriaSuggestionService:
+    """Counts the user's decisions to suggest exclusions; never applies one."""
+
+    def __init__(
+        self,
+        repository: SuggestionRepository,
+        offers: OfferService,
+        profiles: SearchProfileService,
+    ) -> None:
+        self._repository = repository
+        self._offers = offers
+        self._profiles = profiles
+
+    async def list_all(self) -> list[CriteriaSuggestion]:
+        discarded = await self._repository.discarded_titles()
+        candidates = exclusion_candidates(discarded, await self._repository.promoted_titles())
+        dismissed = await self._repository.dismissed()
+        suggestions: list[CriteriaSuggestion] = []
+        for terms in await self._profiles.all_terms():
+            assert terms.search_profile_id is not None  # all_terms reads saved profiles
+            for candidate in candidates:
+                word, profile_id = candidate.word, terms.search_profile_id
+                if (profile_id, word.casefold()) in dismissed or not can_exclude(word, terms):
+                    continue
+                excluding = [*terms.excluded_keywords, word]
+                preview = await self._offers.preview(profile_id, {"excluded_keywords": excluding})
+                if preview.discarded_filtered > 0:
+                    suggestions.append(
+                        CriteriaSuggestion(
+                            profile_id,
+                            terms.name,
+                            word,
+                            excluding,
+                            list(candidate.offer_ids),
+                            len(discarded),
+                            preview,
+                        )
+                    )
+        return suggestions
+
+    async def dismiss(self, profile_id: UUID, word: str) -> None:
+        await self._profiles.get(profile_id)
+        await self._repository.dismiss(profile_id, word)
 
 
 def _as_json(value: Any) -> Any:

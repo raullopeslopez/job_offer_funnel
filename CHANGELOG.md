@@ -16,6 +16,12 @@ While the version is `0.x`, the API may change without a major version bump.
   profile's keywords, how many pass its reading and what adding the title would do.
 - Inbox: Filtered shows "No title of yours" with the most frequent titles and "Add title",
   a logged criteria change.
+- Criteria suggestions: `GET /api/v1/criteria-suggestions` suggests excluding a word from a
+  search profile when it is in the titles of at least 3 discarded offers and of no
+  promoted one, with the offers behind it and what excluding it would do; only counting,
+  no language model. `POST /api/v1/criteria-suggestions/dismissals` ("Not now") hides one
+  for good. Nothing is applied on its own.
+- Metrics: the suggestions show under "Why you discard", with "Not now" and "Exclude it".
 - Criteria changes: `POST /api/v1/criteria-changes` changes one rule of a search profile
   (and only one: `validation-error` otherwise) and logs it with the rule before and after,
   what it did when applied (the counts of a preview) and, with `offer_id`, the offer it

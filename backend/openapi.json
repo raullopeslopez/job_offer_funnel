@@ -1070,6 +1070,61 @@
         "title": "CriteriaPreviewRead",
         "type": "object"
       },
+      "CriteriaSuggestionRead": {
+        "properties": {
+          "discarded": {
+            "description": "All the discarded offers, expired ones left out.",
+            "title": "Discarded",
+            "type": "integer"
+          },
+          "excluded_keywords": {
+            "description": "The profile's excluded keywords with the word: the change to make.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Excluded Keywords",
+            "type": "array"
+          },
+          "offer_ids": {
+            "description": "The discarded offers with the word.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Offer Ids",
+            "type": "array"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/CriteriaPreviewRead",
+            "description": "What excluding the word would do."
+          },
+          "search_profile_id": {
+            "format": "uuid",
+            "title": "Search Profile Id",
+            "type": "string"
+          },
+          "search_profile_name": {
+            "title": "Search Profile Name",
+            "type": "string"
+          },
+          "word": {
+            "description": "The word to exclude, as the titles write it.",
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "search_profile_id",
+          "search_profile_name",
+          "word",
+          "excluded_keywords",
+          "offer_ids",
+          "discarded",
+          "preview"
+        ],
+        "title": "CriteriaSuggestionRead",
+        "type": "object"
+      },
       "DiscardCreate": {
         "properties": {
           "reason": {
@@ -1127,6 +1182,46 @@
           "offers"
         ],
         "title": "DiscardReasonCountRead",
+        "type": "object"
+      },
+      "DismissalCreate": {
+        "properties": {
+          "search_profile_id": {
+            "format": "uuid",
+            "title": "Search Profile Id",
+            "type": "string"
+          },
+          "word": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "search_profile_id",
+          "word"
+        ],
+        "title": "DismissalCreate",
+        "type": "object"
+      },
+      "DismissalRead": {
+        "properties": {
+          "search_profile_id": {
+            "format": "uuid",
+            "title": "Search Profile Id",
+            "type": "string"
+          },
+          "word": {
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "search_profile_id",
+          "word"
+        ],
+        "title": "DismissalRead",
         "type": "object"
       },
       "EmailAlert": {
@@ -2134,6 +2229,37 @@
           "offset"
         ],
         "title": "Page[CriteriaChangeRead]",
+        "type": "object"
+      },
+      "Page_CriteriaSuggestionRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CriteriaSuggestionRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[CriteriaSuggestionRead]",
         "type": "object"
       },
       "Page_JobBoardRead_": {
@@ -4508,6 +4634,145 @@
           }
         ],
         "summary": "Undo Criteria Change",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/criteria-suggestions": {
+      "get": {
+        "description": "Words to exclude, counted from the discarded and promoted offers; never applied.",
+        "operationId": "list_criteria_suggestions_api_v1_criteria_suggestions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CriteriaSuggestionRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Criteria Suggestions",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/criteria-suggestions/dismissals": {
+      "post": {
+        "description": "\"Not now\": the word is not suggested again for the profile. Saying it twice is once.",
+        "operationId": "dismiss_criteria_suggestion_api_v1_criteria_suggestions_dismissals_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissalCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DismissalRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Profile does not exist"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Dismiss Criteria Suggestion",
         "tags": [
           "inbox"
         ]
