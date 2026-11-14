@@ -66,6 +66,23 @@ Feature: Metrics screen
       Then "Why you discard" lists "Stack", then "Location"
       And "By source" shows "Remote OK" with 5 imported, 3 that fit, 1 promoted and 1 discarded
 
+    # "The AI triage" shows how the offer triager does (specs/inbox/offer_triages.feature),
+    # once it has triaged an offer you decided on: its precision and its misses, each with
+    # a bar per week, so that you see whether each batch does better.
+
+    @component
+    Scenario: The triager's precision and misses
+      Given the triager was right in 3 of 4 suggested discards decided and missed 1 of 4 triaged offers discarded
+      When I open the metrics
+      Then "The AI triage" says "75.0%" and "3 right of 4 suggested discards you decided"
+      And it says "25.0%" and "1 missed of 4 triaged offers you discarded"
+
+    @component
+    Scenario: Without triaged offers decided there is no AI triage
+      Given there is no offer quality yet
+      When I open the metrics
+      Then there is no "The AI triage"
+
   Rule: With applications, the screen shows their conversion and the active pipeline
 
     Background:

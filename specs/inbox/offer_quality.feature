@@ -20,6 +20,10 @@ Feature: Offer quality
   - Discards by reason, the most frequent first, without the expired ones.
   - By source (a job board or a watched company): the imported offers, how many fit, and
     how many were promoted and discarded.
+  - The triager (specs/inbox/offer_triages.feature), over the triaged offers I promoted or
+    discarded: its precision, the suggested discards I discarded over the suggested
+    discards I decided; and its misses, the missed discards over the triaged offers I
+    discarded.
 
   Background:
     Given a job board named "Remote OK" imported from the feed "remoteok"
@@ -109,3 +113,21 @@ Feature: Offer quality
     Then the sources are:
       | source    | imported | fitting | promoted | discarded |
       | Remote OK | 5        | 3       | 1        | 1         |
+
+  # --- Triager ---
+
+  Scenario: The triager's precision and misses follow what I did with the triaged offers
+    Given the offer triager answers for the offer of "Acme" with the reason "stack" and the evidence "Python services"
+    And the offer triager answers for the offer of "Globex" with the reason "stack" and the evidence "Python services"
+    And I triaged the offers
+    And I discarded the offer of "Acme" because "stack"
+    And I promoted the offer of "Globex"
+    And I discarded the offer of "Initech" because "location"
+    When I view the offer quality
+    Then the triager's precision is 50.0% of 2 suggested discards decided
+    And the triager's misses are 50.0% of 2 triaged offers discarded
+
+  Scenario: Without triaged offers decided there are no triager figures
+    Given I triaged the offers
+    When I view the offer quality
+    Then there is no triager precision and there are no triager misses

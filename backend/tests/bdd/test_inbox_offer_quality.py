@@ -1,5 +1,5 @@
 import re
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
@@ -12,7 +12,8 @@ from pytest_bdd import given, parsers, scenarios, then, when
 from support.clock import FixedClock
 
 from funnel.core.clock import get_clock
-from funnel.modules.inbox.router import get_feed_client
+from funnel.modules.inbox.domain import OfferText, TriageAnswer, TriageContext
+from funnel.modules.inbox.router import get_feed_client, get_offer_triager
 
 pytestmark = pytest.mark.bdd
 
@@ -31,6 +32,8 @@ Row = dict[str, str]
 class ScenarioState:
     remoteok: list[Row] = field(default_factory=list)
     remoteok_id: str | None = None
+    # What the fake offer triager answers, by company.
+    answers: dict[str, TriageAnswer] = field(default_factory=dict)
     response: httpx2.Response | None = None
 
     @property
@@ -44,9 +47,25 @@ def state() -> ScenarioState:
     return ScenarioState()
 
 
+class FakeOfferTriager:
+    """Answers what the scenario says; an offer it knows nothing about has nothing to say."""
+
+    def __init__(self, state: ScenarioState) -> None:
+        self._state = state
+
+    async def triage(
+        self, offers: Sequence[OfferText], _context: TriageContext
+    ) -> Mapping[int, TriageAnswer]:
+        return {
+            number: self._state.answers.get(offer.company, TriageAnswer())
+            for number, offer in enumerate(offers)
+        }
+
+
 @pytest.fixture(autouse=True)
 def fake_remoteok(client: TestClient, state: ScenarioState) -> Iterator[None]:
-    """Remote OK answers from the scenario: tests never reach the internet."""
+    """Remote OK and the offer triager answer from the scenario: tests never reach the
+    internet."""
 
     def answer(_request: httpx2.Request) -> httpx2.Response:
         jobs = [
@@ -66,8 +85,10 @@ def fake_remoteok(client: TestClient, state: ScenarioState) -> Iterator[None]:
 
     overrides = cast(FastAPI, client.app).dependency_overrides
     overrides[get_feed_client] = fake_client
+    overrides[get_offer_triager] = lambda: FakeOfferTriager(state)
     yield
     overrides.pop(get_feed_client, None)
+    overrides.pop(get_offer_triager, None)
     overrides.pop(get_clock, None)
 
 
@@ -159,6 +180,21 @@ def given_moved(client: TestClient, company: str, stage: str) -> None:
         _ok(client.post(url, json={"to_stage": to_stage}))
 
 
+@given(
+    parsers.parse(
+        'the offer triager answers for the offer of "{company}" with the reason "{reason}" '
+        'and the evidence "{evidence}"'
+    )
+)
+def given_answer(state: ScenarioState, company: str, reason: str, evidence: str) -> None:
+    state.answers[company] = TriageAnswer(reason=reason, evidence=evidence)
+
+
+@given("I triaged the offers")
+def given_triaged(client: TestClient) -> None:
+    _ok(client.post(f"{OFFERS_URL}/triages"))
+
+
 # --- When ---
 
 
@@ -240,3 +276,33 @@ def then_sources(state: ScenarioState, datatable: list[list[str]]) -> None:
         for row in rows
     ]
     assert state.quality["sources"] == expected
+
+
+@then(
+    parsers.re(
+        r"the triager's precision is (?P<precision>[\d.]+)% of (?P<decided>\d+) suggested "
+        r"discards decided"
+    )
+)
+def then_triager_precision(state: ScenarioState, precision: str, decided: str) -> None:
+    total = state.quality["total"]
+    found = (total["triager_precision"], total["suggested_decided"])
+    assert found == (float(precision), int(decided))
+
+
+@then(
+    parsers.re(
+        r"the triager's misses are (?P<misses>[\d.]+)% of (?P<discarded>\d+) triaged offers "
+        r"discarded"
+    )
+)
+def then_triager_misses(state: ScenarioState, misses: str, discarded: str) -> None:
+    total = state.quality["total"]
+    found = (total["triager_misses"], total["triaged_discarded"])
+    assert found == (float(misses), int(discarded))
+
+
+@then("there is no triager precision and there are no triager misses")
+def then_no_triager_figures(state: ScenarioState) -> None:
+    total = state.quality["total"]
+    assert (total["triager_precision"], total["triager_misses"]) == (None, None)

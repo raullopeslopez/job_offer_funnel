@@ -143,6 +143,12 @@ const figures = (fields: Partial<Figures> = {}): Figures => ({
   promoted: 0,
   applied: 0,
   answered: 0,
+  suggested_decided: 0,
+  suggested_discarded: 0,
+  triager_precision: null,
+  triaged_discarded: 0,
+  missed_discards: 0,
+  triager_misses: null,
   ...fields,
 });
 
@@ -261,6 +267,42 @@ describe("MetricsPage offer quality", () => {
     ]);
     const row = within(screen.getByRole("table", { name: "By source" })).getAllByRole("row")[1];
     expect(row).toHaveTextContent("Remote OK5311");
+  });
+
+  it("shows the triager's precision and misses", async () => {
+    // Arrange
+    qualityOf(
+      figures({
+        suggested_decided: 4,
+        suggested_discarded: 3,
+        triager_precision: 75,
+        triaged_discarded: 4,
+        missed_discards: 1,
+        triager_misses: 25,
+      }),
+    );
+
+    // Act
+    renderPage("/metrics");
+
+    // Assert
+    const triage = await screen.findByRole("region", { name: "The AI triage" });
+    expect(triage).toHaveTextContent("75.0%");
+    expect(triage).toHaveTextContent("3 right of 4 suggested discards you decided");
+    expect(triage).toHaveTextContent("25.0%");
+    expect(triage).toHaveTextContent("1 missed of 4 triaged offers you discarded");
+  });
+
+  it("shows no AI triage without triaged offers decided", async () => {
+    // Arrange
+    qualityOf(figures());
+
+    // Act
+    renderPage("/metrics");
+
+    // Assert
+    expect(await screen.findByRole("heading", { name: "Offer quality" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "The AI triage" })).not.toBeInTheDocument();
   });
 });
 

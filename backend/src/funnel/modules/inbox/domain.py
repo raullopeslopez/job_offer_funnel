@@ -403,6 +403,95 @@ class OfferReaderUnavailableError(AppError):
     status = HTTPStatus.SERVICE_UNAVAILABLE
 
 
+# --- Offer triages (specs/inbox/offer_triages.feature) ---
+
+# Offers per request, and what the triager is told: about what its plan allows a minute.
+TRIAGE_BATCH_SIZE: Final = 5
+TRIAGE_DECISIONS: Final = 30
+TRIAGE_MISTAKES: Final = 20
+SUGGESTED_REASONS: Final = frozenset(
+    {
+        DiscardReason.TITLE_WORD,
+        DiscardReason.STACK,
+        DiscardReason.LOCATION,
+        DiscardReason.CONTRACT,
+        DiscardReason.COMPANY,
+    }
+)
+
+
+@dataclass(frozen=True)
+class SuggestedDiscard:
+    """A discard the triager suggests: for title_word the evidence is the word."""
+
+    reason: DiscardReason
+    evidence: str
+
+
+@dataclass(frozen=True)
+class TriageAnswer:
+    """What the triager says of an offer, not trusted yet; no reason is nothing to say."""
+
+    reason: str | None = None
+    evidence: str | None = None
+
+
+class Mistake(StrEnum):
+    REJECTED_SUGGESTION = "rejected_suggestion"
+    MISSED_DISCARD = "missed_discard"
+
+
+@dataclass(frozen=True)
+class Decision:
+    """An offer I promoted (no reason) or discarded, as the triager is told it."""
+
+    title: str
+    status: OfferStatus
+    reason: DiscardReason | None = None
+    word: str | None = None
+
+
+@dataclass(frozen=True)
+class TriageMistake:
+    title: str
+    mistake: Mistake
+    reason: DiscardReason | None = None
+
+
+@dataclass(frozen=True)
+class TriageContext:
+    """What the triager is told once per request, with the offers."""
+
+    profiles: Sequence[SearchTerms]
+    decisions: Sequence[Decision]
+    mistakes: Sequence[TriageMistake]
+
+
+def kept_suggestion(answer: TriageAnswer, offer: OfferText) -> SuggestedDiscard | None:
+    """The suggested discard, if its reason is of the list and its evidence holds: a word of
+    the title for title_word, a sentence of the description for the others."""
+    reason = next((r for r in SUGGESTED_REASONS if r == answer.reason), None)
+    if reason is None:
+        return None
+    if reason is DiscardReason.TITLE_WORD:
+        word = (answer.evidence or "").strip()
+        return SuggestedDiscard(reason, word) if word and is_title_word(word, offer.title) else None
+    quote = _quoted(answer.evidence, offer.description)
+    return None if quote is None else SuggestedDiscard(reason, quote)
+
+
+class OfferTriagerError(Exception):
+    """The offer triager did not answer, or answered something unusable."""
+
+
+class OfferTriagerUnavailableError(AppError):
+    """No offer triager is configured, so nothing can be triaged."""
+
+    slug = "offer-triager-unavailable"
+    title = "Offer triager not available"
+    status = HTTPStatus.SERVICE_UNAVAILABLE
+
+
 class OfferAction(StrEnum):
     DISCARD = "discard"
     RESTORE = "restore"
@@ -606,6 +695,8 @@ class QualityOffer:
     review: Review | None = None
     review_rules: Sequence[Rule] = ()
     stage: Stage | None = None
+    is_triaged: bool = False
+    suggested_discard: DiscardReason | None = None
 
     @property
     def is_decided_from_pending(self) -> bool:
@@ -637,6 +728,12 @@ class QualityFigures:
     promoted: int
     applied: int
     answered: int
+    suggested_decided: int
+    suggested_discarded: int
+    triager_precision: float | None
+    triaged_discarded: int
+    missed_discards: int
+    triager_misses: float | None
 
 
 @dataclass(frozen=True)
@@ -678,6 +775,16 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
     promoted = [offer for offer in offers if offer.status is OfferStatus.PROMOTED]
     stages = list(Stage)
     reached = [stages.index(offer.stage) for offer in promoted if offer.stage is not None]
+    triaged = [offer for offer in offers if offer.is_triaged]
+    suggested = [
+        offer
+        for offer in triaged
+        if offer.suggested_discard is not None
+        and (offer.status is OfferStatus.PROMOTED or offer.is_discarded)
+    ]
+    suggested_discarded = sum(offer.is_discarded for offer in suggested)
+    triaged_discarded = [offer for offer in triaged if offer.is_discarded]
+    missed = sum(offer.suggested_discard is None for offer in triaged_discarded)
     return QualityFigures(
         decided=len(decided),
         promoted_from_pending=promoted_from_pending,
@@ -689,6 +796,12 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
         promoted=len(promoted),
         applied=sum(index >= stages.index(Stage.APPLIED) for index in reached),
         answered=sum(index >= stages.index(Stage.SCREENING) for index in reached),
+        suggested_decided=len(suggested),
+        suggested_discarded=suggested_discarded,
+        triager_precision=rate(suggested_discarded, len(suggested)),
+        triaged_discarded=len(triaged_discarded),
+        missed_discards=missed,
+        triager_misses=rate(missed, len(triaged_discarded)),
     )
 
 

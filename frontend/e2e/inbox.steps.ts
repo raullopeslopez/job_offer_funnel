@@ -295,3 +295,8 @@ Then("I can import the job boards: {string}", async ({ page }, name: string) => 
   await page.getByRole("dialog").getByRole("combobox", { name: "Job board" }).click();
   await expect(page.getByRole("option")).toHaveText([name]);
 });
+
+Then(/^there is no "([^"]+)"$/, async ({ page }, name: string) => {
+  await expect(titles(page).first()).toBeVisible();
+  await expect(page.getByRole("button", { name })).toHaveCount(0);
+});

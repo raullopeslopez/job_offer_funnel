@@ -17,6 +17,7 @@ import { MaybeGroup } from "./MaybeGroup";
 import { NearMissGroups } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
+import { TriageButton } from "./TriageButton";
 import type { Offer, OfferStatus, OfferView } from "./types";
 
 // The pending offers are split: those that fit a search profile and the filtered ones
@@ -177,7 +178,8 @@ export function InboxPage() {
             </Typography>
           )}
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          {view === "pending" && <TriageButton />}
           <Button variant="outlined" onClick={() => setDialog("import")}>
             Import job board
           </Button>

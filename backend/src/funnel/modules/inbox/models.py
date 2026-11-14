@@ -36,6 +36,7 @@ from funnel.modules.inbox.domain import (
     OfferStatus,
     ProfileRule,
     Review,
+    SuggestedDiscard,
 )
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
@@ -194,6 +195,12 @@ class OfferRow(Base):
     watched_company_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True
     )
+    # Set once the offer triager has seen it, with the discard it suggested, if any.
+    triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    suggested_discard_reason: Mapped[DiscardReason | None] = mapped_column(
+        _enum_column_type(DiscardReason, "suggested_discard_reason")
+    )
+    suggested_discard_evidence: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # Depends on the current search profiles, so every query computes it (see repository.py).
     filtered: Mapped[bool] = query_expression()
@@ -211,3 +218,8 @@ class OfferRow(Base):
     readings: Mapped[list[OfferReadingRow]] = relationship(
         lazy="selectin", order_by=(OfferReadingRow.created_at, OfferReadingRow.id), viewonly=True
     )
+
+    @property
+    def suggested_discard(self) -> SuggestedDiscard | None:
+        reason, evidence = self.suggested_discard_reason, self.suggested_discard_evidence
+        return None if reason is None or evidence is None else SuggestedDiscard(reason, evidence)

@@ -28,6 +28,7 @@ from funnel.modules.inbox.repository import (
     OfferRepository,
     ReadingRepository,
     SuggestionRepository,
+    TriageRepository,
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import (
@@ -54,6 +55,8 @@ from funnel.modules.inbox.schemas import (
     QualityFiguresRead,
     ReadingBatchRead,
     SourceQualityRead,
+    TriageBatchRead,
+    TriagerRead,
     WatchedCompanyCreate,
     WatchedCompanyRead,
     WeekQualityRead,
@@ -65,8 +68,10 @@ from funnel.modules.inbox.service import (
     FeedImportService,
     OfferReadingService,
     OfferService,
+    OfferTriageService,
     WatchedCompanyService,
 )
+from funnel.modules.inbox.triager import OfferTriager
 
 offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
@@ -125,6 +130,26 @@ def get_offer_reading_service(
     return OfferReadingService(
         ReadingRepository(session), build_search_profile_service(session), reader
     )
+
+
+def get_offer_triager(
+    request: Request, client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)]
+) -> OfferTriager | None:
+    """The offer triager, or None without its API key; tests replace it with a fake."""
+    settings: Settings = request.app.state.settings
+    api_key = settings.groq_api_key.get_secret_value()
+    return OfferTriager(client, api_key, settings.groq_model) if api_key else None
+
+
+def get_offer_triage_service(
+    session: SessionDep, triager: Annotated[OfferTriager | None, Depends(get_offer_triager)]
+) -> OfferTriageService:
+    return OfferTriageService(
+        TriageRepository(session), build_search_profile_service(session), triager
+    )
+
+
+TriageService = Annotated[OfferTriageService, Depends(get_offer_triage_service)]
 
 
 @offers_router.post(
@@ -200,6 +225,35 @@ async def read_offers(
     """
     batch = await service.read_pending()
     return ReadingBatchRead(read=batch.read, failed=batch.failed, left=batch.left)
+
+
+@offers_router.get("/triager")
+async def read_offer_triager(service: TriageService) -> TriagerRead:
+    """Whether the offers can be triaged: without an offer triager the app works as always."""
+    return TriagerRead(is_available=service.is_available)
+
+
+@offers_router.post(
+    "/triages",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.SERVICE_UNAVAILABLE: {
+            "model": ProblemRead,
+            "description": "No offer triager is configured (`offer-triager-unavailable`); "
+            "nothing changed",
+        },
+    },
+)
+async def triage_offers(service: TriageService) -> TriageBatchRead:
+    """Have the offer triager compare up to 5 pending imported offers that fit a profile,
+    in a single request, with your promoted and discarded offers and its own mistakes. It
+    may suggest discarding each one, with a reason and its evidence; nothing is discarded.
+
+    An offer is triaged once. Call it again while `left` is not 0; the offers the triager
+    does not answer for are left to triage.
+    """
+    batch = await service.triage_pending()
+    return TriageBatchRead(triaged=batch.triaged, failed=batch.failed, left=batch.left)
 
 
 @offers_router.get("/filtered-counts")

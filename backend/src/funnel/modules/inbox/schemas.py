@@ -137,6 +137,26 @@ class ReadingBatchRead(BaseModel):
     left: int = Field(description="Readings still to be made, the failed ones included.")
 
 
+class TriageBatchRead(BaseModel):
+    triaged: int = Field(description="Offers triaged now, with a suggested discard or without.")
+    failed: int = Field(description="Offers the triager did not answer for; left to triage.")
+    left: int = Field(description="Offers still to triage, the failed ones included.")
+
+
+class TriagerRead(BaseModel):
+    is_available: bool = Field(description="Whether an offer triager is configured.")
+
+
+class SuggestedDiscardRead(BaseModel):
+    """A discard the offer triager suggests; it is never applied on its own."""
+
+    reason: DiscardReason = Field(description="title_word, stack, location, contract or company.")
+    evidence: str = Field(
+        description="With `title_word`, the word of the title (the discard's word); otherwise "
+        "a sentence of the description."
+    )
+
+
 class RuleRead(BaseModel):
     rule: Rule
     result: RuleResult
@@ -274,6 +294,16 @@ class QualityFiguresRead(BaseModel):
     promoted: int = Field(description="Promoted offers, rescues included.")
     applied: int = Field(description="Of the promoted, applications that reached `applied`.")
     answered: int = Field(description="Of the promoted, applications that reached `screening`.")
+    suggested_decided: int = Field(
+        description="Triaged offers with a suggested discard that were promoted or discarded."
+    )
+    suggested_discarded: int = Field(description="Of those, the ones discarded.")
+    triager_precision: float | None = Field(
+        description="suggested_discarded ÷ suggested_decided, in %."
+    )
+    triaged_discarded: int = Field(description="Triaged offers discarded, expired ones left out.")
+    missed_discards: int = Field(description="Of those, the ones without a suggested discard.")
+    triager_misses: float | None = Field(description="missed_discards ÷ triaged_discarded, in %.")
 
 
 class WeekQualityRead(QualityFiguresRead):
@@ -351,6 +381,10 @@ class OfferRead(BaseModel):
         "filtered, and no longer a near miss."
     )
     review_rules: list[Rule] = Field(description="The rules that filtered it when reviewed.")
+    suggested_discard: SuggestedDiscardRead | None = Field(
+        description="What the offer triager suggests, once triaged; null when it had nothing "
+        "to say or the offer was not triaged."
+    )
     watched_company_id: UUID | None = Field(
         description="The watched company it was imported from, if still watched."
     )

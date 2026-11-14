@@ -16,6 +16,7 @@ import { groupByDay } from "./dayGroups";
 import { discardReasonText } from "./discardReasons";
 import type { SearchProfile } from "./filterRules";
 import { OfferStrip } from "./OfferStrip";
+import { SuggestedDiscard } from "./SuggestedDiscard";
 import type { Offer, OfferView } from "./types";
 
 export type JobBoard = Pick<components["schemas"]["JobBoardRead"], "id" | "import_method">;
@@ -61,8 +62,15 @@ export function InboxOffer({
   profiles,
   now = new Date(),
   actions,
-}: OfferContext & { offer: Offer; actions: ReactNode }) {
+  onDiscarded,
+}: OfferContext & {
+  offer: Offer;
+  actions: ReactNode;
+  /** Given, a pending offer with a suggested discard can be discarded as suggested. */
+  onDiscarded?: (offer: Offer) => void;
+}) {
   const sourceKind = offerSourceKind(offer, jobBoards);
+  const isSuggested = offer.status === "pending" && offer.suggested_discard && onDiscarded;
   return (
     <OfferPiece
       offer={offer}
@@ -71,11 +79,12 @@ export function InboxOffer({
       actions={actions}
       strip={<OfferStrip offer={offer} sourceKind={sourceKind} profiles={profiles} />}
       footer={
-        offer.status === "discarded" && (
+        (offer.status === "discarded" && (
           <Typography variant="body2" color="text.secondary">
             Reason: {discardReasonText(offer)}
           </Typography>
-        )
+        )) ||
+        (isSuggested && <SuggestedDiscard offer={offer} onDiscarded={onDiscarded} />)
       }
     />
   );
@@ -117,6 +126,7 @@ export function OfferList({
         profiles={profiles}
         now={now}
         actions={<Actions offer={offer} {...actions} />}
+        onDiscarded={onDiscarded}
       />
     );
   if (single) {
