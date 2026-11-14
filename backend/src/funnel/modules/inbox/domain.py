@@ -274,11 +274,13 @@ def plain_text(description: str) -> str:
 
 @dataclass(frozen=True)
 class OfferText:
-    """What the offer reader is given; `description` is plain text."""
+    """What the offer reader and the triager are given; `description` is plain text. A near
+    miss also says the rule that filtered it."""
 
     title: str
     company: str
     description: str
+    filtered_by: RuleCheck | None = None
 
 
 @dataclass(frozen=True)
@@ -460,6 +462,8 @@ class TriageAnswer:
     why: str | None = None
     reason: str | None = None
     evidence: str | None = None
+    # For an OK near miss filtered by its keywords: a word of the offer to add as one.
+    keyword: str | None = None
 
 
 @dataclass(frozen=True)

@@ -252,3 +252,8 @@ def then_not_found(state: ScenarioState) -> None:
 def then_invalid(state: ScenarioState) -> None:
     response = state.last_response
     assert (response.status_code, response.json()["type"]) == (422, "/problems/validation-error")
+
+
+@then(parsers.re(r"(?P<discarded>\d+) offers? I discarded would fit with the change$"))
+def then_discarded_fitting(state: ScenarioState, discarded: str) -> None:
+    assert _ok(state.last_response, 200)["discarded_fitting"] == int(discarded)
