@@ -10,7 +10,9 @@ Feature: Criteria previews
   - how many pending offers would come into Pending (they are filtered now and would not be),
   - how many would leave it (they are not filtered now and would be),
   - how many promoted offers, and how many discarded ones, the change would have filtered:
-    they fit the profiles now and would not with the change.
+    they fit the profiles now and would not with the change;
+  - how many discarded offers the change would make fit: they do not fit the profiles now
+    and would with the change.
   Offers added by hand are never filtered, so they never count. Expired offers do not
   count: the import discarded them, not the user. Applying the change is editing the
   profile as usual.
@@ -72,6 +74,11 @@ Feature: Criteria previews
     And I discarded the offer of "Hooli"
     When I preview the profile "Backend" with the keywords "Python, Django"
     Then the change would have filtered 1 offer I promoted and 1 I discarded
+
+  Scenario: A preview says how many discarded offers the change would make fit
+    Given I discarded the offer of "Initech"
+    When I preview the profile "Backend" with the excluded_keywords ""
+    Then 1 offer I discarded would fit with the change
 
   Scenario: Expired offers and offers added by hand do not count
     Given an offer for "Umbrella" as "Backend Engineer"

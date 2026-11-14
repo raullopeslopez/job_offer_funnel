@@ -28,8 +28,8 @@ Feature: Near miss triages
   It says how many offers it would bring into Pending. Kept suggestions join the criteria suggestions
   (specs/inbox/criteria_suggestions.feature), marked as from the triager with its why and
   the offer it comes from, and are listed while they still hold the rule. Accepting one
-  is a criteria change made from that offer (specs/inbox/criteria_changes.feature).
-  Nothing is applied on its own.
+  is a criteria change made from that offer (specs/inbox/criteria_changes.feature); "Not
+  now" hides it for good, like any criteria suggestion. Nothing is applied on its own.
 
   Background:
     Given a job board named "Remote OK" imported from the feed "remoteok"
@@ -115,6 +115,12 @@ Feature: Near miss triages
       | company | verdict                                               |
       | Initech | KO because "You discard senior roles."                |
       | Globex  | OK because "Worth it.", suggesting the keyword "Rust" |
+
+  Scenario: "Not now" hides a suggestion to relax a rule
+    Given the offer triager says the offer of "Initech" is OK because "Worth it."
+    And I triaged the offers
+    When I say "Not now" to the suggestion to stop excluding "Senior" in "Backend"
+    Then the criteria suggestions include nothing from the offer of "Initech"
 
   Scenario: Accepting a suggestion is a criteria change made from that near miss
     Given the offer triager says the offer of "Initech" is OK because "Worth it."
