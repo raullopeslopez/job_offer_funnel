@@ -195,6 +195,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/criteria-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Criteria Suggestions
+         * @description Words to exclude, counted from the discarded and promoted offers; never applied.
+         */
+        get: operations["list_criteria_suggestions_api_v1_criteria_suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/criteria-suggestions/dismissals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Criteria Suggestion
+         * @description "Not now": the word is not suggested again for the profile. Saying it twice is once.
+         */
+        post: operations["dismiss_criteria_suggestion_api_v1_criteria_suggestions_dismissals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/email-alerts/imports": {
         parameters: {
             query?: never;
@@ -1131,6 +1171,38 @@ export interface components {
              */
             promoted_filtered: number;
         };
+        /** CriteriaSuggestionRead */
+        CriteriaSuggestionRead: {
+            /**
+             * Discarded
+             * @description All the discarded offers, expired ones left out.
+             */
+            discarded: number;
+            /**
+             * Excluded Keywords
+             * @description The profile's excluded keywords with the word: the change to make.
+             */
+            excluded_keywords: string[];
+            /**
+             * Offer Ids
+             * @description The discarded offers with the word.
+             */
+            offer_ids: string[];
+            /** @description What excluding the word would do. */
+            preview: components["schemas"]["CriteriaPreviewRead"];
+            /**
+             * Search Profile Id
+             * Format: uuid
+             */
+            search_profile_id: string;
+            /** Search Profile Name */
+            search_profile_name: string;
+            /**
+             * Word
+             * @description The word to exclude, as the titles write it.
+             */
+            word: string;
+        };
         /** DiscardCreate */
         DiscardCreate: {
             /**
@@ -1156,6 +1228,26 @@ export interface components {
             /** Offers */
             offers: number;
             reason: components["schemas"]["DiscardReason"];
+        };
+        /** DismissalCreate */
+        DismissalCreate: {
+            /**
+             * Search Profile Id
+             * Format: uuid
+             */
+            search_profile_id: string;
+            /** Word */
+            word: string;
+        };
+        /** DismissalRead */
+        DismissalRead: {
+            /**
+             * Search Profile Id
+             * Format: uuid
+             */
+            search_profile_id: string;
+            /** Word */
+            word: string;
         };
         /**
          * EmailAlert
@@ -1544,6 +1636,17 @@ export interface components {
         Page_CriteriaChangeRead_: {
             /** Items */
             items: components["schemas"]["CriteriaChangeRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[CriteriaSuggestionRead] */
+        Page_CriteriaSuggestionRead_: {
+            /** Items */
+            items: components["schemas"]["CriteriaSuggestionRead"][];
             /** Limit */
             limit: number;
             /** Offset */
@@ -2830,6 +2933,98 @@ export interface operations {
             };
             /** @description A later change edited the same rule (`rule-changed-since`) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    list_criteria_suggestions_api_v1_criteria_suggestions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CriteriaSuggestionRead_"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    dismiss_criteria_suggestion_api_v1_criteria_suggestions_dismissals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissalCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissalRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Profile does not exist */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

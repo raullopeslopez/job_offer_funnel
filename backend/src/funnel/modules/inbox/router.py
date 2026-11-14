@@ -27,6 +27,7 @@ from funnel.modules.inbox.repository import (
     FeedImportRepository,
     OfferRepository,
     ReadingRepository,
+    SuggestionRepository,
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import (
@@ -37,8 +38,11 @@ from funnel.modules.inbox.schemas import (
     CriteriaChangeRead,
     CriteriaPreviewCreate,
     CriteriaPreviewRead,
+    CriteriaSuggestionRead,
     DiscardCreate,
     DiscardReasonCountRead,
+    DismissalCreate,
+    DismissalRead,
     FilteredCountsRead,
     ImportRead,
     OfferCreate,
@@ -54,6 +58,7 @@ from funnel.modules.inbox.schemas import (
 )
 from funnel.modules.inbox.service import (
     CriteriaChangeService,
+    CriteriaSuggestionService,
     EmailAlertService,
     FeedImportService,
     OfferReadingService,
@@ -602,7 +607,54 @@ async def undo_criteria_change(change_id: UUID, service: ChangeService) -> None:
     await service.undo(change_id)
 
 
+suggestions_router = APIRouter(prefix="/criteria-suggestions", tags=["inbox"])
+
+
+def get_suggestion_service(
+    session: SessionDep, offers: Annotated[OfferService, Depends(get_offer_service)]
+) -> CriteriaSuggestionService:
+    return CriteriaSuggestionService(
+        SuggestionRepository(session), offers, build_search_profile_service(session)
+    )
+
+
+SuggestionService = Annotated[CriteriaSuggestionService, Depends(get_suggestion_service)]
+
+
+@suggestions_router.get("")
+async def list_criteria_suggestions(
+    page: Annotated[PageParams, Depends(get_page_params)], service: SuggestionService
+) -> Page[CriteriaSuggestionRead]:
+    """Words to exclude, counted from the discarded and promoted offers; never applied."""
+    suggestions = await service.list_all()
+    return Page(
+        items=[
+            CriteriaSuggestionRead.model_validate(suggestion, from_attributes=True)
+            for suggestion in suggestions[page.offset : page.offset + page.limit]
+        ],
+        total=len(suggestions),
+        limit=page.limit,
+        offset=page.offset,
+    )
+
+
+@suggestions_router.post(
+    "/dismissals",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.NOT_FOUND: {"model": ProblemRead, "description": "Profile does not exist"}
+    },
+)
+async def dismiss_criteria_suggestion(
+    dismissal: DismissalCreate, service: SuggestionService
+) -> DismissalRead:
+    """ "Not now": the word is not suggested again for the profile. Saying it twice is once."""
+    await service.dismiss(dismissal.search_profile_id, dismissal.word)
+    return DismissalRead(search_profile_id=dismissal.search_profile_id, word=dismissal.word)
+
+
 router = APIRouter()
+router.include_router(suggestions_router)
 router.include_router(criteria_changes_router)
 router.include_router(offers_router)
 router.include_router(imports_router)

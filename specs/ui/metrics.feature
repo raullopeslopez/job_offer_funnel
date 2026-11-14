@@ -42,6 +42,23 @@ Feature: Metrics screen
       Then "Changes to your criteria" lists "Excluded “Lead”" with "Today · took 6 out of Pending · lost 0 promoted"
       And undoing it leaves "No changes yet."
 
+    # Under "Why you discard", the suggestions of specs/inbox/criteria_suggestions.feature:
+    # "Suggested: exclude “{word}” from {profile}", the line "In {k} of the {n}. Takes {m}
+    # out of Pending, loses none you promoted." and "Not now" or "Exclude it" (a criteria
+    # change). Nothing is applied until "Exclude it".
+
+    @component
+    Scenario Outline: A suggested exclusion, with "Not now" and "Exclude it"
+      Given excluding "Lead" from "Backend" is suggested, in 2 of the 5 discarded, taking 3 offers out of Pending
+      When I open the metrics and choose "<choice>"
+      Then the app <does>
+      And the suggestion is no longer shown
+
+      Examples:
+        | choice     | does                                                |
+        | Not now    | does not suggest it again                           |
+        | Exclude it | excludes "Lead" from "Backend", as a criteria change |
+
     @component
     Scenario: Discards by reason and the sources
       Given the offer quality has the discards "Stack" 2 and "Location" 1 and the source "Remote OK"

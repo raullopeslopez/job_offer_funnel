@@ -48,6 +48,7 @@ from funnel.modules.inbox.models import (
     UNIQUE_DUPLICATE_KEY,
     UNIQUE_WATCHED_NAME_INDEX,
     CriteriaChangeRow,
+    DismissedSuggestionRow,
     OfferReadingRow,
     OfferRow,
     WatchedCompanyRow,
@@ -403,6 +404,47 @@ class CriteriaChangeRepository:
         )
         total = await self._session.scalar(select(func.count()).select_from(CriteriaChangeRow))
         return list(rows), total or 0
+
+
+class SuggestionRepository:
+    """What the suggestions count, and the ones dismissed. Never commits."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def discarded_titles(self) -> list[tuple[UUID, str]]:
+        """The imported offers the user discarded: expired ones were discarded by imports."""
+        rows = await self._session.execute(
+            select(OfferRow.id, OfferRow.title).where(
+                OfferRow.status == OfferStatus.DISCARDED,
+                OfferRow.description.is_not(None),
+                OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON),
+            )
+        )
+        return [(offer_id, title) for offer_id, title in rows]
+
+    async def promoted_titles(self) -> list[str]:
+        rows = await self._session.scalars(
+            select(OfferRow.title).where(OfferRow.status == OfferStatus.PROMOTED)
+        )
+        return list(rows)
+
+    async def dismissed(self) -> set[tuple[UUID, str]]:
+        """Each profile and word dismissed, the word in lower case."""
+        rows = await self._session.execute(
+            select(
+                DismissedSuggestionRow.search_profile_id, func.lower(DismissedSuggestionRow.word)
+            )
+        )
+        return {(profile_id, word) for profile_id, word in rows}
+
+    async def dismiss(self, profile_id: UUID, word: str) -> None:
+        # Once per profile and word: a second "Not now" changes nothing.
+        await self._session.execute(
+            insert(DismissedSuggestionRow)
+            .values(id=uuid7(), search_profile_id=profile_id, word=word)
+            .on_conflict_do_nothing()
+        )
 
 
 class ReadingRepository:
