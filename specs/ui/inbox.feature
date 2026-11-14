@@ -11,7 +11,10 @@ Feature: Inbox screen
   their own view.
 
   Every offer is a piece with the same parts, wherever it came from: its source,
-  company and age, its title, its actions and a strip of rules. The pieces are
+  company, country and age, its title, its actions and a strip of rules. The country
+  is a tag per country of the offer (specs/inbox/offer_countries.feature); when its
+  location names no known country the tag shows the location as published, and an
+  offer without a location has no tag. The pieces are
   grouped by the day they were added: Today, Yesterday and Earlier.
 
   An imported pending offer has a filter reason (specs/inbox/filter_reasons.feature),
@@ -72,6 +75,29 @@ Feature: Inbox screen
     And I am on the inbox
     When I ask to see more offers
     Then I see 21 offers listed
+
+  # --- The country ---
+
+  # @component: only an import gives an offer a location, and the E2E tests cannot
+  # reach the feeds.
+
+  @component
+  Scenario Outline: An offer shows a tag per country of its location
+    Given an imported offer for "Acme" as "Backend Engineer" located in "<location>"
+    When I open the inbox
+    Then the offer "Backend Engineer" shows the country tags: "<tags>"
+
+    Examples:
+      | location          | tags                  |
+      | Madrid, Spain     | Spain                 |
+      | Spain, Portugal   | Spain, Portugal       |
+      | Worldwide         | Worldwide             |
+      | San Francisco, CA | San Francisco, CA     |
+
+  Scenario: An offer without a location shows no country tag
+    Given an offer for "Acme" as "Backend Engineer"
+    When I open the inbox
+    Then the offer "Backend Engineer" shows no country tag
 
   # --- The strip of rules ---
 

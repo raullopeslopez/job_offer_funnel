@@ -1996,6 +1996,20 @@
             "title": "Company",
             "type": "string"
           },
+          "countries": {
+            "description": "The known countries its location names, in the order they appear and each once; `Worldwide` when it can be done from any country.",
+            "examples": [
+              [
+                "Spain",
+                "Portugal"
+              ]
+            ],
+            "items": {
+              "type": "string"
+            },
+            "title": "Countries",
+            "type": "array"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -2067,6 +2081,18 @@
               }
             ],
             "title": "Job Board Name"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the job is, as its source publishes it; null for offers added by hand, RSS items and offers whose source publishes none.",
+            "title": "Location"
           },
           "notes": {
             "anyOf": [
@@ -2171,6 +2197,8 @@
           "title",
           "job_board_id",
           "job_board_name",
+          "location",
+          "countries",
           "notes",
           "status",
           "filtered",

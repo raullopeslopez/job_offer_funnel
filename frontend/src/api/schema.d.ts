@@ -1677,6 +1677,15 @@ export interface components {
             /** Company */
             company: string;
             /**
+             * Countries
+             * @description The known countries its location names, in the order they appear and each once; `Worldwide` when it can be done from any country.
+             * @example [
+             *       "Spain",
+             *       "Portugal"
+             *     ]
+             */
+            countries: string[];
+            /**
              * Created At
              * Format: date-time
              */
@@ -1704,6 +1713,11 @@ export interface components {
             job_board_id: string | null;
             /** Job Board Name */
             job_board_name: string | null;
+            /**
+             * Location
+             * @description Where the job is, as its source publishes it; null for offers added by hand, RSS items and offers whose source publishes none.
+             */
+            location: string | null;
             /** Notes */
             notes: string | null;
             /**

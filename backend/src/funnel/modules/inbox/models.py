@@ -40,6 +40,7 @@ from funnel.modules.inbox.domain import (
     SuggestedDiscard,
     Triage,
     Verdict,
+    countries,
 )
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
@@ -211,6 +212,8 @@ class OfferRow(Base):
     # Only imported offers have one (maybe empty): it is what marks them as imported, and
     # their keywords are looked for in it.
     description: Mapped[str | None] = mapped_column(Text)
+    # As its source publishes it; None for offers added by hand and sources without one.
+    location: Mapped[str | None] = mapped_column(String(200))
     # Company and title normalized: the database rejects the same offer twice.
     duplicate_key: Mapped[str] = mapped_column(String(401), unique=True)
     # Where it was found by hand, or the job board it was imported from.
@@ -257,9 +260,14 @@ class OfferRow(Base):
     # Not a column: it depends on the current search profiles, and the repository sets it
     # on each read, for pending imported offers.
     filter_reason: FilterReason | None = None
+
     readings: Mapped[list[OfferReadingRow]] = relationship(
         lazy="selectin", order_by=(OfferReadingRow.created_at, OfferReadingRow.id), viewonly=True
     )
+
+    @property
+    def countries(self) -> list[str]:
+        return countries(self.location)
 
     @property
     def triage(self) -> Triage | None:

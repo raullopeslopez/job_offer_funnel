@@ -2,12 +2,13 @@ import { Box, Link, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import type { components } from "../api/schema";
 import { mono, offerShape, type Source } from "../theme";
+import { CountryTag } from "./CountryTag";
 import { RelativeDate } from "./RelativeDate";
 import { SourceTag } from "./SourceTag";
 
 type Offer = Pick<
   components["schemas"]["OfferRead"],
-  "title" | "url" | "company" | "created_at" | "job_board_name"
+  "title" | "url" | "company" | "created_at" | "job_board_name" | "location" | "countries"
 >;
 
 type Props = {
@@ -21,7 +22,13 @@ type Props = {
   now?: Date;
 };
 
-// One offer: where it came from, company and age, the title as a link, and slots for its
+// Its countries, or its location as published when it names no known country.
+function countryLabels({ countries, location }: Offer): string[] {
+  if (countries.length > 0) return countries;
+  return location ? [location] : [];
+}
+
+// One offer: where it came from, company, country and age, the title as a link, and slots for its
 // actions, its rule strip and a footer.
 export function OfferPiece({ offer, sourceKind, actions, strip, footer, heading, now }: Props) {
   const sourceName = sourceKind === "watched" ? undefined : offer.job_board_name;
@@ -50,6 +57,9 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, heading,
             }}
           >
             <SourceTag kind={sourceKind} name={sourceName} />
+            {countryLabels(offer).map((label) => (
+              <CountryTag key={label} label={label} />
+            ))}
             <span>
               {offer.company} ·{" "}
               <Box component="span" sx={{ fontFamily: mono }}>

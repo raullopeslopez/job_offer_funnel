@@ -129,3 +129,5 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Frase literal de la descripción que justifica una respuesta | `evidence` |
 | ATS (sistema de selección de la empresa) | `ats`: `greenhouse` · `lever` · `ashby` |
 | Tablero de la empresa en su ATS (nombre en la URL pública de empleo) | `board` |
+| Ubicación de una oferta (tal como la publica su fuente; puede faltar) | `location` |
+| Países de una oferta (los países conocidos que nombra su ubicación; «Worldwide» si se puede hacer desde cualquiera) | `countries` |

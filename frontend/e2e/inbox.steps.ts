@@ -200,6 +200,10 @@ Then("the offer {string} shows {string}", async ({ page }, title: string, text: 
   await expect(row(page, title)).toContainText(text);
 });
 
+Then("the offer {string} shows no country tag", async ({ page }, title: string) => {
+  await expect(row(page, title).getByTitle("Country")).toHaveCount(0);
+});
+
 Then("the offer {string} links to its application", async ({ page }, title: string) => {
   await expect(row(page, title).getByRole("link", { name: "View application" })).toHaveAttribute(
     "href",
