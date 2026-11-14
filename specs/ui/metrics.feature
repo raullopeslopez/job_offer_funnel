@@ -68,7 +68,9 @@ Feature: Metrics screen
 
     # "The AI triage" shows how the offer triager does (specs/inbox/offer_triages.feature),
     # once it has triaged an offer you decided on: its precision and its misses, each with
-    # a bar per week, so that you see whether each batch does better.
+    # a bar per week, so that you see whether each batch does better. Once it has triaged a
+    # near miss you reviewed (specs/inbox/near_miss_triages.feature), it also shows its
+    # rescues and its lost rescues, the same way.
 
     @component
     Scenario: The triager's precision and misses
@@ -76,6 +78,13 @@ Feature: Metrics screen
       When I open the metrics
       Then "The AI triage" says "75.0%" and "3 right of 4 suggested discards you decided"
       And it says "25.0%" and "1 missed of 4 triaged offers you discarded"
+
+    @component
+    Scenario: The triager's rescues and lost rescues
+      Given the triager's OK near misses were rescued in 1 of 2 reviewed and 1 of 4 near misses rescued was marked KO
+      When I open the metrics
+      Then "The AI triage" says "50.0%" and "1 rescued of 2 OK near misses you reviewed"
+      And it says "25.0%" and "1 marked KO of 4 near misses you rescued"
 
     @component
     Scenario: Without triaged offers decided there is no AI triage
