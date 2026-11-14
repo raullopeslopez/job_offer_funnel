@@ -114,6 +114,8 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Alerta por email (método de importación `email` de un portal) | `email alert`: `linkedin` |
 | Lectura de una oferta (lo que dice su descripción, para una ubicación de un perfil) | `reading` |
 | Lector de ofertas (servicio externo que lee la descripción) | `offer reader` |
+| Revisor de criterios (servicio externo que propone cambios de criterio a partir de las decisiones) | `criteria reviewer` |
+| Propuesta de cambio de criterio (del revisor; nunca se aplica sola) | `criteria proposal` |
 | Modalidad que dice la oferta | `work_mode` (los mismos valores que en el perfil) |
 | Se puede hacer viviendo en la ubicación del perfil | `admits_location` (sí o no; en las specs `yes` · `no`) |
 | Puesto estable (jornada completa y sin fecha de fin, como empleado o como contractor; no por tareas, por horas, temporal ni a media jornada) | `stable` (sí o no; en las specs `yes` · `no`) |
