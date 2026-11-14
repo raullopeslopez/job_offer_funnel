@@ -1,32 +1,35 @@
 import { Box } from "@mui/material";
 import { mono } from "../../theme";
 
-type Props = { items: string[]; excluded?: boolean };
+// title: a tag with a border; keyword: a mono token; excluded: a mono token, struck through.
+type Kind = "title" | "keyword" | "excluded";
 
-// Keywords as small mono tokens; the excluded ones are red and prefixed with a minus.
-export function Tokens({ items, excluded }: Props) {
+type Props = { items: string[]; kind: Kind };
+
+export function Tokens({ items, kind }: Props) {
   if (items.length === 0) return <Box sx={{ color: "text.disabled" }}>—</Box>;
-  const tone = excluded ? "red" : "neutral";
   return (
-    <Box sx={{ display: "inline-flex", gap: "4px", overflow: "hidden" }}>
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
       {items.map((item) => (
         <Box
           key={item}
-          component="span"
-          sx={(theme) => ({
-            display: "inline-flex",
-            alignItems: "center",
-            height: 20,
-            px: "6px",
-            borderRadius: "6px",
-            fontFamily: mono,
-            fontSize: 11.5,
-            whiteSpace: "nowrap",
-            bgcolor: (theme.vars ?? theme).palette.tone[tone].bg,
-            color: (theme.vars ?? theme).palette.tone[tone].fg,
-          })}
+          component={kind === "excluded" ? "s" : "span"}
+          sx={(theme) => {
+            const palette = (theme.vars ?? theme).palette;
+            const tone = palette.tone[kind === "excluded" ? "red" : "neutral"];
+            return {
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: 24,
+              px: "8px",
+              borderRadius: "7px",
+              fontSize: 13,
+              ...(kind === "title"
+                ? { border: 1, borderColor: "divider", color: "text.primary" }
+                : { fontFamily: mono, fontSize: 12, bgcolor: tone.bg, color: tone.fg }),
+            };
+          }}
         >
-          {excluded ? "−" : ""}
           {item}
         </Box>
       ))}
