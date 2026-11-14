@@ -10,6 +10,21 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Offer triages: `POST /api/v1/offers/triages` has a language model (the offer triager,
+  on Groq with `GROQ_API_KEY`) compare up to 5 pending imported offers that fit a profile,
+  description included, with your last promoted and discarded offers and with its own
+  mistakes (suggestions you rejected by promoting, discards it missed). It may suggest a
+  discard with a reason of the list and its evidence (a word of the title, or a sentence of
+  the description letter for letter); nothing is discarded on its own. Each offer is
+  triaged once; it answers `{triaged, failed, left}`. `GET /api/v1/offers/triager` says
+  whether it is available; without it the triage answers 503 `offer-triager-unavailable`.
+- Offers have `suggested_discard` (`{reason, evidence}` or null).
+- Offer quality: the triager's precision (suggested discards you discarded of those you
+  decided) and misses (triaged offers you discarded without a suggestion), in total and
+  week by week.
+- Inbox: "Triage with AI" in Pending triages batch after batch with its progress, and a
+  pending offer with a suggested discard shows it with "Discard as suggested". Metrics:
+  "The AI triage" with the triager's precision and misses.
 - Frequent titles: `GET /api/v1/offers/frequent-titles?search_profile_id=` lists the
   titles of at least 2 filtered offers with none of the profile's titles (grouped
   ignoring case and spaces, up to 5, the most frequent first), with how many have the
