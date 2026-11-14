@@ -23,6 +23,22 @@ While the version is `0.x`, the API may change without a major version bump.
   least one you discarded. Each offer is triaged once; it answers
   `{triaged, ok, ko, failed, left}`. `GET /api/v1/offers/triager` says
   whether it is available; without it the triage answers 503 `offer-triager-unavailable`.
+- Near miss triages: the triage also takes the near misses (filtered by a single rule, not
+  by the title), after the offers that fit, telling the triager the rule that filtered
+  each. For a near miss, `ok` is a false negative (counted in `to_rescue`) and `ko` means
+  rightly filtered; it stays filtered either way. An `ok` near miss may suggest relaxing
+  the rule that filtered it: stop excluding the word, stop asking for the keyword it lacks
+  (a profile asks for all of them), or accept its work mode. It is kept only if no offer
+  you discarded would fit with the change.
+- Criteria suggestions have `rule`, `word` and `after` (the rule's value with the
+  change), instead of `excluded_keywords`; "Not now" takes the `rule` too (by default
+  `excluded_keywords`). Criteria previews say `discarded_fitting`: the discarded offers
+  the change would make fit.
+- Offer quality: the triager's rescues (the OK near misses you rescued, of those you
+  reviewed) and lost rescues (the near misses you rescued that it marked KO).
+- Inbox: the triage says how many near misses are "to rescue"; a near miss with a verdict
+  shows it, and with a suggestion "Improve the filter" with what it would bring into
+  Pending and "Relax it", a criteria change made from that offer.
 - Offers have `triage` (`{verdict, why}` or null) and `suggested_discard`
   (`{reason, evidence}` or null).
 - Offer quality: the triager's precision (suggested discards you discarded of those you

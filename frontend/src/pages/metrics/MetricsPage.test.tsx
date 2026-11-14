@@ -149,6 +149,12 @@ const figures = (fields: Partial<Figures> = {}): Figures => ({
   triaged_discarded: 0,
   missed_discards: 0,
   triager_misses: null,
+  ok_near_misses_reviewed: 0,
+  ok_near_misses_rescued: 0,
+  triager_rescues: null,
+  triaged_near_misses_rescued: 0,
+  lost_rescues: 0,
+  triager_lost_rescues: null,
   ...fields,
 });
 
@@ -363,8 +369,9 @@ describe("MetricsPage suggested exclusions", () => {
     search_profile_name: "Backend",
     source: "count",
     why: null,
+    rule: "excluded_keywords",
     word: "Lead",
-    excluded_keywords: ["Senior", "Lead"],
+    after: ["Senior", "Lead"],
     offer_ids: ["0193a000-0000-7000-8000-00000000000a", "0193a000-0000-7000-8000-00000000000b"],
     discarded: 5,
     preview: {
@@ -372,6 +379,7 @@ describe("MetricsPage suggested exclusions", () => {
       leaving_pending: 3,
       promoted_filtered: 0,
       discarded_filtered: 2,
+      discarded_fitting: 0,
     },
   };
 
@@ -379,7 +387,7 @@ describe("MetricsPage suggested exclusions", () => {
     [
       "Not now",
       "/api/v1/criteria-suggestions/dismissals",
-      { search_profile_id: suggestion.search_profile_id, word: "Lead" },
+      { search_profile_id: suggestion.search_profile_id, rule: "excluded_keywords", word: "Lead" },
     ],
     [
       "Exclude it",

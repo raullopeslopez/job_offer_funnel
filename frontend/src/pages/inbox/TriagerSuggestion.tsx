@@ -2,6 +2,8 @@ import { Alert, Box, Button, Paper, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import {
+  acceptLabel,
+  suggestionChange,
   suggestionEffect,
   useCriteriaSuggestions,
   useSuggestionChoice,
@@ -31,9 +33,7 @@ export function TriagerSuggestion() {
           {choose.error.title}
         </Alert>
       )}
-      <Typography variant="subtitle2">
-        AI suggests: exclude “{suggestion.word}” from {suggestion.search_profile_name}
-      </Typography>
+      <Typography variant="subtitle2">AI suggests: {suggestionChange(suggestion)}</Typography>
       <Typography variant="body2">{suggestion.why}</Typography>
       <Typography variant="body2" color="text.secondary">
         {suggestionEffect(suggestion)}
@@ -52,7 +52,7 @@ export function TriagerSuggestion() {
           disabled={choose.isPending}
           onClick={() => choose.mutate({ suggestion, choice: "exclude" })}
         >
-          Exclude it
+          {acceptLabel(suggestion)}
         </Button>
       </Box>
     </Paper>
