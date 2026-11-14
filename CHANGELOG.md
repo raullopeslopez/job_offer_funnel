@@ -180,6 +180,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Profiles screen: each profile shows what makes an offer fit (by words: job titles,
+  keywords and excluded words; by the description: where you live and the work modes) and
+  its generated searches, with each job board's syntax and an "Open search" button. The
+  first profile starts open; the others open with "Show fit and searches". The searches no
+  longer open in a dialog.
 - Discard reasons: the reason of a discard is now one of a closed list (`title_word`,
   `stack`, `location`, `contract`, `company`, `none`, plus `expired`, set only by the
   imports), and `none` when none is given. With `title_word`, `word` says the word of the

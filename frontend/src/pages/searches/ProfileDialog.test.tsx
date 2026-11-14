@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { server } from "../../test/server";
 import { ProfileDialog } from "./ProfileDialog";
-import type { Profile } from "./ProfilesGrid";
+import type { Profile } from "./types";
 
 const PROFILE: Profile = {
   id: "6f1c1d2e-0000-4000-8000-000000000001",

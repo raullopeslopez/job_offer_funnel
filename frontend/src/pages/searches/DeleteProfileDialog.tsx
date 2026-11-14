@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import type { Profile } from "./ProfilesGrid";
+import type { Profile } from "./types";
 
 type Props = { profile: Profile | null; onClose: () => void; onDeleted: () => void };
 

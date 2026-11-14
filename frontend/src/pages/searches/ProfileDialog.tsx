@@ -13,7 +13,7 @@ import { Controller, useForm } from "react-hook-form";
 import { api } from "../../api/client";
 import { fieldErrors, isProblem } from "../../api/problems";
 import type { components } from "../../api/schema";
-import type { Profile } from "./ProfilesGrid";
+import type { Profile } from "./types";
 
 type WorkMode = components["schemas"]["WorkMode"];
 const WORK_MODES: WorkMode[] = ["remote", "hybrid", "onsite"];
