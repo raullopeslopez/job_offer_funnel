@@ -4,16 +4,20 @@ Feature: Offer readings
   So that offers I cannot take are filtered even when their title fits
 
   A title says little: "Backend Engineer" may be remote from anywhere or three days a
-  week in an office. Reading the offers sends the description of each pending imported
-  offer to the offer reader, which answers three things:
+  week in an office. Reading the offers sends the title, the location its source
+  publishes (specs/inbox/offer_countries.feature) and the description of each pending
+  imported offer to the offer reader, which answers three things:
   - its work mode: remote, hybrid or onsite;
   - whether the job can be done living in a location: yes or no;
   - whether it is a stable job: yes for a full-time position with no end date, as an
     employee or as a contractor; no when it is paid by the task or by the hour,
     temporary or part-time.
-  Each answer comes with its evidence, the sentence of the description that says so. An
-  answer whose evidence is not in the description, letter for letter, is not kept. What
-  the description does not say stays unknown.
+  Each answer comes with its evidence, the words of the title, the location or the
+  description that say so. An answer whose evidence is in none of them, letter for
+  letter, is not kept. What none of them says stays unknown.
+  Where the company is does not matter; where I can live does. A remote job whose title
+  or location names a place, such as "Backend Engineer - UK", "US Remote" or "USA only",
+  can only be done living there, unless the description opens it to other places.
   An offer is read once for each location of the search profiles it fits by its title,
   keywords and exclusions (specs/inbox/filtered_offers.feature); for profiles without a
   location it is read without that question. Offers without a description (added by
@@ -70,6 +74,24 @@ Feature: Offer readings
     Then the reading of "Backend Engineer" for "Spain" says:
       | work_mode | work_mode_evidence | admits_location | admits_location_evidence |
       | remote    | Fully remote       |                 |                          |
+
+  Scenario Outline: The title and the location are evidence too
+    Given the job board "Remote OK" was imported with:
+      | title   | company | location   | description   | url                    |
+      | <title> | Acme    | <location> | Fully remote. | https://remoteok.com/1 |
+    And the offer reader answers for "<title>":
+      | admits_location | admits_location_evidence |
+      | no              | <evidence>               |
+    When I read the offers
+    Then the reading of "<title>" for "Spain" says:
+      | admits_location | admits_location_evidence |
+      | no              | <evidence>               |
+
+    Examples:
+      | title                       | location | evidence              |
+      | Backend Engineer - UK       |          | Backend Engineer - UK |
+      | US Remote: Backend Engineer | Remote   | US Remote             |
+      | Backend Engineer            | USA only | USA only              |
 
   Scenario: At most 5 offers are read at a time
     Given the job board "Remote OK" was imported with 6 offers as "Backend Engineer"

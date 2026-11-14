@@ -277,13 +277,22 @@ def plain_text(description: str) -> str:
 
 @dataclass(frozen=True)
 class OfferText:
-    """What the offer reader and the triager are given; `description` is plain text. A near
-    miss also says the rule that filtered it."""
+    """What the offer reader and the triager are given; `description` is plain text and
+    `location` the one its source publishes. A near miss also says the rule that filtered
+    it."""
 
     title: str
     company: str
     description: str
     filtered_by: RuleCheck | None = None
+    location: str | None = None
+
+    @property
+    def evidence(self) -> str:
+        """Where an answer's evidence may be: the title, the location and the description,
+        one per line so that no quote spans two of them."""
+        parts = (self.title, self.location or "", self.description)
+        return "\n".join(" ".join(part.split()) for part in parts)
 
 
 @dataclass(frozen=True)
@@ -299,7 +308,7 @@ class Reading:
 
 
 def _quoted(evidence: str | None, text: str) -> str | None:
-    """The evidence, if the text says it letter for letter (spaces aside)."""
+    """The evidence, if one line of the text says it letter for letter (spaces aside)."""
     quote = " ".join((evidence or "").split())
     return quote if quote and quote in text else None
 

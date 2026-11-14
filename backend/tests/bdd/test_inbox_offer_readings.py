@@ -78,6 +78,7 @@ def fake_sources(client: TestClient, state: ScenarioState) -> Iterator[None]:
                 "company": r["company"],
                 "description": r["description"],
                 "url": r["url"],
+                "location": r.get("location") or None,
             }
             for r in state.remoteok
         ]

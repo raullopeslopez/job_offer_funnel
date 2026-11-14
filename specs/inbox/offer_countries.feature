@@ -16,7 +16,8 @@ Feature: Offer countries
   Emirates. "Worldwide" and "Anywhere" mean the job can be done from any country and
   are shown as "Worldwide". A location that names no known country, such as a city or
   just "Remote", shows as published; an offer without a location shows no country.
-  The country is only shown: it changes neither the filter nor the readings.
+  The country is only shown: it does not change the filter. The location, as published,
+  is given to the offer reader (specs/inbox/offer_readings.feature).
 
   Background:
     Given the time is 2026-03-10 09:00

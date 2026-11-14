@@ -230,6 +230,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Offer readings: the offer reader is also given the offer's title and the location its
+  source publishes, and an answer's evidence may be quoted from any of them, not only
+  from the description. A remote job whose title or location names a place
+  ("Backend Engineer - UK", "US Remote", "USA only") is read as one that can only be done
+  living there, unless its description opens it to other places, so it is filtered for
+  a profile whose location that place excludes.
 - Profiles screen: each profile shows what makes an offer fit (by words: job titles,
   keywords and excluded words; by the description: where you live and the work modes) and
   its generated searches, with each job board's syntax and an "Open search" button. The
