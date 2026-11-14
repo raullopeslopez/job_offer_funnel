@@ -16,7 +16,7 @@ import { groupByDay } from "./dayGroups";
 import { discardReasonText } from "./discardReasons";
 import type { SearchProfile } from "./filterRules";
 import { OfferStrip } from "./OfferStrip";
-import { SuggestedDiscard } from "./SuggestedDiscard";
+import { TriageVerdict } from "./TriageVerdict";
 import type { Offer, OfferView } from "./types";
 
 export type JobBoard = Pick<components["schemas"]["JobBoardRead"], "id" | "import_method">;
@@ -66,11 +66,11 @@ export function InboxOffer({
 }: OfferContext & {
   offer: Offer;
   actions: ReactNode;
-  /** Given, a pending offer with a suggested discard can be discarded as suggested. */
+  /** Given, a pending offer with a verdict shows it, and can be discarded as suggested. */
   onDiscarded?: (offer: Offer) => void;
 }) {
   const sourceKind = offerSourceKind(offer, jobBoards);
-  const isSuggested = offer.status === "pending" && offer.suggested_discard && onDiscarded;
+  const isTriaged = offer.status === "pending" && offer.triage && onDiscarded;
   return (
     <OfferPiece
       offer={offer}
@@ -84,7 +84,7 @@ export function InboxOffer({
             Reason: {discardReasonText(offer)}
           </Typography>
         )) ||
-        (isSuggested && <SuggestedDiscard offer={offer} onDiscarded={onDiscarded} />)
+        (isTriaged && <TriageVerdict offer={offer} onDiscarded={onDiscarded} />)
       }
     />
   );
