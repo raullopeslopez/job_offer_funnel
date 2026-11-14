@@ -17,8 +17,8 @@ from funnel.modules.inbox.domain import (
     OfferTriagerError,
     TriageAnswer,
     TriageContext,
-    TriagerSuggestion,
     TriageReply,
+    TriagerSuggestion,
 )
 from funnel.modules.inbox.router import get_feed_client, get_offer_triager
 
@@ -199,7 +199,8 @@ def given_profile(client: TestClient, name: str, datatable: list[list[str]]) -> 
 
 @given(parsers.parse('the job board "Remote OK" was imported with:'))
 def given_imported(client: TestClient, state: ScenarioState, datatable: list[list[str]]) -> None:
-    state.remoteok = _rows(datatable)
+    # The feed keeps publishing what it published before: those offers are not expired.
+    state.remoteok = [*state.remoteok, *_rows(datatable)]
     _import(client, state)
 
 

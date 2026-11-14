@@ -512,11 +512,23 @@ class TriageContext:
     mistakes: Sequence[TriageMistake]
 
 
+WHY_LENGTH: Final = 200
+
+
+def kept_triage(answer: TriageAnswer) -> Triage | None:
+    """The verdict and why, if the verdict is OK or KO; the why is cut to 200 characters.
+    None is no answer: the offer is left to be triaged again."""
+    verdict = next((v for v in Verdict if v == (answer.verdict or "").lower()), None)
+    if verdict is None:
+        return None
+    return Triage(verdict, " ".join((answer.why or "").split())[:WHY_LENGTH])
+
+
 def kept_suggestion(answer: TriageAnswer, offer: OfferText) -> SuggestedDiscard | None:
-    """The suggested discard, if its reason is of the list and its evidence holds: a word of
-    the title for title_word, a sentence of the description for the others."""
+    """The suggested discard of a KO, if its reason is of the list and its evidence holds: a
+    word of the title for title_word, a sentence of the description for the others."""
     reason = next((r for r in SUGGESTED_REASONS if r == answer.reason), None)
-    if reason is None:
+    if reason is None or (answer.verdict or "").lower() != Verdict.KO:
         return None
     if reason is DiscardReason.TITLE_WORD:
         word = (answer.evidence or "").strip()
@@ -740,8 +752,12 @@ class QualityOffer:
     review: Review | None = None
     review_rules: Sequence[Rule] = ()
     stage: Stage | None = None
-    is_triaged: bool = False
+    verdict: Verdict | None = None
     suggested_discard: DiscardReason | None = None
+
+    @property
+    def is_triaged(self) -> bool:
+        return self.verdict is not None
 
     @property
     def is_decided_from_pending(self) -> bool:
@@ -829,7 +845,7 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
     ]
     suggested_discarded = sum(offer.is_discarded for offer in suggested)
     triaged_discarded = [offer for offer in triaged if offer.is_discarded]
-    missed = sum(offer.suggested_discard is None for offer in triaged_discarded)
+    missed = sum(offer.verdict is Verdict.OK for offer in triaged_discarded)
     return QualityFigures(
         decided=len(decided),
         promoted_from_pending=promoted_from_pending,

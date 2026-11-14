@@ -42,9 +42,11 @@ from funnel.modules.inbox.domain import (
     ReviewMade,
     Rule,
     SuggestedDiscard,
+    Triage,
     TriageMistake,
     UnknownJobBoardError,
     UntitledOffer,
+    Verdict,
     WordHits,
     filter_reason,
 )
@@ -56,6 +58,7 @@ from funnel.modules.inbox.models import (
     DismissedSuggestionRow,
     OfferReadingRow,
     OfferRow,
+    TriagerSuggestionRow,
     WatchedCompanyRow,
 )
 
@@ -287,7 +290,7 @@ class OfferRepository:
                 OfferRow.discard_reason,
                 OfferRow.review,
                 OfferRow.review_rules,
-                OfferRow.triaged_at.is_not(None),
+                OfferRow.verdict,
                 OfferRow.suggested_discard_reason,
                 OfferRow.application_id,
             ).where(OfferRow.created_at >= since)
@@ -304,7 +307,7 @@ class OfferRepository:
                     discard_reason=discard_reason,
                     review=review,
                     review_rules=[Rule(rule) for rule in review_rules],
-                    is_triaged=is_triaged,
+                    verdict=verdict,
                     suggested_discard=suggested_discard,
                 ),
                 application_id,
@@ -318,7 +321,7 @@ class OfferRepository:
                 discard_reason,
                 review,
                 review_rules,
-                is_triaged,
+                verdict,
                 suggested_discard,
                 application_id,
             ) in rows
@@ -467,6 +470,34 @@ class SuggestionRepository:
         )
         return {(profile_id, word) for profile_id, word in rows}
 
+    async def triager_suggestions(self) -> list[TriagerSuggestionRow]:
+        rows = await self._session.scalars(
+            select(TriagerSuggestionRow).order_by(TriagerSuggestionRow.created_at)
+        )
+        return list(rows)
+
+    async def keep_triager_suggestion(  # noqa: PLR0913, PLR0917  # the parts of a suggestion
+        self, profile_id: UUID, word: str, why: str, offer_ids: Sequence[UUID]
+    ) -> None:
+        """Once per profile and word, ignoring case: suggested again, it takes the new why
+        and adds the offers it comes from."""
+        kept = await self._session.scalar(
+            select(TriagerSuggestionRow).where(
+                TriagerSuggestionRow.search_profile_id == profile_id,
+                func.lower(TriagerSuggestionRow.word) == word.casefold(),
+            )
+        )
+        if kept is None:
+            self._session.add(
+                TriagerSuggestionRow(
+                    search_profile_id=profile_id, word=word, why=why, offer_ids=list(offer_ids)
+                )
+            )
+        else:
+            kept.why = why
+            kept.offer_ids = list(dict.fromkeys([*kept.offer_ids, *offer_ids]))
+        await self._session.flush()
+
     async def dismiss(self, profile_id: UUID, word: str) -> None:
         # Once per profile and word: a second "Not now" changes nothing.
         await self._session.execute(
@@ -542,13 +573,13 @@ class TriageRepository:
     async def list_untriaged(
         self, profiles: Sequence[SearchTerms], limit: int
     ) -> tuple[list[OfferRow], int]:
-        """The most recent pending imported offers that fit a profile and were not triaged,
+        """The most recent pending imported offers that fit a profile and have no verdict yet,
         and how many there are in all."""
         conditions = (
             OfferRow.status == OfferStatus.PENDING,
             func.coalesce(OfferRow.description, "") != "",
             _fits_any(profiles),
-            OfferRow.triaged_at.is_(None),
+            OfferRow.verdict.is_(None),
         )
         total = await self._session.scalar(
             select(func.count()).select_from(OfferRow).where(*conditions)
@@ -572,8 +603,8 @@ class TriageRepository:
         return decisions
 
     async def mistakes(self, limit: int) -> list[TriageMistake]:
-        """The last suggested discards the user promoted, and the last triaged offers the
-        user discarded with no suggestion."""
+        """The last suggested discards the user promoted, and the last offers marked OK
+        that the user discarded."""
         rejected = await self._session.execute(
             select(OfferRow.title, OfferRow.suggested_discard_reason)
             .where(
@@ -588,8 +619,7 @@ class TriageRepository:
             .where(
                 OfferRow.status == OfferStatus.DISCARDED,
                 _DECIDED_BY_USER,
-                OfferRow.triaged_at.is_not(None),
-                OfferRow.suggested_discard_reason.is_(None),
+                OfferRow.verdict == Verdict.OK,
             )
             .order_by(*_MOST_RECENT)
             .limit(limit)
@@ -602,8 +632,12 @@ class TriageRepository:
             *(TriageMistake(title, Mistake.MISSED_DISCARD) for title in missed),
         ]
 
-    async def save(self, offer: OfferRow, suggestion: SuggestedDiscard | None) -> None:
+    async def save(
+        self, offer: OfferRow, triage: Triage, suggestion: SuggestedDiscard | None
+    ) -> None:
         offer.triaged_at = func.now()
+        offer.verdict = triage.verdict
+        offer.verdict_why = triage.why
         offer.suggested_discard_reason = None if suggestion is None else suggestion.reason
         offer.suggested_discard_evidence = None if suggestion is None else suggestion.evidence
         await self._session.flush()

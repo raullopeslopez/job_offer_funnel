@@ -1,5 +1,6 @@
 """The offer triager: a language model on Groq that compares pending offers with what the
-user decided before, and suggests discarding the ones they would discard.
+user decided before, marks each one OK or KO (a false positive) with why, suggests
+discarding the KO ones, and suggests words to exclude from the profiles.
 
 One chat completion per batch of offers, answered as JSON with a strict schema, like the
 offer reader (reader.py). The context (profiles, decisions, its own mistakes) goes once
@@ -8,7 +9,7 @@ model answers is not trusted: the domain keeps only the suggestions whose eviden
 """
 
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any, Final
 
 import httpx2
@@ -23,6 +24,8 @@ from funnel.modules.inbox.domain import (
     TriageAnswer,
     TriageContext,
     TriageMistake,
+    TriageReply,
+    TriagerSuggestion,
 )
 from funnel.modules.inbox.reader import API
 
@@ -33,16 +36,23 @@ _TAIL_CHARACTERS: Final = 500
 _INSTRUCTIONS: Final = f"""\
 You help a job seeker triage job offers. You are given their search profiles, the offers \
 they promoted and discarded before (with why), the mistakes you made before, and some new \
-offers. For each new offer, say whether they would discard it, judging only by what they \
-decided before. When in doubt, say nothing: a wrong suggestion costs more than a missed one.
-Answer for every offer, by its number. To suggest a discard give a reason and its evidence:
+offers that passed their filters. Judge each new offer only by what they decided before.
+Answer for every offer, by its number, with a verdict and why:
+- ok: worth their time.
+- ko: a false positive: it passed their filters but they would discard it.
+When in doubt, say ok: a wrong ko costs more than a missed one. Why is one short sentence.
+For a ko, give the reason and its evidence:
 - title_word: a word of the title they keep discarding; the evidence is that word, copied \
 from the title.
 - stack, location, contract or company: the evidence is one short excerpt copied character \
 by character from the description that shows it.
-Reasons: {", ".join(sorted(SUGGESTED_REASONS))}. With nothing to say, answer null for the \
-reason and the evidence. Learn from your mistakes: do not suggest again what they promoted, \
-and look for what you missed."""
+Reasons: {", ".join(sorted(SUGGESTED_REASONS))}; for an ok, null reason and evidence.
+Then, to make their filters better, you may suggest words to exclude from a profile: a \
+word that is in the ko offers you name and in the offers they discarded, and in none they \
+promoted. Give the profile's name, the word, why, and the numbers of those ko offers. \
+Suggest none rather than a doubtful one.
+Learn from your mistakes: do not mark ko again what they promoted, and look for what you \
+missed."""
 
 _SCHEMA: Final = {
     "type": "object",
@@ -53,18 +63,34 @@ _SCHEMA: Final = {
                 "type": "object",
                 "properties": {
                     "offer": {"type": "integer"},
+                    "verdict": {"type": "string", "enum": ["ok", "ko"]},
+                    "why": {"type": "string"},
                     "reason": {
                         "type": ["string", "null"],
                         "enum": [*sorted(SUGGESTED_REASONS), None],
                     },
                     "evidence": {"type": ["string", "null"]},
                 },
-                "required": ["offer", "reason", "evidence"],
+                "required": ["offer", "verdict", "why", "reason", "evidence"],
                 "additionalProperties": False,
             },
-        }
+        },
+        "exclusions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "profile": {"type": "string"},
+                    "word": {"type": "string"},
+                    "why": {"type": "string"},
+                    "offers": {"type": "array", "items": {"type": "integer"}},
+                },
+                "required": ["profile", "word", "why", "offers"],
+                "additionalProperties": False,
+            },
+        },
     },
-    "required": ["offers"],
+    "required": ["offers", "exclusions"],
     "additionalProperties": False,
 }
 
@@ -112,19 +138,35 @@ def _question(offers: Sequence[OfferText], context: TriageContext) -> str:
     return f"{told}\n\nNew offers:\n\n" + "\n\n".join(new)
 
 
-def _answers(answer: Any, offers: int) -> dict[int, TriageAnswer]:
+def _text(value: Any) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def _reply(answer: Any, offers: int) -> TriageReply:
     if not isinstance(answer, dict) or not isinstance(answer.get("offers"), list):
         raise TypeError(f"expected an object with offers, got {answer!r}")
     found: dict[int, TriageAnswer] = {}
     for item in answer["offers"]:
         number = item.get("offer") if isinstance(item, dict) else None
         if isinstance(number, int) and 0 <= number < offers:
-            reason, evidence = item.get("reason"), item.get("evidence")
             found[number] = TriageAnswer(
-                reason=reason if isinstance(reason, str) else None,
-                evidence=evidence if isinstance(evidence, str) else None,
+                verdict=_text(item.get("verdict")),
+                why=_text(item.get("why")),
+                reason=_text(item.get("reason")),
+                evidence=_text(item.get("evidence")),
             )
-    return found
+    exclusions = answer.get("exclusions")
+    suggestions = [
+        TriagerSuggestion(
+            item["profile"],
+            item["word"],
+            _text(item.get("why")) or "",
+            [n for n in item.get("offers") or [] if isinstance(n, int)],
+        )
+        for item in (exclusions if isinstance(exclusions, list) else [])
+        if isinstance(item, dict) and _text(item.get("profile")) and _text(item.get("word"))
+    ]
+    return TriageReply(found, suggestions)
 
 
 class OfferTriager:
@@ -135,12 +177,11 @@ class OfferTriager:
         self._api_key = api_key
         self._model = model
 
-    async def triage(
-        self, offers: Sequence[OfferText], context: TriageContext
-    ) -> Mapping[int, TriageAnswer]:
-        """What the model says of each offer, by its position; an offer it did not answer
-        for is missing. Raises OfferTriagerError when the model does not answer (network,
-        quota, error status) or answers something that is not the JSON asked for."""
+    async def triage(self, offers: Sequence[OfferText], context: TriageContext) -> TriageReply:
+        """What the model says of each offer, by its position (an offer it did not answer
+        for is missing), and the exclusions it suggests. Raises OfferTriagerError when the
+        model does not answer (network, quota, error status) or answers something that is
+        not the JSON asked for."""
         body = {
             "model": self._model,
             "temperature": 0,
@@ -159,6 +200,6 @@ class OfferTriager:
             )
             response.raise_for_status()
             answer = json.loads(response.json()["choices"][0]["message"]["content"])
-            return _answers(answer, len(offers))
+            return _reply(answer, len(offers))
         except (httpx2.HTTPError, ValueError, KeyError, IndexError, TypeError) as error:
             raise OfferTriagerError(f"{type(error).__name__}: {error}") from error
