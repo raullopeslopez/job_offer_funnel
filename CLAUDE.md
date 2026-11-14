@@ -39,7 +39,7 @@ Frontend en `frontend/` con seis pantallas en dos grupos: «Offers» (Inbox, Pro
 - [x] Fase 1, fila 5: alertas por email de LinkedIn (método `email` con `email_alert`, `inbox/email_alerts`; el buzón dedicado se lee por IMAP en el script de cada 6 h)
 - [x] Fase 1, segundo filtro: lectura de ofertas (`inbox/offer_readings`): un lector externo (Groq, `GROQ_API_KEY`) saca de la descripción la modalidad, si se puede hacer desde la ubicación del perfil y si el puesto es estable, con su frase literal; el encaje lo sigue calculando la app
 - [x] Rediseño visual (Epic #30): tema premium v2 claro/oscuro, responsive y anclas visuales en todas las pantallas; componentes compartidos en `frontend/src/components/`
-- [ ] Epic #74 (calidad de ofertas y rediseño de la Bandeja): hechas #75 (tema v3, tinta y señal) y #76 (navegación en seis apartados)
+- [x] Epic #74 (calidad de ofertas y rediseño de la Bandeja): tema v3 y navegación en seis apartados; Bandeja en piezas con la franja de reglas, «Maybe» y Filtered por regla (`filter_reason`, casi); descarte con motivo de lista cerrada, rescates y «Rightly filtered»; vista previa de un cambio de criterio y su registro con deshacer; calidad de las ofertas (KR) en Metrics; sugerencias por conteo y títulos frecuentes; Sources por cómo llegan las ofertas y Profiles con encaje y búsquedas generadas
 
 ## Criterio: evitar la sobreingeniería
 
