@@ -1,6 +1,6 @@
 import asyncio
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from typing import Any
 
 import httpx2
@@ -17,6 +17,8 @@ from funnel.modules.inbox.domain import (
     TriageAnswer,
     TriageContext,
     TriageMistake,
+    TriageReply,
+    TriagerSuggestion,
 )
 from funnel.modules.inbox.reader import API
 from funnel.modules.inbox.triager import OfferTriager
@@ -40,9 +42,16 @@ CONTEXT = TriageContext(
 )
 ANSWER = {
     "offers": [
-        {"offer": 0, "reason": "company", "evidence": "for a crypto exchange"},
-        {"offer": 1, "reason": None, "evidence": None},
-    ]
+        {
+            "offer": 0,
+            "verdict": "ko",
+            "why": "Crypto.",
+            "reason": "company",
+            "evidence": "for a crypto exchange",
+        },
+        {"offer": 1, "verdict": "ok", "why": "Fits.", "reason": None, "evidence": None},
+    ],
+    "exclusions": [{"profile": "Backend", "word": "crypto", "why": "Noise.", "offers": [0]}],
 }
 
 Handler = Callable[[httpx2.Request], httpx2.Response]
@@ -52,8 +61,8 @@ def _completion(content: str) -> httpx2.Response:
     return httpx2.Response(200, json={"choices": [{"message": {"content": content}}]})
 
 
-def _triage(handler: Handler, offers: list[OfferText] = OFFERS) -> Mapping[int, TriageAnswer]:
-    async def triage() -> Mapping[int, TriageAnswer]:
+def _triage(handler: Handler, offers: list[OfferText] = OFFERS) -> TriageReply:
+    async def triage() -> TriageReply:
         async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as client:
             return await OfferTriager(client, "secret-key", "some-model").triage(offers, CONTEXT)
 
@@ -74,10 +83,14 @@ def _sent(offers: list[OfferText] = OFFERS) -> tuple[httpx2.Request, dict[str, A
 
 def test_reads_what_the_model_answers_for_each_offer() -> None:
     # Act
-    answers = _triage(lambda _request: _completion(json.dumps(ANSWER)))
+    reply = _triage(lambda _request: _completion(json.dumps(ANSWER)))
 
     # Assert
-    assert answers == {0: TriageAnswer("company", "for a crypto exchange"), 1: TriageAnswer()}
+    assert reply.answers == {
+        0: TriageAnswer("ko", "Crypto.", "company", "for a crypto exchange"),
+        1: TriageAnswer("ok", "Fits."),
+    }
+    assert reply.suggestions == [TriagerSuggestion("Backend", "crypto", "Noise.", [0])]
 
 
 def test_asks_once_for_the_batch_with_the_context_and_a_strict_schema() -> None:
@@ -111,13 +124,13 @@ def test_sends_the_start_and_the_end_of_a_long_description() -> None:
 
 def test_leaves_out_the_offers_the_model_does_not_answer_for() -> None:
     # Arrange
-    answer = {"offers": [{"offer": 1, "reason": None, "evidence": None}, {"offer": 7}]}
+    answer = {"offers": [{"offer": 1, "verdict": "ok", "why": "Fits."}, {"offer": 7}]}
 
     # Act
-    answers = _triage(lambda _request: _completion(json.dumps(answer)))
+    reply = _triage(lambda _request: _completion(json.dumps(answer)))
 
     # Assert
-    assert answers == {1: TriageAnswer()}
+    assert (reply.answers, reply.suggestions) == ({1: TriageAnswer("ok", "Fits.")}, [])
 
 
 @pytest.mark.parametrize(

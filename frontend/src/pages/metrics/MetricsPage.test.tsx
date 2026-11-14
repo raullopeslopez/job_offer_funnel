@@ -361,6 +361,8 @@ describe("MetricsPage suggested exclusions", () => {
   const suggestion: Suggestion = {
     search_profile_id: "0193a000-0000-7000-8000-000000000002",
     search_profile_name: "Backend",
+    source: "count",
+    why: null,
     word: "Lead",
     excluded_keywords: ["Senior", "Lead"],
     offer_ids: ["0193a000-0000-7000-8000-00000000000a", "0193a000-0000-7000-8000-00000000000b"],

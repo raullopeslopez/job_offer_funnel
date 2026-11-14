@@ -53,6 +53,7 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   application_id: null,
   review: null,
   review_rules: [],
+  triage: null,
   suggested_discard: null,
   watched_company_id: null,
   watched_company_name: null,
@@ -790,11 +791,18 @@ describe("InboxPage frequent titles", () => {
 
 // specs/ui/inbox.feature, "Triage": the E2E tests cannot reach the offer triager.
 describe("InboxPage triage", () => {
+  type Suggestion = components["schemas"]["CriteriaSuggestionRead"];
+
   /** An available triager answering these batches in order, the last one again after. */
-  function triagerAnswering(...batches: { triaged: number; left: number }[]) {
+  function triagerAnswering(
+    ...batches: { triaged: number; ok: number; ko: number; left: number }[]
+  ) {
     let call = 0;
     server.use(
       http.get("/api/v1/offers/triager", () => HttpResponse.json({ is_available: true })),
+      http.get("/api/v1/criteria-suggestions", () =>
+        HttpResponse.json({ items: [], total: 0, limit: 100, offset: 0 }),
+      ),
       http.post("/api/v1/offers/triages", () => {
         const batch = batches[Math.min(call, batches.length - 1)];
         call += 1;
@@ -803,20 +811,55 @@ describe("InboxPage triage", () => {
     );
   }
 
+  /** The triager's suggestion to exclude "Lead" from Backend, coming from these offers. */
+  function triagerSuggesting(...offerIds: string[]) {
+    let suggestions: Suggestion[] = [
+      {
+        search_profile_id: PROFILE_ID,
+        search_profile_name: "Backend",
+        source: "triager",
+        why: "You discard lead roles.",
+        word: "Lead",
+        excluded_keywords: ["Senior", "Lead"],
+        offer_ids: offerIds,
+        discarded: 5,
+        preview: {
+          entering_pending: 0,
+          leaving_pending: 3,
+          promoted_filtered: 0,
+          discarded_filtered: 2,
+        },
+      },
+    ];
+    const sent: { url: string; body: unknown }[] = [];
+    server.use(
+      http.get("/api/v1/offers/triager", () => HttpResponse.json({ is_available: true })),
+      http.get("/api/v1/criteria-suggestions", () =>
+        HttpResponse.json({ items: suggestions, total: suggestions.length, limit: 100, offset: 0 }),
+      ),
+      http.post(/\/api\/v1\/criteria-(changes|suggestions\/dismissals)$/, async ({ request }) => {
+        sent.push({ url: new URL(request.url).pathname, body: await request.json() });
+        suggestions = [];
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    return sent;
+  }
+
   it.each([
     [
       [
-        { triaged: 5, left: 2 },
-        { triaged: 2, left: 0 },
+        { triaged: 5, ok: 2, ko: 3, left: 2 },
+        { triaged: 2, ok: 1, ko: 1, left: 0 },
       ],
-      "Triaged 7 · 0 left",
+      "Triaged 7 · 3 OK · 4 KO · 0 left",
     ],
     [
       [
-        { triaged: 3, left: 2 },
-        { triaged: 0, left: 2 },
+        { triaged: 3, ok: 1, ko: 2, left: 2 },
+        { triaged: 0, ok: 0, ko: 0, left: 2 },
       ],
-      "Triaged 3 · 2 left. Try again later.",
+      "Triaged 3 · 1 OK · 2 KO · 2 left. Try again later.",
     ],
   ])("triages batch after batch until none is left or one triages none", async (batches, said) => {
     // Arrange
@@ -833,20 +876,34 @@ describe("InboxPage triage", () => {
   });
 
   it.each([
+    ["ok", "Like Acme's role.", null, "AI: OK — Like Acme's role."],
+    ["ko", "Part-time role.", null, "AI: KO — Part-time role."],
     [
-      "contract",
-      "Part-time, 20 hours a week",
-      "Suggested discard: Contract — “Part-time, 20 hours a week”",
+      "ko",
+      "Part-time role.",
+      { reason: "contract", evidence: "Part-time, 20 hours a week" },
+      "AI: KO — Part-time role. Contract — “Part-time, 20 hours a week”",
     ],
-    ["title_word", "Lead", "Suggested discard: A word in the title — “Lead”"],
-  ] as const)("shows a suggested discard because %s", async (reason, evidence, shown) => {
+    [
+      "ko",
+      "You discard leads.",
+      { reason: "title_word", evidence: "Lead" },
+      "AI: KO — You discard leads. A word in the title — “Lead”",
+    ],
+  ] as const)("shows the verdict %s: %s", async (verdict, why, suggested_discard, shown) => {
     // Arrange
     inboxWith([
       offer("Backend Engineer Lead", {
         company: "Globex",
-        suggested_discard: { reason, evidence },
+        triage: { verdict, why },
+        suggested_discard,
       }),
     ]);
+    server.use(
+      http.get("/api/v1/criteria-suggestions", () =>
+        HttpResponse.json({ items: [], total: 0, limit: 100, offset: 0 }),
+      ),
+    );
 
     // Act
     renderInbox();
@@ -854,6 +911,9 @@ describe("InboxPage triage", () => {
     // Assert
     const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
     expect(within(piece).getByText(shown)).toBeInTheDocument();
+    expect(within(piece).queryByRole("button", { name: "Discard as suggested" }) !== null).toBe(
+      suggested_discard !== null,
+    );
   });
 
   it.each([
@@ -862,10 +922,16 @@ describe("InboxPage triage", () => {
   ] as const)("discards as suggested because %s", async (reason, evidence, body) => {
     // Arrange
     const user = userEvent.setup();
-    const suggested = offer("Backend Engineer Lead", { suggested_discard: { reason, evidence } });
+    const suggested = offer("Backend Engineer Lead", {
+      triage: { verdict: "ko", why: "Not for you." },
+      suggested_discard: { reason, evidence },
+    });
     inboxWith([suggested]);
     const discarded: unknown[] = [];
     server.use(
+      http.get("/api/v1/criteria-suggestions", () =>
+        HttpResponse.json({ items: [], total: 0, limit: 100, offset: 0 }),
+      ),
       http.post("/api/v1/offers/:offerId/discard", async ({ params, request }) => {
         discarded.push({ offerId: params.offerId, ...((await request.json()) as object) });
         return HttpResponse.json({}, { status: 201 });
@@ -880,5 +946,69 @@ describe("InboxPage triage", () => {
     // Assert
     expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
     expect(discarded).toEqual([{ offerId: suggested.id, ...body }]);
+  });
+
+  it("improves the filter from the offer the suggestion comes from", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const ko = offer("Lead Backend Engineer", { triage: { verdict: "ko", why: "A lead role." } });
+    inboxWith([ko]);
+    const sent = triagerSuggesting(ko.id);
+    renderInbox();
+    const piece = await screen.findByRole("article", { name: "Lead Backend Engineer" });
+    expect(
+      await within(piece).findByText("Improve the filter: exclude “Lead” from Backend"),
+    ).toBeInTheDocument();
+
+    // Act
+    await user.click(within(piece).getByRole("button", { name: "Exclude it" }));
+
+    // Assert
+    expect(sent).toEqual([
+      {
+        url: "/api/v1/criteria-changes",
+        body: {
+          search_profile_id: PROFILE_ID,
+          excluded_keywords: ["Senior", "Lead"],
+          offer_id: ko.id,
+        },
+      },
+    ]);
+    await waitFor(() =>
+      expect(within(piece).queryByText(/Improve the filter/)).not.toBeInTheDocument(),
+    );
+  });
+
+  it.each([
+    [
+      "Not now",
+      "/api/v1/criteria-suggestions/dismissals",
+      { search_profile_id: PROFILE_ID, word: "Lead" },
+    ],
+    [
+      "Exclude it",
+      "/api/v1/criteria-changes",
+      { search_profile_id: PROFILE_ID, excluded_keywords: ["Senior", "Lead"] },
+    ],
+  ])("shows the triager's suggestion above the offers, and %s", async (choice, url, body) => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("Backend Engineer")]);
+    const sent = triagerSuggesting();
+    renderInbox();
+    const shown = await screen.findByRole("region", { name: "AI suggestion" });
+    expect(within(shown).getByText("AI suggests: exclude “Lead” from Backend")).toBeInTheDocument();
+    expect(
+      within(shown).getByText("Takes 3 offers out of Pending, loses none you promoted."),
+    ).toBeInTheDocument();
+
+    // Act
+    await user.click(within(shown).getByRole("button", { name: choice }));
+
+    // Assert
+    expect(sent).toEqual([{ url, body }]);
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "AI suggestion" })).not.toBeInTheDocument(),
+    );
   });
 });

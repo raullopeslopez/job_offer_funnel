@@ -142,10 +142,16 @@ def get_offer_triager(
 
 
 def get_offer_triage_service(
-    session: SessionDep, triager: Annotated[OfferTriager | None, Depends(get_offer_triager)]
+    session: SessionDep,
+    offers: Annotated[OfferService, Depends(get_offer_service)],
+    triager: Annotated[OfferTriager | None, Depends(get_offer_triager)],
 ) -> OfferTriageService:
     return OfferTriageService(
-        TriageRepository(session), build_search_profile_service(session), triager
+        TriageRepository(session),
+        SuggestionRepository(session),
+        offers,
+        build_search_profile_service(session),
+        triager,
     )
 
 

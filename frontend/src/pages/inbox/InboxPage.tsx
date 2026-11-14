@@ -18,6 +18,7 @@ import { NearMissGroups } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
 import { TriageButton } from "./TriageButton";
+import { TriagerSuggestion } from "./TriagerSuggestion";
 import type { Offer, OfferStatus, OfferView } from "./types";
 
 // The pending offers are split: those that fit a search profile and the filtered ones
@@ -202,6 +203,7 @@ export function InboxPage() {
         />
       </Box>
 
+      {view === "pending" && <TriagerSuggestion />}
       {view === "filtered" && <NearMissGroups {...context} {...nearMissActions} />}
       {view === "filtered" && <FrequentTitles profiles={context.profiles} />}
 

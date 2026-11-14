@@ -61,7 +61,7 @@ Feature: Offer triages
   # --- Verdicts ---
 
   Scenario Outline: Every triaged offer has a verdict and why, and stays pending
-    Given the offer triager says the offer of "Acme" <verdict> because "<why>"
+    Given the offer triager says the offer of "Acme" is <verdict> because "<why>"
     When I triage the offers
     Then the offer of "Acme" has the verdict "<verdict>" because "<why>"
     And the offer of "Acme" is "pending"
@@ -185,7 +185,7 @@ Feature: Offer triages
     And the offer triager says the offer of "Wayne" is KO because "A lead role."
     And the offer triager suggests excluding "Lead" from "Backend" because "You discard lead roles.", from the offer of "Wayne"
     And I triaged the offers
-    And I promoted an imported offer as "Lead Platform Engineer"
+    And I promoted an imported offer as "Lead Backend Engineer"
     When I list the suggestions
     Then the criteria suggestions do not include excluding "Lead" from "Backend"
 
