@@ -1086,7 +1086,7 @@
             "type": "array"
           },
           "offer_ids": {
-            "description": "The discarded offers with the word.",
+            "description": "Counted: the discarded offers with the word. From the triager: the `ko` offers it comes from; accepting it from one is a criteria change with its `offer_id`.",
             "items": {
               "format": "uuid",
               "type": "string"
@@ -1107,6 +1107,22 @@
             "title": "Search Profile Name",
             "type": "string"
           },
+          "source": {
+            "$ref": "#/components/schemas/SuggestionSource",
+            "description": "`count`: counted from the decisions; `triager`: suggested by the offer triager, with why."
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The triager's why; null for a counted suggestion.",
+            "title": "Why"
+          },
           "word": {
             "description": "The word to exclude, as the titles write it.",
             "title": "Word",
@@ -1116,6 +1132,8 @@
         "required": [
           "search_profile_id",
           "search_profile_name",
+          "source",
+          "why",
           "word",
           "excluded_keywords",
           "offer_ids",
@@ -2070,11 +2088,22 @@
                 "type": "null"
               }
             ],
-            "description": "What the offer triager suggests, once triaged; null when it had nothing to say or the offer was not triaged."
+            "description": "With a `ko` verdict whose evidence holds, the discard it suggests; null otherwise."
           },
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "triage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TriageRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The triager's verdict; null until triaged."
           },
           "url": {
             "title": "Url",
@@ -2122,6 +2151,7 @@
           "application_id",
           "review",
           "review_rules",
+          "triage",
           "suggested_discard",
           "watched_company_id",
           "watched_company_name",
@@ -2540,7 +2570,7 @@
             "title": "Losses"
           },
           "missed_discards": {
-            "description": "Of those, the ones without a suggested discard.",
+            "description": "Of those, the ones marked `ok`.",
             "title": "Missed Discards",
             "type": "integer"
           },
@@ -3161,6 +3191,15 @@
         "title": "SuggestedDiscardRead",
         "type": "object"
       },
+      "SuggestionSource": {
+        "description": "Where a criteria suggestion comes from: counted from the decisions, or the triager.",
+        "enum": [
+          "count",
+          "triager"
+        ],
+        "title": "SuggestionSource",
+        "type": "string"
+      },
       "Syntax": {
         "description": "How a job board reads a search.",
         "enum": [
@@ -3283,23 +3322,55 @@
             "title": "Failed",
             "type": "integer"
           },
+          "ko": {
+            "description": "Of those, the ones marked `ko`: false positives.",
+            "title": "Ko",
+            "type": "integer"
+          },
           "left": {
             "description": "Offers still to triage, the failed ones included.",
             "title": "Left",
             "type": "integer"
           },
+          "ok": {
+            "description": "Of those, the ones marked `ok`.",
+            "title": "Ok",
+            "type": "integer"
+          },
           "triaged": {
-            "description": "Offers triaged now, with a suggested discard or without.",
+            "description": "Offers triaged now: each has a verdict.",
             "title": "Triaged",
             "type": "integer"
           }
         },
         "required": [
           "triaged",
+          "ok",
+          "ko",
           "failed",
           "left"
         ],
         "title": "TriageBatchRead",
+        "type": "object"
+      },
+      "TriageRead": {
+        "description": "What the offer triager says of an offer; it is never applied on its own.",
+        "properties": {
+          "verdict": {
+            "$ref": "#/components/schemas/Verdict",
+            "description": "`ok`: worth the user's time; `ko`: a false positive, it passed the filters but the user would discard it."
+          },
+          "why": {
+            "description": "One sentence in the triager's words, up to 200 characters.",
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "why"
+        ],
+        "title": "TriageRead",
         "type": "object"
       },
       "TriagerRead": {
@@ -3358,6 +3429,15 @@
         ],
         "title": "ValidationProblemRead",
         "type": "object"
+      },
+      "Verdict": {
+        "description": "What the offer triager says of an offer: worth the user's time (ok) or not (ko).",
+        "enum": [
+          "ok",
+          "ko"
+        ],
+        "title": "Verdict",
+        "type": "string"
       },
       "WatchedCompanyCreate": {
         "properties": {
@@ -3459,7 +3539,7 @@
             "title": "Losses"
           },
           "missed_discards": {
-            "description": "Of those, the ones without a suggested discard.",
+            "description": "Of those, the ones marked `ok`.",
             "title": "Missed Discards",
             "type": "integer"
           },
@@ -4813,7 +4893,7 @@
     },
     "/api/v1/criteria-suggestions": {
       "get": {
-        "description": "Words to exclude, counted from the discarded and promoted offers; never applied.",
+        "description": "Words to exclude, counted from the discarded and promoted offers or suggested by the\noffer triager; never applied.",
         "operationId": "list_criteria_suggestions_api_v1_criteria_suggestions_get",
         "parameters": [
           {
@@ -6169,7 +6249,7 @@
     },
     "/api/v1/offers/triages": {
       "post": {
-        "description": "Have the offer triager compare up to 5 pending imported offers that fit a profile,\nin a single request, with your promoted and discarded offers and its own mistakes. It\nmay suggest discarding each one, with a reason and its evidence; nothing is discarded.\n\nAn offer is triaged once. Call it again while `left` is not 0; the offers the triager\ndoes not answer for are left to triage.",
+        "description": "Have the offer triager compare up to 5 pending imported offers that fit a profile,\nin a single request, with your promoted and discarded offers and its own mistakes. It\nmarks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,\nwith a reason and its evidence. It may also suggest excluding a word from a profile,\nwhich joins the criteria suggestions if it holds the rule. Nothing is applied.\n\nAn offer is triaged once. Call it again while `left` is not 0; the offers the triager\ndoes not answer for are left to triage.",
         "operationId": "triage_offers_api_v1_offers_triages_post",
         "responses": {
           "201": {

@@ -47,6 +47,7 @@ from funnel.modules.inbox.domain import (
     ProfileRule,
     Review,
     RuleChangedSinceError,
+    SuggestionSource,
     TriageContext,
     WordNotInTitleError,
     can_exclude,
@@ -284,6 +285,8 @@ class CriteriaSuggestion:
     offer_ids: list[UUID]
     discarded: int
     preview: CriteriaPreview
+    source: SuggestionSource = SuggestionSource.COUNT
+    why: str | None = None
 
 
 class CriteriaSuggestionService:
@@ -391,6 +394,8 @@ class TriageBatch:
     triaged: int
     failed: int
     left: int
+    ok: int = 0
+    ko: int = 0
 
 
 class OfferTriageService:

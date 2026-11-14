@@ -90,6 +90,28 @@ def is_near_miss(failed: Sequence[Rule]) -> bool:
     return len(failed) == 1 and Rule.TITLE not in failed
 
 
+class Verdict(StrEnum):
+    """What the offer triager says of an offer: worth the user's time (ok) or not (ko)."""
+
+    OK = "ok"
+    KO = "ko"
+
+
+@dataclass(frozen=True)
+class Triage:
+    """The triager's verdict on an offer, and why in its own words."""
+
+    verdict: Verdict
+    why: str
+
+
+class SuggestionSource(StrEnum):
+    """Where a criteria suggestion comes from: counted from the decisions, or the triager."""
+
+    COUNT = "count"
+    TRIAGER = "triager"
+
+
 class Review(StrEnum):
     """What the user did with a filtered offer: promoted it, or left it filtered."""
 

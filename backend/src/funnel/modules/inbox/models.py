@@ -37,6 +37,8 @@ from funnel.modules.inbox.domain import (
     ProfileRule,
     Review,
     SuggestedDiscard,
+    Triage,
+    Verdict,
 )
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
@@ -195,8 +197,11 @@ class OfferRow(Base):
     watched_company_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True
     )
-    # Set once the offer triager has seen it, with the discard it suggested, if any.
+    # Set once the offer triager has seen it: its verdict and why, and the discard it
+    # suggested, if any.
     triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    verdict: Mapped[Verdict | None] = mapped_column(_enum_column_type(Verdict, "verdict"))
+    verdict_why: Mapped[str | None] = mapped_column(Text)
     suggested_discard_reason: Mapped[DiscardReason | None] = mapped_column(
         _enum_column_type(DiscardReason, "suggested_discard_reason")
     )
@@ -218,6 +223,11 @@ class OfferRow(Base):
     readings: Mapped[list[OfferReadingRow]] = relationship(
         lazy="selectin", order_by=(OfferReadingRow.created_at, OfferReadingRow.id), viewonly=True
     )
+
+    @property
+    def triage(self) -> Triage | None:
+        verdict, why = self.verdict, self.verdict_why
+        return None if verdict is None or why is None else Triage(verdict, why)
 
     @property
     def suggested_discard(self) -> SuggestedDiscard | None:

@@ -16,6 +16,8 @@ from funnel.modules.inbox.domain import (
     Review,
     Rule,
     RuleResult,
+    SuggestionSource,
+    Verdict,
 )
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -138,13 +140,25 @@ class ReadingBatchRead(BaseModel):
 
 
 class TriageBatchRead(BaseModel):
-    triaged: int = Field(description="Offers triaged now, with a suggested discard or without.")
+    triaged: int = Field(description="Offers triaged now: each has a verdict.")
+    ok: int = Field(description="Of those, the ones marked `ok`.")
+    ko: int = Field(description="Of those, the ones marked `ko`: false positives.")
     failed: int = Field(description="Offers the triager did not answer for; left to triage.")
     left: int = Field(description="Offers still to triage, the failed ones included.")
 
 
 class TriagerRead(BaseModel):
     is_available: bool = Field(description="Whether an offer triager is configured.")
+
+
+class TriageRead(BaseModel):
+    """What the offer triager says of an offer; it is never applied on its own."""
+
+    verdict: Verdict = Field(
+        description="`ok`: worth the user's time; `ko`: a false positive, it passed the "
+        "filters but the user would discard it."
+    )
+    why: str = Field(description="One sentence in the triager's words, up to 200 characters.")
 
 
 class SuggestedDiscardRead(BaseModel):
@@ -249,11 +263,19 @@ class CriteriaChangeRead(BaseModel):
 class CriteriaSuggestionRead(BaseModel):
     search_profile_id: UUID
     search_profile_name: str
+    source: SuggestionSource = Field(
+        description="`count`: counted from the decisions; `triager`: suggested by the offer "
+        "triager, with why."
+    )
+    why: str | None = Field(description="The triager's why; null for a counted suggestion.")
     word: str = Field(description="The word to exclude, as the titles write it.")
     excluded_keywords: list[str] = Field(
         description="The profile's excluded keywords with the word: the change to make."
     )
-    offer_ids: list[UUID] = Field(description="The discarded offers with the word.")
+    offer_ids: list[UUID] = Field(
+        description="Counted: the discarded offers with the word. From the triager: the `ko` "
+        "offers it comes from; accepting it from one is a criteria change with its `offer_id`."
+    )
     discarded: int = Field(description="All the discarded offers, expired ones left out.")
     preview: CriteriaPreviewRead = Field(description="What excluding the word would do.")
 
@@ -302,7 +324,7 @@ class QualityFiguresRead(BaseModel):
         description="suggested_discarded ÷ suggested_decided, in %."
     )
     triaged_discarded: int = Field(description="Triaged offers discarded, expired ones left out.")
-    missed_discards: int = Field(description="Of those, the ones without a suggested discard.")
+    missed_discards: int = Field(description="Of those, the ones marked `ok`.")
     triager_misses: float | None = Field(description="missed_discards ÷ triaged_discarded, in %.")
 
 
@@ -381,9 +403,10 @@ class OfferRead(BaseModel):
         "filtered, and no longer a near miss."
     )
     review_rules: list[Rule] = Field(description="The rules that filtered it when reviewed.")
+    triage: TriageRead | None = Field(description="The triager's verdict; null until triaged.")
     suggested_discard: SuggestedDiscardRead | None = Field(
-        description="What the offer triager suggests, once triaged; null when it had nothing "
-        "to say or the offer was not triaged."
+        description="With a `ko` verdict whose evidence holds, the discard it suggests; null "
+        "otherwise."
     )
     watched_company_id: UUID | None = Field(
         description="The watched company it was imported from, if still watched."
