@@ -78,6 +78,24 @@ def test_asks_the_model_with_the_key_and_a_strict_schema() -> None:
     assert OFFER.description in question
 
 
+@pytest.mark.parametrize(
+    ("published", "expected"),
+    [
+        pytest.param("USA only", "Location: USA only", id="published"),
+        pytest.param(None, "Company: Acme\nDescription:", id="none-published"),
+    ],
+)
+def test_sends_the_location_the_source_publishes(published: str | None, expected: str) -> None:
+    # Arrange
+    offer = OfferText("Backend Engineer", "Acme", "Fully remote.", location=published)
+
+    # Act
+    _request, body = _sent("Spain", offer)
+
+    # Assert
+    assert expected in body["messages"][-1]["content"]
+
+
 def test_does_not_ask_about_the_location_without_one() -> None:
     # Act
     _request, body = _sent(None)

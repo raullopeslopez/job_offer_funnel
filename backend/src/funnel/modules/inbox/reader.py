@@ -23,8 +23,8 @@ _TAIL_CHARACTERS: Final = 1500
 _INSTRUCTIONS: Final = """\
 You read a job posting and answer only with what it states explicitly. Never guess.
 For every answer give as evidence one short excerpt copied character by character from \
-the description. If the description does not state something, answer null for it and for \
-its evidence.
+the title, the location or the description. If none of them states something, answer \
+null for it and for its evidence.
 - work_mode: where the work is done, never what the role is about. "remote" if it can be \
 done fully from home, also when an office is optional, when remote is one of the options \
 offered, or when it only asks for occasional travel; "hybrid" only if it requires regular \
@@ -36,7 +36,10 @@ says anywhere or worldwide); false only if it requires living, being a citizen o
 the right to work somewhere that excludes the given location. Otherwise null: a job that \
 is just "remote", preferred locations, working hours or time zones, languages, the \
 salary's currency, and where the company, its team or its clients are, are not \
-requirements.
+requirements. But a remote job whose title or location names a place, in any spelling \
+("Backend Engineer - UK", "US Remote", "USA only", "Remote, Germany"), can only be done \
+living there: answer false if that place excludes the given location, quoting it, unless \
+the description opens the job to other places.
 - stable: true if it is a full-time position with no end date, as an employee or as a \
 contractor; false if it is paid by the task or by the hour, temporary, or part-time. \
 Weekly hours or a salary alone say nothing: null."""
@@ -75,8 +78,9 @@ def _excerpt(description: str) -> str:
 
 def _question(offer: OfferText, location: str | None) -> str:
     asked = "" if location is None else f"Location to answer admits_location for: {location}\n"
+    published = "" if offer.location is None else f"Location: {offer.location}\n"
     return (
-        f"{asked}Title: {offer.title}\nCompany: {offer.company}\n"
+        f"{asked}Title: {offer.title}\nCompany: {offer.company}\n{published}"
         f"Description:\n{_excerpt(offer.description)}"
     )
 
@@ -110,7 +114,7 @@ class OfferReader:
         self._model = model
 
     async def read(self, offer: OfferText, location: str | None) -> Reading:
-        """What the description says, for someone living in `location` if there is one.
+        """What the posting says, for someone living in `location` if there is one.
 
         Raises OfferReaderError when the model does not answer (network, quota, error
         status) or answers something that is not the JSON asked for.

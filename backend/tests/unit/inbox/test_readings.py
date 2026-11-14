@@ -1,7 +1,7 @@
 import pytest
 
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import Reading, plain_text, supported
+from funnel.modules.inbox.domain import OfferText, Reading, plain_text, supported
 
 pytestmark = pytest.mark.unit
 
@@ -28,6 +28,35 @@ ANSWER = Reading(
 def test_plain_text_is_what_a_person_reads(description: str, expected: str) -> None:
     # Act / Assert
     assert plain_text(description) == expected
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        pytest.param("USA  only", "Backend Engineer - UK\nUSA only\nFully remote.", id="location"),
+        pytest.param(None, "Backend Engineer - UK\n\nFully remote.", id="no-location"),
+    ],
+)
+def test_the_evidence_is_the_title_the_location_and_the_description_one_per_line(
+    location: str | None, expected: str
+) -> None:
+    # Arrange
+    offer = OfferText("Backend  Engineer - UK", "Acme", "Fully remote.", location=location)
+
+    # Act / Assert
+    assert offer.evidence == expected
+
+
+def test_an_evidence_that_spans_two_lines_is_not_kept() -> None:
+    # Arrange
+    offer = OfferText("Backend Engineer - UK", "Acme", "Fully remote.")
+    answer = Reading(admits_location=False, admits_location_evidence="UK Fully remote")
+
+    # Act
+    kept = supported(answer, offer.evidence, asked_location=True)
+
+    # Assert
+    assert kept == Reading()
 
 
 def test_answers_with_their_evidence_in_the_text_are_kept() -> None:

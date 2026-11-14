@@ -434,14 +434,19 @@ class OfferReadingService:
         unread, total = await self._readings.list_unread(profiles, READING_BATCH_SIZE)
         read = 0
         for offer, location in unread:
-            text = OfferText(offer.title, offer.company, plain_text(offer.description or ""))
+            text = OfferText(
+                offer.title,
+                offer.company,
+                plain_text(offer.description or ""),
+                location=offer.location,
+            )
             try:
                 answer = await self._reader.read(text, location)
             except OfferReaderError as error:
                 # Left unread: the next reading tries it again.
                 _logger.warning("offer_reading_failed", offer_id=str(offer.id), error=str(error))
                 continue
-            kept = supported(answer, text.description, asked_location=location is not None)
+            kept = supported(answer, text.evidence, asked_location=location is not None)
             await self._readings.add(offer.id, location, kept)
             read += 1
         return ReadingBatch(read=read, failed=len(unread) - read, left=total - read)
