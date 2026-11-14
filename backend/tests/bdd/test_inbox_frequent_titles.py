@@ -37,7 +37,8 @@ class ScenarioState:
 
     @property
     def found(self) -> dict[str, Any]:
-        return _ok(self.last_response, 200)
+        found: dict[str, Any] = _ok(self.last_response, 200)
+        return found
 
 
 @pytest.fixture
