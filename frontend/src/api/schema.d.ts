@@ -204,7 +204,8 @@ export interface paths {
         };
         /**
          * List Criteria Suggestions
-         * @description Words to exclude, counted from the discarded and promoted offers; never applied.
+         * @description Words to exclude, counted from the discarded and promoted offers or suggested by the
+         *     offer triager; never applied.
          */
         get: operations["list_criteria_suggestions_api_v1_criteria_suggestions_get"];
         put?: never;
@@ -565,7 +566,9 @@ export interface paths {
          * Triage Offers
          * @description Have the offer triager compare up to 5 pending imported offers that fit a profile,
          *     in a single request, with your promoted and discarded offers and its own mistakes. It
-         *     may suggest discarding each one, with a reason and its evidence; nothing is discarded.
+         *     marks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,
+         *     with a reason and its evidence. It may also suggest excluding a word from a profile,
+         *     which joins the criteria suggestions if it holds the rule. Nothing is applied.
          *
          *     An offer is triaged once. Call it again while `left` is not 0; the offers the triager
          *     does not answer for are left to triage.
@@ -1251,7 +1254,7 @@ export interface components {
             excluded_keywords: string[];
             /**
              * Offer Ids
-             * @description The discarded offers with the word.
+             * @description Counted: the discarded offers with the word. From the triager: the `ko` offers it comes from; accepting it from one is a criteria change with its `offer_id`.
              */
             offer_ids: string[];
             /** @description What excluding the word would do. */
@@ -1263,6 +1266,13 @@ export interface components {
             search_profile_id: string;
             /** Search Profile Name */
             search_profile_name: string;
+            /** @description `count`: counted from the decisions; `triager`: suggested by the offer triager, with why. */
+            source: components["schemas"]["SuggestionSource"];
+            /**
+             * Why
+             * @description The triager's why; null for a counted suggestion.
+             */
+            why: string | null;
             /**
              * Word
              * @description The word to exclude, as the titles write it.
@@ -1693,10 +1703,12 @@ export interface components {
              */
             review_rules: components["schemas"]["Rule"][];
             status: components["schemas"]["OfferStatus"];
-            /** @description What the offer triager suggests, once triaged; null when it had nothing to say or the offer was not triaged. */
+            /** @description With a `ko` verdict whose evidence holds, the discard it suggests; null otherwise. */
             suggested_discard: components["schemas"]["SuggestedDiscardRead"] | null;
             /** Title */
             title: string;
+            /** @description The triager's verdict; null until triaged. */
+            triage: components["schemas"]["TriageRead"] | null;
             /** Url */
             url: string;
             /**
@@ -1892,7 +1904,7 @@ export interface components {
             losses: number | null;
             /**
              * Missed Discards
-             * @description Of those, the ones without a suggested discard.
+             * @description Of those, the ones marked `ok`.
              */
             missed_discards: number;
             /**
@@ -2140,6 +2152,12 @@ export interface components {
             reason: components["schemas"]["DiscardReason"];
         };
         /**
+         * SuggestionSource
+         * @description Where a criteria suggestion comes from: counted from the decisions, or the triager.
+         * @enum {string}
+         */
+        SuggestionSource: "count" | "triager";
+        /**
          * Syntax
          * @description How a job board reads a search.
          * @enum {string}
@@ -2183,15 +2201,38 @@ export interface components {
              */
             failed: number;
             /**
+             * Ko
+             * @description Of those, the ones marked `ko`: false positives.
+             */
+            ko: number;
+            /**
              * Left
              * @description Offers still to triage, the failed ones included.
              */
             left: number;
             /**
+             * Ok
+             * @description Of those, the ones marked `ok`.
+             */
+            ok: number;
+            /**
              * Triaged
-             * @description Offers triaged now, with a suggested discard or without.
+             * @description Offers triaged now: each has a verdict.
              */
             triaged: number;
+        };
+        /**
+         * TriageRead
+         * @description What the offer triager says of an offer; it is never applied on its own.
+         */
+        TriageRead: {
+            /** @description `ok`: worth the user's time; `ko`: a false positive, it passed the filters but the user would discard it. */
+            verdict: components["schemas"]["Verdict"];
+            /**
+             * Why
+             * @description One sentence in the triager's words, up to 200 characters.
+             */
+            why: string;
         };
         /** TriagerRead */
         TriagerRead: {
@@ -2217,6 +2258,12 @@ export interface components {
             /** Type */
             type: string;
         };
+        /**
+         * Verdict
+         * @description What the offer triager says of an offer: worth the user's time (ok) or not (ko).
+         * @enum {string}
+         */
+        Verdict: "ok" | "ko";
         /** WatchedCompanyCreate */
         WatchedCompanyCreate: {
             ats: components["schemas"]["Ats"];
@@ -2279,7 +2326,7 @@ export interface components {
             losses: number | null;
             /**
              * Missed Discards
-             * @description Of those, the ones without a suggested discard.
+             * @description Of those, the ones marked `ok`.
              */
             missed_discards: number;
             /**
