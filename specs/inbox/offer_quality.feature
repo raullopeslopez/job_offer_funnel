@@ -22,8 +22,8 @@ Feature: Offer quality
     how many were promoted and discarded.
   - The triager (specs/inbox/offer_triages.feature), over the triaged offers I promoted or
     discarded: its precision, the suggested discards I discarded over the suggested
-    discards I decided; and its misses, the missed discards over the triaged offers I
-    discarded.
+    discards I decided; and its misses, the missed discards (offers it marked OK) over the
+    triaged offers I discarded.
 
   Background:
     Given a job board named "Remote OK" imported from the feed "remoteok"
@@ -117,8 +117,9 @@ Feature: Offer quality
   # --- Triager ---
 
   Scenario: The triager's precision and misses follow what I did with the triaged offers
-    Given the offer triager answers for the offer of "Acme" with the reason "stack" and the evidence "Python services"
-    And the offer triager answers for the offer of "Globex" with the reason "stack" and the evidence "Python services"
+    Given the offer triager says the offer of "Acme" is KO, with the reason "stack" and the evidence "Python services"
+    And the offer triager says the offer of "Globex" is KO, with the reason "stack" and the evidence "Python services"
+    And the offer triager says the offer of "Initech" is OK
     And I triaged the offers
     And I discarded the offer of "Acme" because "stack"
     And I promoted the offer of "Globex"
