@@ -409,6 +409,15 @@ class OfferRead(BaseModel):
     title: str
     job_board_id: UUID | None
     job_board_name: str | None
+    location: str | None = Field(
+        description="Where the job is, as its source publishes it; null for offers added by "
+        "hand, RSS items and offers whose source publishes none."
+    )
+    countries: list[str] = Field(
+        description="The known countries its location names, in the order they appear and "
+        "each once; `Worldwide` when it can be done from any country.",
+        examples=[["Spain", "Portugal"]],
+    )
     notes: str | None
     status: OfferStatus
     filtered: bool = Field(
