@@ -43,6 +43,8 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   title,
   job_board_id: REMOTE_OK_ID,
   job_board_name: "Remote OK",
+  location: null,
+  countries: [],
   notes: null,
   status: "pending",
   filtered: false,
@@ -230,6 +232,29 @@ describe("InboxPage filtered offers", () => {
     expect(await screen.findByRole("heading", { name: heading, level: 1 })).toBeInTheDocument();
     expect(await screen.findByRole("article", { name: shown })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(1);
+  });
+});
+
+// specs/ui/inbox.feature: "An offer shows a tag per country of its location".
+describe("InboxPage country tags", () => {
+  it.each<[string, string[], string[]]>([
+    ["Madrid, Spain", ["Spain"], ["Spain"]],
+    ["Spain, Portugal", ["Spain", "Portugal"], ["Spain", "Portugal"]],
+    ["Worldwide", ["Worldwide"], ["Worldwide"]],
+    ["San Francisco, CA", [], ["San Francisco, CA"]],
+  ])("an offer located in %j shows the tags %j", async (location, countries, tags) => {
+    // Arrange
+    inboxWith([imported("Backend Engineer", rulesWith(), { location, countries })]);
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const shown = within(piece)
+      .getAllByTitle("Country")
+      .map((tag) => tag.textContent);
+    expect(shown).toEqual(tags);
   });
 });
 

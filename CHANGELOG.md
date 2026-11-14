@@ -10,6 +10,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Offer countries: every offer has `location`, where the job is as its source publishes
+  it (Remote OK, Remotive, Himalayas, Jobicy, Greenhouse, Lever, Ashby and LinkedIn job
+  alerts; null for offers added by hand, RSS items and offers imported before), and
+  `countries`, the known countries it names in order (by English name, or USA, US, UK and
+  UAE in capitals), with `Worldwide` for jobs that can be done from any country. The
+  inbox shows a tag per country, or the location as published when it names none.
 - Offer triages: `POST /api/v1/offers/triages` has a language model (the offer triager,
   on Groq with `GROQ_API_KEY`) compare up to 5 pending imported offers that fit a profile,
   description included, with your last promoted and discarded offers and with its own

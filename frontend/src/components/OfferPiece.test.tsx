@@ -11,6 +11,8 @@ const offer = {
   company: "Acme",
   created_at: "2026-11-10T09:00:00Z",
   job_board_name: "Jobicy",
+  location: null,
+  countries: [],
 };
 const now = new Date("2026-11-13T12:00:00Z");
 
@@ -42,6 +44,21 @@ describe("OfferPiece", () => {
 
     // Assert
     expect(screen.getByText(tag)).toBeInTheDocument();
+  });
+
+  it.each<[string, string | null, string[], string[]]>([
+    ["one tag per country", "Spain, Portugal", ["Spain", "Portugal"], ["Spain", "Portugal"]],
+    ["the location when it names no known country", "San Francisco, CA", [], ["San Francisco, CA"]],
+    ["no tag without a location", null, [], []],
+  ])("shows %s", (_name, location, countries, tags) => {
+    // Arrange / Act
+    renderThemed(
+      <OfferPiece offer={{ ...offer, location, countries }} sourceKind="api" now={now} />,
+    );
+
+    // Assert
+    const shown = screen.queryAllByTitle("Country").map((tag) => tag.textContent);
+    expect(shown).toEqual(tags);
   });
 
   it("renders its actions, strip and footer slots", () => {
