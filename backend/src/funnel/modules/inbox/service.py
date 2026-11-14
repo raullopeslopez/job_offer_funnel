@@ -20,6 +20,9 @@ from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
     LATEST_ONLY_FEEDS,
     READING_BATCH_SIZE,
+    TRIAGE_BATCH_SIZE,
+    TRIAGE_DECISIONS,
+    TRIAGE_MISTAKES,
     BoardUnavailableError,
     CriteriaPreview,
     DiscardReason,
@@ -39,9 +42,12 @@ from funnel.modules.inbox.domain import (
     OfferReaderUnavailableError,
     OfferStatus,
     OfferText,
+    OfferTriagerError,
+    OfferTriagerUnavailableError,
     ProfileRule,
     Review,
     RuleChangedSinceError,
+    TriageContext,
     WordNotInTitleError,
     can_exclude,
     count_filtered,
@@ -49,6 +55,7 @@ from funnel.modules.inbox.domain import (
     exclusion_candidates,
     frequent_titles,
     is_title_word,
+    kept_suggestion,
     next_status,
     offer_quality,
     plain_text,
@@ -65,6 +72,7 @@ from funnel.modules.inbox.repository import (
     OfferRepository,
     ReadingRepository,
     SuggestionRepository,
+    TriageRepository,
     WatchedCompanyRepository,
 )
 from funnel.modules.inbox.schemas import (
@@ -72,6 +80,7 @@ from funnel.modules.inbox.schemas import (
     OfferCreate,
     WatchedCompanyCreate,
 )
+from funnel.modules.inbox.triager import OfferTriager
 
 _logger = structlog.get_logger(__name__)
 
@@ -375,6 +384,58 @@ class OfferReadingService:
             await self._readings.add(offer.id, location, kept)
             read += 1
         return ReadingBatch(read=read, failed=len(unread) - read, left=total - read)
+
+
+@dataclass(frozen=True)
+class TriageBatch:
+    triaged: int
+    failed: int
+    left: int
+
+
+class OfferTriageService:
+    """Has the offer triager compare the pending offers with the user's decisions."""
+
+    def __init__(
+        self,
+        triages: TriageRepository,
+        profiles: SearchProfileService,
+        triager: OfferTriager | None,
+    ) -> None:
+        self._triages = triages
+        self._profiles = profiles
+        self._triager = triager
+
+    @property
+    def is_available(self) -> bool:
+        return self._triager is not None
+
+    async def triage_pending(self) -> TriageBatch:
+        if self._triager is None:
+            raise OfferTriagerUnavailableError("No offer triager is configured")
+        profiles = await self._profiles.all_terms()
+        offers, total = await self._triages.list_untriaged(profiles, TRIAGE_BATCH_SIZE)
+        if not offers:
+            return TriageBatch(triaged=0, failed=0, left=total)
+        context = TriageContext(
+            profiles,
+            await self._triages.decisions(TRIAGE_DECISIONS),
+            await self._triages.mistakes(TRIAGE_MISTAKES),
+        )
+        texts = [
+            OfferText(offer.title, offer.company, plain_text(offer.description or ""))
+            for offer in offers
+        ]
+        try:
+            answers = await self._triager.triage(texts, context)
+        except OfferTriagerError as error:
+            # Left untriaged: the next triage tries them again.
+            _logger.warning("offer_triage_failed", offers=len(offers), error=str(error))
+            answers = {}
+        for number, answer in answers.items():
+            await self._triages.save(offers[number], kept_suggestion(answer, texts[number]))
+        triaged = len(answers)
+        return TriageBatch(triaged=triaged, failed=len(offers) - triaged, left=total - triaged)
 
 
 @dataclass(frozen=True)

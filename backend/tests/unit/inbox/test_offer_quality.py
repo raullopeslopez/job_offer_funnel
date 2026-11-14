@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from typing import Any
 
 import pytest
 
@@ -111,3 +112,25 @@ def test_real_result_counts_the_stages_reached_by_the_promoted_offers() -> None:
     # Assert
     total = quality.total
     assert (total.promoted, total.applied, total.answered) == (3, 2, 1)
+
+
+@pytest.mark.unit
+def test_the_triager_is_judged_by_what_was_done_with_the_triaged_offers() -> None:
+    # Arrange
+    suggested: dict[str, Any] = {"is_triaged": True, "suggested_discard": DiscardReason.STACK}
+    offers = [
+        _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.STACK, **suggested),
+        _offer(1, OfferStatus.PROMOTED, **suggested),
+        _offer(1, **suggested),
+        _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.EXPIRED, **suggested),
+        _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.LOCATION, is_triaged=True),
+        _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.LOCATION),
+    ]
+
+    # Act
+    quality = offer_quality(offers, TODAY, near_misses_left=0)
+
+    # Assert
+    total = quality.total
+    assert (total.triager_precision, total.suggested_decided) == (50.0, 2)
+    assert (total.triager_misses, total.triaged_discarded) == (50.0, 2)

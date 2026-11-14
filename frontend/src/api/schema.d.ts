@@ -532,6 +532,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/triager": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Offer Triager
+         * @description Whether the offers can be triaged: without an offer triager the app works as always.
+         */
+        get: operations["read_offer_triager_api_v1_offers_triager_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/offers/triages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Triage Offers
+         * @description Have the offer triager compare up to 5 pending imported offers that fit a profile,
+         *     in a single request, with your promoted and discarded offers and its own mistakes. It
+         *     may suggest discarding each one, with a reason and its evidence; nothing is discarded.
+         *
+         *     An offer is triaged once. Call it again while `left` is not 0; the offers the triager
+         *     does not answer for are left to triage.
+         */
+        post: operations["triage_offers_api_v1_offers_triages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/offers/{offer_id}": {
         parameters: {
             query?: never;
@@ -1648,6 +1693,8 @@ export interface components {
              */
             review_rules: components["schemas"]["Rule"][];
             status: components["schemas"]["OfferStatus"];
+            /** @description What the offer triager suggests, once triaged; null when it had nothing to say or the offer was not triaged. */
+            suggested_discard: components["schemas"]["SuggestedDiscardRead"] | null;
             /** Title */
             title: string;
             /** Url */
@@ -1844,6 +1891,11 @@ export interface components {
              */
             losses: number | null;
             /**
+             * Missed Discards
+             * @description Of those, the ones without a suggested discard.
+             */
+            missed_discards: number;
+            /**
              * Precision
              * @description promoted_from_pending ÷ decided, in %.
              */
@@ -1862,6 +1914,31 @@ export interface components {
              * @description Near misses rescued or rightly filtered.
              */
             reviewed_near_misses: number;
+            /**
+             * Suggested Decided
+             * @description Triaged offers with a suggested discard that were promoted or discarded.
+             */
+            suggested_decided: number;
+            /**
+             * Suggested Discarded
+             * @description Of those, the ones discarded.
+             */
+            suggested_discarded: number;
+            /**
+             * Triaged Discarded
+             * @description Triaged offers discarded, expired ones left out.
+             */
+            triaged_discarded: number;
+            /**
+             * Triager Misses
+             * @description missed_discards ÷ triaged_discarded, in %.
+             */
+            triager_misses: number | null;
+            /**
+             * Triager Precision
+             * @description suggested_discarded ÷ suggested_decided, in %.
+             */
+            triager_precision: number | null;
         };
         /** ReadingBatchRead */
         ReadingBatchRead: {
@@ -2050,6 +2127,19 @@ export interface components {
          */
         Stage: "evaluated" | "applied" | "screening" | "interviewing" | "offer" | "accepted";
         /**
+         * SuggestedDiscardRead
+         * @description A discard the offer triager suggests; it is never applied on its own.
+         */
+        SuggestedDiscardRead: {
+            /**
+             * Evidence
+             * @description With `title_word`, the word of the title (the discard's word); otherwise a sentence of the description.
+             */
+            evidence: string;
+            /** @description title_word, stack, location, contract or company. */
+            reason: components["schemas"]["DiscardReason"];
+        };
+        /**
          * Syntax
          * @description How a job board reads a search.
          * @enum {string}
@@ -2084,6 +2174,32 @@ export interface components {
             outcome: components["schemas"]["Outcome"] | null;
             /** @description Equals from_stage when the transition closes it. */
             to_stage: components["schemas"]["Stage"];
+        };
+        /** TriageBatchRead */
+        TriageBatchRead: {
+            /**
+             * Failed
+             * @description Offers the triager did not answer for; left to triage.
+             */
+            failed: number;
+            /**
+             * Left
+             * @description Offers still to triage, the failed ones included.
+             */
+            left: number;
+            /**
+             * Triaged
+             * @description Offers triaged now, with a suggested discard or without.
+             */
+            triaged: number;
+        };
+        /** TriagerRead */
+        TriagerRead: {
+            /**
+             * Is Available
+             * @description Whether an offer triager is configured.
+             */
+            is_available: boolean;
         };
         /**
          * ValidationProblemRead
@@ -2162,6 +2278,11 @@ export interface components {
              */
             losses: number | null;
             /**
+             * Missed Discards
+             * @description Of those, the ones without a suggested discard.
+             */
+            missed_discards: number;
+            /**
              * Precision
              * @description promoted_from_pending ÷ decided, in %.
              */
@@ -2185,6 +2306,31 @@ export interface components {
              * Format: date
              */
             starts_on: string;
+            /**
+             * Suggested Decided
+             * @description Triaged offers with a suggested discard that were promoted or discarded.
+             */
+            suggested_decided: number;
+            /**
+             * Suggested Discarded
+             * @description Of those, the ones discarded.
+             */
+            suggested_discarded: number;
+            /**
+             * Triaged Discarded
+             * @description Triaged offers discarded, expired ones left out.
+             */
+            triaged_discarded: number;
+            /**
+             * Triager Misses
+             * @description missed_discards ÷ triaged_discarded, in %.
+             */
+            triager_misses: number | null;
+            /**
+             * Triager Precision
+             * @description suggested_discarded ÷ suggested_decided, in %.
+             */
+            triager_precision: number | null;
         };
         /**
          * WorkMode
@@ -3916,6 +4062,91 @@ export interface operations {
                 };
             };
             /** @description No offer reader is configured (`offer-reader-unavailable`); nothing changed */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+        };
+    };
+    read_offer_triager_api_v1_offers_triager_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriagerRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    triage_offers_api_v1_offers_triages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriageBatchRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+            /** @description No offer triager is configured (`offer-triager-unavailable`); nothing changed */
             503: {
                 headers: {
                     [name: string]: unknown;

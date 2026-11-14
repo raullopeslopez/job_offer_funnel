@@ -2061,6 +2061,17 @@
           "status": {
             "$ref": "#/components/schemas/OfferStatus"
           },
+          "suggested_discard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SuggestedDiscardRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the offer triager suggests, once triaged; null when it had nothing to say or the offer was not triaged."
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -2111,6 +2122,7 @@
           "application_id",
           "review",
           "review_rules",
+          "suggested_discard",
           "watched_company_id",
           "watched_company_name",
           "created_at"
@@ -2527,6 +2539,11 @@
             "description": "rescued \u00f7 reviewed near misses, in %.",
             "title": "Losses"
           },
+          "missed_discards": {
+            "description": "Of those, the ones without a suggested discard.",
+            "title": "Missed Discards",
+            "type": "integer"
+          },
           "precision": {
             "anyOf": [
               {
@@ -2556,6 +2573,45 @@
             "description": "Near misses rescued or rightly filtered.",
             "title": "Reviewed Near Misses",
             "type": "integer"
+          },
+          "suggested_decided": {
+            "description": "Triaged offers with a suggested discard that were promoted or discarded.",
+            "title": "Suggested Decided",
+            "type": "integer"
+          },
+          "suggested_discarded": {
+            "description": "Of those, the ones discarded.",
+            "title": "Suggested Discarded",
+            "type": "integer"
+          },
+          "triaged_discarded": {
+            "description": "Triaged offers discarded, expired ones left out.",
+            "title": "Triaged Discarded",
+            "type": "integer"
+          },
+          "triager_misses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "missed_discards \u00f7 triaged_discarded, in %.",
+            "title": "Triager Misses"
+          },
+          "triager_precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "suggested_discarded \u00f7 suggested_decided, in %.",
+            "title": "Triager Precision"
           }
         },
         "required": [
@@ -2568,7 +2624,13 @@
           "fitting",
           "promoted",
           "applied",
-          "answered"
+          "answered",
+          "suggested_decided",
+          "suggested_discarded",
+          "triager_precision",
+          "triaged_discarded",
+          "missed_discards",
+          "triager_misses"
         ],
         "title": "QualityFiguresRead",
         "type": "object"
@@ -3079,6 +3141,26 @@
         "title": "Stage",
         "type": "string"
       },
+      "SuggestedDiscardRead": {
+        "description": "A discard the offer triager suggests; it is never applied on its own.",
+        "properties": {
+          "evidence": {
+            "description": "With `title_word`, the word of the title (the discard's word); otherwise a sentence of the description.",
+            "title": "Evidence",
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/DiscardReason",
+            "description": "title_word, stack, location, contract or company."
+          }
+        },
+        "required": [
+          "reason",
+          "evidence"
+        ],
+        "title": "SuggestedDiscardRead",
+        "type": "object"
+      },
       "Syntax": {
         "description": "How a job board reads a search.",
         "enum": [
@@ -3192,6 +3274,46 @@
           "note"
         ],
         "title": "TransitionRead",
+        "type": "object"
+      },
+      "TriageBatchRead": {
+        "properties": {
+          "failed": {
+            "description": "Offers the triager did not answer for; left to triage.",
+            "title": "Failed",
+            "type": "integer"
+          },
+          "left": {
+            "description": "Offers still to triage, the failed ones included.",
+            "title": "Left",
+            "type": "integer"
+          },
+          "triaged": {
+            "description": "Offers triaged now, with a suggested discard or without.",
+            "title": "Triaged",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "triaged",
+          "failed",
+          "left"
+        ],
+        "title": "TriageBatchRead",
+        "type": "object"
+      },
+      "TriagerRead": {
+        "properties": {
+          "is_available": {
+            "description": "Whether an offer triager is configured.",
+            "title": "Is Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_available"
+        ],
+        "title": "TriagerRead",
         "type": "object"
       },
       "ValidationProblemRead": {
@@ -3336,6 +3458,11 @@
             "description": "rescued \u00f7 reviewed near misses, in %.",
             "title": "Losses"
           },
+          "missed_discards": {
+            "description": "Of those, the ones without a suggested discard.",
+            "title": "Missed Discards",
+            "type": "integer"
+          },
           "precision": {
             "anyOf": [
               {
@@ -3370,6 +3497,45 @@
             "format": "date",
             "title": "Starts On",
             "type": "string"
+          },
+          "suggested_decided": {
+            "description": "Triaged offers with a suggested discard that were promoted or discarded.",
+            "title": "Suggested Decided",
+            "type": "integer"
+          },
+          "suggested_discarded": {
+            "description": "Of those, the ones discarded.",
+            "title": "Suggested Discarded",
+            "type": "integer"
+          },
+          "triaged_discarded": {
+            "description": "Triaged offers discarded, expired ones left out.",
+            "title": "Triaged Discarded",
+            "type": "integer"
+          },
+          "triager_misses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "missed_discards \u00f7 triaged_discarded, in %.",
+            "title": "Triager Misses"
+          },
+          "triager_precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "suggested_discarded \u00f7 suggested_decided, in %.",
+            "title": "Triager Precision"
           }
         },
         "required": [
@@ -3383,6 +3549,12 @@
           "promoted",
           "applied",
           "answered",
+          "suggested_decided",
+          "suggested_discarded",
+          "triager_precision",
+          "triaged_discarded",
+          "missed_discards",
+          "triager_misses",
           "starts_on"
         ],
         "title": "WeekQualityRead",
@@ -5943,6 +6115,110 @@
           }
         ],
         "summary": "Read Offers",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/triager": {
+      "get": {
+        "description": "Whether the offers can be triaged: without an offer triager the app works as always.",
+        "operationId": "read_offer_triager_api_v1_offers_triager_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriagerRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Offer Triager",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/triages": {
+      "post": {
+        "description": "Have the offer triager compare up to 5 pending imported offers that fit a profile,\nin a single request, with your promoted and discarded offers and its own mistakes. It\nmay suggest discarding each one, with a reason and its evidence; nothing is discarded.\n\nAn offer is triaged once. Call it again while `left` is not 0; the offers the triager\ndoes not answer for are left to triage.",
+        "operationId": "triage_offers_api_v1_offers_triages_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriageBatchRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "No offer triager is configured (`offer-triager-unavailable`); nothing changed"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Triage Offers",
         "tags": [
           "inbox"
         ]

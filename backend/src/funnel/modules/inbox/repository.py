@@ -29,8 +29,10 @@ from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import (
     EXPIRED_REASON,
+    Decision,
     FilterReason,
     FitChange,
+    Mistake,
     OfferFilter,
     OfferStatus,
     ProfileMatch,
@@ -39,6 +41,8 @@ from funnel.modules.inbox.domain import (
     Review,
     ReviewMade,
     Rule,
+    SuggestedDiscard,
+    TriageMistake,
     UnknownJobBoardError,
     UntitledOffer,
     WordHits,
@@ -283,6 +287,8 @@ class OfferRepository:
                 OfferRow.discard_reason,
                 OfferRow.review,
                 OfferRow.review_rules,
+                OfferRow.triaged_at.is_not(None),
+                OfferRow.suggested_discard_reason,
                 OfferRow.application_id,
             ).where(OfferRow.created_at >= since)
         )
@@ -298,6 +304,8 @@ class OfferRepository:
                     discard_reason=discard_reason,
                     review=review,
                     review_rules=[Rule(rule) for rule in review_rules],
+                    is_triaged=is_triaged,
+                    suggested_discard=suggested_discard,
                 ),
                 application_id,
             )
@@ -310,6 +318,8 @@ class OfferRepository:
                 discard_reason,
                 review,
                 review_rules,
+                is_triaged,
+                suggested_discard,
                 application_id,
             ) in rows
         ]
@@ -514,6 +524,88 @@ class ReadingRepository:
                 stable_evidence=reading.stable_evidence,
             )
         )
+        await self._session.flush()
+
+
+_DECIDED_BY_USER = and_(
+    OfferRow.description.is_not(None), OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON)
+)
+_MOST_RECENT = (OfferRow.created_at.desc(), OfferRow.id.desc())
+
+
+class TriageRepository:
+    """What the offer triager is given and what it suggested. Never commits."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def list_untriaged(
+        self, profiles: Sequence[SearchTerms], limit: int
+    ) -> tuple[list[OfferRow], int]:
+        """The most recent pending imported offers that fit a profile and were not triaged,
+        and how many there are in all."""
+        conditions = (
+            OfferRow.status == OfferStatus.PENDING,
+            func.coalesce(OfferRow.description, "") != "",
+            _fits_any(profiles),
+            OfferRow.triaged_at.is_(None),
+        )
+        total = await self._session.scalar(
+            select(func.count()).select_from(OfferRow).where(*conditions)
+        )
+        offers = await self._session.scalars(
+            select(OfferRow).where(*conditions).order_by(*_MOST_RECENT).limit(limit)
+        )
+        return list(offers), total or 0
+
+    async def decisions(self, limit: int) -> list[Decision]:
+        """The last promoted and the last discarded imported offers, expired ones left out."""
+        decisions: list[Decision] = []
+        for status in (OfferStatus.PROMOTED, OfferStatus.DISCARDED):
+            rows = await self._session.execute(
+                select(OfferRow.title, OfferRow.discard_reason, OfferRow.discard_word)
+                .where(OfferRow.status == status, _DECIDED_BY_USER)
+                .order_by(*_MOST_RECENT)
+                .limit(limit)
+            )
+            decisions += [Decision(title, status, reason, word) for title, reason, word in rows]
+        return decisions
+
+    async def mistakes(self, limit: int) -> list[TriageMistake]:
+        """The last suggested discards the user promoted, and the last triaged offers the
+        user discarded with no suggestion."""
+        rejected = await self._session.execute(
+            select(OfferRow.title, OfferRow.suggested_discard_reason)
+            .where(
+                OfferRow.status == OfferStatus.PROMOTED,
+                OfferRow.suggested_discard_reason.is_not(None),
+            )
+            .order_by(*_MOST_RECENT)
+            .limit(limit)
+        )
+        missed = await self._session.scalars(
+            select(OfferRow.title)
+            .where(
+                OfferRow.status == OfferStatus.DISCARDED,
+                _DECIDED_BY_USER,
+                OfferRow.triaged_at.is_not(None),
+                OfferRow.suggested_discard_reason.is_(None),
+            )
+            .order_by(*_MOST_RECENT)
+            .limit(limit)
+        )
+        return [
+            *(
+                TriageMistake(title, Mistake.REJECTED_SUGGESTION, reason)
+                for title, reason in rejected
+            ),
+            *(TriageMistake(title, Mistake.MISSED_DISCARD) for title in missed),
+        ]
+
+    async def save(self, offer: OfferRow, suggestion: SuggestedDiscard | None) -> None:
+        offer.triaged_at = func.now()
+        offer.suggested_discard_reason = None if suggestion is None else suggestion.reason
+        offer.suggested_discard_evidence = None if suggestion is None else suggestion.evidence
         await self._session.flush()
 
 
