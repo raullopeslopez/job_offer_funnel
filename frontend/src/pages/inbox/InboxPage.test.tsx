@@ -53,6 +53,7 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   application_id: null,
   review: null,
   review_rules: [],
+  suggested_discard: null,
   watched_company_id: null,
   watched_company_name: null,
   created_at: new Date().toISOString(),
@@ -175,6 +176,8 @@ function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] 
       HttpResponse.json({ items: profiles, total: profiles.length, limit: 100, offset: 0 }),
     ),
     http.get("/api/v1/offers/frequent-titles", () => HttpResponse.json({ offers: 0, titles: [] })),
+    // Without an offer triager, as the E2E tests; the triage tests make one available.
+    http.get("/api/v1/offers/triager", () => HttpResponse.json({ is_available: false })),
   );
 }
 
@@ -782,5 +785,100 @@ describe("InboxPage frequent titles", () => {
     expect(added).toEqual([
       { search_profile_id: PROFILE_ID, titles: ["Backend Engineer", "Software Engineer, Backend"] },
     ]);
+  });
+});
+
+// specs/ui/inbox.feature, "Triage": the E2E tests cannot reach the offer triager.
+describe("InboxPage triage", () => {
+  /** An available triager answering these batches in order, the last one again after. */
+  function triagerAnswering(...batches: { triaged: number; left: number }[]) {
+    let call = 0;
+    server.use(
+      http.get("/api/v1/offers/triager", () => HttpResponse.json({ is_available: true })),
+      http.post("/api/v1/offers/triages", () => {
+        const batch = batches[Math.min(call, batches.length - 1)];
+        call += 1;
+        return HttpResponse.json({ failed: 0, ...batch }, { status: 201 });
+      }),
+    );
+  }
+
+  it.each([
+    [
+      [
+        { triaged: 5, left: 2 },
+        { triaged: 2, left: 0 },
+      ],
+      "Triaged 7 · 0 left",
+    ],
+    [
+      [
+        { triaged: 3, left: 2 },
+        { triaged: 0, left: 2 },
+      ],
+      "Triaged 3 · 2 left. Try again later.",
+    ],
+  ])("triages batch after batch until none is left or one triages none", async (batches, said) => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("Backend Engineer")]);
+    triagerAnswering(...batches);
+    renderInbox();
+
+    // Act
+    await user.click(await screen.findByRole("button", { name: "Triage with AI" }));
+
+    // Assert
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(said));
+  });
+
+  it.each([
+    [
+      "contract",
+      "Part-time, 20 hours a week",
+      "Suggested discard: Contract — “Part-time, 20 hours a week”",
+    ],
+    ["title_word", "Lead", "Suggested discard: A word in the title — “Lead”"],
+  ] as const)("shows a suggested discard because %s", async (reason, evidence, shown) => {
+    // Arrange
+    inboxWith([
+      offer("Backend Engineer Lead", {
+        company: "Globex",
+        suggested_discard: { reason, evidence },
+      }),
+    ]);
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    expect(within(piece).getByText(shown)).toBeInTheDocument();
+  });
+
+  it.each([
+    ["contract", "Part-time, 20 hours a week", { reason: "contract" }],
+    ["title_word", "Lead", { reason: "title_word", word: "Lead" }],
+  ] as const)("discards as suggested because %s", async (reason, evidence, body) => {
+    // Arrange
+    const user = userEvent.setup();
+    const suggested = offer("Backend Engineer Lead", { suggested_discard: { reason, evidence } });
+    inboxWith([suggested]);
+    const discarded: unknown[] = [];
+    server.use(
+      http.post("/api/v1/offers/:offerId/discard", async ({ params, request }) => {
+        discarded.push({ offerId: params.offerId, ...((await request.json()) as object) });
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderInbox();
+    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+
+    // Act
+    await user.click(within(piece).getByRole("button", { name: "Discard as suggested" }));
+
+    // Assert
+    expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
+    expect(discarded).toEqual([{ offerId: suggested.id, ...body }]);
   });
 });

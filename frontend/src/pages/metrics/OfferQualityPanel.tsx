@@ -88,6 +88,63 @@ function Trend({ values }: { values: (number | null)[] }) {
   );
 }
 
+/** How the offer triager does, once it triaged an offer you decided on; null before. */
+function TriageFigures({ quality }: { quality: Quality }) {
+  const { total, weeks } = quality;
+  if (total.suggested_decided + total.triaged_discarded === 0) return null;
+  const figures = [
+    {
+      label: "Precision",
+      value: formatRate(total.triager_precision),
+      sentence: `${total.suggested_discarded} right of ${total.suggested_decided} suggested discards you decided`,
+      trend: weeks.map((week) => week.triager_precision),
+    },
+    {
+      label: "Misses",
+      value: formatRate(total.triager_misses),
+      sentence: `${total.missed_discards} missed of ${total.triaged_discarded} triaged offers you discarded`,
+      trend: weeks.map((week) => week.triager_misses),
+    },
+  ];
+  return (
+    <Box component="section" aria-labelledby="ai-triage" sx={{ mb: 4 }}>
+      <Typography id="ai-triage" variant="h6" component="h3" gutterBottom>
+        The AI triage
+      </Typography>
+      <Paper
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+          gap: "1px",
+          bgcolor: "divider",
+          overflow: "hidden",
+        }}
+      >
+        {figures.map((figure) => (
+          <Box
+            key={figure.label}
+            sx={{ display: "grid", gap: 1, p: 2, bgcolor: "background.paper" }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {figure.label}
+            </Typography>
+            <Typography
+              component="div"
+              sx={{ fontFamily: mono, fontSize: "1.75rem", fontWeight: 500, lineHeight: 1.1 }}
+            >
+              {figure.value}
+            </Typography>
+            <Trend values={figure.trend} />
+            <Typography variant="caption" color="text.secondary">
+              {figure.sentence}
+            </Typography>
+          </Box>
+        ))}
+      </Paper>
+    </Box>
+  );
+}
+
 function DiscardBars({ reasons }: { reasons: Quality["discard_reasons"] }) {
   if (reasons.length === 0) {
     return <Typography color="text.secondary">No discards in the last 4 weeks.</Typography>;
@@ -180,6 +237,8 @@ export function OfferQualityPanel() {
           </Link>
         ))}
       </Paper>
+
+      <TriageFigures quality={quality.data} />
 
       <CriteriaChanges />
 
