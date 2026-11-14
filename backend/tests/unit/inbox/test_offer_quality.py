@@ -10,6 +10,7 @@ from funnel.modules.inbox.domain import (
     QualityOffer,
     Review,
     Rule,
+    Verdict,
     offer_quality,
     rate,
 )
@@ -117,13 +118,13 @@ def test_real_result_counts_the_stages_reached_by_the_promoted_offers() -> None:
 @pytest.mark.unit
 def test_the_triager_is_judged_by_what_was_done_with_the_triaged_offers() -> None:
     # Arrange
-    suggested: dict[str, Any] = {"is_triaged": True, "suggested_discard": DiscardReason.STACK}
+    suggested: dict[str, Any] = {"verdict": Verdict.KO, "suggested_discard": DiscardReason.STACK}
     offers = [
         _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.STACK, **suggested),
         _offer(1, OfferStatus.PROMOTED, **suggested),
         _offer(1, **suggested),
         _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.EXPIRED, **suggested),
-        _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.LOCATION, is_triaged=True),
+        _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.LOCATION, verdict=Verdict.OK),
         _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.LOCATION),
     ]
 

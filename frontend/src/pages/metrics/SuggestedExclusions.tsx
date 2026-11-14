@@ -1,57 +1,33 @@
 import { Alert, Box, Button, Typography } from "@mui/material";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../api/client";
-import type { components } from "../../api/schema";
+import {
+  type CriteriaSuggestion,
+  suggestionEffect,
+  useCriteriaSuggestions,
+  useSuggestionChoice,
+} from "../../components/criteriaSuggestions";
 
-type Suggestion = components["schemas"]["CriteriaSuggestionRead"];
-type Choice = "dismiss" | "exclude";
-
-const offers = (count: number) => (count === 1 ? "1 offer" : `${count} offers`);
-
-/** Why a word is suggested and what excluding it would do (specs/ui/metrics.feature). */
-export function suggestionReason(suggestion: Suggestion): string {
-  const { preview } = suggestion;
-  const promoted =
-    preview.promoted_filtered === 0
-      ? "loses none you promoted"
-      : `would have filtered ${preview.promoted_filtered} you promoted`;
-  return `In ${suggestion.offer_ids.length} of the ${suggestion.discarded}. Takes ${offers(preview.leaving_pending)} out of Pending, ${promoted}.`;
+/** Why a word is suggested and what excluding it would do (specs/ui/metrics.feature): the
+ * counted ones say in how many discarded offers it is, the triager's say its why. */
+export function suggestionReason(suggestion: CriteriaSuggestion): string {
+  const why =
+    suggestion.source === "triager"
+      ? suggestion.why
+      : `In ${suggestion.offer_ids.length} of the ${suggestion.discarded}.`;
+  return `${why} ${suggestionEffect(suggestion)}`;
 }
 
-// Counted from your decisions (specs/inbox/criteria_suggestions.feature); none is applied
-// until "Exclude it", which is a logged criteria change.
+/** "Suggested" when counted, "AI suggests" when the offer triager suggests it. */
+export function suggestionTitle({ source, word, search_profile_name }: CriteriaSuggestion): string {
+  const who = source === "triager" ? "AI suggests" : "Suggested";
+  return `${who}: exclude “${word}” from ${search_profile_name}`;
+}
+
+// Counted from your decisions or suggested by the offer triager
+// (specs/inbox/criteria_suggestions.feature); none is applied until "Exclude it", which is a
+// logged criteria change.
 export function SuggestedExclusions() {
-  const queryClient = useQueryClient();
-  const suggestions = useQuery({
-    queryKey: ["criteria-suggestions"],
-    queryFn: async () => {
-      const { data, error } = await api.GET("/api/v1/criteria-suggestions", {
-        params: { query: { limit: 100 } },
-      });
-      if (error) throw error;
-      return data.items;
-    },
-  });
-  // The API's problem: its title says why the choice was rejected.
-  const choose = useMutation<void, { title: string }, { suggestion: Suggestion; choice: Choice }>({
-    mutationFn: async ({ suggestion, choice }) => {
-      const { search_profile_id, word, excluded_keywords } = suggestion;
-      const { error } =
-        choice === "dismiss"
-          ? await api.POST("/api/v1/criteria-suggestions/dismissals", {
-              body: { search_profile_id, word },
-            })
-          : await api.POST("/api/v1/criteria-changes", {
-              body: { search_profile_id, excluded_keywords },
-            });
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      for (const key of ["criteria-suggestions", "criteria-changes", "offers", "search-profiles"]) {
-        await queryClient.invalidateQueries({ queryKey: [key] });
-      }
-    },
-  });
+  const suggestions = useCriteriaSuggestions();
+  const choose = useSuggestionChoice();
 
   if (!suggestions.data?.length) return null;
   return (
@@ -68,9 +44,7 @@ export function SuggestedExclusions() {
             key={`${suggestion.search_profile_id}-${suggestion.word}`}
             sx={{ py: 1.5, borderTop: 1, borderColor: "divider" }}
           >
-            <Typography variant="subtitle2">
-              Suggested: exclude “{suggestion.word}” from {suggestion.search_profile_name}
-            </Typography>
+            <Typography variant="subtitle2">{suggestionTitle(suggestion)}</Typography>
             <Typography variant="body2" color="text.secondary">
               {suggestionReason(suggestion)}
             </Typography>

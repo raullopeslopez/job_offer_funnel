@@ -90,6 +90,28 @@ def is_near_miss(failed: Sequence[Rule]) -> bool:
     return len(failed) == 1 and Rule.TITLE not in failed
 
 
+class Verdict(StrEnum):
+    """What the offer triager says of an offer: worth the user's time (ok) or not (ko)."""
+
+    OK = "ok"
+    KO = "ko"
+
+
+@dataclass(frozen=True)
+class Triage:
+    """The triager's verdict on an offer, and why in its own words."""
+
+    verdict: Verdict
+    why: str
+
+
+class SuggestionSource(StrEnum):
+    """Where a criteria suggestion comes from: counted from the decisions, or the triager."""
+
+    COUNT = "count"
+    TRIAGER = "triager"
+
+
 class Review(StrEnum):
     """What the user did with a filtered offer: promoted it, or left it filtered."""
 
@@ -430,10 +452,33 @@ class SuggestedDiscard:
 
 @dataclass(frozen=True)
 class TriageAnswer:
-    """What the triager says of an offer, not trusted yet; no reason is nothing to say."""
+    """What the triager says of an offer, not trusted yet: its verdict and why and, for a
+    KO, a discard reason and its evidence."""
 
+    verdict: str | None = None
+    why: str | None = None
     reason: str | None = None
     evidence: str | None = None
+
+
+@dataclass(frozen=True)
+class TriagerSuggestion:
+    """A word the triager suggests excluding from a profile (by its name), with why and the
+    offers of the batch it comes from (by their position); not trusted yet."""
+
+    profile: str
+    word: str
+    why: str
+    offers: Sequence[int]
+
+
+@dataclass(frozen=True)
+class TriageReply:
+    """What the triager answers for a batch: by offer position (an offer it did not answer
+    for is missing), and the exclusions it suggests."""
+
+    answers: Mapping[int, TriageAnswer]
+    suggestions: Sequence[TriagerSuggestion] = ()
 
 
 class Mistake(StrEnum):
@@ -467,11 +512,23 @@ class TriageContext:
     mistakes: Sequence[TriageMistake]
 
 
+WHY_LENGTH: Final = 200
+
+
+def kept_triage(answer: TriageAnswer) -> Triage | None:
+    """The verdict and why, if the verdict is OK or KO; the why is cut to 200 characters.
+    None is no answer: the offer is left to be triaged again."""
+    verdict = next((v for v in Verdict if v == (answer.verdict or "").lower()), None)
+    if verdict is None:
+        return None
+    return Triage(verdict, " ".join((answer.why or "").split())[:WHY_LENGTH])
+
+
 def kept_suggestion(answer: TriageAnswer, offer: OfferText) -> SuggestedDiscard | None:
-    """The suggested discard, if its reason is of the list and its evidence holds: a word of
-    the title for title_word, a sentence of the description for the others."""
+    """The suggested discard of a KO, if its reason is of the list and its evidence holds: a
+    word of the title for title_word, a sentence of the description for the others."""
     reason = next((r for r in SUGGESTED_REASONS if r == answer.reason), None)
-    if reason is None:
+    if reason is None or (answer.verdict or "").lower() != Verdict.KO:
         return None
     if reason is DiscardReason.TITLE_WORD:
         word = (answer.evidence or "").strip()
@@ -695,8 +752,12 @@ class QualityOffer:
     review: Review | None = None
     review_rules: Sequence[Rule] = ()
     stage: Stage | None = None
-    is_triaged: bool = False
+    verdict: Verdict | None = None
     suggested_discard: DiscardReason | None = None
+
+    @property
+    def is_triaged(self) -> bool:
+        return self.verdict is not None
 
     @property
     def is_decided_from_pending(self) -> bool:
@@ -784,7 +845,7 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
     ]
     suggested_discarded = sum(offer.is_discarded for offer in suggested)
     triaged_discarded = [offer for offer in triaged if offer.is_discarded]
-    missed = sum(offer.suggested_discard is None for offer in triaged_discarded)
+    missed = sum(offer.verdict is Verdict.OK for offer in triaged_discarded)
     return QualityFigures(
         decided=len(decided),
         promoted_from_pending=promoted_from_pending,

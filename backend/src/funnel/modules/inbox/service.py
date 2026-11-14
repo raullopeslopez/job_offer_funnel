@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime, time
 from typing import Any
@@ -13,7 +13,13 @@ from funnel.modules.applications.domain import Channel
 from funnel.modules.applications.schemas import ApplicationCreate
 from funnel.modules.applications.service import ApplicationService
 from funnel.modules.companies.service import CompanyService
-from funnel.modules.discovery.domain import Feed, ImportMethod, WorkMode, next_import_at
+from funnel.modules.discovery.domain import (
+    Feed,
+    ImportMethod,
+    SearchTerms,
+    WorkMode,
+    next_import_at,
+)
 from funnel.modules.discovery.service import JobBoardService, SearchProfileService
 from funnel.modules.inbox.alerts import read_alert
 from funnel.modules.inbox.ats import BoardReader
@@ -23,6 +29,7 @@ from funnel.modules.inbox.domain import (
     TRIAGE_BATCH_SIZE,
     TRIAGE_DECISIONS,
     TRIAGE_MISTAKES,
+    WHY_LENGTH,
     BoardUnavailableError,
     CriteriaPreview,
     DiscardReason,
@@ -47,7 +54,11 @@ from funnel.modules.inbox.domain import (
     ProfileRule,
     Review,
     RuleChangedSinceError,
+    SuggestionSource,
     TriageContext,
+    TriageReply,
+    TriagerSuggestion,
+    Verdict,
     WordNotInTitleError,
     can_exclude,
     count_filtered,
@@ -56,6 +67,7 @@ from funnel.modules.inbox.domain import (
     frequent_titles,
     is_title_word,
     kept_suggestion,
+    kept_triage,
     next_status,
     offer_quality,
     plain_text,
@@ -284,6 +296,8 @@ class CriteriaSuggestion:
     offer_ids: list[UUID]
     discarded: int
     preview: CriteriaPreview
+    source: SuggestionSource = SuggestionSource.COUNT
+    why: str | None = None
 
 
 class CriteriaSuggestionService:
@@ -324,6 +338,41 @@ class CriteriaSuggestionService:
                             preview,
                         )
                     )
+        return suggestions + await self._from_triager(suggestions, dismissed, len(discarded))
+
+    async def _from_triager(
+        self,
+        counted: Sequence[CriteriaSuggestion],
+        dismissed: Collection[tuple[UUID, str]],
+        discarded: int,
+    ) -> list[CriteriaSuggestion]:
+        """The triager's suggestions that still hold the rule and were not counted too."""
+        terms_by_id = {t.search_profile_id: t for t in await self._profiles.all_terms()}
+        seen = {(s.search_profile_id, s.word.casefold()) for s in counted}
+        suggestions: list[CriteriaSuggestion] = []
+        for row in await self._repository.triager_suggestions():
+            key = (row.search_profile_id, row.word.casefold())
+            terms = terms_by_id.get(row.search_profile_id)
+            if key in seen or key in dismissed or terms is None or not can_exclude(row.word, terms):
+                continue
+            excluding = [*terms.excluded_keywords, row.word]
+            preview = await self._offers.preview(
+                row.search_profile_id, {"excluded_keywords": excluding}
+            )
+            if preview.promoted_filtered == 0 and preview.discarded_filtered > 0:
+                suggestions.append(
+                    CriteriaSuggestion(
+                        row.search_profile_id,
+                        terms.name,
+                        row.word,
+                        excluding,
+                        list(row.offer_ids),
+                        discarded,
+                        preview,
+                        SuggestionSource.TRIAGER,
+                        row.why,
+                    )
+                )
         return suggestions
 
     async def dismiss(self, profile_id: UUID, word: str) -> None:
@@ -391,18 +440,24 @@ class TriageBatch:
     triaged: int
     failed: int
     left: int
+    ok: int = 0
+    ko: int = 0
 
 
 class OfferTriageService:
     """Has the offer triager compare the pending offers with the user's decisions."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917  # one collaborator each, wired in the router
         self,
         triages: TriageRepository,
+        suggestions: SuggestionRepository,
+        offers: OfferService,
         profiles: SearchProfileService,
         triager: OfferTriager | None,
     ) -> None:
         self._triages = triages
+        self._suggestions = suggestions
+        self._offers = offers
         self._profiles = profiles
         self._triager = triager
 
@@ -427,15 +482,66 @@ class OfferTriageService:
             for offer in offers
         ]
         try:
-            answers = await self._triager.triage(texts, context)
+            reply = await self._triager.triage(texts, context)
         except OfferTriagerError as error:
             # Left untriaged: the next triage tries them again.
             _logger.warning("offer_triage_failed", offers=len(offers), error=str(error))
-            answers = {}
-        for number, answer in answers.items():
-            await self._triages.save(offers[number], kept_suggestion(answer, texts[number]))
-        triaged = len(answers)
-        return TriageBatch(triaged=triaged, failed=len(offers) - triaged, left=total - triaged)
+            reply = TriageReply({})
+        verdicts: dict[int, Verdict] = {}
+        for number, answer in reply.answers.items():
+            triage = kept_triage(answer)
+            if triage is not None:
+                verdicts[number] = triage.verdict
+                discard = kept_suggestion(answer, texts[number])
+                await self._triages.save(offers[number], triage, discard)
+        for suggestion in reply.suggestions:
+            await self._keep(suggestion, profiles, offers, texts, verdicts)
+        ko = sum(verdict is Verdict.KO for verdict in verdicts.values())
+        triaged = len(verdicts)
+        return TriageBatch(
+            triaged=triaged,
+            failed=len(offers) - triaged,
+            left=total - triaged,
+            ok=triaged - ko,
+            ko=ko,
+        )
+
+    async def _keep(  # noqa: PLR0913, PLR0917  # what the batch knows of each offer
+        self,
+        suggestion: TriagerSuggestion,
+        profiles: Sequence[SearchTerms],
+        offers: Sequence[OfferRow],
+        texts: Sequence[OfferText],
+        verdicts: Mapping[int, Verdict],
+    ) -> None:
+        """Keep a suggested exclusion if it comes from KO offers with the word and holds the
+        rule: it would filter no promoted offer and at least one discarded."""
+        word = suggestion.word.strip()
+        terms = next(
+            (t for t in profiles if t.name.casefold() == suggestion.profile.casefold()), None
+        )
+        from_offers = [
+            offers[number].id
+            for number in dict.fromkeys(suggestion.offers)
+            if verdicts.get(number) is Verdict.KO
+            and is_title_word(word, f"{texts[number].title}\n{texts[number].description}")
+        ]
+        if not word or terms is None or not from_offers or not can_exclude(word, terms):
+            return
+        assert terms.search_profile_id is not None  # all_terms reads saved profiles
+        if (terms.search_profile_id, word.casefold()) in await self._suggestions.dismissed():
+            return
+        excluding = [*terms.excluded_keywords, word]
+        preview = await self._offers.preview(
+            terms.search_profile_id, {"excluded_keywords": excluding}
+        )
+        if preview.promoted_filtered == 0 and preview.discarded_filtered > 0:
+            await self._suggestions.keep_triager_suggestion(
+                terms.search_profile_id,
+                word,
+                " ".join(suggestion.why.split())[:WHY_LENGTH],
+                from_offers,
+            )
 
 
 @dataclass(frozen=True)

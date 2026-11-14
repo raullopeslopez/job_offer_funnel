@@ -12,7 +12,7 @@ from pytest_bdd import given, parsers, scenarios, then, when
 from support.clock import FixedClock
 
 from funnel.core.clock import get_clock
-from funnel.modules.inbox.domain import OfferText, TriageAnswer, TriageContext
+from funnel.modules.inbox.domain import OfferText, TriageAnswer, TriageContext, TriageReply
 from funnel.modules.inbox.router import get_feed_client, get_offer_triager
 
 pytestmark = pytest.mark.bdd
@@ -48,18 +48,17 @@ def state() -> ScenarioState:
 
 
 class FakeOfferTriager:
-    """Answers what the scenario says; an offer it knows nothing about has nothing to say."""
+    """Answers what the scenario says; an offer it knows nothing about is OK."""
 
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
 
-    async def triage(
-        self, offers: Sequence[OfferText], _context: TriageContext
-    ) -> Mapping[int, TriageAnswer]:
-        return {
-            number: self._state.answers.get(offer.company, TriageAnswer())
+    async def triage(self, offers: Sequence[OfferText], _context: TriageContext) -> TriageReply:
+        answers: Mapping[int, TriageAnswer] = {
+            number: self._state.answers.get(offer.company, TriageAnswer("ok", "Fits."))
             for number, offer in enumerate(offers)
         }
+        return TriageReply(answers, [])
 
 
 @pytest.fixture(autouse=True)
@@ -181,13 +180,21 @@ def given_moved(client: TestClient, company: str, stage: str) -> None:
 
 
 @given(
-    parsers.parse(
-        'the offer triager answers for the offer of "{company}" with the reason "{reason}" '
-        'and the evidence "{evidence}"'
+    parsers.re(
+        r'the offer triager says the offer of "(?P<company>[^"]+)" is (?P<verdict>OK|KO)'
+        r'(?: because "(?P<why>[^"]*)")?'
+        r'(?:, with the reason "(?P<reason>[^"]+)" and the evidence "(?P<evidence>[^"]+)")?$'
     )
 )
-def given_answer(state: ScenarioState, company: str, reason: str, evidence: str) -> None:
-    state.answers[company] = TriageAnswer(reason=reason, evidence=evidence)
+def given_answer(  # noqa: PLR0913, PLR0917  # one per part of the step
+    state: ScenarioState,
+    company: str,
+    verdict: str,
+    why: str | None,
+    reason: str | None,
+    evidence: str | None,
+) -> None:
+    state.answers[company] = TriageAnswer(verdict.lower(), why or "Why.", reason, evidence)
 
 
 @given("I triaged the offers")

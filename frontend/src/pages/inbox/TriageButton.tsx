@@ -3,11 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../../api/client";
 
-type Progress = { triaged: number; left: number; isStopped: boolean };
+type Progress = { triaged: number; ok: number; ko: number; left: number; isStopped: boolean };
 
-// "Triage with AI" (specs/ui/inbox.feature): batch after batch until none is left, and it
-// stops when a batch triages none (the triager's limits, or it failed on all of them).
-// Without an offer triager it does not show.
+// "Triage with AI" (specs/ui/inbox.feature): batch after batch until none is left, saying
+// how many are OK and KO, and it stops when a batch triages none (the triager's limits, or
+// it failed on all of them). Without an offer triager it does not show.
 export function TriageButton() {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -23,14 +23,16 @@ export function TriageButton() {
 
   const triage = useMutation({
     mutationFn: async () => {
-      let triaged = 0;
+      let [triaged, ok, ko] = [0, 0, 0];
       for (;;) {
         const { data, error } = await api.POST("/api/v1/offers/triages");
         if (error) throw error;
-        triaged += data.triaged;
+        [triaged, ok, ko] = [triaged + data.triaged, ok + data.ok, ko + data.ko];
         const isStopped = data.triaged === 0 && data.left > 0;
-        setProgress({ triaged, left: data.left, isStopped });
-        await queryClient.invalidateQueries({ queryKey: ["offers"], exact: false });
+        setProgress({ triaged, ok, ko, left: data.left, isStopped });
+        for (const key of ["offers", "criteria-suggestions"]) {
+          await queryClient.invalidateQueries({ queryKey: [key], exact: false });
+        }
         if (data.left === 0 || isStopped) return;
       }
     },
@@ -46,7 +48,7 @@ export function TriageButton() {
       )}
       {progress && (
         <Typography variant="body2" color="text.secondary" role="status">
-          Triaged {progress.triaged} · {progress.left} left
+          Triaged {progress.triaged} · {progress.ok} OK · {progress.ko} KO · {progress.left} left
           {progress.isStopped ? ". Try again later." : ""}
         </Typography>
       )}

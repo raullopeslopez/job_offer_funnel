@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     String,
     Text,
+    Uuid,
     column,
     func,
     select,
@@ -37,12 +38,15 @@ from funnel.modules.inbox.domain import (
     ProfileRule,
     Review,
     SuggestedDiscard,
+    Triage,
+    Verdict,
 )
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
 UNIQUE_READING_INDEX = "uq_offer_readings_offer_id_location"
 UNIQUE_DISMISSED_INDEX = "uq_dismissed_suggestions_profile_lower_word"
+UNIQUE_TRIAGER_SUGGESTION_INDEX = "uq_triager_suggestions_profile_lower_word"
 # Their violation means "the job board does not exist": the repository translates it.
 JOB_BOARD_FOREIGN_KEY = "fk_offers_job_board_id_job_boards"
 
@@ -104,6 +108,31 @@ class DismissedSuggestionRow(Base):
     )
     word: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class TriagerSuggestionRow(Base):
+    """A word the offer triager suggested excluding from a profile, with why and the offers
+    it comes from; listed while it holds the rule (specs/inbox/offer_triages.feature)."""
+
+    __tablename__ = "triager_suggestions"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
+    search_profile_id: Mapped[UUID] = mapped_column(
+        ForeignKey("search_profiles.id", ondelete="CASCADE")
+    )
+    word: Mapped[str] = mapped_column(String(200))
+    why: Mapped[str] = mapped_column(Text)
+    offer_ids: Mapped[list[UUID]] = mapped_column(ARRAY(Uuid))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# Once per profile and word, ignoring case, like the dismissed ones.
+Index(
+    UNIQUE_TRIAGER_SUGGESTION_INDEX,
+    TriagerSuggestionRow.search_profile_id,
+    func.lower(TriagerSuggestionRow.word),
+    unique=True,
+)
 
 
 # Once per profile and word, ignoring case; search_profile_id leads it, so it also serves
@@ -195,8 +224,11 @@ class OfferRow(Base):
     watched_company_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True
     )
-    # Set once the offer triager has seen it, with the discard it suggested, if any.
+    # Set once the offer triager has seen it: its verdict and why, and the discard it
+    # suggested, if any.
     triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    verdict: Mapped[Verdict | None] = mapped_column(_enum_column_type(Verdict, "verdict"))
+    verdict_why: Mapped[str | None] = mapped_column(Text)
     suggested_discard_reason: Mapped[DiscardReason | None] = mapped_column(
         _enum_column_type(DiscardReason, "suggested_discard_reason")
     )
@@ -218,6 +250,11 @@ class OfferRow(Base):
     readings: Mapped[list[OfferReadingRow]] = relationship(
         lazy="selectin", order_by=(OfferReadingRow.created_at, OfferReadingRow.id), viewonly=True
     )
+
+    @property
+    def triage(self) -> Triage | None:
+        verdict, why = self.verdict, self.verdict_why
+        return None if verdict is None or why is None else Triage(verdict, why)
 
     @property
     def suggested_discard(self) -> SuggestedDiscard | None:

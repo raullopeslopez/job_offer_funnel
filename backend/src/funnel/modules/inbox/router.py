@@ -142,10 +142,16 @@ def get_offer_triager(
 
 
 def get_offer_triage_service(
-    session: SessionDep, triager: Annotated[OfferTriager | None, Depends(get_offer_triager)]
+    session: SessionDep,
+    offers: Annotated[OfferService, Depends(get_offer_service)],
+    triager: Annotated[OfferTriager | None, Depends(get_offer_triager)],
 ) -> OfferTriageService:
     return OfferTriageService(
-        TriageRepository(session), build_search_profile_service(session), triager
+        TriageRepository(session),
+        SuggestionRepository(session),
+        offers,
+        build_search_profile_service(session),
+        triager,
     )
 
 
@@ -247,13 +253,17 @@ async def read_offer_triager(service: TriageService) -> TriagerRead:
 async def triage_offers(service: TriageService) -> TriageBatchRead:
     """Have the offer triager compare up to 5 pending imported offers that fit a profile,
     in a single request, with your promoted and discarded offers and its own mistakes. It
-    may suggest discarding each one, with a reason and its evidence; nothing is discarded.
+    marks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,
+    with a reason and its evidence. It may also suggest excluding a word from a profile,
+    which joins the criteria suggestions if it holds the rule. Nothing is applied.
 
     An offer is triaged once. Call it again while `left` is not 0; the offers the triager
     does not answer for are left to triage.
     """
     batch = await service.triage_pending()
-    return TriageBatchRead(triaged=batch.triaged, failed=batch.failed, left=batch.left)
+    return TriageBatchRead(
+        triaged=batch.triaged, ok=batch.ok, ko=batch.ko, failed=batch.failed, left=batch.left
+    )
 
 
 @offers_router.get("/filtered-counts")
@@ -706,7 +716,8 @@ SuggestionService = Annotated[CriteriaSuggestionService, Depends(get_suggestion_
 async def list_criteria_suggestions(
     page: Annotated[PageParams, Depends(get_page_params)], service: SuggestionService
 ) -> Page[CriteriaSuggestionRead]:
-    """Words to exclude, counted from the discarded and promoted offers; never applied."""
+    """Words to exclude, counted from the discarded and promoted offers or suggested by the
+    offer triager; never applied."""
     suggestions = await service.list_all()
     return Page(
         items=[
