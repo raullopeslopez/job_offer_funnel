@@ -273,7 +273,7 @@ class CriteriaSuggestionRead(BaseModel):
     why: str | None = Field(description="The triager's why; null for a counted suggestion.")
     rule: ProfileRule = Field(
         description="The rule it changes: `excluded_keywords` (exclude a word, or stop "
-        "excluding it), `keywords` (add one) or `work_modes` (accept one)."
+        "excluding it), `keywords` (stop asking for one) or `work_modes` (accept one)."
     )
     word: str = Field(description="The word or work mode it adds or takes out.")
     after: RuleValue = Field(description="The rule's value with the change: the change to make.")

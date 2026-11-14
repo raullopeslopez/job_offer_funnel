@@ -749,7 +749,7 @@ async def dismiss_criteria_suggestion(
 ) -> DismissalRead:
     """ "Not now": the change of that word in that rule is not suggested again for the
     profile. Saying it twice is once."""
-    await service.dismiss(dismissal.search_profile_id, dismissal.word)
+    await service.dismiss(dismissal.search_profile_id, dismissal.rule, dismissal.word)
     return DismissalRead(
         search_profile_id=dismissal.search_profile_id, rule=dismissal.rule, word=dismissal.word
     )

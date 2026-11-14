@@ -156,7 +156,9 @@ def _suggestion(client: TestClient, word: str, profile: str) -> dict[str, Any] |
         (
             s
             for s in _suggestions(client)
-            if s["word"].casefold() == word.casefold() and s["search_profile_name"] == profile
+            if s["word"].casefold() == word.casefold()
+            and s["search_profile_name"] == profile
+            and s["rule"] == "excluded_keywords"
         ),
         None,
     )
@@ -359,7 +361,7 @@ def when_accept(client: TestClient, state: ScenarioState, company: str) -> None:
     suggestion = next(s for s in _suggestions(client) if offer_id in s["offer_ids"])
     body = {
         "search_profile_id": suggestion["search_profile_id"],
-        "excluded_keywords": suggestion["excluded_keywords"],
+        suggestion["rule"]: suggestion["after"],
         "offer_id": offer_id,
     }
     state.response = client.post("/api/v1/criteria-changes", json=body)

@@ -19,8 +19,7 @@ Feature: Near miss triages
   An OK near miss may carry a suggestion to relax the rule that filtered it, for its
   reference profile:
   - excluded: stop excluding the word that filtered it;
-  - keywords: add a keyword, a word the triager gives that is in the offer's title or
-    description;
+  - keywords: stop asking for the keywords it lacks (a profile asks for all of them);
   - work_mode: accept the work mode its reading says.
   Location and stable are not relaxed: the offer can only be rescued. A suggestion is
   kept only if it holds the rule for relaxing a criterion: against the imported offers,
@@ -77,25 +76,25 @@ Feature: Near miss triages
   # --- Relaxing a rule ---
 
   Scenario Outline: An OK near miss suggests relaxing the rule that filtered it
-    Given the offer triager says the offer of "<company>" is OK because "Worth it."<keyword>
+    Given the offer triager says the offer of "<company>" is OK because "Worth it."
     When I triage the offers
     Then the criteria suggestions include <change> in "Backend", from the triager because "Worth it."
     And it comes from the offer of "<company>"
     And it would bring 1 offer into Pending
 
     Examples:
-      | company | keyword                             | change                        |
-      | Initech |                                     | to stop excluding "Senior"    |
-      | Globex  | , suggesting the keyword "payments" | to add the keyword "payments" |
+      | company | change                                  |
+      | Initech | to stop excluding "Senior"              |
+      | Globex  | to stop asking for the keyword "Python" |
 
   Scenario: An OK near miss filtered by its work mode suggests accepting that work mode
     Given a search profile named "Remote" with:
       | titles     | Platform Engineer |
       | work_modes | remote            |
+    And the offer reader reads the offer of "Wayne" as "hybrid"
     And the job board "Remote OK" was imported with:
       | title             | company | description               | url                    |
       | Platform Engineer | Wayne   | Hybrid, two days on site. | https://remoteok.com/5 |
-    And the offer of "Wayne" was read as "hybrid" for the profile "Remote"
     And the offer triager says the offer of "Wayne" is OK because "Worth it."
     When I triage the offers
     Then the criteria suggestions include to accept the work mode "hybrid" in "Remote", from the triager because "Worth it."
@@ -106,15 +105,10 @@ Feature: Near miss triages
     When I triage the offers
     Then the criteria suggestions include nothing from the offer of "Initech"
 
-  Scenario Outline: A KO near miss, or a keyword that is not in the offer, suggests nothing
-    Given the offer triager says the offer of "<company>" is <verdict>
+  Scenario: A KO near miss suggests nothing
+    Given the offer triager says the offer of "Initech" is KO because "You discard senior roles."
     When I triage the offers
-    Then the criteria suggestions include nothing from the offer of "<company>"
-
-    Examples:
-      | company | verdict                                               |
-      | Initech | KO because "You discard senior roles."                |
-      | Globex  | OK because "Worth it.", suggesting the keyword "Rust" |
+    Then the criteria suggestions include nothing from the offer of "Initech"
 
   Scenario: "Not now" hides a suggestion to relax a rule
     Given the offer triager says the offer of "Initech" is OK because "Worth it."

@@ -1267,7 +1267,7 @@ export interface components {
             offer_ids: string[];
             /** @description What excluding the word would do. */
             preview: components["schemas"]["CriteriaPreviewRead"];
-            /** @description The rule it changes: `excluded_keywords` (exclude a word, or stop excluding it), `keywords` (add one) or `work_modes` (accept one). */
+            /** @description The rule it changes: `excluded_keywords` (exclude a word, or stop excluding it), `keywords` (stop asking for one) or `work_modes` (accept one). */
             rule: components["schemas"]["ProfileRule"];
             /**
              * Search Profile Id

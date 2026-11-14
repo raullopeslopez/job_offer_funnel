@@ -138,6 +138,7 @@ Feature: Offer quality
     And the offer triager says the offers of "Hooli" and "Wayne" are OK
     And the offer triager says the offer of "Umbrella" is KO because "Not for you."
     And I triaged the offers
+    And I triaged the offers again, past the first 5
     And I promoted the offer of "Hooli"
     And I marked the offer of "Wayne" as rightly filtered
     And I promoted the offer of "Umbrella"

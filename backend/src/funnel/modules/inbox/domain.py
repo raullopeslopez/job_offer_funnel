@@ -165,7 +165,7 @@ class CriteriaPreview:
     leaving_pending: int
     promoted_filtered: int
     discarded_filtered: int
-    discarded_fitting: int = 0
+    discarded_fitting: int
 
 
 def preview_criteria(changes: Iterable[FitChange]) -> CriteriaPreview:
@@ -178,6 +178,7 @@ def preview_criteria(changes: Iterable[FitChange]) -> CriteriaPreview:
         leaving_pending=counts[OfferStatus.PENDING, False],
         promoted_filtered=counts[OfferStatus.PROMOTED, False],
         discarded_filtered=counts[OfferStatus.DISCARDED, False],
+        discarded_fitting=counts[OfferStatus.DISCARDED, True],
     )
 
 
@@ -462,8 +463,6 @@ class TriageAnswer:
     why: str | None = None
     reason: str | None = None
     evidence: str | None = None
-    # For an OK near miss filtered by its keywords: a word of the offer to add as one.
-    keyword: str | None = None
 
 
 @dataclass(frozen=True)
@@ -540,6 +539,69 @@ def kept_suggestion(answer: TriageAnswer, offer: OfferText) -> SuggestedDiscard 
         return SuggestedDiscard(reason, word) if word and is_title_word(word, offer.title) else None
     quote = _quoted(answer.evidence, offer.description)
     return None if quote is None else SuggestedDiscard(reason, quote)
+
+
+# --- Suggested criteria changes of the triager (specs/inbox/offer_triages.feature and
+# specs/inbox/near_miss_triages.feature) ---
+
+
+def _has(words: Iterable[str], word: str) -> bool:
+    return word.casefold() in {w.casefold() for w in words}
+
+
+def _values(terms: SearchTerms, rule: ProfileRule) -> list[str]:
+    return [str(value) for value in getattr(terms, rule)]
+
+
+def rule_after(terms: SearchTerms, rule: ProfileRule, word: str) -> list[str]:
+    """The rule's value with the change: the word comes out if the rule has it (an excluded
+    word or a keyword); otherwise it goes in (a word to exclude, or a work mode)."""
+    current = _values(terms, rule)
+    if _has(current, word):
+        return [w for w in current if w.casefold() != word.casefold()]
+    return [*current, word]
+
+
+def is_relaxing(terms: SearchTerms, rule: ProfileRule, word: str) -> bool:
+    """Whether the change lets more offers in: all but excluding a new word."""
+    return rule is not ProfileRule.EXCLUDED_KEYWORDS or _has(terms.excluded_keywords, word)
+
+
+def can_change(terms: SearchTerms, rule: ProfileRule, word: str) -> bool:
+    """Exclude a word the profile does not look for, or stop excluding one; stop asking for
+    a keyword it asks for; accept a work mode it does not accept yet."""
+    has = _has(_values(terms, rule), word)
+    if rule is ProfileRule.EXCLUDED_KEYWORDS:
+        return has or can_exclude(word, terms)
+    return has if rule is ProfileRule.KEYWORDS else not has
+
+
+def holds_the_rule(preview: CriteriaPreview, *, relaxing: bool) -> bool:
+    """Tightening: it would filter no promoted offer and at least one discarded. Relaxing:
+    it would make no discarded offer fit, and bring at least one into Pending."""
+    if relaxing:
+        return preview.discarded_fitting == 0 and preview.entering_pending > 0
+    return preview.promoted_filtered == 0 and preview.discarded_filtered > 0
+
+
+@dataclass(frozen=True)
+class Relaxing:
+    """Relaxing the rule that filtered a near miss: the word or work mode it changes."""
+
+    rule: ProfileRule
+    word: str
+
+
+def relaxing(check: RuleCheck) -> Relaxing | None:
+    """Stop excluding the word that filtered it, stop asking for the keyword it lacks, or
+    accept its work mode. Location and stable are not relaxed."""
+    if check.rule is Rule.EXCLUDED and check.found:
+        return Relaxing(ProfileRule.EXCLUDED_KEYWORDS, check.found[0])
+    if check.rule is Rule.KEYWORDS and check.missing:
+        return Relaxing(ProfileRule.KEYWORDS, check.missing[0])
+    if check.rule is Rule.WORK_MODE and isinstance(check.value, WorkMode):
+        return Relaxing(ProfileRule.WORK_MODES, check.value)
+    return None
 
 
 class OfferTriagerError(Exception):
@@ -800,12 +862,12 @@ class QualityFigures:
     triaged_discarded: int
     missed_discards: int
     triager_misses: float | None
-    ok_near_misses_reviewed: int = 0
-    ok_near_misses_rescued: int = 0
-    triager_rescues: float | None = None
-    triaged_near_misses_rescued: int = 0
-    lost_rescues: int = 0
-    triager_lost_rescues: float | None = None
+    ok_near_misses_reviewed: int
+    ok_near_misses_rescued: int
+    triager_rescues: float | None
+    triaged_near_misses_rescued: int
+    lost_rescues: int
+    triager_lost_rescues: float | None
 
 
 @dataclass(frozen=True)
@@ -857,6 +919,11 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
     suggested_discarded = sum(offer.is_discarded for offer in suggested)
     triaged_discarded = [offer for offer in triaged if offer.is_discarded]
     missed = sum(offer.verdict is Verdict.OK for offer in triaged_discarded)
+    # The near misses: OK is worth rescuing, KO rightly filtered.
+    ok_reviewed = [o for o in reviewed if o.verdict is Verdict.OK]
+    ok_rescued = sum(o.review is Review.RESCUED for o in ok_reviewed)
+    triaged_rescued = [o for o in reviewed if o.is_triaged and o.review is Review.RESCUED]
+    lost = sum(o.verdict is Verdict.KO for o in triaged_rescued)
     return QualityFigures(
         decided=len(decided),
         promoted_from_pending=promoted_from_pending,
@@ -874,6 +941,12 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
         triaged_discarded=len(triaged_discarded),
         missed_discards=missed,
         triager_misses=rate(missed, len(triaged_discarded)),
+        ok_near_misses_reviewed=len(ok_reviewed),
+        ok_near_misses_rescued=ok_rescued,
+        triager_rescues=rate(ok_rescued, len(ok_reviewed)),
+        triaged_near_misses_rescued=len(triaged_rescued),
+        lost_rescues=lost,
+        triager_lost_rescues=rate(lost, len(triaged_rescued)),
     )
 
 

@@ -1116,7 +1116,7 @@
           },
           "rule": {
             "$ref": "#/components/schemas/ProfileRule",
-            "description": "The rule it changes: `excluded_keywords` (exclude a word, or stop excluding it), `keywords` (add one) or `work_modes` (accept one)."
+            "description": "The rule it changes: `excluded_keywords` (exclude a word, or stop excluding it), `keywords` (stop asking for one) or `work_modes` (accept one)."
           },
           "search_profile_id": {
             "format": "uuid",

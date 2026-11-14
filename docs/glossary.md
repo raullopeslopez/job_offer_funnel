@@ -121,7 +121,7 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Descarte sugerido (veredicto `ko` con motivo y evidencia que se sostiene; nunca se aplica solo) | `suggested discard` |
 | Sugerencia rechazada (descarte sugerido de una oferta que promoví) | `rejected suggestion` |
 | Descarte no visto (oferta que el triador marcó OK y que descarté) | `missed discard` |
-| Relajar una regla (cambio de criterio que deja entrar más ofertas: dejar de excluir una palabra, añadir una palabra clave, aceptar una modalidad) | `relax` |
+| Relajar una regla (cambio de criterio que deja entrar más ofertas: dejar de excluir una palabra, dejar de exigir una palabra clave, aceptar una modalidad) | `relax` |
 | Rescate perdido (casi que el triador marcó KO y que rescaté) | `lost rescue` |
 | Modalidad que dice la oferta | `work_mode` (los mismos valores que en el perfil) |
 | Se puede hacer viviendo en la ubicación del perfil | `admits_location` (sí o no; en las specs `yes` · `no`) |

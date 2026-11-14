@@ -15,8 +15,8 @@ from funnel.core.clock import get_clock
 from funnel.modules.discovery.domain import WorkMode
 from funnel.modules.inbox.domain import (
     OfferText,
-    Reading,
     OfferTriagerError,
+    Reading,
     TriageAnswer,
     TriageContext,
     TriageReply,
@@ -105,7 +105,9 @@ class FakeOfferReader:
         self._state = state
 
     async def read(self, offer: OfferText, _location: str | None) -> Reading:
-        return Reading(work_mode=self._state.readings.get(offer.company))
+        mode = self._state.readings.get(offer.company)
+        # The description is its evidence: a reading is kept only with one.
+        return Reading(work_mode=mode, work_mode_evidence=offer.description if mode else None)
 
 
 @pytest.fixture(autouse=True)
@@ -220,15 +222,15 @@ def given_imported(client: TestClient, state: ScenarioState, datatable: list[lis
     # The feed keeps publishing what it published before: those offers are not expired.
     state.remoteok = [*state.remoteok, *_rows(datatable)]
     _import(client, state)
+    if state.readings:
+        while _ok(client.post(f"{OFFERS_URL}/readings"))["left"]:
+            pass
 
 
-@given(parsers.parse('the offer of "{company}" was read as "{mode}" for the profile "{_name}"'))
-def given_read(
-    client: TestClient, state: ScenarioState, company: str, mode: str, _name: str
-) -> None:
+@given(parsers.parse('the offer reader reads the offer of "{company}" as "{mode}"'))
+def given_reader(state: ScenarioState, company: str, mode: str) -> None:
+    # Imported offers are read as they come in.
     state.readings[company] = WorkMode(mode)
-    while _ok(client.post(f"{OFFERS_URL}/readings"))["left"]:
-        pass
 
 
 @given(
@@ -247,13 +249,11 @@ def given_discarded_imported(
 @given(
     parsers.re(
         r'the offer triager says the offer of "(?P<company>[^"]+)" is (?P<verdict>OK|KO)'
-        r'(?: because "(?P<why>[^"]*)")?(?:, suggesting the keyword "(?P<keyword>[^"]+)")?$'
+        r'(?: because "(?P<why>[^"]*)")?$'
     )
 )
-def given_answer(
-    state: ScenarioState, company: str, verdict: str, why: str | None, keyword: str | None
-) -> None:
-    state.answers[company] = TriageAnswer(verdict.lower(), why or "Why.", keyword=keyword)
+def given_answer(state: ScenarioState, company: str, verdict: str, why: str | None) -> None:
+    state.answers[company] = TriageAnswer(verdict.lower(), why or "Why.")
 
 
 @given(parsers.re(r"the offer triager says the offers of (?P<companies>.+) are OK$"))
@@ -349,12 +349,13 @@ def then_counts(state: ScenarioState, ko: int, ok: int) -> None:
     assert (batch["ko"], batch["to_rescue"]) == (ko, ok)
 
 
-CHANGES = {"stop excluding": "excluded_keywords", "add the keyword": "keywords"}
+CHANGES = {"stop excluding": "excluded_keywords", "stop asking for the keyword": "keywords"}
 
 
 @then(
     parsers.re(
-        r"the criteria suggestions include to (?P<change>stop excluding|add the keyword|accept "
+        r"the criteria suggestions include to (?P<change>stop excluding|stop asking for the "
+        r"keyword|accept "
         r'the work mode) "(?P<word>[^"]+)" in "(?P<profile>[^"]+)", from the triager because '
         r'"(?P<why>[^"]+)"$'
     ),
@@ -367,7 +368,8 @@ def then_includes(
     assert suggestion is not None, _suggestions(client)
     rule = CHANGES.get(change, "work_modes")
     after = _profile(client, profile)[rule]
-    expected = [w for w in after if w != word] if change == "stop excluding" else [*after, word]
+    is_removed = change.startswith("stop")
+    expected = [w for w in after if w != word] if is_removed else [*after, word]
     assert (suggestion["source"], suggestion["why"]) == ("triager", why)
     assert (suggestion["rule"], suggestion["after"]) == (rule, expected)
     return suggestion
