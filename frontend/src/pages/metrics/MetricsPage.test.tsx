@@ -299,6 +299,32 @@ describe("MetricsPage offer quality", () => {
     expect(triage).toHaveTextContent("1 missed of 4 triaged offers you discarded");
   });
 
+  // specs/ui/metrics.feature, "The triager's rescues and lost rescues"
+  it("shows the triager's rescues and lost rescues", async () => {
+    // Arrange
+    qualityOf(
+      figures({
+        ok_near_misses_reviewed: 2,
+        ok_near_misses_rescued: 1,
+        triager_rescues: 50,
+        triaged_near_misses_rescued: 4,
+        lost_rescues: 1,
+        triager_lost_rescues: 25,
+      }),
+    );
+
+    // Act
+    renderPage("/metrics");
+
+    // Assert
+    const triage = await screen.findByRole("region", { name: "The AI triage" });
+    expect(triage).toHaveTextContent("50.0%");
+    expect(triage).toHaveTextContent("1 rescued of 2 OK near misses you reviewed");
+    expect(triage).toHaveTextContent("25.0%");
+    expect(triage).toHaveTextContent("1 marked KO of 4 near misses you rescued");
+    expect(triage).not.toHaveTextContent("suggested discards you decided");
+  });
+
   it("shows no AI triage without triaged offers decided", async () => {
     // Arrange
     qualityOf(figures());

@@ -36,6 +36,8 @@ While the version is `0.x`, the API may change without a major version bump.
   the change would make fit.
 - Offer quality: the triager's rescues (the OK near misses you rescued, of those you
   reviewed) and lost rescues (the near misses you rescued that it marked KO).
+- Metrics: "The AI triage" also shows the triager's rescues and lost rescues, with a bar
+  per week, once it has triaged a near miss you reviewed.
 - Inbox: the triage says how many near misses are "to rescue"; a near miss with a verdict
   shows it, and with a suggestion "Improve the filter" with what it would bring into
   Pending and "Relax it", a criteria change made from that offer.
