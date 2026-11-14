@@ -791,6 +791,7 @@ def _offer_row(
         company=offer.company,
         title=offer.title,
         description=offer.description,
+        location=offer.location,
         duplicate_key=duplicate_key(offer.company, offer.title),
         status=OfferStatus.PENDING,
         job_board_id=job_board_id,

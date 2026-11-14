@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping
 from typing import Final
 
 from funnel.modules.discovery.domain import EmailAlert
-from funnel.modules.inbox.domain import FeedOffer, UnsupportedAlertError
+from funnel.modules.inbox.domain import FeedOffer, UnsupportedAlertError, published_location
 
 # Offers are stored in VARCHAR(200) columns.
 _MAX_TEXT = 200
@@ -25,7 +25,7 @@ def _linkedin(text: str) -> list[FeedOffer]:
     for block in _SEPARATOR.split(body):
         link = _LINKEDIN_JOB.search(block)
         lines = [line.strip() for line in block[: link.start()].splitlines()] if link else []
-        title, company, *_ = [line for line in lines if line] + ["", ""]
+        title, company, location, *_ = [line for line in lines if line] + ["", "", ""]
         if link and title and company:
             offers.append(
                 FeedOffer(
@@ -34,6 +34,7 @@ def _linkedin(text: str) -> list[FeedOffer]:
                     description="",
                     # Without the email's tracking parameters.
                     url=f"https://www.linkedin.com/jobs/view/{link.group(1)}/",
+                    location=published_location(location),
                 )
             )
     return offers

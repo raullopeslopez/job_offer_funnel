@@ -1,6 +1,7 @@
 """One adapter per ATS: read a company's public job board and turn each job into a FeedOffer.
 
-Response shapes checked against the live APIs on 2026-11-08. An unknown board answers 404.
+Response shapes checked against the live APIs on 2026-11-08 (the locations on 2026-11-14).
+An unknown board answers 404.
 """
 
 from collections.abc import Awaitable, Callable, Mapping
@@ -9,11 +10,11 @@ from typing import Any, Final
 
 import httpx2
 
-from funnel.modules.inbox.domain import Ats, FeedOffer
+from funnel.modules.inbox.domain import Ats, FeedOffer, published_location
 
 Reader = Callable[[httpx2.AsyncClient, str], Awaitable[list[Mapping[str, Any]]]]
-# Where each ATS puts the title, description and link of a job.
-Fields = tuple[str, str, str]
+# Where each ATS puts the title, description, link and location of a job.
+Fields = tuple[str, str, str, str]
 
 # Offers are stored in VARCHAR(200) columns.
 _MAX_TEXT = 200
@@ -29,14 +30,21 @@ async def _greenhouse(client: httpx2.AsyncClient, board: str) -> list[Mapping[st
     url = f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs?content=true"
     jobs: list[Mapping[str, Any]] = (await _get_json(client, url))["jobs"]
     # The description comes as escaped HTML: unescaped, its words can be matched.
-    return [{**job, "content": unescape(job.get("content") or "")} for job in jobs]
+    return [
+        {
+            **job,
+            "content": unescape(job.get("content") or ""),
+            "location": (job.get("location") or {}).get("name"),
+        }
+        for job in jobs
+    ]
 
 
 async def _lever(client: httpx2.AsyncClient, board: str) -> list[Mapping[str, Any]]:
     jobs: list[Mapping[str, Any]] = await _get_json(
         client, f"https://api.lever.co/v0/postings/{board}?mode=json"
     )
-    return jobs
+    return [{**job, "location": (job.get("categories") or {}).get("location")} for job in jobs]
 
 
 async def _ashby(client: httpx2.AsyncClient, board: str) -> list[Mapping[str, Any]]:
@@ -45,15 +53,15 @@ async def _ashby(client: httpx2.AsyncClient, board: str) -> list[Mapping[str, An
 
 
 ADAPTERS: Final[Mapping[Ats, tuple[Reader, Fields]]] = {
-    Ats.ASHBY: (_ashby, ("title", "descriptionPlain", "jobUrl")),
-    Ats.GREENHOUSE: (_greenhouse, ("title", "content", "absolute_url")),
-    Ats.LEVER: (_lever, ("text", "descriptionPlain", "hostedUrl")),
+    Ats.ASHBY: (_ashby, ("title", "descriptionPlain", "jobUrl", "location")),
+    Ats.GREENHOUSE: (_greenhouse, ("title", "content", "absolute_url", "location")),
+    Ats.LEVER: (_lever, ("text", "descriptionPlain", "hostedUrl", "location")),
 }
 
 
 def _offer(job: Mapping[str, Any], fields: Fields, company: str) -> FeedOffer | None:
     """None when the job lacks a title or a link."""
-    title, description, url = (job.get(name) for name in fields)
+    title, description, url, location = (job.get(name) for name in fields)
     if not (isinstance(title, str) and title.strip() and isinstance(url, str) and url.strip()):
         return None
     return FeedOffer(
@@ -61,6 +69,7 @@ def _offer(job: Mapping[str, Any], fields: Fields, company: str) -> FeedOffer | 
         company=company,
         description=description if isinstance(description, str) else "",
         url=url.strip(),
+        location=published_location(location),
     )
 
 

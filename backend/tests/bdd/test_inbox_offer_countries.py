@@ -45,7 +45,7 @@ class Job:
 
 
 def _remoteok(jobs: list[Job]) -> object:
-    items = [
+    items: list[dict[str, object]] = [
         {"position": j.title, "company": j.company, "description": "", "url": j.url}
         | ({} if j.location is None else {"location": j.location})
         for j in jobs

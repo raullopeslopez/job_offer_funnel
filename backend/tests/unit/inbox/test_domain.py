@@ -7,6 +7,7 @@ from funnel.modules.inbox.domain import (
     InvalidOfferStatusError,
     OfferAction,
     OfferStatus,
+    countries,
     duplicate_key,
     is_title_word,
     next_status,
@@ -79,3 +80,31 @@ def test_duplicate_key_ignores_case_and_extra_spaces(company: str, title: str) -
 def test_duplicate_key_keeps_company_and_title_apart() -> None:
     # Act / Assert
     assert duplicate_key("Acme Backend", "Engineer") != duplicate_key("Acme", "Backend Engineer")
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        pytest.param("Madrid, Spain", ["Spain"], id="name"),
+        pytest.param("spain", ["Spain"], id="ignores-case"),
+        pytest.param("USA only", ["United States"], id="short-form"),
+        pytest.param("Spain, Portugal", ["Spain", "Portugal"], id="in-order"),
+        pytest.param("Germany, Spain, Germany", ["Germany", "Spain"], id="each-once"),
+        pytest.param("United States, US", ["United States"], id="name-and-short-form-once"),
+        pytest.param("Juba, South Sudan", ["South Sudan"], id="longest-name"),
+        pytest.param("Lagos, Nigeria", ["Nigeria"], id="whole-words"),
+        pytest.param("Guinea-Bissau", ["Guinea-Bissau"], id="hyphenated-name"),
+        pytest.param("Anywhere in the world", ["Worldwide"], id="any-country"),
+        pytest.param("Join us remotely", [], id="short-form-in-lowercase"),
+        pytest.param("San Francisco, CA", [], id="no-known-country"),
+        pytest.param(None, [], id="no-location"),
+    ],
+)
+def test_countries_are_the_known_countries_a_location_names(
+    location: str | None, expected: list[str]
+) -> None:
+    # Act
+    found = countries(location)
+
+    # Assert
+    assert found == expected

@@ -1,7 +1,7 @@
 """Offer status rules, duplicate detection and what a reading of an offer may keep.
 
-Source of truth: specs/inbox/inbox.feature, specs/inbox/job_board_imports.feature and
-specs/inbox/offer_readings.feature.
+Source of truth: specs/inbox/inbox.feature, specs/inbox/job_board_imports.feature,
+specs/inbox/offer_readings.feature and specs/inbox/offer_countries.feature.
 """
 
 import html
@@ -260,6 +260,8 @@ class FeedOffer:
     company: str
     description: str
     url: str
+    # Where the job is, as the source publishes it; None when it publishes none.
+    location: str | None = None
 
 
 # Offers read per request: the offer reader's plan allows about this many a minute.
@@ -999,3 +1001,253 @@ def offer_quality(
         discard_reasons=sorted(reasons.items(), key=lambda item: (-item[1], item[0])),
         sources=_sources(window),
     )
+
+
+# --- Countries of an offer (specs/inbox/offer_countries.feature) ---
+
+# Offers are stored in VARCHAR(200) columns.
+_MAX_LOCATION: Final = 200
+
+
+def published_location(value: object) -> str | None:
+    """The location as a source publishes it: a text, or a list of them (Himalayas).
+    None when it publishes none, or only blanks."""
+    parts = value if isinstance(value, list) else [value]
+    texts = [part.strip() for part in parts if isinstance(part, str) and part.strip()]
+    return ", ".join(texts)[:_MAX_LOCATION] or None
+
+
+WORLDWIDE: Final = "Worldwide"
+# The English short names of the countries: matched as whole words, ignoring case.
+_COUNTRY_NAMES: Final = (
+    "Afghanistan",
+    "Albania",
+    "Algeria",
+    "Andorra",
+    "Angola",
+    "Antigua and Barbuda",
+    "Argentina",
+    "Armenia",
+    "Australia",
+    "Austria",
+    "Azerbaijan",
+    "Bahamas",
+    "Bahrain",
+    "Bangladesh",
+    "Barbados",
+    "Belarus",
+    "Belgium",
+    "Belize",
+    "Benin",
+    "Bhutan",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Botswana",
+    "Brazil",
+    "Brunei",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Cambodia",
+    "Cameroon",
+    "Canada",
+    "Cape Verde",
+    "Central African Republic",
+    "Chad",
+    "Chile",
+    "China",
+    "Colombia",
+    "Comoros",
+    "Congo",
+    "Costa Rica",
+    "Croatia",
+    "Cuba",
+    "Cyprus",
+    "Czech Republic",
+    "Czechia",
+    "Denmark",
+    "Djibouti",
+    "Dominica",
+    "Dominican Republic",
+    "Ecuador",
+    "Egypt",
+    "El Salvador",
+    "Equatorial Guinea",
+    "Eritrea",
+    "Estonia",
+    "Eswatini",
+    "Ethiopia",
+    "Fiji",
+    "Finland",
+    "France",
+    "Gabon",
+    "Gambia",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Greece",
+    "Grenada",
+    "Guatemala",
+    "Guinea",
+    "Guinea-Bissau",
+    "Guyana",
+    "Haiti",
+    "Honduras",
+    "Hong Kong",
+    "Hungary",
+    "Iceland",
+    "India",
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Israel",
+    "Italy",
+    "Ivory Coast",
+    "Jamaica",
+    "Japan",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kiribati",
+    "Kosovo",
+    "Kuwait",
+    "Kyrgyzstan",
+    "Laos",
+    "Latvia",
+    "Lebanon",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Madagascar",
+    "Malawi",
+    "Malaysia",
+    "Maldives",
+    "Mali",
+    "Malta",
+    "Marshall Islands",
+    "Mauritania",
+    "Mauritius",
+    "Mexico",
+    "Micronesia",
+    "Moldova",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Morocco",
+    "Mozambique",
+    "Myanmar",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Netherlands",
+    "New Zealand",
+    "Nicaragua",
+    "Niger",
+    "Nigeria",
+    "North Korea",
+    "North Macedonia",
+    "Norway",
+    "Oman",
+    "Pakistan",
+    "Palau",
+    "Palestine",
+    "Panama",
+    "Papua New Guinea",
+    "Paraguay",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Puerto Rico",
+    "Qatar",
+    "Romania",
+    "Russia",
+    "Rwanda",
+    "Saint Kitts and Nevis",
+    "Saint Lucia",
+    "Saint Vincent and the Grenadines",
+    "Samoa",
+    "San Marino",
+    "Sao Tome and Principe",
+    "Saudi Arabia",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leone",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "Solomon Islands",
+    "Somalia",
+    "South Africa",
+    "South Korea",
+    "South Sudan",
+    "Spain",
+    "Sri Lanka",
+    "Sudan",
+    "Suriname",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Taiwan",
+    "Tajikistan",
+    "Tanzania",
+    "Thailand",
+    "Timor-Leste",
+    "Togo",
+    "Tonga",
+    "Trinidad and Tobago",
+    "Tunisia",
+    "Turkey",
+    "Turkmenistan",
+    "Tuvalu",
+    "Uganda",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "United States",
+    "Uruguay",
+    "Uzbekistan",
+    "Vanuatu",
+    "Vatican City",
+    "Venezuela",
+    "Vietnam",
+    "Yemen",
+    "Zambia",
+    "Zimbabwe",
+)
+# Common short forms, matched only in capitals: "us" is a word too.
+_SHORT_FORMS: Final = {
+    "USA": "United States",
+    "US": "United States",
+    "UK": "United Kingdom",
+    "UAE": "United Arab Emirates",
+}
+_ANY_COUNTRY: Final = ("Worldwide", "Anywhere")
+_CANONICAL: Final = {name.casefold(): name for name in _COUNTRY_NAMES} | {
+    word.casefold(): WORLDWIDE for word in _ANY_COUNTRY
+}
+
+
+def _alternatives(names: Iterable[str]) -> str:
+    # The longest first, so that "South Sudan" wins over "Sudan" where both start.
+    return "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
+
+
+_COUNTRY: Final = re.compile(
+    rf"(?<![\w-])(?:(?i:(?P<name>{_alternatives([*_COUNTRY_NAMES, *_ANY_COUNTRY])}))"
+    rf"|(?P<short>{_alternatives(_SHORT_FORMS)}))(?![\w-])"
+)
+
+
+def countries(location: str | None) -> list[str]:
+    """The known countries the location names, in the order they appear and each once."""
+    found: dict[str, None] = {}
+    for match in _COUNTRY.finditer(location or ""):
+        name, short = match.group("name"), match.group("short")
+        found[_CANONICAL[name.casefold()] if name else _SHORT_FORMS[short]] = None
+    return list(found)

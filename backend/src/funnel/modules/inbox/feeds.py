@@ -1,8 +1,8 @@
 """One adapter per public feed: read its JSON API and turn each job into a FeedOffer.
 Plus one reader for every RSS, whose items read "Company: Title" (Evenbreak's convention).
 
-Response shapes checked against the live APIs on 2026-11-08 (Jobicy's pages on 2026-11-12)
-and the RSS on 2026-11-11; terms in docs/fase0.md.
+Response shapes checked against the live APIs on 2026-11-08 (Jobicy's pages on 2026-11-12,
+the locations on 2026-11-14) and the RSS on 2026-11-11; terms in docs/fase0.md.
 """
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
@@ -13,7 +13,7 @@ from xml.etree import ElementTree
 import httpx2
 
 from funnel.modules.discovery.domain import QUERY_PLACEHOLDER, Feed
-from funnel.modules.inbox.domain import FeedOffer
+from funnel.modules.inbox.domain import FeedOffer, published_location
 
 # Titles to search by, for the feeds whose terms rule out reading them whole.
 Reader = Callable[[httpx2.AsyncClient, Sequence[str]], Awaitable[list[FeedOffer]]]
@@ -34,13 +34,13 @@ async def _get_json(
     return response.json()
 
 
-# Where each feed puts the title, company, description and link of a job.
-Fields = tuple[str, str, str, str]
+# Where each feed puts the title, company, description, link and location of a job.
+Fields = tuple[str, str, str, str, str]
 
 
 def _offer(job: Mapping[str, Any], fields: Fields) -> FeedOffer | None:
     """None when the job lacks what an offer needs."""
-    title, company, description, url = (job.get(name) for name in fields)
+    title, company, description, url, location = (job.get(name) for name in fields)
     if not (isinstance(title, str) and isinstance(company, str) and isinstance(url, str)):
         return None
     if not (title.strip() and company.strip() and url.strip()):
@@ -50,6 +50,7 @@ def _offer(job: Mapping[str, Any], fields: Fields) -> FeedOffer | None:
         company=company.strip()[:_MAX_TEXT],
         description=description if isinstance(description, str) else "",
         url=url.strip(),
+        location=published_location(location),
     )
 
 
@@ -62,7 +63,7 @@ async def _remoteok(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[
     # The first element is the legal notice, not a job.
     return _kept(
         [
-            _offer(job, ("position", "company", "description", "url"))
+            _offer(job, ("position", "company", "description", "url", "location"))
             for job in jobs
             if "position" in job
         ]
@@ -72,7 +73,12 @@ async def _remoteok(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[
 async def _remotive(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[FeedOffer]:
     body = await _get_json(client, "https://remotive.com/api/remote-jobs")
     return _kept(
-        [_offer(job, ("title", "company_name", "description", "url")) for job in body["jobs"]]
+        [
+            _offer(
+                job, ("title", "company_name", "description", "url", "candidate_required_location")
+            )
+            for job in body["jobs"]
+        ]
     )
 
 
@@ -83,7 +89,10 @@ async def _himalayas(client: httpx2.AsyncClient, titles: Sequence[str]) -> list[
     for title in titles:
         body = await _get_json(client, "https://himalayas.app/jobs/api/search", {"q": title})
         for job in body["jobs"]:
-            offer = _offer(job, ("title", "companyName", "description", "applicationLink"))
+            offer = _offer(
+                job,
+                ("title", "companyName", "description", "applicationLink", "locationRestrictions"),
+            )
             if offer is not None:
                 offers.setdefault(offer.url, offer)
     return list(offers.values())
@@ -95,7 +104,7 @@ async def _jobicy(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[Fe
     for _page in range(_JOBICY_PAGES):
         body = await _get_json(client, "https://jobicy.com/api/v2/remote-jobs", params)
         offers += [
-            _offer(job, ("jobTitle", "companyName", "jobDescription", "url"))
+            _offer(job, ("jobTitle", "companyName", "jobDescription", "url", "jobGeo"))
             for job in body["jobs"]
         ]
         # The cursor of the next page; none on the last one.
@@ -114,7 +123,8 @@ READERS: Final[Mapping[Feed, Reader]] = {
 }
 
 
-_RSS_FIELDS: Final = ("title", "company", "description", "url")
+# The RSS publishes no location.
+_RSS_FIELDS: Final = ("title", "company", "description", "url", "location")
 
 
 def _rss_offer(item: ElementTree.Element) -> FeedOffer | None:
