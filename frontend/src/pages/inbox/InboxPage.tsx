@@ -11,6 +11,7 @@ import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
 import { SegmentedTabs } from "../../components/SegmentedTabs";
 import { AddOfferDialog } from "./AddOfferDialog";
+import { FrequentTitles } from "./FrequentTitles";
 import { ImportJobBoardDialog } from "./ImportJobBoardDialog";
 import { MaybeGroup } from "./MaybeGroup";
 import { NearMissGroups } from "./NearMissGroups";
@@ -200,6 +201,7 @@ export function InboxPage() {
       </Box>
 
       {view === "filtered" && <NearMissGroups {...context} {...nearMissActions} />}
+      {view === "filtered" && <FrequentTitles profiles={context.profiles} />}
 
       {offers.isSuccess && (view !== "filtered" || listed > 0 || total === 0) && (
         <OfferList

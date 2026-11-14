@@ -28,6 +28,7 @@ from funnel.modules.inbox.domain import (
     FeedOffer,
     FeedUnavailableError,
     FilteredCounts,
+    FrequentTitle,
     ImportedByEmailError,
     JobBoardNotImportedError,
     OfferAction,
@@ -46,6 +47,7 @@ from funnel.modules.inbox.domain import (
     count_filtered,
     duplicate_key,
     exclusion_candidates,
+    frequent_titles,
     is_title_word,
     next_status,
     offer_quality,
@@ -72,6 +74,15 @@ from funnel.modules.inbox.schemas import (
 )
 
 _logger = structlog.get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class FrequentTitles:
+    """How many offers have no title of the profile, and their most frequent titles with
+    the profile's titles if each were added and what that would do."""
+
+    offers: int
+    titles: list[tuple[FrequentTitle, list[str], CriteriaPreview]]
 
 
 class OfferService:
@@ -130,6 +141,19 @@ class OfferService:
         ]
         counts = await self.count_filtered()
         return offer_quality(offers, now.date(), counts.near_misses)
+
+    async def frequent_titles(self, profile_id: UUID) -> FrequentTitles:
+        """The titles that keep coming among the offers filtered without a title of the
+        profile, each with what adding it would do."""
+        await self._profiles.get(profile_id)
+        profiles = await self._profiles.all_terms()
+        terms = next(terms for terms in profiles if terms.search_profile_id == profile_id)
+        untitled = await self._repository.without_a_title_of(terms, profiles)
+        titles = []
+        for title in frequent_titles(untitled):
+            adding = [*terms.titles, title.title]
+            titles.append((title, adding, await self.preview(profile_id, {"titles": adding})))
+        return FrequentTitles(len(untitled), titles)
 
     async def preview(self, profile_id: UUID, changes: Mapping[str, Any]) -> CriteriaPreview:
         """What editing the profile with these changes would do to the offers; saves nothing."""

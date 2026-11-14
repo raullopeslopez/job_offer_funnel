@@ -539,6 +539,53 @@ class UnknownJobBoardError(AppError):
     status = HTTPStatus.UNPROCESSABLE_CONTENT
 
 
+# --- Frequent titles (specs/inbox/frequent_titles.feature) ---
+
+FREQUENT_TITLE_MIN_OFFERS: Final = 2
+FREQUENT_TITLES_SHOWN: Final = 5
+
+
+@dataclass(frozen=True)
+class UntitledOffer:
+    """A filtered offer with none of a profile's titles, as the frequent titles read it."""
+
+    title: str
+    has_keywords: bool
+    reading_passes: bool
+
+
+@dataclass(frozen=True)
+class FrequentTitle:
+    title: str
+    offers: int
+    with_keywords: int
+    reading_passes: int
+
+
+def _title_key(title: str) -> str:
+    return " ".join(title.split()).casefold()
+
+
+def frequent_titles(offers: Sequence[UntitledOffer]) -> list[FrequentTitle]:
+    """The titles of at least 2 offers, the most frequent first, as most often written."""
+    groups: dict[str, list[UntitledOffer]] = {}
+    for offer in offers:
+        groups.setdefault(_title_key(offer.title), []).append(offer)
+    found = [
+        FrequentTitle(
+            # Counter keeps the first seen first on a tie: the oldest offer's writing.
+            title=Counter(offer.title for offer in group).most_common(1)[0][0],
+            offers=len(group),
+            with_keywords=sum(offer.has_keywords for offer in group),
+            reading_passes=sum(offer.reading_passes for offer in group),
+        )
+        for group in groups.values()
+        if len(group) >= FREQUENT_TITLE_MIN_OFFERS
+    ]
+    found.sort(key=lambda title: (-title.offers, _title_key(title.title)))
+    return found[:FREQUENT_TITLES_SHOWN]
+
+
 # --- Offer quality (specs/inbox/offer_quality.feature) ---
 
 QUALITY_WEEKS: Final = 4

@@ -10,6 +10,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Frequent titles: `GET /api/v1/offers/frequent-titles?search_profile_id=` lists the
+  titles of at least 2 filtered offers with none of the profile's titles (grouped
+  ignoring case and spaces, up to 5, the most frequent first), with how many have the
+  profile's keywords, how many pass its reading and what adding the title would do.
+- Inbox: Filtered shows "No title of yours" with the most frequent titles and "Add title",
+  a logged criteria change.
 - Criteria suggestions: `GET /api/v1/criteria-suggestions` suggests excluding a word from a
   search profile when it is in the titles of at least 3 discarded offers and of no
   promoted one, with the offers behind it and what excluding it would do; only counting,
