@@ -420,7 +420,10 @@ Feature: Inbox screen
   # discard. The criteria suggestions from the triager show above the offers, one at a
   # time, the first first: "AI suggests: exclude “{word}” from {profile}", its why, the
   # line "Takes {m} out of Pending, loses none you promoted." and "Not now" or "Exclude
-  # it" (a criteria change), as in the metrics (specs/ui/metrics.feature).
+  # it" (a criteria change), as in the metrics (specs/ui/metrics.feature). An offer that a
+  # criteria suggestion comes from also says it under its verdict, "Improve the filter:
+  # exclude “{word}” from {profile}", with the same line and "Exclude it", which is a
+  # criteria change made from that offer.
   # @component: the E2E tests cannot reach the triager.
 
   Scenario: Without an offer triager there is no triage
@@ -460,6 +463,14 @@ Feature: Inbox screen
     Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "does not fit" because "Part-time role."
     When I open the inbox
     Then the offer "Backend Engineer Lead" has no "Discard as suggested"
+
+  @component
+  Scenario: Improve the filter from the offer the suggestion comes from
+    Given the triager suggests excluding "Lead" from "Backend" because "You discard lead roles.", taking 3 offers out of Pending, from the offer "Lead Backend Engineer"
+    And I am on the inbox
+    When I choose "Exclude it" on the offer "Lead Backend Engineer"
+    Then the app excludes "Lead" from "Backend", as a criteria change made from that offer
+    And the offer "Lead Backend Engineer" no longer says "Improve the filter"
 
   @component
   Scenario Outline: A criteria suggestion from the triager, with "Not now" and "Exclude it"

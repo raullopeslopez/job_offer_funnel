@@ -27,13 +27,17 @@ Feature: Offer triages
   how many do not, how many failed and how many are left.
 
   With the batch, the triager may suggest excluding a word from a search profile, with
-  why. A suggestion is kept only if it holds the rule for changing a criterion: against
+  why and the offers of the batch it comes from: those it said do not fit and that have
+  the word in their title or description. A suggestion without such an offer is not
+  kept. A suggestion is kept only if it holds the rule for changing a criterion: against
   the imported offers, excluding it would have filtered no offer I promoted and at least
   one I discarded (specs/inbox/criteria_previews.feature). It must also be a word the
   profile does not exclude yet and that is not part of its titles or keywords, and not
   one I said "Not now" to. Kept suggestions join the criteria suggestions
-  (specs/inbox/criteria_suggestions.feature), marked as from the triager with its why,
-  and are listed while they still hold the rule.
+  (specs/inbox/criteria_suggestions.feature), marked as from the triager with its why
+  and the offers it comes from, and are listed while they still hold the rule. Each of
+  those offers carries the suggestion, so the filter can be improved from the offer:
+  accepting it there is a criteria change made from that offer.
 
   Nothing is ever applied on its own: the offer stays pending, discarding it with the
   suggested reason and word is a normal discard (specs/inbox/inbox.feature), and
@@ -115,16 +119,50 @@ Feature: Offer triages
 
   # --- Suggested criteria changes ---
 
-  Scenario: A suggestion that filters a discarded offer and no promoted one is kept
+  Scenario: A suggestion that filters a discarded offer and no promoted one is kept, with the offers it comes from
     Given I discarded the offer of "Initech" because "title_word" with the word "Lead"
-    And the offer triager suggests excluding "Lead" from "Backend" because "You discard lead roles."
+    And the job board "Remote OK" was imported with:
+      | title                 | company | description      | url                    |
+      | Lead Backend Engineer | Wayne   | Python services. | https://remoteok.com/5 |
+    And the offer triager says the offer of "Wayne" does not fit because "A lead role."
+    And the offer triager suggests excluding "Lead" from "Backend" because "You discard lead roles.", from the offer of "Wayne"
     When I triage the offers
     Then the criteria suggestions include excluding "Lead" from "Backend", from the triager because "You discard lead roles."
+    And it comes from the offer of "Wayne"
+    And the offer of "Wayne" carries the suggestion to exclude "Lead" from "Backend"
+
+  Scenario Outline: A suggestion is only kept from offers that do not fit and have the word
+    Given I discarded the offer of "Initech" because "company"
+    And the offer triager says the offer of "Acme" <verdict>
+    And the offer triager suggests excluding "<word>" from "Backend" because "Noise.", from the offer of "Acme"
+    When I triage the offers
+    Then the criteria suggestions do not include excluding "<word>" from "Backend"
+
+    Examples:
+      | verdict                        | word   |
+      | fits                           | Python |
+      | does not fit because "Crypto." | Lead   |
+
+  Scenario: Accepting a suggestion from an offer is a criteria change made from that offer
+    Given I discarded the offer of "Initech" because "title_word" with the word "Lead"
+    And the job board "Remote OK" was imported with:
+      | title                 | company | description      | url                    |
+      | Lead Backend Engineer | Wayne   | Python services. | https://remoteok.com/5 |
+    And the offer triager says the offer of "Wayne" does not fit because "A lead role."
+    And the offer triager suggests excluding "Lead" from "Backend" because "You discard lead roles.", from the offer of "Wayne"
+    And I triaged the offers
+    When I accept the suggestion carried by the offer of "Wayne"
+    Then the profile "Backend" has the excluded_keywords "Lead"
+    And the latest change came from the offer of "Wayne"
 
   Scenario Outline: A suggestion that does not hold the rule is not kept
     Given I discarded the offer of "Initech" because "company"
+    And the job board "Remote OK" was imported with:
+      | title                 | company | description              | url                    |
+      | Lead Backend Engineer | Wayne   | Spark platform services. | https://remoteok.com/5 |
     And <state>
-    And the offer triager suggests excluding "<word>" from "<profile>" because "Noise."
+    And the offer triager says the offer of "Wayne" does not fit because "Noise."
+    And the offer triager suggests excluding "<word>" from "<profile>" because "Noise.", from the offer of "Wayne"
     When I triage the offers
     Then the criteria suggestions do not include excluding "<word>" from "<profile>"
 
@@ -139,12 +177,13 @@ Feature: Offer triages
 
   Scenario: A kept suggestion that no longer holds the rule is no longer listed
     Given I discarded the offer of "Initech" because "title_word" with the word "Lead"
-    And the offer triager suggests excluding "Lead" from "Backend" because "You discard lead roles."
-    And I triaged the offers
     And the job board "Remote OK" was imported with:
       | title                 | company | description      | url                    |
       | Lead Backend Engineer | Wayne   | Python services. | https://remoteok.com/5 |
-    And I promoted the offer of "Wayne"
+    And the offer triager says the offer of "Wayne" does not fit because "A lead role."
+    And the offer triager suggests excluding "Lead" from "Backend" because "You discard lead roles.", from the offer of "Wayne"
+    And I triaged the offers
+    And I promoted an imported offer as "Lead Platform Engineer"
     When I list the suggestions
     Then the criteria suggestions do not include excluding "Lead" from "Backend"
 
