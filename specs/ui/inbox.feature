@@ -413,9 +413,17 @@ Feature: Inbox screen
 
   # With an offer triager (specs/inbox/offer_triages.feature), the pending view offers
   # "Triage with AI": it triages batch after batch until none is left, saying how many it
-  # triaged and how many are left, and stops when a batch triages none. A pending offer
-  # with a suggested discard says it under its strip, and "Discard as suggested" discards
-  # it with that reason and word, like any discard.
+  # triaged, how many fit, how many do not and how many are left, and stops when a batch
+  # triages none. A pending offer with a verdict says it under its strip: "AI: Fits" or
+  # "AI: Doesn't fit", and why. With a suggested discard it adds the reason and its
+  # evidence, and "Discard as suggested" discards it with that reason and word, like any
+  # discard. The criteria suggestions from the triager show above the offers, one at a
+  # time, the first first: "AI suggests: exclude “{word}” from {profile}", its why, the
+  # line "Takes {m} out of Pending, loses none you promoted." and "Not now" or "Exclude
+  # it" (a criteria change), as in the metrics (specs/ui/metrics.feature). An offer that a
+  # criteria suggestion comes from also says it under its verdict, "Improve the filter:
+  # exclude “{word}” from {profile}", with the same line and "Exclude it", which is a
+  # criteria change made from that offer.
   # @component: the E2E tests cannot reach the triager.
 
   Scenario: Without an offer triager there is no triage
@@ -425,28 +433,57 @@ Feature: Inbox screen
 
   @component
   Scenario: The triage goes batch after batch until none is left
-    Given the offer triager has 7 pending offers to triage, 5 at a time
+    Given the offer triager has 7 pending offers to triage, 5 at a time, and says 3 fit
     And I am on the inbox
     When I triage the offers with AI
-    Then it says "Triaged 7 · 0 left"
+    Then it says "Triaged 7 · 3 fit · 4 don't · 0 left"
 
   @component
   Scenario: A triage that triages none stops and says what is left
-    Given the offer triager triages 3 pending offers and then none, with 2 left
+    Given the offer triager triages 3 pending offers and then none, with 2 left, and says 1 fits
     And I am on the inbox
     When I triage the offers with AI
-    Then it says "Triaged 3 · 2 left. Try again later."
+    Then it says "Triaged 3 · 1 fit · 2 don't · 2 left. Try again later."
 
   @component
-  Scenario Outline: A pending offer shows its suggested discard
-    Given a pending offer for "Globex" as "Backend Engineer Lead" with a suggested discard because "<reason>" with "<evidence>"
+  Scenario Outline: A pending offer shows the verdict of the triage
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "<verdict>" because "<why>"<suggested>
     When I open the inbox
     Then the offer "Backend Engineer Lead" says "<shown>"
 
     Examples:
-      | reason     | evidence                   | shown                                                 |
-      | contract   | Part-time, 20 hours a week | Suggested discard: Contract — “Part-time, 20 hours a week” |
-      | title_word | Lead                       | Suggested discard: A word in the title — “Lead”       |
+      | verdict      | why                | suggested                                                                       | shown                                                                     |
+      | fits         | Like Acme's role.  |                                                                                 | AI: Fits — Like Acme's role.                                              |
+      | does not fit | Part-time role.    |                                                                                 | AI: Doesn't fit — Part-time role.                                         |
+      | does not fit | Part-time role.    | , with a suggested discard because "contract" with "Part-time, 20 hours a week" | AI: Doesn't fit — Part-time role. Contract — “Part-time, 20 hours a week” |
+      | does not fit | You discard leads. | , with a suggested discard because "title_word" with "Lead"                     | AI: Doesn't fit — You discard leads. A word in the title — “Lead”         |
+
+  @component
+  Scenario: Only an offer with a suggested discard can be discarded as suggested
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "does not fit" because "Part-time role."
+    When I open the inbox
+    Then the offer "Backend Engineer Lead" has no "Discard as suggested"
+
+  @component
+  Scenario: Improve the filter from the offer the suggestion comes from
+    Given the triager suggests excluding "Lead" from "Backend" because "You discard lead roles.", taking 3 offers out of Pending, from the offer "Lead Backend Engineer"
+    And I am on the inbox
+    When I choose "Exclude it" on the offer "Lead Backend Engineer"
+    Then the app excludes "Lead" from "Backend", as a criteria change made from that offer
+    And the offer "Lead Backend Engineer" no longer says "Improve the filter"
+
+  @component
+  Scenario Outline: A criteria suggestion from the triager, with "Not now" and "Exclude it"
+    Given the triager suggests excluding "Lead" from "Backend" because "You discard lead roles.", taking 3 offers out of Pending
+    And I am on the inbox
+    When I choose "<choice>" on "AI suggests: exclude “Lead” from Backend"
+    Then the app <does>
+    And the suggestion is no longer shown
+
+    Examples:
+      | choice     | does                                                 |
+      | Not now    | does not suggest it again                            |
+      | Exclude it | excludes "Lead" from "Backend", as a criteria change |
 
   @component
   Scenario Outline: Discard an offer as suggested
