@@ -10,6 +10,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Frequent titles: `GET /api/v1/offers/frequent-titles?search_profile_id=` lists the
+  titles of at least 2 filtered offers with none of the profile's titles (grouped
+  ignoring case and spaces, up to 5, the most frequent first), with how many have the
+  profile's keywords, how many pass its reading and what adding the title would do.
+- Inbox: Filtered shows "No title of yours" with the most frequent titles and "Add title",
+  a logged criteria change.
 - Criteria changes: `POST /api/v1/criteria-changes` changes one rule of a search profile
   (and only one: `validation-error` otherwise) and logs it with the rule before and after,
   what it did when applied (the counts of a preview) and, with `offer_id`, the offer it

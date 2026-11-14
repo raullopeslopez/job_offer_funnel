@@ -174,6 +174,7 @@ function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] 
     http.get("/api/v1/search-profiles", () =>
       HttpResponse.json({ items: profiles, total: profiles.length, limit: 100, offset: 0 }),
     ),
+    http.get("/api/v1/offers/frequent-titles", () => HttpResponse.json({ offers: 0, titles: [] })),
   );
 }
 
@@ -728,5 +729,58 @@ describe("InboxPage exclusion proposal", () => {
     expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
     expect(discarded).toEqual([{ offerId: candidate.id, reason: "title_word", word: "Lead" }]);
     expect(edited).toEqual(edits);
+  });
+});
+
+// specs/ui/inbox.feature: "The titles that keep coming without a title of yours".
+describe("InboxPage frequent titles", () => {
+  it("lists them in Filtered and adds one as a criteria change", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([imported("Software Engineer, Backend", rulesWith(rule("title", "failed")))]);
+    const preview = {
+      entering_pending: 2,
+      leaving_pending: 0,
+      promoted_filtered: 0,
+      discarded_filtered: 0,
+    };
+    const added: unknown[] = [];
+    server.use(
+      http.get("/api/v1/offers/frequent-titles", () =>
+        HttpResponse.json({
+          offers: 6,
+          titles: [
+            {
+              title: "Software Engineer, Backend",
+              offers: 3,
+              with_keywords: 2,
+              reading_passes: 1,
+              titles: ["Backend Engineer", "Software Engineer, Backend"],
+              preview,
+            },
+          ],
+        }),
+      ),
+      http.post("/api/v1/criteria-changes", async ({ request }) => {
+        added.push(await request.json());
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderInbox("/inbox?status=filtered");
+    const block = await screen.findByRole("region", { name: "No title of yours · 6 offers" });
+    expect(within(block).getByText("Most frequent titles")).toBeInTheDocument();
+    expect(
+      within(block).getByText("2 mention python and django · 1 remote and open to Spain"),
+    ).toBeInTheDocument();
+
+    // Act
+    await user.click(
+      within(block).getByRole("button", { name: "Add title · brings 2 to Pending" }),
+    );
+
+    // Assert
+    expect(added).toEqual([
+      { search_profile_id: PROFILE_ID, titles: ["Backend Engineer", "Software Engineer, Backend"] },
+    ]);
   });
 });

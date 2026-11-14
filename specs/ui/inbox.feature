@@ -232,6 +232,19 @@ Feature: Inbox screen
     When I show the group "A word you exclude"
     Then the group lists "Junior Backend Engineer" with its source, its company, its failed cell and "Promote anyway"
 
+  # Filtered also shows, for each profile, the titles that keep coming among the offers
+  # with none of its titles (specs/inbox/frequent_titles.feature): "No title of yours ·
+  # {n} offers", "Most frequent titles", and per title its count, the line "{k} mention
+  # python · {j} remote and open to Spain" and "Add title · brings {n} to Pending", a
+  # criteria change (specs/inbox/criteria_changes.feature).
+
+  @component
+  Scenario: The titles that keep coming without a title of yours
+    Given 6 filtered offers have no title of the profile "Backend", 3 of them "Software Engineer, Backend"
+    And I am on the inbox showing the "filtered" offers
+    When I add the title "Software Engineer, Backend"
+    Then the profile "Backend" has the titles "Backend Engineer, Software Engineer, Backend", as a criteria change
+
   @component
   Scenario: The offers further away are listed with their strip
     Given a filtered offer for "Globex" as "Data Engineer" that fails the title
