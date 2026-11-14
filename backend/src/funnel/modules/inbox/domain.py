@@ -452,10 +452,33 @@ class SuggestedDiscard:
 
 @dataclass(frozen=True)
 class TriageAnswer:
-    """What the triager says of an offer, not trusted yet; no reason is nothing to say."""
+    """What the triager says of an offer, not trusted yet: its verdict and why and, for a
+    KO, a discard reason and its evidence."""
 
+    verdict: str | None = None
+    why: str | None = None
     reason: str | None = None
     evidence: str | None = None
+
+
+@dataclass(frozen=True)
+class TriagerSuggestion:
+    """A word the triager suggests excluding from a profile (by its name), with why and the
+    offers of the batch it comes from (by their position); not trusted yet."""
+
+    profile: str
+    word: str
+    why: str
+    offers: Sequence[int]
+
+
+@dataclass(frozen=True)
+class TriageReply:
+    """What the triager answers for a batch: by offer position (an offer it did not answer
+    for is missing), and the exclusions it suggests."""
+
+    answers: Mapping[int, TriageAnswer]
+    suggestions: Sequence[TriagerSuggestion] = ()
 
 
 class Mistake(StrEnum):

@@ -17,6 +17,8 @@ from funnel.modules.inbox.domain import (
     OfferTriagerError,
     TriageAnswer,
     TriageContext,
+    TriagerSuggestion,
+    TriageReply,
 )
 from funnel.modules.inbox.router import get_feed_client, get_offer_triager
 
@@ -26,6 +28,8 @@ scenarios("inbox/offer_triages.feature")
 
 OFFERS_URL = "/api/v1/offers"
 TRIAGES_URL = f"{OFFERS_URL}/triages"
+SUGGESTIONS_URL = "/api/v1/criteria-suggestions"
+PROFILES_URL = "/api/v1/search-profiles"
 LIST_FIELDS = frozenset({"titles", "keywords", "excluded_keywords"})
 # Past the 6 hours a job board waits between imports.
 LATER = timedelta(hours=7)
@@ -38,8 +42,11 @@ class ScenarioState:
     remoteok: list[Row] = field(default_factory=list)
     remoteok_id: str | None = None
     imports: int = 0
-    # What the fake triager answers, by company; those it leaves out; whether it fails.
+    # What the fake triager answers, by company (OK when the scenario says nothing); the
+    # exclusions it suggests, with the companies they come from; those it leaves out;
+    # whether it fails.
     answers: dict[str, TriageAnswer] = field(default_factory=dict)
+    suggestions: list[tuple[str, str, str, list[str]]] = field(default_factory=list)
     unanswered: set[str] = field(default_factory=set)
     is_failing: bool = False
     has_triager: bool = True
@@ -64,22 +71,26 @@ def state() -> ScenarioState:
 
 
 class FakeOfferTriager:
-    """Answers what the scenario says; an offer it knows nothing about has nothing to say."""
+    """Answers what the scenario says; an offer it knows nothing about is OK."""
 
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
 
-    async def triage(
-        self, offers: Sequence[OfferText], context: TriageContext
-    ) -> Mapping[int, TriageAnswer]:
+    async def triage(self, offers: Sequence[OfferText], context: TriageContext) -> TriageReply:
         self._state.requests.append((list(offers), context))
         if self._state.is_failing:
             raise OfferTriagerError("the triager is down")
-        return {
-            number: self._state.answers.get(offer.company, TriageAnswer())
+        answers: Mapping[int, TriageAnswer] = {
+            number: self._state.answers.get(offer.company, TriageAnswer("ok", "Fits."))
             for number, offer in enumerate(offers)
             if offer.company not in self._state.unanswered
         }
+        numbers = {offer.company: number for number, offer in enumerate(offers)}
+        suggestions = [
+            TriagerSuggestion(profile, word, why, [numbers[c] for c in companies if c in numbers])
+            for profile, word, why, companies in self._state.suggestions
+        ]
+        return TriageReply(answers, suggestions)
 
 
 @pytest.fixture(autouse=True)
@@ -127,6 +138,28 @@ def _offer(client: TestClient, company: str) -> dict[str, Any]:
     items = _ok(client.get(OFFERS_URL, params={"limit": "100"}), 200)["items"]
     offer: dict[str, Any] = next(o for o in items if o["company"] == company)
     return offer
+
+
+def _profile(client: TestClient, name: str) -> dict[str, Any]:
+    items = _ok(client.get(PROFILES_URL, params={"limit": "100"}), 200)["items"]
+    profile: dict[str, Any] = next(p for p in items if p["name"] == name)
+    return profile
+
+
+def _suggestions(client: TestClient) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = _ok(client.get(SUGGESTIONS_URL), 200)["items"]
+    return items
+
+
+def _suggestion(client: TestClient, word: str, profile: str) -> dict[str, Any] | None:
+    return next(
+        (
+            s
+            for s in _suggestions(client)
+            if s["word"].casefold() == word.casefold() and s["search_profile_name"] == profile
+        ),
+        None,
+    )
 
 
 def _offer_url(client: TestClient, company: str) -> str:
@@ -201,11 +234,50 @@ def given_offer(client: TestClient, company: str, title: str) -> None:
 
 
 @given(
-    parsers.re(r'I discarded the offer of "(?P<company>[^"]+)"(?: because "(?P<reason>[^"]+)")?$')
+    parsers.re(
+        r'I discarded the offer of "(?P<company>[^"]+)"(?: because "(?P<reason>[^"]+)")?'
+        r'(?: with the word "(?P<word>[^"]+)")?$'
+    )
 )
-def given_discarded(client: TestClient, company: str, reason: str | None) -> None:
+def given_discarded(client: TestClient, company: str, reason: str | None, word: str | None) -> None:
     body = {} if reason is None else {"reason": reason}
+    if word is not None:
+        body["word"] = word
     _ok(client.post(f"{_offer_url(client, company)}/discard", json=body))
+
+
+@given(parsers.parse('I promoted an imported offer as "{title}"'))
+def given_promoted_imported(client: TestClient, state: ScenarioState, title: str) -> None:
+    url = f"https://remoteok.com/promoted/{len(state.remoteok)}"
+    state.remoteok = [
+        *state.remoteok,
+        {"title": title, "company": "Promoted Co", "description": "Python.", "url": url},
+    ]
+    _import(client, state)
+    _ok(client.post(f"{_offer_url(client, 'Promoted Co')}/promotion", json={}))
+
+
+@given(parsers.parse('the profile "{name}" has the keywords "{word}"'))
+def given_keywords(client: TestClient, name: str, word: str) -> None:
+    profile_id = _profile(client, name)["id"]
+    _ok(client.patch(f"{PROFILES_URL}/{profile_id}", json={"keywords": [word]}), 200)
+
+
+@given(parsers.parse('the profile "{name}" excludes "{word}"'))
+def given_excludes(client: TestClient, name: str, word: str) -> None:
+    profile_id = _profile(client, name)["id"]
+    _ok(client.patch(f"{PROFILES_URL}/{profile_id}", json={"excluded_keywords": [word]}), 200)
+
+
+@given(parsers.parse('I said "Not now" to excluding "{word}" from "{name}"'))
+def given_dismissed(client: TestClient, word: str, name: str) -> None:
+    body = {"search_profile_id": _profile(client, name)["id"], "word": word}
+    _ok(client.post(f"{SUGGESTIONS_URL}/dismissals", json=body))
+
+
+@given(parsers.parse('no search profile named "{name}"'))
+def given_no_profile(client: TestClient, name: str) -> None:
+    assert all(p["name"] != name for p in _ok(client.get(PROFILES_URL), 200)["items"])
 
 
 @given(parsers.parse('I promoted the offer of "{company}"'))
@@ -214,13 +286,46 @@ def given_promoted(client: TestClient, company: str) -> None:
 
 
 @given(
-    parsers.parse(
-        'the offer triager answers for the offer of "{company}" with the reason "{reason}" '
-        'and the evidence "{evidence}"'
+    parsers.re(
+        r'the offer triager says the offer of "(?P<company>[^"]+)" is (?P<verdict>OK|KO)'
+        r'(?: because "(?P<why>[^"]*)")?'
+        r'(?:, with the reason "(?P<reason>[^"]+)" and the evidence "(?P<evidence>[^"]+)")?$'
     )
 )
-def given_answer(state: ScenarioState, company: str, reason: str, evidence: str) -> None:
-    state.answers[company] = TriageAnswer(reason=reason, evidence=evidence)
+def given_answer(  # noqa: PLR0913, PLR0917  # one per part of the step
+    state: ScenarioState,
+    company: str,
+    verdict: str,
+    why: str | None,
+    reason: str | None,
+    evidence: str | None,
+) -> None:
+    state.answers[company] = TriageAnswer(verdict.lower(), why or "Why.", reason, evidence)
+
+
+@given(
+    parsers.parse(
+        'the offer triager says the offer of "{company}" is OK with a why of {n:d} characters'
+    )
+)
+def given_long_why(state: ScenarioState, company: str, n: int) -> None:
+    state.answers[company] = TriageAnswer("ok", "w" * n)
+
+
+@given(parsers.re(r"the offer triager says the offers of (?P<companies>.+) are OK$"))
+def given_ok_offers(state: ScenarioState, companies: str) -> None:
+    for company in re.findall(r'"([^"]+)"', companies):
+        state.answers[company] = TriageAnswer("ok", "Fits.")
+
+
+@given(
+    parsers.re(
+        r'the offer triager suggests excluding "(?P<word>[^"]+)" from "(?P<profile>[^"]+)" '
+        r'because "(?P<why>[^"]+)", from the offer of "(?P<company>[^"]+)"$'
+    )
+)
+def given_suggests(state: ScenarioState, word: str, profile: str, why: str, company: str) -> None:
+    state.suggestions.append((profile, word, why, [company]))
 
 
 @given(parsers.parse('the offer triager does not answer for the offer of "{company}"'))
@@ -245,6 +350,24 @@ def given_triager(state: ScenarioState, triager: str) -> None:
 @when("I triage the offers")
 def when_triage(client: TestClient, state: ScenarioState) -> None:
     state.response = client.post(TRIAGES_URL)
+
+
+@when(parsers.parse('I accept the suggestion carried by the offer of "{company}"'))
+def when_accept(client: TestClient, state: ScenarioState, company: str) -> None:
+    offer_id = _offer(client, company)["id"]
+    suggestion = next(s for s in _suggestions(client) if offer_id in s["offer_ids"])
+    body = {
+        "search_profile_id": suggestion["search_profile_id"],
+        "excluded_keywords": suggestion["excluded_keywords"],
+        "offer_id": offer_id,
+    }
+    state.response = client.post("/api/v1/criteria-changes", json=body)
+
+
+@given("I listed the suggestions")
+@when("I list the suggestions")
+def when_list(client: TestClient, state: ScenarioState) -> None:
+    state.response = client.get(SUGGESTIONS_URL)
 
 
 @when("I check whether the triage is available")
@@ -279,7 +402,84 @@ def then_status(client: TestClient, company: str, status: str) -> None:
     parsers.parse("the triage triaged {triaged:d} offers, failed on {failed:d} and left {left:d}")
 )
 def then_batch(state: ScenarioState, triaged: int, failed: int, left: int) -> None:
-    assert _ok(state.last_response) == {"triaged": triaged, "failed": failed, "left": left}
+    batch = _ok(state.last_response)
+    assert (batch["triaged"], batch["failed"], batch["left"]) == (triaged, failed, left)
+
+
+@then(parsers.parse("the triage says {ok:d} OK and {ko:d} KO"))
+def then_ok_ko(state: ScenarioState, ok: int, ko: int) -> None:
+    batch = _ok(state.last_response)
+    assert (batch["ok"], batch["ko"]) == (ok, ko)
+
+
+@then(
+    parsers.re(
+        r'the offer of "(?P<company>[^"]+)" has the verdict "(?P<verdict>OK|KO)"'
+        r'(?: because "(?P<why>[^"]+)")?$'
+    )
+)
+def then_verdict(client: TestClient, company: str, verdict: str, why: str | None) -> None:
+    triage = _offer(client, company)["triage"]
+    assert triage is not None
+    assert triage["verdict"] == verdict.lower()
+    if why is not None:
+        assert triage["why"] == why
+
+
+@then(parsers.parse('the offer of "{company}" has a why of {n:d} characters'))
+def then_why_length(client: TestClient, company: str, n: int) -> None:
+    assert len(_offer(client, company)["triage"]["why"]) == n
+
+
+@then(parsers.parse('the offer of "{company}" has no verdict'))
+def then_no_verdict(client: TestClient, company: str) -> None:
+    assert _offer(client, company)["triage"] is None
+
+
+@then(
+    parsers.parse(
+        'the criteria suggestions include excluding "{word}" from "{profile}", from the '
+        'triager because "{why}"'
+    ),
+    target_fixture="suggestion",
+)
+def then_includes(client: TestClient, word: str, profile: str, why: str) -> dict[str, Any]:
+    suggestion = _suggestion(client, word, profile)
+    assert suggestion is not None, _suggestions(client)
+    assert (suggestion["source"], suggestion["why"]) == ("triager", why)
+    return suggestion
+
+
+@then(parsers.parse('the criteria suggestions do not include excluding "{word}" from "{profile}"'))
+def then_not_includes(client: TestClient, word: str, profile: str) -> None:
+    assert _suggestion(client, word, profile) is None
+
+
+@then(parsers.parse('it comes from the offer of "{company}"'))
+def then_comes_from(client: TestClient, suggestion: dict[str, Any], company: str) -> None:
+    assert suggestion["offer_ids"] == [_offer(client, company)["id"]]
+
+
+@then(
+    parsers.parse(
+        'the offer of "{company}" carries the suggestion to exclude "{word}" from "{profile}"'
+    )
+)
+def then_carries(client: TestClient, company: str, word: str, profile: str) -> None:
+    suggestion = _suggestion(client, word, profile)
+    assert suggestion is not None
+    assert _offer(client, company)["id"] in suggestion["offer_ids"]
+
+
+@then(parsers.parse('the profile "{name}" has the excluded_keywords "{words}"'))
+def then_excluded(client: TestClient, name: str, words: str) -> None:
+    assert _profile(client, name)["excluded_keywords"] == re.split(r"\s*,\s*", words)
+
+
+@then(parsers.parse('the latest change came from the offer of "{company}"'))
+def then_change_from(client: TestClient, company: str) -> None:
+    changes = _ok(client.get("/api/v1/criteria-changes"), 200)["items"]
+    assert changes[0]["offer_id"] == _offer(client, company)["id"]
 
 
 @then(parsers.re(r"the offer triager was asked once, only about the offers of (?P<companies>.+)$"))
