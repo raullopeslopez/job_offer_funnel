@@ -88,24 +88,47 @@ function Trend({ values }: { values: (number | null)[] }) {
   );
 }
 
-/** How the offer triager does, once it triaged an offer you decided on; null before. */
+/** How the offer triager does, once it triaged an offer you decided on: in Pending, its
+ * precision and misses; among the near misses you reviewed, its rescues and lost rescues.
+ * Null before. */
 function TriageFigures({ quality }: { quality: Quality }) {
   const { total, weeks } = quality;
-  if (total.suggested_decided + total.triaged_discarded === 0) return null;
-  const figures = [
-    {
-      label: "Precision",
-      value: formatRate(total.triager_precision),
-      sentence: `${total.suggested_discarded} right of ${total.suggested_decided} suggested discards you decided`,
-      trend: weeks.map((week) => week.triager_precision),
-    },
-    {
-      label: "Misses",
-      value: formatRate(total.triager_misses),
-      sentence: `${total.missed_discards} missed of ${total.triaged_discarded} triaged offers you discarded`,
-      trend: weeks.map((week) => week.triager_misses),
-    },
-  ];
+  const pending =
+    total.suggested_decided + total.triaged_discarded === 0
+      ? []
+      : [
+          {
+            label: "Precision",
+            value: formatRate(total.triager_precision),
+            sentence: `${total.suggested_discarded} right of ${total.suggested_decided} suggested discards you decided`,
+            trend: weeks.map((week) => week.triager_precision),
+          },
+          {
+            label: "Misses",
+            value: formatRate(total.triager_misses),
+            sentence: `${total.missed_discards} missed of ${total.triaged_discarded} triaged offers you discarded`,
+            trend: weeks.map((week) => week.triager_misses),
+          },
+        ];
+  const nearMisses =
+    total.ok_near_misses_reviewed + total.triaged_near_misses_rescued === 0
+      ? []
+      : [
+          {
+            label: "Rescues",
+            value: formatRate(total.triager_rescues),
+            sentence: `${total.ok_near_misses_rescued} rescued of ${total.ok_near_misses_reviewed} OK near misses you reviewed`,
+            trend: weeks.map((week) => week.triager_rescues),
+          },
+          {
+            label: "Lost rescues",
+            value: formatRate(total.triager_lost_rescues),
+            sentence: `${total.lost_rescues} marked KO of ${total.triaged_near_misses_rescued} near misses you rescued`,
+            trend: weeks.map((week) => week.triager_lost_rescues),
+          },
+        ];
+  const figures = [...pending, ...nearMisses];
+  if (figures.length === 0) return null;
   return (
     <Box component="section" aria-labelledby="ai-triage" sx={{ mb: 4 }}>
       <Typography id="ai-triage" variant="h6" component="h3" gutterBottom>
