@@ -6,6 +6,7 @@ the locations on 2026-11-14) and the RSS on 2026-11-11; terms in docs/fase0.md.
 """
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from html import unescape
 from typing import Any, Final
 from urllib.parse import quote
 from xml.etree import ElementTree
@@ -43,11 +44,13 @@ def _offer(job: Mapping[str, Any], fields: Fields) -> FeedOffer | None:
     title, company, description, url, location = (job.get(name) for name in fields)
     if not (isinstance(title, str) and isinstance(company, str) and isinstance(url, str)):
         return None
-    if not (title.strip() and company.strip() and url.strip()):
+    # Some feeds (Jobicy) publish "&" as "&#038;" or "&amp;" in the title and the company.
+    title, company = unescape(title).strip(), unescape(company).strip()
+    if not (title and company and url.strip()):
         return None
     return FeedOffer(
-        title=title.strip()[:_MAX_TEXT],
-        company=company.strip()[:_MAX_TEXT],
+        title=title[:_MAX_TEXT],
+        company=company[:_MAX_TEXT],
         description=description if isinstance(description, str) else "",
         url=url.strip(),
         location=published_location(location),
