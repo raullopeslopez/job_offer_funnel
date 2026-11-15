@@ -41,8 +41,6 @@ export function verdictGroup(offer: Pick<Offer, "triage" | "suggested_discard">)
 }
 
 /** The offers, as listed by verdict, split by their verdict group and in the same order. */
-export function groupByVerdict<T extends Pick<Offer, "triage" | "suggested_discard">>(
-  offers: T[],
-) {
+export function groupByVerdict<T extends Pick<Offer, "triage" | "suggested_discard">>(offers: T[]) {
   return groupInOrder(offers, verdictGroup);
 }
