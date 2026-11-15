@@ -213,7 +213,10 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
 ) -> Page[OfferRead]:
     """Offers from the most recently added."""
     offers, total = await service.list_page(
-        OfferFilter(status, filtered, near_miss, failed_rule), page
+        OfferFilter(
+            status, filtered, near_miss, failed_rule, matching_company_or_title, job_board_id
+        ),
+        page,
     )
     return Page(
         items=[OfferRead.model_validate(row, from_attributes=True) for row in offers],

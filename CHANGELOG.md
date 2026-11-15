@@ -10,6 +10,10 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Offer search: `GET /offers` takes `matching_company_or_title`, only the offers whose
+  company or title contains it, ignoring case and the spaces around it, and
+  `job_board_id`, only the offers that came from that job board. Both combine with the
+  other ways of listing the offers, and `total` counts only the offers they match.
 - Offer triages with Claude Code: with `OFFER_TRIAGER=claude-code` the offer triager is
   the `claude` CLI on your Claude subscription (model `CLAUDE_CODE_MODEL`, `sonnet` by
   default) instead of Groq, 20 offers at a time instead of 5, told and answering the

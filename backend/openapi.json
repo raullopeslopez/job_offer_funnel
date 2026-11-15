@@ -6008,7 +6008,7 @@
           {
             "description": "Only the offers whose company or title contains it, ignoring case.",
             "in": "query",
-            "name": "company_or_title",
+            "name": "matching_company_or_title",
             "required": false,
             "schema": {
               "anyOf": [
@@ -6020,7 +6020,7 @@
                 }
               ],
               "description": "Only the offers whose company or title contains it, ignoring case.",
-              "title": "Company Or Title"
+              "title": "Matching Company Or Title"
             }
           },
           {

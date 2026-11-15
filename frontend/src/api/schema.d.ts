@@ -3927,6 +3927,10 @@ export interface operations {
                 near_miss?: boolean | null;
                 /** @description Only the offers whose filter reason fails this rule. */
                 failed_rule?: components["schemas"]["Rule"] | null;
+                /** @description Only the offers whose company or title contains it, ignoring case. */
+                matching_company_or_title?: string | null;
+                /** @description Only the offers that came from this job board. */
+                job_board_id?: string | null;
                 limit?: number;
                 offset?: number;
             };
