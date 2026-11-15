@@ -616,6 +616,16 @@
         "title": "CompanyUpdate",
         "type": "object"
       },
+      "Confidence": {
+        "description": "How sure the offer triager is of its verdict.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "title": "Confidence",
+        "type": "string"
+      },
       "ConversionByChannelRead": {
         "properties": {
           "channels": {
@@ -3470,19 +3480,49 @@
       "TriageRead": {
         "description": "What the offer triager says of an offer; it is never applied on its own.",
         "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Confidence"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How sure the triager is of its verdict; null when it did not say, and for offers triaged before it was asked."
+          },
           "verdict": {
             "$ref": "#/components/schemas/Verdict",
             "description": "`ok`: worth the user's time; `ko`: a false positive, it passed the filters but the user would discard it."
           },
-          "why": {
-            "description": "One sentence in the triager's words, up to 200 characters.",
-            "title": "Why",
-            "type": "string"
+          "why_not": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhyRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What in the offer speaks against it; null when nothing does."
+          },
+          "why_yes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhyRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What in the offer speaks for it; null when nothing does."
           }
         },
         "required": [
           "verdict",
-          "why"
+          "why_yes",
+          "why_not",
+          "confidence"
         ],
         "title": "TriageRead",
         "type": "object"
@@ -3802,6 +3842,34 @@
           "starts_on"
         ],
         "title": "WeekQualityRead",
+        "type": "object"
+      },
+      "WhyRead": {
+        "description": "One side of a triage: a sentence in the triager's words, and the text of the offer\nthat backs it.",
+        "properties": {
+          "quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Copied letter for letter from the title or the description; null when the triager gave none or it was not in the offer.",
+            "title": "Quote"
+          },
+          "why": {
+            "description": "One sentence, up to 200 characters.",
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "why",
+          "quote"
+        ],
+        "title": "WhyRead",
         "type": "object"
       },
       "WorkMode": {

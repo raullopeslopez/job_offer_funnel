@@ -10,6 +10,7 @@ from funnel.modules.discovery.domain import WorkMode
 from funnel.modules.discovery.schemas import SearchProfileUpdate
 from funnel.modules.inbox.domain import (
     Ats,
+    Confidence,
     DiscardReason,
     OfferStatus,
     ProfileRule,
@@ -154,6 +155,17 @@ class TriagerRead(BaseModel):
     is_available: bool = Field(description="Whether an offer triager is configured.")
 
 
+class WhyRead(BaseModel):
+    """One side of a triage: a sentence in the triager's words, and the text of the offer
+    that backs it."""
+
+    why: str = Field(description="One sentence, up to 200 characters.")
+    quote: str | None = Field(
+        description="Copied letter for letter from the title or the description; null when "
+        "the triager gave none or it was not in the offer."
+    )
+
+
 class TriageRead(BaseModel):
     """What the offer triager says of an offer; it is never applied on its own."""
 
@@ -161,7 +173,16 @@ class TriageRead(BaseModel):
         description="`ok`: worth the user's time; `ko`: a false positive, it passed the "
         "filters but the user would discard it."
     )
-    why: str = Field(description="One sentence in the triager's words, up to 200 characters.")
+    why_yes: WhyRead | None = Field(
+        description="What in the offer speaks for it; null when nothing does."
+    )
+    why_not: WhyRead | None = Field(
+        description="What in the offer speaks against it; null when nothing does."
+    )
+    confidence: Confidence | None = Field(
+        description="How sure the triager is of its verdict; null when it did not say, and "
+        "for offers triaged before it was asked."
+    )
 
 
 class SuggestedDiscardRead(BaseModel):

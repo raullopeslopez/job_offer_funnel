@@ -1,6 +1,6 @@
 import re
 from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pytest_bdd import given, parsers, scenarios, then, when
 from support.clock import FixedClock
+from support.triages import said
 
 from funnel.core.clock import get_clock
 from funnel.modules.inbox.domain import (
@@ -292,7 +293,10 @@ def given_promoted(client: TestClient, company: str) -> None:
     parsers.re(
         r'the offer triager says the offer of "(?P<company>[^"]+)" is (?P<verdict>OK|KO)'
         r'(?: because "(?P<why>[^"]*)")?'
-        r'(?:, with the reason "(?P<reason>[^"]+)" and the evidence "(?P<evidence>[^"]+)")?$'
+        r'(?:, with the reason "(?P<reason>[^"]+)" and the evidence "(?P<evidence>[^"]+)")?'
+        r'(?:, with the confidence "(?P<confidence>[^"]+)")?'
+        r'(?:, quoting "(?P<quote>[^"]+)")?'
+        r"(?P<nothing_against>, with nothing against it)?$"
     )
 )
 def given_answer(  # noqa: PLR0913, PLR0917  # one per part of the step
@@ -302,17 +306,43 @@ def given_answer(  # noqa: PLR0913, PLR0917  # one per part of the step
     why: str | None,
     reason: str | None,
     evidence: str | None,
+    confidence: str | None,
+    quote: str | None,
+    nothing_against: str | None,  # noqa: ARG001  # an OK has no why not unless told
 ) -> None:
-    state.answers[company] = TriageAnswer(verdict.lower(), why or "Why.", reason, evidence)
+    state.answers[company] = said(
+        verdict, why or "Why.", reason=reason, evidence=evidence, quote=quote
+    )
+    if confidence is not None:
+        state.answers[company] = replace(state.answers[company], confidence=confidence)
+
+
+@given(
+    parsers.re(
+        r'the offer triager says of the offer of "(?P<company>[^"]+)": (?P<verdict>OK|KO), '
+        r"with (?P<confidence>\w+) confidence$"
+    )
+)
+def given_whys(
+    state: ScenarioState, company: str, verdict: str, confidence: str, datatable: list[list[str]]
+) -> None:
+    sides = {side: (why, quote) for side, why, quote in datatable[1:]}
+    yes, quote_yes = sides.get("why yes", (None, None))
+    no, quote_not = sides.get("why not", (None, None))
+    state.answers[company] = TriageAnswer(
+        verdict.lower(), yes, no, quote_yes=quote_yes, quote_not=quote_not, confidence=confidence
+    )
 
 
 @given(
     parsers.parse(
-        'the offer triager says the offer of "{company}" is OK with a why of {n:d} characters'
+        'the offer triager says the offer of "{company}" is OK with a {side} of {n:d} characters'
     )
 )
-def given_long_why(state: ScenarioState, company: str, n: int) -> None:
-    state.answers[company] = TriageAnswer("ok", "w" * n)
+def given_long_why(state: ScenarioState, company: str, side: str, n: int) -> None:
+    long = "w" * n
+    yes, no = (long, "No.") if side == "why yes" else ("Yes.", long)
+    state.answers[company] = TriageAnswer("ok", yes, no)
 
 
 @given(parsers.re(r"the offer triager says the offers of (?P<companies>.+) are OK$"))
@@ -418,20 +448,53 @@ def then_ok_ko(state: ScenarioState, ok: int, ko: int) -> None:
 @then(
     parsers.re(
         r'the offer of "(?P<company>[^"]+)" has the verdict "(?P<verdict>OK|KO)"'
-        r'(?: because "(?P<why>[^"]+)")?$'
+        r'(?: because "(?P<why>[^"]+)")?'
+        r"(?: with (?P<confidence>low|medium|high|no) confidence)?$"
     )
 )
-def then_verdict(client: TestClient, company: str, verdict: str, why: str | None) -> None:
+def then_verdict(
+    client: TestClient, company: str, verdict: str, why: str | None, confidence: str | None
+) -> None:
     triage = _offer(client, company)["triage"]
     assert triage is not None
     assert triage["verdict"] == verdict.lower()
     if why is not None:
-        assert triage["why"] == why
+        side = "why_yes" if verdict == "OK" else "why_not"
+        assert triage[side]["why"] == why
+    if confidence is not None:
+        assert triage["confidence"] == (None if confidence == "no" else confidence)
 
 
-@then(parsers.parse('the offer of "{company}" has a why of {n:d} characters'))
-def then_why_length(client: TestClient, company: str, n: int) -> None:
-    assert len(_offer(client, company)["triage"]["why"]) == n
+@then(parsers.parse('the offer of "{company}" has these whys:'))
+def then_whys(client: TestClient, company: str, datatable: list[list[str]]) -> None:
+    triage = _offer(client, company)["triage"]
+    shown = [
+        [side, triage[key]["why"], triage[key]["quote"] or ""]
+        for side, key in (("why yes", "why_yes"), ("why not", "why_not"))
+        if triage[key] is not None
+    ]
+    assert shown == datatable[1:]
+
+
+@then(parsers.parse('the offer of "{company}" has no why not'))
+def then_no_why_not(client: TestClient, company: str) -> None:
+    assert _offer(client, company)["triage"]["why_not"] is None
+
+
+@then(
+    parsers.re(
+        r'the offer of "(?P<company>[^"]+)" has the why yes "(?P<why>[^"]+)" '
+        r'(?:quoting "(?P<quote>[^"]+)"|with no quote)$'
+    )
+)
+def then_why_yes(client: TestClient, company: str, why: str, quote: str | None) -> None:
+    assert _offer(client, company)["triage"]["why_yes"] == {"why": why, "quote": quote}
+
+
+@then(parsers.parse('the offer of "{company}" has a {side} of {n:d} characters'))
+def then_why_length(client: TestClient, company: str, side: str, n: int) -> None:
+    key = side.replace(" ", "_")
+    assert len(_offer(client, company)["triage"][key]["why"]) == n
 
 
 @then(parsers.parse('the offer of "{company}" has no verdict'))

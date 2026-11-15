@@ -466,6 +466,11 @@ class TriageBatch:
 _ALL: Final = 100_000
 
 
+def _why_yes(triage: Triage) -> str:
+    """Why a near miss is worth rescuing: the why of a suggestion to relax its rule."""
+    return "" if triage.why_yes is None else triage.why_yes.why
+
+
 def _failed_check(offer: OfferRow) -> RuleCheck | None:
     """The rule that filtered a near miss."""
     reason = offer.filter_reason
@@ -535,7 +540,7 @@ class OfferTriageService:
             reply = TriageReply({})
         verdicts: dict[int, Verdict] = {}
         for number, answer in reply.answers.items():
-            triage = kept_triage(answer)
+            triage = kept_triage(answer, texts[number])
             if triage is None:
                 continue
             verdicts[number] = triage.verdict
@@ -566,7 +571,7 @@ class OfferTriageService:
         if change is None or reason is None or reason.search_profile_id is None:
             return
         await self._keep_change(
-            reason.search_profile_id, change.rule, change.word, triage.why, [offer.id]
+            reason.search_profile_id, change.rule, change.word, _why_yes(triage), [offer.id]
         )
 
     async def _keep_change(  # noqa: PLR0913, PLR0917  # the parts of a suggestion

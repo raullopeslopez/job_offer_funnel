@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pytest_bdd import given, parsers, scenarios, then, when
 from support.clock import FixedClock
+from support.triages import said
 
 from funnel.core.clock import get_clock
 from funnel.modules.discovery.domain import WorkMode
@@ -253,7 +254,7 @@ def given_discarded_imported(
     )
 )
 def given_answer(state: ScenarioState, company: str, verdict: str, why: str | None) -> None:
-    state.answers[company] = TriageAnswer(verdict.lower(), why or "Why.")
+    state.answers[company] = said(verdict, why or "Why.")
 
 
 @given(parsers.re(r"the offer triager says the offers of (?P<companies>.+) are OK$"))
@@ -331,7 +332,9 @@ def then_not_asked(state: ScenarioState, company: str) -> None:
 
 @then(parsers.parse('the offer of "{company}" has the verdict "{verdict}" because "{why}"'))
 def then_verdict(client: TestClient, company: str, verdict: str, why: str) -> None:
-    assert _offer(client, company)["triage"] == {"verdict": verdict.lower(), "why": why}
+    triage = _offer(client, company)["triage"]
+    side = "why_yes" if verdict == "OK" else "why_not"
+    assert (triage["verdict"], triage[side]["why"]) == (verdict.lower(), why)
 
 
 @then(parsers.re(r'the offer of "(?P<company>[^"]+)" is (?P<negation>not )?filtered$'))
