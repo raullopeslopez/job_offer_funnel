@@ -36,8 +36,10 @@ function viewQuery(view: View): { status: OfferStatus; filtered?: boolean } {
   return view === "pending" ? { status: view, filtered: false } : { status: view };
 }
 // The filtered view lists the near misses by rule, and then the rest: those further away.
+// The pending view goes by the triager's verdict (specs/inbox/offer_triages.feature).
 function listQuery(view: View) {
-  return view === "filtered" ? { ...viewQuery(view), near_miss: false } : viewQuery(view);
+  if (view === "filtered") return { ...viewQuery(view), near_miss: false };
+  return view === "pending" ? { ...viewQuery(view), by_verdict: true } : viewQuery(view);
 }
 // The count of a view: the tabs show it, and the navigation the one of the pending offers.
 export function offerCountQuery(view: View) {
@@ -213,6 +215,7 @@ export function InboxPage() {
           offers={items}
           {...context}
           single={view === "filtered" ? { title: "Further away", count: listed } : undefined}
+          byVerdict={view === "pending"}
           onDiscard={setDiscarding}
           discardingId={discarding?.id}
           onCancelDiscard={() => setDiscarding(null)}

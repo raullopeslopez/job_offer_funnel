@@ -410,7 +410,7 @@ export interface paths {
         };
         /**
          * List Offers
-         * @description Offers from the most recently added.
+         * @description Offers from the most recently added, or by verdict.
          */
         get: operations["list_offers_api_v1_offers_get"];
         put?: never;
@@ -3931,6 +3931,8 @@ export interface operations {
                 matching_company_or_title?: string | null;
                 /** @description Only the offers that came from this job board. */
                 job_board_id?: string | null;
+                /** @description By the triager's verdict: OK, then no verdict, then KO by the reason of their suggested discard; within each, from the most recently added. */
+                by_verdict?: boolean;
                 limit?: number;
                 offset?: number;
             };

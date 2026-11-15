@@ -5932,7 +5932,7 @@
     },
     "/api/v1/offers": {
       "get": {
-        "description": "Offers from the most recently added.",
+        "description": "Offers from the most recently added, or by verdict.",
         "operationId": "list_offers_api_v1_offers_get",
         "parameters": [
           {
@@ -6040,6 +6040,18 @@
               ],
               "description": "Only the offers that came from this job board.",
               "title": "Job Board Id"
+            }
+          },
+          {
+            "description": "By the triager's verdict: OK, then no verdict, then KO by the reason of their suggested discard; within each, from the most recently added.",
+            "in": "query",
+            "name": "by_verdict",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "By the triager's verdict: OK, then no verdict, then KO by the reason of their suggested discard; within each, from the most recently added.",
+              "title": "By Verdict",
+              "type": "boolean"
             }
           },
           {

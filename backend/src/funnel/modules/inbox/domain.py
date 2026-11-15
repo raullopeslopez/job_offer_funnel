@@ -150,7 +150,8 @@ class ReviewMade:
 
 @dataclass(frozen=True)
 class OfferFilter:
-    """Which offers to list; None means either."""
+    """Which offers to list, None meaning either, and whether by verdict instead of only from
+    the most recently added."""
 
     status: OfferStatus | None = None
     is_filtered: bool | None = None
@@ -158,6 +159,7 @@ class OfferFilter:
     failed_rule: Rule | None = None
     matching_company_or_title: str | None = None
     job_board_id: UUID | None = None
+    is_by_verdict: bool = False
 
 
 @dataclass(frozen=True)

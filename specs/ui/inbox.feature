@@ -452,6 +452,15 @@ Feature: Inbox screen
   # criteria suggestion comes from also says it under its verdict, "Improve the filter:
   # exclude “{word}” from {profile}", with the same line and "Exclude it", which is a
   # criteria change made from that offer.
+  #
+  # Once a pending offer has a verdict, the pending view goes by verdict
+  # (specs/inbox/offer_triages.feature) instead of by day: the group "AI: OK", then
+  # "Not triaged", then one group "AI: KO · {reason}" per reason of the suggested discards,
+  # in the order of the list, and last "AI: KO" for those with no suggested discard. Only
+  # the groups with offers show, each with its count. Each KO offer keeps its
+  # "Discard: {reason}", so they are discarded one after another, always by my click.
+  # Without verdicts the pending view goes by day, as always. "Maybe" and the other views
+  # do not change.
   # @component: the E2E tests cannot reach the triager.
 
   Scenario: Without an offer triager there is no triage
@@ -514,6 +523,19 @@ Feature: Inbox screen
     Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "KO" because "Part-time role."
     When I open the inbox
     Then the offer "Backend Engineer Lead" has no "Discard:" action
+
+  @component
+  Scenario: With verdicts, the pending view goes by verdict
+    Given these pending offers, most recent first:
+      | title                   | verdict | suggested discard |
+      | Python Engineer         | KO      |                   |
+      | Go Engineer             | KO      | stack             |
+      | Part-time Engineer      | KO      | contract          |
+      | Backend Engineer        |         |                   |
+      | Senior Backend Engineer | OK      |                   |
+    When I open the inbox
+    Then I see the groups, in order: "AI: OK", "Not triaged", "AI: KO · Stack", "AI: KO · Contract", "AI: KO"
+    And I see the offers, in order: "Senior Backend Engineer", "Backend Engineer", "Go Engineer", "Part-time Engineer", "Python Engineer"
 
   @component
   Scenario: Improve the filter from the offer the suggestion comes from
