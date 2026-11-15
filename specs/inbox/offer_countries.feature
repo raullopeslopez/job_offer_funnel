@@ -78,6 +78,13 @@ Feature: Offer countries
     When I import the job board "Remote OK"
     Then the offer "Backend Engineer" has no location
 
+  Scenario: Offers with and without a location are imported together
+    Given the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "Madrid, Spain"
+    And the feed "remoteok" publishes an offer for "Acme" as "Senior Backend Engineer" with no location
+    When I import the job board "Remote OK"
+    Then the offer "Backend Engineer" is located in "Madrid, Spain"
+    And the offer "Senior Backend Engineer" has no location
+
   # --- The countries of an offer ---
 
   Scenario Outline: The countries are the known countries its location names
