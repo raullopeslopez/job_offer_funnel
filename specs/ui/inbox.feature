@@ -76,6 +76,36 @@ Feature: Inbox screen
     When I ask to see more offers
     Then I see 21 offers listed
 
+  # --- Variants ---
+
+  # The pending view lists the offers with their variants together
+  # (specs/inbox/offer_variants.feature). Variants that come one after another show as one
+  # closed group, "{company} · {base title} · {n} variants", in the place of the first of
+  # them; opening it shows its pieces, each with its own actions. An offer with no other
+  # variant next to it is a piece as always. The count of the inbox still counts offers,
+  # and the other views and "Maybe" do not group.
+
+  Scenario: The variants of a role show as one closed group
+    Given offers for "Acme" as "Backend Engineer - Payments", "Data Engineer" and "Backend Engineer - Platform", added in that order
+    When I open the inbox
+    Then I see the group of variants "Acme · Backend Engineer · 2 variants"
+    And I see the offers, in order: "Data Engineer"
+    And the inbox says "3 to decide"
+
+  Scenario: A group of variants opens to show its offers
+    Given offers for "Acme" as "Backend Engineer - Payments", "Data Engineer" and "Backend Engineer - Platform", added in that order
+    And I am on the inbox
+    When I show the group of variants "Acme · Backend Engineer · 2 variants"
+    Then I see the offers, in order: "Backend Engineer - Platform", "Backend Engineer - Payments", "Data Engineer"
+
+  Scenario: A group left with one offer is a piece again
+    Given offers for "Acme" as "Backend Engineer - Payments", "Data Engineer" and "Backend Engineer - Platform", added in that order
+    And I am on the inbox
+    And I showed the group of variants "Acme · Backend Engineer · 2 variants"
+    When I discard the offer "Backend Engineer - Platform" because "No reason"
+    Then I see no group of variants
+    And I see the offers, in order: "Data Engineer", "Backend Engineer - Payments"
+
   # --- The country ---
 
   # @component: only an import gives an offer a location, and the E2E tests cannot

@@ -9,6 +9,7 @@ from sqlalchemy import (
     ColumnElement,
     CursorResult,
     Select,
+    String,
     and_,
     case,
     exists,
@@ -19,6 +20,9 @@ from sqlalchemy import (
     select,
     true,
     update,
+)
+from sqlalchemy import (
+    cast as sql_cast,
 )
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
@@ -170,11 +174,53 @@ def filtered(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
     )
 
 
+def _to_decide(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
+    """Pending and not filtered: the offers that have variants."""
+    return and_(OfferRow.status == OfferStatus.PENDING, not_(filtered(profiles)))
+
+
+def _variants(profiles: Sequence[SearchTerms]) -> ColumnElement[int]:
+    """How many offers to decide share its variant key, itself included; 1 for the others."""
+    counts = (
+        select(OfferRow.variant_key.label("variant_key"), func.count().label("offers"))
+        .where(_to_decide(profiles))
+        .group_by(OfferRow.variant_key)
+        .subquery()
+    )
+    shared = (
+        select(counts.c.offers)
+        .where(counts.c.variant_key == OfferRow.variant_key)
+        .scalar_subquery()
+    )
+    return case((_to_decide(profiles), shared), else_=1)
+
+
+def _variants_together(
+    profiles: Sequence[SearchTerms], groups: Sequence[ColumnElement[Any]]
+) -> tuple[ColumnElement[Any], ...]:
+    """The order that puts each offer where the most recent of its variants in the same
+    group goes. Only the offers to decide have variants: the others go on their own."""
+    variant = case(
+        (_to_decide(profiles), OfferRow.variant_key), else_=sql_cast(OfferRow.id, String)
+    )
+    variants = (*groups, variant)
+    return (
+        func.first_value(OfferRow.created_at)
+        .over(partition_by=variants, order_by=_MOST_RECENT)
+        .desc(),
+        func.first_value(OfferRow.id).over(partition_by=variants, order_by=_MOST_RECENT).desc(),
+    )
+
+
 def _select_offers(profiles: Sequence[SearchTerms]) -> Select[OfferRow]:
-    # populate_existing: rows already in the session get `filtered` computed again.
+    # populate_existing: rows already in the session get `filtered` and `variants` computed
+    # again.
     return (
         select(OfferRow)
-        .options(with_expression(OfferRow.filtered, filtered(profiles)))
+        .options(
+            with_expression(OfferRow.filtered, filtered(profiles)),
+            with_expression(OfferRow.variants, _variants(profiles)),
+        )
         .execution_options(populate_existing=True)
     )
 
@@ -371,7 +417,7 @@ class OfferRepository:
             await self._session.scalars(
                 _select_offers(profiles)
                 .where(*conditions)
-                .order_by(*(_BY_VERDICT if offer_filter.is_by_verdict else ()), *_MOST_RECENT)
+                .order_by(*_order(offer_filter, profiles))
                 .limit(page.limit)
                 .offset(page.offset)
             )
@@ -615,6 +661,14 @@ _BY_VERDICT = (
         else_=len(_SUGGESTED_ORDER),
     ),
 )
+
+
+def _order(
+    offer_filter: OfferFilter, profiles: Sequence[SearchTerms]
+) -> tuple[ColumnElement[Any], ...]:
+    groups = _BY_VERDICT if offer_filter.is_by_verdict else ()
+    together = _variants_together(profiles, groups) if offer_filter.has_variants_together else ()
+    return (*groups, *together, *_MOST_RECENT)
 
 
 class TriageRepository:

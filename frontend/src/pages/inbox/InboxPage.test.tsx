@@ -56,6 +56,8 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   job_board_name: "Remote OK",
   location: null,
   countries: [],
+  base_title: title,
+  variants: 1,
   notes: null,
   status: "pending",
   filtered: false,
@@ -294,6 +296,32 @@ describe("InboxPage groups", () => {
     await screen.findByRole("article", { name: "New one" });
     const groups = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(groups).toEqual(["Today · 1 offer", "Yesterday · 1 offer", "Earlier · 1 offer"]);
+  });
+
+  it("shows the variants next to each other as one closed group that opens", async () => {
+    // Arrange: specs/ui/inbox.feature, "Variants".
+    const variant = { base_title: "Backend Engineer", variants: 2 };
+    inboxWith([
+      offer("Backend Engineer - Platform", variant),
+      offer("Backend Engineer - Payments", variant),
+      offer("Data Engineer"),
+    ]);
+    renderInbox();
+    const group = await screen.findByRole("region", {
+      name: "Acme · Backend Engineer · 2 variants",
+    });
+    const closed = screen.getAllByRole("article").map((piece) => piece.getAttribute("aria-label"));
+
+    // Act
+    await userEvent.click(within(group).getByRole("button", { expanded: false }));
+
+    // Assert
+    expect(closed).toEqual(["Data Engineer"]);
+    const open = within(group).getAllByRole("article");
+    expect(open.map((piece) => piece.getAttribute("aria-label"))).toEqual([
+      "Backend Engineer - Platform",
+      "Backend Engineer - Payments",
+    ]);
   });
 
   it("with verdicts, the pending view goes by verdict", async () => {

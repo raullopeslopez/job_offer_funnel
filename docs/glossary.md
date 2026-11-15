@@ -109,6 +109,8 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Perfil de referencia de una oferta (el que menos reglas incumple; empate: el primero por nombre) | `reference profile` |
 | Motivo del filtrado (resultado de cada regla frente al perfil de referencia) | `filter reason` |
 | Casi: filtrada que pasa el título y falla una sola regla | `near miss` (`near_miss`) |
+| Título base (el título hasta su primer paréntesis, coma o guion separado por espacios) | `base title` (`base_title`) |
+| Variantes (pendientes sin filtrar de la misma empresa con el mismo título base) | `variants` |
 | Revisión de una filtrada: rescate (promoverla) o bien filtrada (dejarla filtrada) | `review`: `rescued` · `rightly_filtered` |
 | Empresa vigilada (por su ATS) | `watched company` |
 | Alerta por email (método de importación `email` de un portal) | `email alert`: `linkedin` |

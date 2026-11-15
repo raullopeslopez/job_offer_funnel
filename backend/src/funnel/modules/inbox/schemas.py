@@ -439,6 +439,17 @@ class OfferRead(BaseModel):
         "each once; `Worldwide` when it can be done from any country.",
         examples=[["Spain", "Portugal"]],
     )
+    base_title: str = Field(
+        description="Its title up to the first parenthesis, bracket, comma, or dash or "
+        "vertical bar set off by a space; the whole title when that leaves nothing.",
+        examples=["Backend Engineer"],
+    )
+    variants: int = Field(
+        description="The pending offers that are not filtered, itself included, with its "
+        "company and base title, ignoring case and extra spaces; 1 when it is not pending "
+        "or is filtered.",
+        ge=1,
+    )
     notes: str | None
     status: OfferStatus
     filtered: bool = Field(

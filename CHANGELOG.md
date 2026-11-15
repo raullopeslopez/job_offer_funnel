@@ -10,6 +10,14 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Offer variants: every offer says its `base_title` (its title up to the first parenthesis,
+  bracket, comma, or dash or vertical bar set off by a space) and its `variants`, how many
+  pending offers that are not filtered share its company and base title, itself included.
+  `GET /offers` takes `variants_together=true` to list the variants one after another,
+  where the most recent of them would go; with `by_verdict`, only those within the same
+  group of the verdict. The inbox lists Pending that way and shows the variants of a role
+  as one closed group, "{company} · {base title} · {n} variants", that opens to show its
+  offers: ten postings of one role per team no longer read as the same offer ten times.
 - Pending by verdict: `GET /offers` takes `by_verdict=true` to list the offers OK first,
   then those with no verdict, then those KO by the reason of their suggested discard
   (title_word, stack, location, contract, company, and those with none last), each group

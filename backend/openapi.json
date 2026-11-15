@@ -2002,6 +2002,14 @@
             "description": "Set once the offer is promoted.",
             "title": "Application Id"
           },
+          "base_title": {
+            "description": "Its title up to the first parenthesis, bracket, comma, or dash or vertical bar set off by a space; the whole title when that leaves nothing.",
+            "examples": [
+              "Backend Engineer"
+            ],
+            "title": "Base Title",
+            "type": "string"
+          },
           "company": {
             "title": "Company",
             "type": "string"
@@ -2175,6 +2183,12 @@
             "title": "Url",
             "type": "string"
           },
+          "variants": {
+            "description": "The pending offers that are not filtered, itself included, with its company and base title, ignoring case and extra spaces; 1 when it is not pending or is filtered.",
+            "minimum": 1.0,
+            "title": "Variants",
+            "type": "integer"
+          },
           "watched_company_id": {
             "anyOf": [
               {
@@ -2209,6 +2223,8 @@
           "job_board_name",
           "location",
           "countries",
+          "base_title",
+          "variants",
           "notes",
           "status",
           "filtered",
@@ -5932,7 +5948,7 @@
     },
     "/api/v1/offers": {
       "get": {
-        "description": "Offers from the most recently added, or by verdict.",
+        "description": "Offers from the most recently added, or by verdict; maybe with their variants together.",
         "operationId": "list_offers_api_v1_offers_get",
         "parameters": [
           {
@@ -6051,6 +6067,18 @@
               "default": false,
               "description": "By the triager's verdict: OK, then no verdict, then KO by the reason of their suggested discard; within each, from the most recently added.",
               "title": "By Verdict",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "The variants of an offer one after another, from the most recently added, where the most recent of them would go; with `by_verdict`, only those within the same group of the verdict.",
+            "in": "query",
+            "name": "variants_together",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "The variants of an offer one after another, from the most recently added, where the most recent of them would go; with `by_verdict`, only those within the same group of the verdict.",
+              "title": "Variants Together",
               "type": "boolean"
             }
           },

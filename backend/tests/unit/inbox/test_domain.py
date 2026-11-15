@@ -7,6 +7,7 @@ from funnel.modules.inbox.domain import (
     InvalidOfferStatusError,
     OfferAction,
     OfferStatus,
+    base_title,
     countries,
     duplicate_key,
     is_title_word,
@@ -131,3 +132,26 @@ def test_countries_are_the_known_countries_a_location_names(
 
     # Assert
     assert found == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        pytest.param("Backend Engineer", "Backend Engineer", id="nothing-to-cut"),
+        pytest.param("Backend Engineer - Payments", "Backend Engineer", id="dash"),
+        pytest.param("Backend Engineer -Payments", "Backend Engineer", id="dash-space-before"),
+        pytest.param("Backend Engineer- Payments", "Backend Engineer", id="dash-space-after"),
+        pytest.param("Backend Engineer — Payments", "Backend Engineer", id="em-dash"),
+        pytest.param("Backend Engineer, Payments", "Backend Engineer", id="comma"),
+        pytest.param("Backend Engineer (Remote)", "Backend Engineer", id="parenthesis"),
+        pytest.param("Backend Engineer [Remote]", "Backend Engineer", id="bracket"),
+        pytest.param("Backend Engineer | Spain", "Backend Engineer", id="vertical-bar"),
+        pytest.param("Full-Stack Engineer - Payments", "Full-Stack Engineer", id="hyphen-in-word"),
+        pytest.param("  Backend   Engineer  ", "Backend Engineer", id="extra-spaces"),
+        pytest.param("(Senior) Backend Engineer", "(Senior) Backend Engineer", id="nothing-left"),
+    ],
+)
+def test_base_title_stops_where_the_role_ends(title: str, expected: str) -> None:
+    # Act / Assert
+    assert base_title(title) == expected
