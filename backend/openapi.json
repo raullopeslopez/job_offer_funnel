@@ -6006,6 +6006,43 @@
             }
           },
           {
+            "description": "Only the offers whose company or title contains it, ignoring case.",
+            "in": "query",
+            "name": "company_or_title",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the offers whose company or title contains it, ignoring case.",
+              "title": "Company Or Title"
+            }
+          },
+          {
+            "description": "Only the offers that came from this job board.",
+            "in": "query",
+            "name": "job_board_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the offers that came from this job board.",
+              "title": "Job Board Id"
+            }
+          },
+          {
             "in": "query",
             "name": "limit",
             "required": false,
