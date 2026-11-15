@@ -381,6 +381,15 @@ class OfferRepository:
         if offer_filter.is_filtered is not None:
             condition = filtered(profiles)
             conditions.append(condition if offer_filter.is_filtered else not_(condition))
+        if offer_filter.job_board_id is not None:
+            conditions.append(OfferRow.job_board_id == offer_filter.job_board_id)
+        if text := (offer_filter.matching_company_or_title or "").strip():
+            conditions.append(
+                or_(
+                    OfferRow.company.icontains(text, autoescape=True),
+                    OfferRow.title.icontains(text, autoescape=True),
+                )
+            )
         if offer_filter.is_near_miss is None and offer_filter.failed_rule is None:
             return conditions
         # Near misses and failed rules are decided by the domain, so they filter by id.

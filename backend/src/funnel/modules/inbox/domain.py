@@ -156,6 +156,8 @@ class OfferFilter:
     is_filtered: bool | None = None
     is_near_miss: bool | None = None
     failed_rule: Rule | None = None
+    matching_company_or_title: str | None = None
+    job_board_id: UUID | None = None
 
 
 @dataclass(frozen=True)

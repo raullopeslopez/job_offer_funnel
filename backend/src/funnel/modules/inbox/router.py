@@ -203,10 +203,20 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
     failed_rule: Annotated[
         Rule | None, Query(description="Only the offers whose filter reason fails this rule.")
     ] = None,
+    matching_company_or_title: Annotated[
+        str | None,
+        Query(description="Only the offers whose company or title contains it, ignoring case."),
+    ] = None,
+    job_board_id: Annotated[
+        UUID | None, Query(description="Only the offers that came from this job board.")
+    ] = None,
 ) -> Page[OfferRead]:
     """Offers from the most recently added."""
     offers, total = await service.list_page(
-        OfferFilter(status, filtered, near_miss, failed_rule), page
+        OfferFilter(
+            status, filtered, near_miss, failed_rule, matching_company_or_title, job_board_id
+        ),
+        page,
     )
     return Page(
         items=[OfferRead.model_validate(row, from_attributes=True) for row in offers],
