@@ -1,3 +1,4 @@
+import re
 from collections.abc import Collection, Sequence
 from dataclasses import replace
 from datetime import datetime
@@ -91,6 +92,13 @@ def _in_title(word: str) -> ColumnElement[bool]:
     return OfferRow.title.icontains(word, autoescape=True)
 
 
+def _whole_in_title(word: str) -> ColumnElement[bool]:
+    """The word, or its plural in -s or -es, between non-alphanumerics or the title's ends;
+    ignoring case. Postgres reads an escaped symbol as itself, so C++ matches literally."""
+    pattern = rf"(^|[^[:alnum:]]){re.escape(word)}(e?s)?($|[^[:alnum:]])"
+    return OfferRow.title.regexp_match(pattern, flags="i")
+
+
 def _in_text(word: str) -> ColumnElement[bool]:
     text = OfferRow.title + " " + func.coalesce(OfferRow.description, "")
     return text.icontains(word, autoescape=True)
@@ -98,12 +106,12 @@ def _in_text(word: str) -> ColumnElement[bool]:
 
 def _fits_words(terms: SearchTerms) -> ColumnElement[bool]:
     """A title in the offer's title, every keyword in title or description, no exclusion
-    in the title; ignoring case. Exclusions skip the description: a passing mention of an
-    excluded word there would drop good offers."""
+    in the title as a whole word; ignoring case. Exclusions skip the description: a
+    passing mention of an excluded word there would drop good offers."""
     return and_(
         or_(false(), *(_in_title(title) for title in terms.titles)),
         *(_in_text(keyword) for keyword in terms.keywords),
-        *(not_(_in_title(excluded)) for excluded in terms.excluded_keywords),
+        *(not_(_whole_in_title(excluded)) for excluded in terms.excluded_keywords),
     )
 
 
@@ -115,7 +123,7 @@ def _word_columns(profiles: Sequence[SearchTerms]) -> list[ColumnElement[bool]]:
         for column in (
             *(_in_title(title) for title in terms.titles),
             *(_in_text(keyword) for keyword in terms.keywords),
-            *(_in_title(excluded) for excluded in terms.excluded_keywords),
+            *(_whole_in_title(excluded) for excluded in terms.excluded_keywords),
         )
     ]
 
