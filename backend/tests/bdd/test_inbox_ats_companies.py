@@ -174,8 +174,11 @@ def _offer(client: TestClient, title: str) -> dict[str, Any]:
     return next(offer for offer in offers if offer["title"] == title)
 
 
-def _add_offer(client: TestClient, state: ScenarioState, company: str, title: str) -> str:
-    body = {"url": f"https://jobs.example/{next(state.urls)}", "company": company, "title": title}
+def _add_offer(
+    client: TestClient, state: ScenarioState, company: str, title: str, url: str | None = None
+) -> str:
+    url = url or f"https://jobs.example/{next(state.urls)}"
+    body = {"url": url, "company": company, "title": title}
     response = client.post(OFFERS_URL, json=body)
     assert response.status_code == 201, response.text
     offer_id: str = response.json()["id"]
@@ -271,6 +274,13 @@ def given_discarded_offer(
     offer_id = _add_offer(client, state, company, title)
     response = client.post(f"{OFFERS_URL}/{offer_id}/discard", json={})
     assert response.status_code == 201, response.text
+
+
+@given(parsers.parse('an offer for "{company}" as "{title}" with URL "{url}"'))
+def given_offer_with_url(
+    client: TestClient, state: ScenarioState, company: str, title: str, url: str
+) -> None:
+    _add_offer(client, state, company, title, url)
 
 
 # --- When ---

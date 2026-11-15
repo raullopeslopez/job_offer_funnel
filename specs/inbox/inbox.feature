@@ -75,8 +75,8 @@ Feature: Inbox
     Then it is rejected because the offer already exists
 
   Scenario Outline: The same URL is the same offer, ignoring a trailing slash and utm_* parameters
-    Given an offer for "Acme" as "Backend Engineer" at "https://jobs.example/1"
-    When I add an offer for "Acme" as "Senior Backend Engineer" at "<url>"
+    Given an offer for "Acme" as "Backend Engineer" with URL "https://jobs.example/1"
+    When I add an offer for "Acme" as "Senior Backend Engineer" with URL "<url>"
     Then it is rejected because the offer already exists
 
     Examples:
@@ -86,8 +86,8 @@ Feature: Inbox
       | https://jobs.example/1?utm_source=api       |
 
   Scenario: Another query string is another URL
-    Given an offer for "Acme" as "Backend Engineer" at "https://jobs.example/apply?job=1"
-    When I add an offer for "Acme" as "Senior Backend Engineer" at "https://jobs.example/apply?job=2"
+    Given an offer for "Acme" as "Backend Engineer" with URL "https://jobs.example/apply?job=1"
+    When I add an offer for "Acme" as "Senior Backend Engineer" with URL "https://jobs.example/apply?job=2"
     Then the offer is "pending"
 
   # --- Viewing and listing ---

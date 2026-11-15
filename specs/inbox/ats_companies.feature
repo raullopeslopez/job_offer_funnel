@@ -98,7 +98,7 @@ Feature: ATS companies
 
   Scenario: An offer whose title was edited on the board is skipped by its URL
     Given the company "Acme" is watched on "ashby" with board "acme"
-    And an offer for "Acme" as "Backend Engineer - Canada" at "https://jobs.ashbyhq.com/acme/1"
+    And an offer for "Acme" as "Backend Engineer - Canada" with URL "https://jobs.ashbyhq.com/acme/1"
     And the board of "Acme" publishes:
       | title            | description     | url                              |
       | Backend Engineer | Python services | https://jobs.ashbyhq.com/acme/1 |
