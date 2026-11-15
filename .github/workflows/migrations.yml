@@ -1,0 +1,60 @@
+name: migrations
+
+# Runs a PR's migrations on a Neon branch copied from production, before Render applies
+# them on start: up to head, down one and up again, on real data.
+on:
+  pull_request:
+    paths:
+      - "backend/migrations/**"
+      - ".github/workflows/migrations.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NEON_PROJECT_ID: misty-bread-13929739
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        run: uv sync --locked
+        working-directory: backend
+      # A safety net: Neon deletes the branch on its own if the delete step never runs.
+      - name: Compute branch expiry
+        id: expiry
+        run: echo "at=$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+      - name: Create Neon branch from production
+        id: branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch_name: migrations-pr-${{ github.event.number }}-${{ github.run_id }}
+          database: funnel
+          role: funnel
+          ssl: omit
+          expires_at: ${{ steps.expiry.outputs.at }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+      - name: Upgrade, downgrade one and upgrade again
+        working-directory: backend
+        env:
+          # asyncpg takes `ssl=require`, not `sslmode`.
+          DATABASE_URL: postgresql+asyncpg://funnel:${{ steps.branch.outputs.password }}@${{ steps.branch.outputs.db_host }}/funnel?ssl=require
+        run: |
+          uv run alembic upgrade head
+          uv run alembic downgrade -1
+          uv run alembic upgrade head
+      - name: Delete Neon branch
+        if: always() && steps.branch.outputs.branch_id != ''
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch: ${{ steps.branch.outputs.branch_id }}
+          api_key: ${{ secrets.NEON_API_KEY }}
