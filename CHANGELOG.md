@@ -330,6 +330,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Feed imports: an offer whose feed publishes the title or the company with HTML
+  character references ("&#038;" or "&amp;" for "&", as Jobicy does) now keeps the
+  characters they stand for, so "Quest Defense Systems &#038; Solutions" is "Quest Defense
+  Systems & Solutions" and its title matches the words of the search profiles. The offers
+  already imported are fixed too.
 - An offer with the same URL as one already in the inbox (ignoring a trailing slash and
   `utm_*` parameters) is now the same offer, even with another company or title: adding
   it answers `409 already-exists`, and imports skip it as already in the inbox. Before, a

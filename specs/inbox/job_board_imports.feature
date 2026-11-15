@@ -19,6 +19,8 @@ Feature: Job board imports
   after it. Items without a company, a title or a link are not offers, and an item found
   by several titles is one offer.
   Every imported offer keeps the link to the original posting and its job board as source.
+  Some feeds publish the title and the company with HTML character references ("&#038;"
+  or "&amp;" for "&"): an offer keeps the characters they stand for, never the reference.
   To respect each source's terms, a job board can be imported at most once every 6 hours,
   and its pending imported offers that are no longer in its feed or RSS are discarded as
   expired, except Jobicy's.
@@ -76,6 +78,14 @@ Feature: Job board imports
       | Backend Engineer | Acme    | Python services | https://himalayas.app/jobs/1 |
     When I import the job board "Himalayas"
     Then the offer "Backend Engineer" links to "https://himalayas.app/jobs/1" and comes from the job board "Himalayas"
+
+  Scenario: HTML character references in the title and the company are read as their characters
+    Given the feed "jobicy" publishes:
+      | title                     | company                                      | description     | url                  |
+      | R&#038;D Backend Engineer | Quest Defense Systems &amp; Solutions, Inc.  | Python services | https://jobicy.com/1 |
+    When I import the job board "Jobicy"
+    Then the pending offers are: "R&D Backend Engineer"
+    And the offer "R&D Backend Engineer" is for the company "Quest Defense Systems & Solutions, Inc."
 
   Scenario Outline: Jobicy is read page by page, up to 3 pages
     Given the feed "jobicy" publishes <pages> pages of 2 offers

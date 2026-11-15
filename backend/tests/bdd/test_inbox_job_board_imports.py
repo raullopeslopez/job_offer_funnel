@@ -513,6 +513,11 @@ def then_offer_source(client: TestClient, title: str, url: str, job_board: str) 
     assert (offer["url"], offer["job_board_name"]) == (url, job_board)
 
 
+@then(parsers.parse('the offer "{title}" is for the company "{company}"'))
+def then_offer_company(client: TestClient, title: str, company: str) -> None:
+    assert _offer(client, title)["company"] == company
+
+
 @then(parsers.re(r'the offer "(?P<title>[^"]+)" is "(?P<status>[^"]+)"$'))
 def then_offer_status(client: TestClient, title: str, status: str) -> None:
     assert _offer(client, title)["status"] == status
