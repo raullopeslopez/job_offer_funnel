@@ -296,6 +296,8 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Importing a job board or a watched company no longer fails with a 500 when only some
+  of its new offers have a location.
 - Scheduled imports no longer fail the whole run when a feed, RSS or ATS board is down
   (`feed-unavailable`, `board-unavailable`): it is skipped and tried again in the next run.
 - Importing Jobicy no longer loses most of its offers nor discards open ones: its feed
