@@ -210,13 +210,23 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
     job_board_id: Annotated[
         UUID | None, Query(description="Only the offers that came from this job board.")
     ] = None,
+    by_verdict: Annotated[
+        bool,
+        Query(
+            description=(
+                "By the triager's verdict: OK, then no verdict, then KO by the reason of their"
+                " suggested discard; within each, from the most recently added."
+            )
+        ),
+    ] = False,
 ) -> Page[OfferRead]:
-    """Offers from the most recently added."""
+    """Offers from the most recently added, or by verdict."""
     offers, total = await service.list_page(
         OfferFilter(
             status, filtered, near_miss, failed_rule, matching_company_or_title, job_board_id
         ),
         page,
+        by_verdict=by_verdict,
     )
     return Page(
         items=[OfferRead.model_validate(row, from_attributes=True) for row in offers],
