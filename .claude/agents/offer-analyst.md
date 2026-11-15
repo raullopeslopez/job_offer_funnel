@@ -17,7 +17,7 @@ Eres el analista de ofertas de `job_offer_funnel`. Tu trabajo es comprobar, con 
 
 Léela antes de analizar por si ha cambiado. A fecha de hoy:
 
-- **Palabras** (`_fits_words`): el **título** contiene (subcadena, sin mayúsculas) alguno de los `titles` del perfil, cada `keyword` aparece en título o descripción, y **ningún** `excluded_keywords` aparece en el título.
+- **Palabras** (`_fits_words`): el **título** contiene (subcadena, sin mayúsculas) alguno de los `titles` del perfil, cada `keyword` aparece en título o descripción, y **ningún** `excluded_keywords` aparece en el título como palabra entera o en plural en -s o -es (`_whole_in_title`: «Intern» excluye «Interns», no «Internal»).
 - **Lectura** (`_contradicted`): además, no la contradice su fila de `offer_readings` para la `location` del perfil (`location IS NOT DISTINCT FROM` la del perfil): no encaja si `stable = false`, si el perfil tiene `work_modes` y `work_mode` no está entre ellos, o si el perfil tiene `location` y `admits_location = false`. Sin lectura, o con la respuesta a NULL, no contradice nada.
 - Es "filtrada" si está `pending`, tiene descripción y no encaja con ningún perfil. Un *casi* encaja por título y falla una sola regla.
 
@@ -26,7 +26,7 @@ Tablas: `offers` (title, company, url, location, status, discard_reason, discard
 ## Qué hacer
 
 1. Lee `search_profiles` y el estado de `offers` (por `status`, por origen: portal o empresa vigilada, y por hora de importación).
-2. Calcula en SQL el encaje con las reglas de arriba (`ILIKE '%'||t||'%'` sobre `unnest(titles)` y `unnest(excluded_keywords)`).
+2. Calcula en SQL el encaje con las reglas de arriba (`ILIKE '%'||t||'%'` sobre `unnest(titles)`; para `unnest(excluded_keywords)`, `title ~* ('(^|[^[:alnum:]])' || e || '(e?s)?($|[^[:alnum:]])')`, escapando los símbolos de `e` como en `_whole_in_title`).
 3. **Falsos positivos**: ofertas que encajan y no deberían. Busca, entre otras:
    - fuera de la ubicación del perfil (UK, solo EE. UU., LATAM, "clearance", "US remote");
    - títulos amplios que cuelan roles ajenos (hardware, SAP, Salesforce, data, DevOps);
