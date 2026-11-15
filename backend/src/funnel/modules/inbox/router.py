@@ -1,3 +1,4 @@
+import shutil
 from collections.abc import AsyncIterator
 from dataclasses import asdict
 from http import HTTPStatus
@@ -71,7 +72,7 @@ from funnel.modules.inbox.service import (
     OfferTriageService,
     WatchedCompanyService,
 )
-from funnel.modules.inbox.triager import OfferTriager
+from funnel.modules.inbox.triager import ClaudeCodeTriager, OfferTriager, Triager
 
 offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
@@ -132,19 +133,27 @@ def get_offer_reading_service(
     )
 
 
-def get_offer_triager(
-    request: Request, client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)]
-) -> OfferTriager | None:
-    """The offer triager, or None without its API key; tests replace it with a fake."""
-    settings: Settings = request.app.state.settings
+def offer_triager(settings: Settings, client: httpx2.AsyncClient) -> Triager | None:
+    """The configured offer triager, or None when it cannot run: Groq without its API
+    key, or Claude Code where the `claude` CLI is not installed."""
+    if settings.offer_triager == "claude-code":
+        command = shutil.which("claude")
+        return ClaudeCodeTriager([command], settings.claude_code_model) if command else None
     api_key = settings.groq_api_key.get_secret_value()
     return OfferTriager(client, api_key, settings.groq_model) if api_key else None
+
+
+def get_offer_triager(
+    request: Request, client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)]
+) -> Triager | None:
+    """The offer triager, or None when it cannot run; tests replace it with a fake."""
+    return offer_triager(request.app.state.settings, client)
 
 
 def get_offer_triage_service(
     session: SessionDep,
     offers: Annotated[OfferService, Depends(get_offer_service)],
-    triager: Annotated[OfferTriager | None, Depends(get_offer_triager)],
+    triager: Annotated[Triager | None, Depends(get_offer_triager)],
 ) -> OfferTriageService:
     return OfferTriageService(
         TriageRepository(session),

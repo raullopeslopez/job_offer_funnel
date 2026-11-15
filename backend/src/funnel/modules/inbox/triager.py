@@ -1,17 +1,22 @@
-"""The offer triager: a language model on Groq that compares pending offers with what the
-user decided before, marks each one OK or KO (a false positive) with why yes, why not
-and its confidence, suggests
-discarding the KO ones, and suggests words to exclude from the profiles.
+"""The offer triager: a language model, on Groq or on Claude Code, that compares pending
+offers with what the user decided before, marks each one OK or KO (a false positive) with
+why yes, why not and its confidence, suggests discarding the KO ones, and suggests words
+to exclude from the profiles.
 
-One chat completion per batch of offers, answered as JSON with a strict schema, like the
-offer reader (reader.py). The context (profiles, decisions, its own mistakes) goes once
+One request per batch of offers, answered as JSON with a strict schema: a chat completion
+on Groq, like the offer reader (reader.py), or the `claude` CLI on the user's Claude
+subscription, which only runs where it is installed and signed in. Both are told and
+answer the same. The context (profiles, decisions, its own mistakes) goes once
 per request, which is what makes a batch cheaper than one request per offer. What the
 model answers is not trusted: the domain keeps only the suggestions whose evidence holds.
 """
 
+import asyncio
 import json
+import subprocess
+import tempfile
 from collections.abc import Sequence
-from typing import Any, Final
+from typing import Any, Final, Protocol
 
 import httpx2
 
@@ -32,7 +37,7 @@ from funnel.modules.inbox.domain import (
 )
 from funnel.modules.inbox.reader import API
 
-# The free plan allows 8,000 tokens a minute: five descriptions must fit with the context.
+# The part of each description told: the head says the role, the tail often the location.
 _HEAD_CHARACTERS: Final = 2000
 _TAIL_CHARACTERS: Final = 500
 
@@ -226,8 +231,21 @@ def _reply(answer: Any, offers: int) -> TriageReply:
     return TriageReply(found, suggestions)
 
 
+class Triager(Protocol):
+    batch_size: int
+
+    async def triage(self, offers: Sequence[OfferText], context: TriageContext) -> TriageReply:
+        """What the model says of each offer, by its position (an offer it did not answer
+        for is missing), and the exclusions it suggests. Raises OfferTriagerError when the
+        model does not answer or answers something that is not the JSON asked for."""
+        ...
+
+
 class OfferTriager:
-    """Asks the model about a batch of offers at a time."""
+    """Asks the model on Groq about a batch of offers at a time."""
+
+    # The free plan allows 8,000 tokens a minute: five descriptions must fit with the context.
+    batch_size = 5
 
     def __init__(self, client: httpx2.AsyncClient, api_key: str, model: str) -> None:
         self._client = client
@@ -260,3 +278,71 @@ class OfferTriager:
             return _reply(answer, len(offers))
         except (httpx2.HTTPError, ValueError, KeyError, IndexError, TypeError) as error:
             raise OfferTriagerError(f"{type(error).__name__}: {error}") from error
+
+
+# A batch of 20 takes Sonnet a minute or two.
+CLAUDE_CODE_TIMEOUT_SECONDS: Final = 600
+# Not run, timed out, or not the JSON asked for.
+_CLAUDE_CODE_FAILURES: Final = (
+    OSError,
+    subprocess.SubprocessError,
+    ValueError,
+    TypeError,
+    AttributeError,
+)
+
+
+class ClaudeCodeTriager:
+    """Asks Claude about a batch of offers at a time through the `claude` CLI, with no
+    tools, no settings, no MCP servers and no saved session, from an empty folder: it
+    only sees what it is told."""
+
+    # No per-minute token plan to fit in: the batch is as large as stays quick to answer.
+    batch_size = 20
+
+    def __init__(self, command: Sequence[str], model: str) -> None:
+        self._command = list(command)
+        self._model = model
+
+    async def triage(self, offers: Sequence[OfferText], context: TriageContext) -> TriageReply:
+        arguments = [
+            *self._command,
+            "-p",
+            "--model",
+            self._model,
+            "--output-format",
+            "json",
+            "--system-prompt",
+            _INSTRUCTIONS,
+            "--json-schema",
+            json.dumps(_SCHEMA),
+            "--tools",
+            "",
+            "--setting-sources",
+            "",
+            "--strict-mcp-config",
+            "--no-session-persistence",
+        ]
+        try:
+            # A thread, not an asyncio subprocess: those need the proactor loop on Windows.
+            done = await asyncio.to_thread(_run, arguments, _question(offers, context))
+            result = json.loads(done.stdout)
+            if done.returncode != 0 or result.get("is_error"):
+                raise ValueError(f"claude failed ({done.returncode}): {done.stdout[:500]}")
+            return _reply(result.get("structured_output"), len(offers))
+        except _CLAUDE_CODE_FAILURES as error:
+            raise OfferTriagerError(f"{type(error).__name__}: {error}") from error
+
+
+def _run(arguments: list[str], question: str) -> subprocess.CompletedProcess[str]:
+    with tempfile.TemporaryDirectory() as empty:
+        return subprocess.run(  # noqa: S603  # our own arguments, never the user's
+            arguments,
+            input=question,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=CLAUDE_CODE_TIMEOUT_SECONDS,
+            check=False,
+            cwd=empty,
+        )
