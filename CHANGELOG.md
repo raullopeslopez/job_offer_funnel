@@ -241,6 +241,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Excluded keywords only filter an offer when they are in its title as a whole word or
+  its plural in "s" or "es": "Lead" filters "Lead Engineer", "Engineer (Tech-Lead)" and
+  "Engineer for Leads", but no longer "Leading" nor "Mislead". Titles and keywords still
+  match inside longer words. Filter reasons, near misses, criteria previews and
+  suggestions follow the same rule.
+
 - Offer triages: each triaged offer now says what speaks for it and what against it, and
   how sure the triager is. `triage.why` is replaced by `why_yes` and `why_not` (each
   `{why, quote}`, or null when there is nothing to say on that side; the quote is kept
