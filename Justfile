@@ -87,6 +87,10 @@ downgrade:
 dev:
     uv run uvicorn funnel.main:create_app --factory --reload
 
+# Run the API on the production database (PROD_DATABASE_URL), triaging with Claude Code on your subscription; open it with `just frontend-dev`. Never migrates
+dev-prod $DATABASE_URL=env("PROD_DATABASE_URL") $OFFER_TRIAGER="claude-code":
+    uv run uvicorn funnel.main:create_app --factory
+
 # Format and auto-fix
 fmt:
     uv run ruff format .
