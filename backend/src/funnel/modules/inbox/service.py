@@ -26,7 +26,6 @@ from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
     LATEST_ONLY_FEEDS,
     READING_BATCH_SIZE,
-    TRIAGE_BATCH_SIZE,
     TRIAGE_DECISIONS,
     TRIAGE_MISTAKES,
     WHY_LENGTH,
@@ -102,7 +101,7 @@ from funnel.modules.inbox.schemas import (
     OfferCreate,
     WatchedCompanyCreate,
 )
-from funnel.modules.inbox.triager import OfferTriager
+from funnel.modules.inbox.triager import Triager
 
 _logger = structlog.get_logger(__name__)
 
@@ -490,7 +489,7 @@ class OfferTriageService:
         suggestions: SuggestionRepository,
         offers: OfferService,
         profiles: SearchProfileService,
-        triager: OfferTriager | None,
+        triager: Triager | None,
     ) -> None:
         self._triages = triages
         self._suggestions = suggestions
@@ -514,9 +513,10 @@ class OfferTriageService:
         if self._triager is None:
             raise OfferTriagerUnavailableError("No offer triager is configured")
         profiles = await self._profiles.all_terms()
-        fitting, total = await self._triages.list_untriaged(profiles, TRIAGE_BATCH_SIZE)
+        size = self._triager.batch_size
+        fitting, total = await self._triages.list_untriaged(profiles, size)
         near_misses = await self._near_misses()
-        offers = [*fitting, *near_misses[: TRIAGE_BATCH_SIZE - len(fitting)]]
+        offers = [*fitting, *near_misses[: size - len(fitting)]]
         total += len(near_misses)
         if not offers:
             return TriageBatch(triaged=0, failed=0, left=total)

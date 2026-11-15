@@ -6481,7 +6481,7 @@
     },
     "/api/v1/offers/triages": {
       "post": {
-        "description": "Have the offer triager compare up to 5 pending imported offers that fit a profile,\nin a single request, with your promoted and discarded offers and its own mistakes. It\nmarks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,\nwith a reason and its evidence. It may also suggest excluding a word from a profile,\nwhich joins the criteria suggestions if it holds the rule. Then the near misses go, the\nsame way: `ok` is a false negative (`to_rescue`), and it may suggest relaxing the rule\nthat filtered it. Nothing is applied.\n\nAn offer is triaged once. Call it again while `left` is not 0; the offers the triager\ndoes not answer for are left to triage.",
+        "description": "Have the offer triager compare the pending imported offers that fit a profile, up to\n5 with Groq and 20 with Claude Code, in a single request, with your promoted and\ndiscarded offers and its own mistakes. It marks each one `ok` or `ko` (a false\npositive), with why; a `ko` may suggest a discard, with a reason and its evidence. It\nmay also suggest excluding a word from a profile, which joins the criteria suggestions\nif it holds the rule. Then the near misses go, the same way: `ok` is a false negative\n(`to_rescue`), and it may suggest relaxing the rule that filtered it. Nothing is\napplied.\n\nAn offer is triaged once. Call it again while `left` is not 0; the offers the triager\ndoes not answer for are left to triage.",
         "operationId": "triage_offers_api_v1_offers_triages_post",
         "responses": {
           "201": {

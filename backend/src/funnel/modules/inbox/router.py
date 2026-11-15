@@ -1,3 +1,4 @@
+import shutil
 from collections.abc import AsyncIterator
 from dataclasses import asdict
 from http import HTTPStatus
@@ -71,7 +72,7 @@ from funnel.modules.inbox.service import (
     OfferTriageService,
     WatchedCompanyService,
 )
-from funnel.modules.inbox.triager import OfferTriager
+from funnel.modules.inbox.triager import ClaudeCodeTriager, OfferTriager, Triager
 
 offers_router = APIRouter(prefix="/offers", tags=["inbox"])
 
@@ -132,19 +133,27 @@ def get_offer_reading_service(
     )
 
 
-def get_offer_triager(
-    request: Request, client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)]
-) -> OfferTriager | None:
-    """The offer triager, or None without its API key; tests replace it with a fake."""
-    settings: Settings = request.app.state.settings
+def offer_triager(settings: Settings, client: httpx2.AsyncClient) -> Triager | None:
+    """The configured offer triager, or None when it cannot run: Groq without its API
+    key, or Claude Code where the `claude` CLI is not installed."""
+    if settings.offer_triager == "claude-code":
+        command = shutil.which("claude")
+        return ClaudeCodeTriager([command], settings.claude_code_model) if command else None
     api_key = settings.groq_api_key.get_secret_value()
     return OfferTriager(client, api_key, settings.groq_model) if api_key else None
+
+
+def get_offer_triager(
+    request: Request, client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)]
+) -> Triager | None:
+    """The offer triager, or None when it cannot run; tests replace it with a fake."""
+    return offer_triager(request.app.state.settings, client)
 
 
 def get_offer_triage_service(
     session: SessionDep,
     offers: Annotated[OfferService, Depends(get_offer_service)],
-    triager: Annotated[OfferTriager | None, Depends(get_offer_triager)],
+    triager: Annotated[Triager | None, Depends(get_offer_triager)],
 ) -> OfferTriageService:
     return OfferTriageService(
         TriageRepository(session),
@@ -251,13 +260,14 @@ async def read_offer_triager(service: TriageService) -> TriagerRead:
     },
 )
 async def triage_offers(service: TriageService) -> TriageBatchRead:
-    """Have the offer triager compare up to 5 pending imported offers that fit a profile,
-    in a single request, with your promoted and discarded offers and its own mistakes. It
-    marks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,
-    with a reason and its evidence. It may also suggest excluding a word from a profile,
-    which joins the criteria suggestions if it holds the rule. Then the near misses go, the
-    same way: `ok` is a false negative (`to_rescue`), and it may suggest relaxing the rule
-    that filtered it. Nothing is applied.
+    """Have the offer triager compare the pending imported offers that fit a profile, up to
+    5 with Groq and 20 with Claude Code, in a single request, with your promoted and
+    discarded offers and its own mistakes. It marks each one `ok` or `ko` (a false
+    positive), with why; a `ko` may suggest a discard, with a reason and its evidence. It
+    may also suggest excluding a word from a profile, which joins the criteria suggestions
+    if it holds the rule. Then the near misses go, the same way: `ok` is a false negative
+    (`to_rescue`), and it may suggest relaxing the rule that filtered it. Nothing is
+    applied.
 
     An offer is triaged once. Call it again while `left` is not 0; the offers the triager
     does not answer for are left to triage.

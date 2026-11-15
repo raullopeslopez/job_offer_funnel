@@ -463,8 +463,7 @@ class OfferReaderUnavailableError(AppError):
 
 # --- Offer triages (specs/inbox/offer_triages.feature) ---
 
-# Offers per request, and what the triager is told: about what its plan allows a minute.
-TRIAGE_BATCH_SIZE: Final = 5
+# What the triager is told (how many offers per request is each triager's: triager.py).
 TRIAGE_DECISIONS: Final = 30
 TRIAGE_MISTAKES: Final = 20
 SUGGESTED_REASONS: Final = frozenset(

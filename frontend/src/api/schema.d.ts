@@ -565,13 +565,14 @@ export interface paths {
         put?: never;
         /**
          * Triage Offers
-         * @description Have the offer triager compare up to 5 pending imported offers that fit a profile,
-         *     in a single request, with your promoted and discarded offers and its own mistakes. It
-         *     marks each one `ok` or `ko` (a false positive), with why; a `ko` may suggest a discard,
-         *     with a reason and its evidence. It may also suggest excluding a word from a profile,
-         *     which joins the criteria suggestions if it holds the rule. Then the near misses go, the
-         *     same way: `ok` is a false negative (`to_rescue`), and it may suggest relaxing the rule
-         *     that filtered it. Nothing is applied.
+         * @description Have the offer triager compare the pending imported offers that fit a profile, up to
+         *     5 with Groq and 20 with Claude Code, in a single request, with your promoted and
+         *     discarded offers and its own mistakes. It marks each one `ok` or `ko` (a false
+         *     positive), with why; a `ko` may suggest a discard, with a reason and its evidence. It
+         *     may also suggest excluding a word from a profile, which joins the criteria suggestions
+         *     if it holds the rule. Then the near misses go, the same way: `ok` is a false negative
+         *     (`to_rescue`), and it may suggest relaxing the rule that filtered it. Nothing is
+         *     applied.
          *
          *     An offer is triaged once. Call it again while `left` is not 0; the offers the triager
          *     does not answer for are left to triage.

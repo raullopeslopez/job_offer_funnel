@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Offer triages with Claude Code: with `OFFER_TRIAGER=claude-code` the offer triager is
+  the `claude` CLI on your Claude subscription (model `CLAUDE_CODE_MODEL`, `sonnet` by
+  default) instead of Groq, 20 offers at a time instead of 5, told and answering the
+  same, so its verdicts look the same in the app. It only runs where `claude` is
+  installed and signed in; without it the triage is not available. `just dev-prod` runs
+  the API that way on the production database (`PROD_DATABASE_URL`), to triage from your
+  computer with `just frontend-dev`.
 - Offer countries: every offer has `location`, where the job is as its source publishes
   it (Remote OK, Remotive, Himalayas, Jobicy, Greenhouse, Lever, Ashby and LinkedIn job
   alerts; null for offers added by hand, RSS items and offers imported before), and

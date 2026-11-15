@@ -50,7 +50,8 @@ class ScenarioState:
     suggestions: list[tuple[str, str, str, list[str]]] = field(default_factory=list)
     unanswered: set[str] = field(default_factory=set)
     is_failing: bool = False
-    has_triager: bool = True
+    # Groq, Claude Code, Claude Code not installed, or missing.
+    triager: str = "Groq"
     # What it was asked: the offers and the context of each request.
     requests: list[tuple[list[OfferText], TriageContext]] = field(default_factory=list)
     response: httpx2.Response | None = None
@@ -71,11 +72,16 @@ def state() -> ScenarioState:
     return ScenarioState()
 
 
+# How many offers each offer triager takes at a time (specs/inbox/offer_triages.feature).
+BATCH_SIZES = {"Groq": 5, "Claude Code": 20}
+
+
 class FakeOfferTriager:
     """Answers what the scenario says; an offer it knows nothing about is OK."""
 
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
+        self.batch_size = BATCH_SIZES[state.triager]
 
     async def triage(self, offers: Sequence[OfferText], context: TriageContext) -> TriageReply:
         self._state.requests.append((list(offers), context))
@@ -117,7 +123,9 @@ def fake_sources(client: TestClient, state: ScenarioState) -> Iterator[None]:
 
     overrides = cast(FastAPI, client.app).dependency_overrides
     overrides[get_feed_client] = fake_client
-    overrides[get_offer_triager] = lambda: FakeOfferTriager(state) if state.has_triager else None
+    overrides[get_offer_triager] = lambda: (
+        FakeOfferTriager(state) if state.triager in BATCH_SIZES else None
+    )
     yield
     overrides.pop(get_feed_client, None)
     overrides.pop(get_offer_triager, None)
@@ -371,9 +379,9 @@ def given_failing(state: ScenarioState) -> None:
     state.is_failing = True
 
 
-@given(parsers.re(r"the offer triager is (?P<triager>configured|missing)$"))
+@given(parsers.re(r"the offer triager is (?P<triager>Groq|Claude Code(, not installed)?|missing)$"))
 def given_triager(state: ScenarioState, triager: str) -> None:
-    state.has_triager = triager == "configured"
+    state.triager = triager
 
 
 # --- When ---
