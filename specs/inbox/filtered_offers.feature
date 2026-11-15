@@ -8,8 +8,9 @@ Feature: Filtered offers
   none of the search profiles. It fits a profile when:
   - one of the profile's titles appears in the offer's title,
   - all of its keywords appear in the title or the description,
-  - none of its excluded keywords appears in the title as a whole word: "Lead" excludes
-    "Lead Backend Engineer" and "Backend Engineer (Tech-Lead)", not "Leading" nor "Leads".
+  - none of its excluded keywords appears in the title as a whole word or its plural
+    ending in "s" or "es": "Lead" excludes "Lead Backend Engineer", "Backend Engineer
+    (Tech-Lead)" and "Engineer for Leads", not "Leading" nor "Mislead".
   Titles and keywords may appear inside a longer word: "Forward Deploy" fits "Forward
   Deployed Engineer".
   Once an offer's description has been read, what it says about the work mode and the
@@ -49,7 +50,7 @@ Feature: Filtered offers
   Scenario Outline: An excluded keyword only excludes the title where it is a whole word
     Given a search profile named "Leads" with:
       | titles            | Platform Engineer |
-      | excluded_keywords | Lead, C++         |
+      | excluded_keywords | Lead, C++, Box    |
     And the job board "Remote OK" was imported with:
       | title   | company | description      | url                    |
       | <title> | Acme    | Platform tooling | https://remoteok.com/1 |
@@ -62,8 +63,9 @@ Feature: Filtered offers
       | Platform Engineer - lead                | filtered     |
       | Platform Engineer (Tech-Lead)           | filtered     |
       | Platform Engineer, C++                  | filtered     |
+      | Platform Engineer, Search Boxes         | filtered     |
       | Platform Engineer, Leading Payments     | not filtered |
-      | Platform Engineer for Leads             | not filtered |
+      | Platform Engineer for Leads             | filtered     |
       | Platform Engineer, Mislead-proof Search | not filtered |
 
   Scenario: An offer that fits any profile is not filtered
