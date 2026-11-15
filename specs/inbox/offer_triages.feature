@@ -62,6 +62,14 @@ Feature: Offer triages
   well the triager does is part of the offer quality (specs/inbox/offer_quality.feature).
   Without an offer triager the app offers no triage and works as always.
 
+  The pending offers can also be listed by verdict, so that the ones worth my time come
+  first and the false positives can be discarded one after another: first those OK, then
+  those with no verdict, then those KO. The KO ones go by the reason of their suggested
+  discard, in the order of the list (title_word, stack, location, contract, company), and
+  those with no suggested discard go last. Within each group, the most recently added
+  first. Without verdicts that is the usual order. Listing by verdict asks nothing of the
+  triager.
+
   Background:
     Given a job board named "Remote OK" imported from the feed "remoteok"
     And a search profile named "Backend" with:
@@ -301,6 +309,38 @@ Feature: Offer triages
       | title            | mistake             | reason   |
       | Backend Engineer | rejected suggestion | contract |
       | Backend Engineer | missed discard      |          |
+
+  # --- Pending by verdict ---
+
+  Scenario: The pending offers listed by verdict: OK, no verdict, KO
+    Given these verdicts:
+      | company | verdict | suggested discard |
+      | Acme    | KO      | contract          |
+      | Globex  | KO      |                   |
+      | Initech | OK      |                   |
+    When I list the pending offers by verdict
+    Then the offers are, by company: "Initech", "Hooli", "Acme", "Globex"
+
+  Scenario: The KO offers go by the reason of their suggested discard, in the order of the list
+    Given these verdicts:
+      | company | verdict | suggested discard |
+      | Acme    | KO      | contract          |
+      | Globex  | KO      | title_word        |
+      | Initech | KO      | stack             |
+    When I list the pending offers by verdict
+    Then the offers are, by company: "Hooli", "Globex", "Initech", "Acme"
+
+  Scenario: Within a group, the most recently added first
+    Given these verdicts:
+      | company | verdict | suggested discard |
+      | Acme    | OK      |                   |
+      | Initech | OK      |                   |
+    When I list the pending offers by verdict
+    Then the offers are, by company: "Initech", "Acme", "Hooli", "Globex"
+
+  Scenario: Without verdicts, listing by verdict is the usual order
+    When I list the pending offers by verdict
+    Then the offers are, by company: "Hooli", "Initech", "Globex", "Acme"
 
   # --- Without a triager, and when it fails ---
 
