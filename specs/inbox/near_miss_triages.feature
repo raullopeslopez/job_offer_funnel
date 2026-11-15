@@ -11,8 +11,8 @@ Feature: Near miss triages
   near miss it is also told the rule that filtered it and why.
 
   For a near miss, OK means a false negative: the rule filtered an offer worth my time.
-  KO means it is rightly filtered. Either way it says why, in one sentence cut to 200
-  characters. A near miss with a verdict stays filtered: rescuing it is promoting it
+  KO means it is rightly filtered. Either way it says why yes and why not, with their
+  quotes, and its confidence, as for any offer. A near miss with a verdict stays filtered: rescuing it is promoting it
   (specs/inbox/rescues.feature) and marking it rightly filtered is a review, as always.
   Each triage also says how many near misses it marked OK.
 
