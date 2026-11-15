@@ -16,8 +16,16 @@ Feature: Offer triages
   Expired offers are not decisions and are never told.
 
   For each offer the triager answers with a verdict, OK (worth my time) or KO (a false
-  positive: it passed my filters but I would discard it), and why: one sentence in its
-  own words, cut to 200 characters. When it is KO, it adds a
+  positive: it passed my filters but I would discard it), why yes and why not, and its
+  confidence. Why yes is what in the offer speaks for it and why not what speaks against
+  it: each one sentence in its own words, cut to 200 characters, or none when there is
+  nothing to say on that side. Each may come with a quote, a short text of the offer
+  that backs it: it is kept only if it is in the title or the description letter for
+  letter, and the sentence is kept either way. The confidence is low, medium or high;
+  any other answer leaves the verdict without a confidence. Below, an offer that is OK
+  "because" something has that why yes, and one that is KO "because" something has that
+  why not. Offers triaged before there were two sides keep their one why on the side
+  of their verdict, with no quote and no confidence. When it is KO, it adds a
   reason of the list (title_word, stack, location, contract or company) and its evidence.
   For title_word the evidence is the word, which must be a word of the title; for the
   other reasons it is a sentence of the description, letter for letter. Only then is it
@@ -78,10 +86,56 @@ Feature: Offer triages
     Then the triage triaged 3 offers, failed on 0 and left 0
     And the triage says 2 OK and 1 KO
 
-  Scenario: A why longer than 200 characters is cut
-    Given the offer triager says the offer of "Acme" is OK with a why of 250 characters
+  Scenario: A triaged offer has why yes, why not and a confidence
+    Given the offer triager says of the offer of "Acme": OK, with high confidence
+      | side    | why                          | quote                 |
+      | why yes | A Python backend role.       | Python services       |
+      | why not | The company works on crypto. | for a crypto exchange |
     When I triage the offers
-    Then the offer of "Acme" has a why of 200 characters
+    Then the offer of "Acme" has the verdict "OK" with high confidence
+    And the offer of "Acme" has these whys:
+      | side    | why                          | quote                 |
+      | why yes | A Python backend role.       | Python services       |
+      | why not | The company works on crypto. | for a crypto exchange |
+
+  Scenario: A side with nothing to say has no why
+    Given the offer triager says the offer of "Acme" is OK because "A Python backend role.", with nothing against it
+    When I triage the offers
+    Then the offer of "Acme" has no why not
+
+  Scenario Outline: A quote that is not in the offer is not kept, and its sentence is
+    Given the offer triager says the offer of "Acme" is OK because "A Python role.", quoting "<quote>"
+    When I triage the offers
+    Then the offer of "Acme" has the why yes "A Python role." <kept>
+
+    Examples:
+      | quote                 | kept                       |
+      | Backend Engineer      | quoting "Backend Engineer" |
+      | crypto exchange       | quoting "crypto exchange"  |
+      | Python services in Go | with no quote              |
+      | python services       | with no quote              |
+
+  Scenario Outline: The confidence is low, medium or high
+    Given the offer triager says the offer of "Acme" is OK, with the confidence "<said>"
+    When I triage the offers
+    Then the offer of "Acme" has the verdict "OK" <kept>
+
+    Examples:
+      | said   | kept                   |
+      | low    | with low confidence    |
+      | medium | with medium confidence |
+      | high   | with high confidence   |
+      | sure   | with no confidence     |
+
+  Scenario Outline: A why longer than 200 characters is cut
+    Given the offer triager says the offer of "Acme" is OK with a <side> of 250 characters
+    When I triage the offers
+    Then the offer of "Acme" has a <side> of 200 characters
+
+    Examples:
+      | side    |
+      | why yes |
+      | why not |
 
   # --- Suggested discards ---
 

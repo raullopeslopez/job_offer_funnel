@@ -650,7 +650,11 @@ class TriageRepository:
     ) -> None:
         offer.triaged_at = func.now()
         offer.verdict = triage.verdict
-        offer.verdict_why = triage.why
+        offer.why_yes = None if triage.why_yes is None else triage.why_yes.why
+        offer.why_yes_quote = None if triage.why_yes is None else triage.why_yes.quote
+        offer.why_not = None if triage.why_not is None else triage.why_not.why
+        offer.why_not_quote = None if triage.why_not is None else triage.why_not.quote
+        offer.confidence = triage.confidence
         offer.suggested_discard_reason = None if suggestion is None else suggestion.reason
         offer.suggested_discard_evidence = None if suggestion is None else suggestion.evidence
         await self._session.flush()

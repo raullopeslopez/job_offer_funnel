@@ -1,5 +1,6 @@
 """The offer triager: a language model on Groq that compares pending offers with what the
-user decided before, marks each one OK or KO (a false positive) with why, suggests
+user decided before, marks each one OK or KO (a false positive) with why yes, why not
+and its confidence, suggests
 discarding the KO ones, and suggests words to exclude from the profiles.
 
 One chat completion per batch of offers, answered as JSON with a strict schema, like the
@@ -38,11 +39,28 @@ _TAIL_CHARACTERS: Final = 500
 _INSTRUCTIONS: Final = f"""\
 You help a job seeker triage job offers. You are given their search profiles, the offers \
 they promoted and discarded before (with why), the mistakes you made before, and some new \
-offers that passed their filters. Judge each new offer only by what they decided before.
-Answer for every offer, by its number, with a verdict and why:
-- ok: worth their time.
-- ko: a false positive: it passed their filters but they would discard it.
-When in doubt, say ok: a wrong ko costs more than a missed one. Why is one short sentence.
+offers that passed their filters.
+The filters only match words, so an offer can pass them and still be a job they do not want. \
+Each profile says what they want: its titles name the kind of role, and its excluded words \
+name what they do not want (for example iOS or Android: no mobile work; Frontend: no \
+frontend work; DevOps or SRE: no operations work). Judge each new offer by the work it \
+actually describes (its main stack, platform and duties), not only by the words of its \
+title, and by what they decided before.
+Answer for every offer, by its number, with a verdict, why yes, why not and your \
+confidence:
+- ok: its main work is the kind of role of one of their profiles.
+- ko: a false positive: its main work is something their profiles do not want, or like \
+what they discarded before.
+When the description really leaves it open, say ok: a wrong ko costs more than a missed \
+one. An offer whose main work is plainly of a kind they do not want is not in doubt.
+Why yes is what in the offer speaks for it, and why not what speaks against it, whatever \
+the verdict: each one short sentence that names what in the offer it is (its stack, \
+platform, duties, location or contract), never a general phrase like "worth their time"; \
+null when there is really nothing to say on that side. With each, give a quote: a short \
+excerpt copied character by character from the title or the description that shows it, \
+or null.
+Confidence is low, medium or high: how sure you are of the verdict. Say high only when \
+the offer plainly says what decides it.
 For a ko, give the reason and its evidence:
 - title_word: a word of the title they keep discarding; the evidence is that word, copied \
 from the title.
@@ -69,14 +87,28 @@ _SCHEMA: Final = {
                 "properties": {
                     "offer": {"type": "integer"},
                     "verdict": {"type": "string", "enum": ["ok", "ko"]},
-                    "why": {"type": "string"},
+                    "why_yes": {"type": ["string", "null"]},
+                    "quote_yes": {"type": ["string", "null"]},
+                    "why_not": {"type": ["string", "null"]},
+                    "quote_not": {"type": ["string", "null"]},
+                    "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
                     "reason": {
                         "type": ["string", "null"],
                         "enum": [*sorted(SUGGESTED_REASONS), None],
                     },
                     "evidence": {"type": ["string", "null"]},
                 },
-                "required": ["offer", "verdict", "why", "reason", "evidence"],
+                "required": [
+                    "offer",
+                    "verdict",
+                    "why_yes",
+                    "quote_yes",
+                    "why_not",
+                    "quote_not",
+                    "confidence",
+                    "reason",
+                    "evidence",
+                ],
                 "additionalProperties": False,
             },
         },
@@ -108,9 +140,10 @@ def _excerpt(description: str) -> str:
 
 def _decision(decision: Decision) -> str:
     if decision.status is OfferStatus.PROMOTED:
-        return f"- promoted: {decision.title}"
-    word = f" ({decision.word})" if decision.word else ""
-    return f"- discarded, {decision.reason}{word}: {decision.title}"
+        return f'- promoted: "{decision.title}"'
+    word = f", word {decision.word}" if decision.word else ""
+    # The reason apart from the title: "discarded, location: <title>" was read as a place.
+    return f'- discarded (reason: {decision.reason}{word}): "{decision.title}"'
 
 
 def _mistake(mistake: TriageMistake) -> str:
@@ -171,9 +204,13 @@ def _reply(answer: Any, offers: int) -> TriageReply:
         if isinstance(number, int) and 0 <= number < offers:
             found[number] = TriageAnswer(
                 verdict=_text(item.get("verdict")),
-                why=_text(item.get("why")),
+                why_yes=_text(item.get("why_yes")),
+                why_not=_text(item.get("why_not")),
                 reason=_text(item.get("reason")),
                 evidence=_text(item.get("evidence")),
+                quote_yes=_text(item.get("quote_yes")),
+                quote_not=_text(item.get("quote_not")),
+                confidence=_text(item.get("confidence")),
             )
     exclusions = answer.get("exclusions")
     suggestions = [

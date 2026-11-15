@@ -117,7 +117,9 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Triaje de una pendiente (un modelo la compara con mis decisiones, leyendo su descripción; no confundir con la fase `screening`) | `triage` |
 | Triador de ofertas (servicio externo que hace el triaje) | `offer triager` |
 | Veredicto del triaje (OK: merece mi tiempo; KO: falso positivo, pasó mis filtros y la descartaría) | `verdict`: `ok` · `ko` |
-| Porqué del veredicto (una frase del triador, con sus palabras) | `why` |
+| Porqué sí y porqué no del triaje (una frase del triador por cada lado, con sus palabras y, si la hay, la cita literal de la oferta que la respalda) | `why yes` · `why not` (`why_yes` · `why_not`) |
+| Cita de un porqué (texto copiado letra por letra del título o la descripción; solo se guarda si está) | `quote` |
+| Confianza del triaje (cuánto se fía el triador de su veredicto) | `confidence`: `low` · `medium` · `high` |
 | Descarte sugerido (veredicto `ko` con motivo y evidencia que se sostiene; nunca se aplica solo) | `suggested discard` |
 | Sugerencia rechazada (descarte sugerido de una oferta que promoví) | `rejected suggestion` |
 | Descarte no visto (oferta que el triador marcó OK y que descarté) | `missed discard` |

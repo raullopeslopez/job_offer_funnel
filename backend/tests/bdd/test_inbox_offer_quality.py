@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pytest_bdd import given, parsers, scenarios, then, when
 from support.clock import FixedClock
+from support.triages import said
 
 from funnel.core.clock import get_clock
 from funnel.modules.inbox.domain import OfferText, TriageAnswer, TriageContext, TriageReply
@@ -200,7 +201,7 @@ def given_answer(  # noqa: PLR0913, PLR0917  # one per part of the step
     reason: str | None,
     evidence: str | None,
 ) -> None:
-    state.answers[company] = TriageAnswer(verdict.lower(), why or "Why.", reason, evidence)
+    state.answers[company] = said(verdict, why or "Why.", reason=reason, evidence=evidence)
 
 
 @given("I triaged the offers")

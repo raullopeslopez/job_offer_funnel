@@ -440,9 +440,11 @@ Feature: Inbox screen
   # With an offer triager (specs/inbox/offer_triages.feature), the pending view offers
   # "Triage with AI": it triages batch after batch until none is left, saying how many it
   # triaged, how many are OK, how many KO and how many are left, and stops when a batch
-  # triages none. A pending offer with a verdict says it under its strip: "AI: OK" or
-  # "AI: KO", and why. With a suggested discard it adds the reason and its
-  # evidence, and "Discard as suggested" discards it with that reason and word, like any
+  # triages none. A pending offer with a verdict says it under its strip, in its AI
+  # section: "AI: OK" or "AI: KO", its confidence ("High", "Medium" or "Low", none if it
+  # has none), and a line per side it has: "Why yes: {why}" and "Why not: {why}", each
+  # followed by its quote in quotes when it has one. With a suggested discard it adds
+  # "Discard: {reason}", which discards it with that reason and word, like any
   # discard. The criteria suggestions from the triager show above the offers, one at a
   # time, the first first: "AI suggests: exclude “{word}” from {profile}", its why, the
   # line "Takes {m} out of Pending, loses none you promoted." and "Not now" or "Exclude
@@ -472,23 +474,46 @@ Feature: Inbox screen
     Then it says "Triaged 3 · 1 OK · 2 KO · 2 left. Try again later."
 
   @component
-  Scenario Outline: A pending offer shows the verdict of the triage
-    Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "<verdict>" because "<why>"<suggested>
+  Scenario: A pending offer shows its AI section
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "KO" with high confidence and these whys:
+      | side    | why               | quote                      |
+      | why yes | A backend role.   | Backend Engineer           |
+      | why not | A part-time role. | Part-time, 20 hours a week |
     When I open the inbox
-    Then the offer "Backend Engineer Lead" says "<shown>"
+    Then the AI section of the offer "Backend Engineer Lead" says:
+      | AI: KO                                                  |
+      | High                                                    |
+      | Why yes: A backend role. “Backend Engineer”             |
+      | Why not: A part-time role. “Part-time, 20 hours a week” |
+
+  @component
+  Scenario Outline: The AI section shows only what the triage has
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "OK" because "Like Acme's role."<more>
+    When I open the inbox
+    Then the AI section of the offer "Backend Engineer Lead" <shows>
 
     Examples:
-      | verdict | why                | suggested                                                                       | shown                                                            |
-      | OK      | Like Acme's role.  |                                                                                 | AI: OK — Like Acme's role.                                       |
-      | KO      | Part-time role.    |                                                                                 | AI: KO — Part-time role.                                         |
-      | KO      | Part-time role.    | , with a suggested discard because "contract" with "Part-time, 20 hours a week" | AI: KO — Part-time role. Contract — “Part-time, 20 hours a week” |
-      | KO      | You discard leads. | , with a suggested discard because "title_word" with "Lead"                     | AI: KO — You discard leads. A word in the title — “Lead”         |
+      | more                     | shows                                              |
+      |                          | says "Why yes: Like Acme's role." and no "Why not" |
+      | , with no confidence     | shows no confidence                                |
+      | , with medium confidence | says "Medium"                                      |
+
+  @component
+  Scenario Outline: A suggested discard shows its reason as the action
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "KO" because "Part-time role.", with a suggested discard because "<reason>" with "<evidence>"
+    When I open the inbox
+    Then the offer "Backend Engineer Lead" has "Discard: <label>"
+
+    Examples:
+      | reason     | evidence                   | label               |
+      | contract   | Part-time, 20 hours a week | Contract            |
+      | title_word | Lead                       | A word in the title |
 
   @component
   Scenario: Only an offer with a suggested discard can be discarded as suggested
     Given a pending offer for "Globex" as "Backend Engineer Lead" with the verdict "KO" because "Part-time role."
     When I open the inbox
-    Then the offer "Backend Engineer Lead" has no "Discard as suggested"
+    Then the offer "Backend Engineer Lead" has no "Discard:" action
 
   @component
   Scenario: Improve the filter from the offer the suggestion comes from
@@ -528,8 +553,7 @@ Feature: Inbox screen
 
   # The triage also marks the near misses (specs/inbox/near_miss_triages.feature), and
   # says how many it marked OK as "{n} to rescue". A near miss with a verdict, in "Maybe"
-  # and in the filtered view, says it under its strip like any offer: "AI: OK" or "AI:
-  # KO", and why. An OK near miss with a suggestion to relax its rule says "Improve the
+  # and in the filtered view, says it under its strip like any offer, in its AI section. An OK near miss with a suggestion to relax its rule says "Improve the
   # filter: {change} in {profile}", the line "Brings {n} into Pending, none you
   # discarded." and "Relax it" (a criteria change made from that offer). Rescuing it is
   # promoting it, as always.
@@ -549,7 +573,7 @@ Feature: Inbox screen
 
     Examples:
       | suggested                                                                 | shown                                                                                               |
-      |                                                                           | AI: OK — Worth it.                                                                                  |
+      |                                                                           | Why yes: Worth it.                                                                                  |
       | , suggesting to stop excluding "Senior" in "Backend", bringing 1 offer in | Improve the filter: stop excluding “Senior” in Backend. Brings 1 into Pending, none you discarded. |
 
   @component

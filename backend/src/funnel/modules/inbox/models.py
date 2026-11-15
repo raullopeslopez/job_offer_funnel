@@ -32,6 +32,7 @@ from funnel.core.db import Base
 from funnel.modules.discovery.domain import WorkMode
 from funnel.modules.inbox.domain import (
     Ats,
+    Confidence,
     DiscardReason,
     FilterReason,
     OfferStatus,
@@ -40,6 +41,7 @@ from funnel.modules.inbox.domain import (
     SuggestedDiscard,
     Triage,
     Verdict,
+    Why,
     countries,
 )
 
@@ -237,11 +239,18 @@ class OfferRow(Base):
     watched_company_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("watched_companies.id", ondelete="SET NULL"), index=True
     )
-    # Set once the offer triager has seen it: its verdict and why, and the discard it
+    # Set once the offer triager has seen it: its verdict, why yes and why not with their
+    # quotes, its confidence, and the discard it
     # suggested, if any.
     triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     verdict: Mapped[Verdict | None] = mapped_column(_enum_column_type(Verdict, "verdict"))
-    verdict_why: Mapped[str | None] = mapped_column(Text)
+    why_yes: Mapped[str | None] = mapped_column(Text)
+    why_yes_quote: Mapped[str | None] = mapped_column(Text)
+    why_not: Mapped[str | None] = mapped_column(Text)
+    why_not_quote: Mapped[str | None] = mapped_column(Text)
+    confidence: Mapped[Confidence | None] = mapped_column(
+        _enum_column_type(Confidence, "confidence")
+    )
     suggested_discard_reason: Mapped[DiscardReason | None] = mapped_column(
         _enum_column_type(DiscardReason, "suggested_discard_reason")
     )
@@ -271,8 +280,11 @@ class OfferRow(Base):
 
     @property
     def triage(self) -> Triage | None:
-        verdict, why = self.verdict, self.verdict_why
-        return None if verdict is None or why is None else Triage(verdict, why)
+        if self.verdict is None:
+            return None
+        why_yes = None if self.why_yes is None else Why(self.why_yes, self.why_yes_quote)
+        why_not = None if self.why_not is None else Why(self.why_not, self.why_not_quote)
+        return Triage(self.verdict, why_yes, why_not, self.confidence)
 
     @property
     def suggested_discard(self) -> SuggestedDiscard | None:

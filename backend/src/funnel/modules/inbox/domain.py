@@ -97,12 +97,32 @@ class Verdict(StrEnum):
     KO = "ko"
 
 
+class Confidence(StrEnum):
+    """How sure the offer triager is of its verdict."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+@dataclass(frozen=True)
+class Why:
+    """One side of a triage: a sentence in the triager's words, and the text of the offer
+    that backs it, if it is in the offer."""
+
+    why: str
+    quote: str | None = None
+
+
 @dataclass(frozen=True)
 class Triage:
-    """The triager's verdict on an offer, and why in its own words."""
+    """The triager's verdict on an offer: what speaks for it and against it, and how sure
+    it is."""
 
     verdict: Verdict
-    why: str
+    why_yes: Why | None = None
+    why_not: Why | None = None
+    confidence: Confidence | None = None
 
 
 class SuggestionSource(StrEnum):
@@ -467,13 +487,17 @@ class SuggestedDiscard:
 
 @dataclass(frozen=True)
 class TriageAnswer:
-    """What the triager says of an offer, not trusted yet: its verdict and why and, for a
-    KO, a discard reason and its evidence."""
+    """What the triager says of an offer, not trusted yet: its verdict, why yes and why not
+    with their quotes, its confidence and, for a KO, a discard reason and its evidence."""
 
     verdict: str | None = None
-    why: str | None = None
+    why_yes: str | None = None
+    why_not: str | None = None
     reason: str | None = None
     evidence: str | None = None
+    quote_yes: str | None = None
+    quote_not: str | None = None
+    confidence: str | None = None
 
 
 @dataclass(frozen=True)
@@ -530,13 +554,28 @@ class TriageContext:
 WHY_LENGTH: Final = 200
 
 
-def kept_triage(answer: TriageAnswer) -> Triage | None:
-    """The verdict and why, if the verdict is OK or KO; the why is cut to 200 characters.
-    None is no answer: the offer is left to be triaged again."""
+def _why(why: str | None, quote: str | None, offer: OfferText) -> Why | None:
+    """One side, cut to 200 characters, with its quote only if the offer says it; none when
+    there is nothing to say."""
+    sentence = " ".join((why or "").split())[:WHY_LENGTH]
+    if not sentence:
+        return None
+    return Why(sentence, _quoted(quote, offer.title) or _quoted(quote, offer.description))
+
+
+def kept_triage(answer: TriageAnswer, offer: OfferText) -> Triage | None:
+    """The verdict, why yes and why not and the confidence, if the verdict is OK or KO; a
+    confidence that is not low, medium or high is left out. None is no answer: the offer is
+    left to be triaged again."""
     verdict = next((v for v in Verdict if v == (answer.verdict or "").lower()), None)
     if verdict is None:
         return None
-    return Triage(verdict, " ".join((answer.why or "").split())[:WHY_LENGTH])
+    return Triage(
+        verdict,
+        _why(answer.why_yes, answer.quote_yes, offer),
+        _why(answer.why_not, answer.quote_not, offer),
+        next((c for c in Confidence if c == (answer.confidence or "").lower()), None),
+    )
 
 
 def kept_suggestion(answer: TriageAnswer, offer: OfferText) -> SuggestedDiscard | None:

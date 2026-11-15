@@ -36,6 +36,17 @@ const BACKEND: SearchProfile = {
   work_modes: ["remote"],
 };
 
+type Triage = NonNullable<Offer["triage"]>;
+
+/** A triage as the specs put it: OK "because" is its why yes, KO "because" its why not. */
+const triaged = (verdict: "ok" | "ko", why: string, fields: Partial<Triage> = {}): Triage => ({
+  verdict,
+  why_yes: verdict === "ok" ? { why, quote: null } : null,
+  why_not: verdict === "ko" ? { why, quote: null } : null,
+  confidence: null,
+  ...fields,
+});
+
 const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   id: crypto.randomUUID(),
   url: `https://remoteok.com/${title}`,
@@ -139,6 +150,14 @@ const isFailing = (o: Offer, name: string) =>
   o.filter_reason?.rules.some((r) => r.rule === name && r.result === "failed") ?? false;
 
 /** The inbox API with these offers; it filters them as the real one does. */
+function noCriteriaSuggestions() {
+  server.use(
+    http.get("/api/v1/criteria-suggestions", () =>
+      HttpResponse.json({ items: [], total: 0, limit: 100, offset: 0 }),
+    ),
+  );
+}
+
 function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] = []) {
   server.use(
     http.get("/api/v1/offers", ({ request }) => {
@@ -909,45 +928,75 @@ describe("InboxPage triage", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(said));
   });
 
-  it.each([
-    ["ok", "Like Acme's role.", null, "AI: OK — Like Acme's role."],
-    ["ko", "Part-time role.", null, "AI: KO — Part-time role."],
-    [
-      "ko",
-      "Part-time role.",
-      { reason: "contract", evidence: "Part-time, 20 hours a week" },
-      "AI: KO — Part-time role. Contract — “Part-time, 20 hours a week”",
-    ],
-    [
-      "ko",
-      "You discard leads.",
-      { reason: "title_word", evidence: "Lead" },
-      "AI: KO — You discard leads. A word in the title — “Lead”",
-    ],
-  ] as const)("shows the verdict %s: %s", async (verdict, why, suggested_discard, shown) => {
+  it("shows the AI section of a triaged offer", async () => {
     // Arrange
     inboxWith([
       offer("Backend Engineer Lead", {
         company: "Globex",
-        triage: { verdict, why },
-        suggested_discard,
+        triage: {
+          verdict: "ko",
+          why_yes: { why: "A backend role.", quote: "Backend Engineer" },
+          why_not: { why: "A part-time role.", quote: "Part-time, 20 hours a week" },
+          confidence: "high",
+        },
       }),
     ]);
-    server.use(
-      http.get("/api/v1/criteria-suggestions", () =>
-        HttpResponse.json({ items: [], total: 0, limit: 100, offset: 0 }),
-      ),
-    );
+    noCriteriaSuggestions();
 
     // Act
     renderInbox();
 
     // Assert
     const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
-    expect(within(piece).getByText(shown)).toBeInTheDocument();
-    expect(within(piece).queryByRole("button", { name: "Discard as suggested" }) !== null).toBe(
-      suggested_discard !== null,
-    );
+    const section = within(piece).getByRole("region", { name: "AI verdict" });
+    expect(section).toHaveTextContent("AI: KO");
+    expect(within(section).getByRole("img", { name: "High confidence" })).toBeInTheDocument();
+    expect(section).toHaveTextContent("Why yes: A backend role. “Backend Engineer”");
+    expect(section).toHaveTextContent("Why not: A part-time role. “Part-time, 20 hours a week”");
+  });
+
+  it.each([
+    ["no confidence", {}, null],
+    ["medium confidence", { confidence: "medium" as const }, "Medium confidence"],
+  ])("shows only what the triage has: %s", async (_case, fields, meter) => {
+    // Arrange
+    inboxWith([
+      offer("Backend Engineer Lead", { triage: triaged("ok", "Like Acme's role.", fields) }),
+    ]);
+    noCriteriaSuggestions();
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    const section = within(piece).getByRole("region", { name: "AI verdict" });
+    expect(section).toHaveTextContent("Why yes: Like Acme's role.");
+    expect(section).not.toHaveTextContent("Why not");
+    expect(within(section).queryByRole("img")?.getAttribute("aria-label") ?? null).toBe(meter);
+  });
+
+  it.each([
+    ["contract", "Part-time, 20 hours a week", "Discard: Contract"],
+    ["title_word", "Lead", "Discard: A word in the title"],
+    [null, null, null],
+  ] as const)("shows a suggested discard %s as its action", async (reason, evidence, action) => {
+    // Arrange
+    inboxWith([
+      offer("Backend Engineer Lead", {
+        triage: triaged("ko", "Part-time role."),
+        suggested_discard: reason && evidence ? { reason, evidence } : null,
+      }),
+    ]);
+    noCriteriaSuggestions();
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    const discard = within(piece).queryByRole("button", { name: /^Discard: / });
+    expect(discard?.textContent ?? null).toBe(action);
   });
 
   it.each([
@@ -957,7 +1006,7 @@ describe("InboxPage triage", () => {
     // Arrange
     const user = userEvent.setup();
     const suggested = offer("Backend Engineer Lead", {
-      triage: { verdict: "ko", why: "Not for you." },
+      triage: triaged("ko", "Not for you."),
       suggested_discard: { reason, evidence },
     });
     inboxWith([suggested]);
@@ -975,7 +1024,7 @@ describe("InboxPage triage", () => {
     const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
 
     // Act
-    await user.click(within(piece).getByRole("button", { name: "Discard as suggested" }));
+    await user.click(within(piece).getByRole("button", { name: /^Discard: / }));
 
     // Assert
     expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
@@ -985,7 +1034,7 @@ describe("InboxPage triage", () => {
   it("improves the filter from the offer the suggestion comes from", async () => {
     // Arrange
     const user = userEvent.setup();
-    const ko = offer("Lead Backend Engineer", { triage: { verdict: "ko", why: "A lead role." } });
+    const ko = offer("Lead Backend Engineer", { triage: triaged("ko", "A lead role.") });
     inboxWith([ko]);
     const sent = triagerSuggesting(ko.id);
     renderInbox();
@@ -1076,7 +1125,7 @@ describe("InboxPage triage", () => {
           },
         ],
       },
-      triage: { verdict: "ok", why: "Worth it." },
+      triage: triaged("ok", "Worth it."),
     });
     inboxWith([nearMiss]);
     let suggestions: Suggestion[] = [
@@ -1113,7 +1162,9 @@ describe("InboxPage triage", () => {
     );
     renderInbox("/inbox?view=filtered");
     const piece = await screen.findByRole("article", { name: "Senior Backend Engineer" });
-    expect(within(piece).getByText("AI: OK — Worth it.")).toBeInTheDocument();
+    expect(within(piece).getByRole("region", { name: "AI verdict" })).toHaveTextContent(
+      "Why yes: Worth it.",
+    );
     expect(
       await within(piece).findByText("Improve the filter: stop excluding “Senior” in Backend"),
     ).toBeInTheDocument();

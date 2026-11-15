@@ -45,11 +45,25 @@ ANSWER = {
         {
             "offer": 0,
             "verdict": "ko",
-            "why": "Crypto.",
+            "why_yes": "A Python backend.",
+            "quote_yes": "Python services",
+            "why_not": "Crypto.",
+            "quote_not": "for a crypto exchange",
+            "confidence": "high",
             "reason": "company",
             "evidence": "for a crypto exchange",
         },
-        {"offer": 1, "verdict": "ok", "why": "Fits.", "reason": None, "evidence": None},
+        {
+            "offer": 1,
+            "verdict": "ok",
+            "why_yes": "Fits.",
+            "quote_yes": None,
+            "why_not": None,
+            "quote_not": None,
+            "confidence": "low",
+            "reason": None,
+            "evidence": None,
+        },
     ],
     "exclusions": [{"profile": "Backend", "word": "crypto", "why": "Noise.", "offers": [0]}],
 }
@@ -87,8 +101,17 @@ def test_reads_what_the_model_answers_for_each_offer() -> None:
 
     # Assert
     assert reply.answers == {
-        0: TriageAnswer("ko", "Crypto.", "company", "for a crypto exchange"),
-        1: TriageAnswer("ok", "Fits."),
+        0: TriageAnswer(
+            "ko",
+            "A Python backend.",
+            "Crypto.",
+            "company",
+            "for a crypto exchange",
+            "Python services",
+            "for a crypto exchange",
+            "high",
+        ),
+        1: TriageAnswer("ok", "Fits.", confidence="low"),
     }
     assert reply.suggestions == [TriagerSuggestion("Backend", "crypto", "Noise.", [0])]
 
@@ -108,6 +131,16 @@ def test_asks_once_for_the_batch_with_the_context_and_a_strict_schema() -> None:
     assert all(offer.description in question for offer in OFFERS)
 
 
+def test_tells_each_decision_with_its_reason_apart_from_the_title() -> None:
+    # Act
+    _request, body = _sent()
+
+    # Assert
+    question = body["messages"][-1]["content"]
+    assert '- discarded (reason: stack): "Data Engineer"' in question
+    assert '- promoted: "Backend Engineer Lead"' in question
+
+
 def test_sends_the_start_and_the_end_of_a_long_description() -> None:
     # Arrange
     offers = [OfferText("Backend Engineer", "Acme", "START " + "x" * 20_000 + " END")]
@@ -124,7 +157,7 @@ def test_sends_the_start_and_the_end_of_a_long_description() -> None:
 
 def test_leaves_out_the_offers_the_model_does_not_answer_for() -> None:
     # Arrange
-    answer = {"offers": [{"offer": 1, "verdict": "ok", "why": "Fits."}, {"offer": 7}]}
+    answer = {"offers": [{"offer": 1, "verdict": "ok", "why_yes": "Fits."}, {"offer": 7}]}
 
     # Act
     reply = _triage(lambda _request: _completion(json.dumps(answer)))
