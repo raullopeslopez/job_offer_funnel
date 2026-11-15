@@ -54,6 +54,7 @@ from funnel.modules.inbox.domain import (
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
     UNIQUE_DUPLICATE_KEY,
+    UNIQUE_URL_KEY,
     UNIQUE_WATCHED_NAME_INDEX,
     CriteriaChangeRow,
     DismissedSuggestionRow,
@@ -178,12 +179,15 @@ class OfferRepository:
     async def add(self, offer: OfferRow, profiles: Sequence[SearchTerms]) -> OfferRow:
         # Read before flushing: after a failed flush the row cannot be loaded any more.
         duplicate = f"An offer for {offer.company} as {offer.title} already exists"
+        same_url = f"An offer at {offer.url} already exists"
         self._session.add(offer)
         try:
             await self._session.flush()
         except IntegrityError as error:
             if UNIQUE_DUPLICATE_KEY in str(error.orig):
                 raise AlreadyExistsError(duplicate) from error
+            if UNIQUE_URL_KEY in str(error.orig):
+                raise AlreadyExistsError(same_url) from error
             if JOB_BOARD_FOREIGN_KEY in str(error.orig):
                 raise UnknownJobBoardError("The job board does not exist") from error
             raise
@@ -672,8 +676,8 @@ class FeedImportRepository:
     async def add_new(self, offers: Sequence[OfferRow]) -> list[UUID]:
         """Insert the offers that are not duplicates; return the ids of those inserted.
 
-        ON CONFLICT DO NOTHING keeps the UNIQUE constraint as the judge of duplicates
-        without aborting the transaction, as a failed flush would.
+        ON CONFLICT DO NOTHING keeps the UNIQUE constraints (company and title, URL) as the
+        judges of duplicates without aborting the transaction, as a failed flush would.
         """
         if not offers:
             return []
@@ -689,10 +693,7 @@ class FeedImportRepository:
             for offer in offers
         ]
         inserted = await self._session.scalars(
-            insert(OfferRow)
-            .values(values)
-            .on_conflict_do_nothing(constraint=UNIQUE_DUPLICATE_KEY)
-            .returning(OfferRow.id)
+            insert(OfferRow).values(values).on_conflict_do_nothing().returning(OfferRow.id)
         )
         return list(inserted.all())
 

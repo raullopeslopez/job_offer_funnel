@@ -164,8 +164,8 @@ TriageService = Annotated[OfferTriageService, Depends(get_offer_triage_service)]
     responses={
         HTTPStatus.CONFLICT: {
             "model": ProblemRead,
-            "description": "An offer with the same company and title already exists, "
-            "even if discarded (`already-exists`)",
+            "description": "An offer with the same company and title, or the same URL, "
+            "already exists, even if discarded (`already-exists`)",
         },
         HTTPStatus.UNPROCESSABLE_CONTENT: {
             "model": ValidationProblemRead | ProblemRead,

@@ -14,6 +14,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from http import HTTPStatus
 from typing import Final
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
 from funnel.core.exceptions import AppError, DomainError
@@ -690,6 +691,18 @@ def next_status(current: OfferStatus, action: OfferAction) -> OfferStatus:
 def duplicate_key(company: str, title: str) -> str:
     """Company and title ignoring case and extra spaces: equal keys mean the same offer."""
     return "|".join(" ".join(text.split()).casefold() for text in (company, title))
+
+
+def url_key(url: str) -> str:
+    """The URL without a trailing slash or utm_* parameters: equal keys mean the same offer,
+    even if the company edited its title."""
+    parts = urlsplit(url)
+    query = [
+        (k, v)
+        for k, v in parse_qsl(parts.query, keep_blank_values=True)
+        if not k.startswith("utm_")
+    ]
+    return urlunsplit(parts._replace(path=parts.path.rstrip("/"), query=urlencode(query)))
 
 
 class InvalidOfferStatusError(DomainError):

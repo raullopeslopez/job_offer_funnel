@@ -12,6 +12,8 @@ Feature: Inbox
   one given when no other is. "expired" is only set by the imports.
   The same company and title, ignoring case and extra spaces, is the same offer,
   even if it was discarded: the same posting found in another job board is rejected.
+  So is the same URL, ignoring a trailing slash and its utm_* parameters, even with
+  another company or title: a company that edits the title keeps its posting's URL.
   Promoting creates an application in stage "evaluated" with the offer's URL and the
   title as role, for the company with that name (created if it does not exist yet),
   through channel "portal" unless another one is given.
@@ -71,6 +73,22 @@ Feature: Inbox
     Given an offer for "Acme" as "Backend Engineer" that was discarded
     When I add an offer for "Acme" as "Backend Engineer"
     Then it is rejected because the offer already exists
+
+  Scenario Outline: The same URL is the same offer, ignoring a trailing slash and utm_* parameters
+    Given an offer for "Acme" as "Backend Engineer" with URL "https://jobs.example/1"
+    When I add an offer for "Acme" as "Senior Backend Engineer" with URL "<url>"
+    Then it is rejected because the offer already exists
+
+    Examples:
+      | url                                         |
+      | https://jobs.example/1                      |
+      | https://jobs.example/1/                     |
+      | https://jobs.example/1?utm_source=api       |
+
+  Scenario: Another query string is another URL
+    Given an offer for "Acme" as "Backend Engineer" with URL "https://jobs.example/apply?job=1"
+    When I add an offer for "Acme" as "Senior Backend Engineer" with URL "https://jobs.example/apply?job=2"
+    Then the offer is "pending"
 
   # --- Viewing and listing ---
 

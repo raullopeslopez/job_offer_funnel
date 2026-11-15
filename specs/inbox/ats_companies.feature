@@ -96,6 +96,15 @@ Feature: ATS companies
     When I import the watched company "Acme"
     Then the import found 1 offers, 0 added, 0 filtered and 1 already in the inbox
 
+  Scenario: An offer whose title was edited on the board is skipped by its URL
+    Given the company "Acme" is watched on "ashby" with board "acme"
+    And an offer for "Acme" as "Backend Engineer - Canada" with URL "https://jobs.ashbyhq.com/acme/1"
+    And the board of "Acme" publishes:
+      | title            | description     | url                              |
+      | Backend Engineer | Python services | https://jobs.ashbyhq.com/acme/1 |
+    When I import the watched company "Acme"
+    Then the import found 1 offers, 0 added, 0 filtered and 1 already in the inbox
+
   Scenario: An imported offer is for the watched company, links to the posting and keeps its source
     Given the company "Acme" is watched on "greenhouse" with board "acme"
     And the board of "Acme" publishes:

@@ -3995,7 +3995,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemRead"];
                 };
             };
-            /** @description An offer with the same company and title already exists, even if discarded (`already-exists`) */
+            /** @description An offer with the same company and title, or the same URL, already exists, even if discarded (`already-exists`) */
             409: {
                 headers: {
                     [name: string]: unknown;

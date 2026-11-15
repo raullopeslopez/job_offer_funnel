@@ -307,6 +307,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- An offer with the same URL as one already in the inbox (ignoring a trailing slash and
+  `utm_*` parameters) is now the same offer, even with another company or title: adding
+  it answers `409 already-exists`, and imports skip it as already in the inbox. Before, a
+  company that edited a title on its board (seen on Ashby) got its offer imported twice.
+  Copies imported before stay until discarded by hand.
 - Importing a job board or a watched company no longer fails with a 500 when only some
   of its new offers have a location.
 - Scheduled imports no longer fail the whole run when a feed, RSS or ATS board is down

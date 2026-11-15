@@ -181,6 +181,13 @@ def when_add_with_field(
     _add(client, state, _body(state, company, title) | {field: value})
 
 
+@when(parsers.re(f'{_ADD} with URL "(?P<url>[^"]+)"$'))
+def when_add_with_url(
+    client: TestClient, state: ScenarioState, company: str, title: str, url: str
+) -> None:
+    _add(client, state, _body(state, company, title) | {"url": url})
+
+
 @when(parsers.re(f"{_ADD} from a nonexistent job board$"))
 def when_add_from_nonexistent_board(
     client: TestClient, state: ScenarioState, company: str, title: str

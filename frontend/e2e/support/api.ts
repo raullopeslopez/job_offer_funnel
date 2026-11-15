@@ -67,10 +67,11 @@ export class Api {
     return this.post("/search-profiles", { name, titles: ["Backend Engineer"], ...fields });
   }
 
+  // One URL per company and title: the API rejects two offers with the same URL.
   addOffer(
     company: string,
     title: string,
-    url = "https://jobs.example/1",
+    url = `https://jobs.example/${encodeURIComponent(company)}/${encodeURIComponent(title)}`,
   ): Promise<Schemas["OfferRead"]> {
     return this.post("/offers", { company, title, url });
   }
