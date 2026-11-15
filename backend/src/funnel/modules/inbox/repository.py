@@ -673,11 +673,13 @@ class FeedImportRepository:
         """
         if not offers:
             return []
+        # Every row must have the same keys in a multi-row VALUES: only the columns the
+        # database fills itself are left out when unset.
         values = [
             {
                 column.key: getattr(offer, column.key)
                 for column in OfferRow.__table__.columns
-                if getattr(offer, column.key) is not None
+                if column.server_default is None or getattr(offer, column.key) is not None
             }
             | {"id": offer.id or uuid7()}
             for offer in offers
