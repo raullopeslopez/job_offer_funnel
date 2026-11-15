@@ -219,8 +219,18 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
             )
         ),
     ] = False,
+    variants_together: Annotated[
+        bool,
+        Query(
+            description=(
+                "The variants of an offer one after another, from the most recently added,"
+                " where the most recent of them would go; with `by_verdict`, only those"
+                " within the same group of the verdict."
+            )
+        ),
+    ] = False,
 ) -> Page[OfferRead]:
-    """Offers from the most recently added, or by verdict."""
+    """Offers from the most recently added, or by verdict; maybe with their variants together."""
     offers, total = await service.list_page(
         OfferFilter(
             status,
@@ -230,6 +240,7 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
             matching_company_or_title,
             job_board_id,
             is_by_verdict=by_verdict,
+            has_variants_together=variants_together,
         ),
         page,
     )

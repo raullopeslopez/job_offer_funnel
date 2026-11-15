@@ -410,7 +410,7 @@ export interface paths {
         };
         /**
          * List Offers
-         * @description Offers from the most recently added, or by verdict.
+         * @description Offers from the most recently added, or by verdict; maybe with their variants together.
          */
         get: operations["list_offers_api_v1_offers_get"];
         put?: never;
@@ -1681,6 +1681,12 @@ export interface components {
              * @description Set once the offer is promoted.
              */
             application_id: string | null;
+            /**
+             * Base Title
+             * @description Its title up to the first parenthesis, bracket, comma, or dash or vertical bar set off by a space; the whole title when that leaves nothing.
+             * @example Backend Engineer
+             */
+            base_title: string;
             /** Company */
             company: string;
             /**
@@ -1748,6 +1754,11 @@ export interface components {
             triage: components["schemas"]["TriageRead"] | null;
             /** Url */
             url: string;
+            /**
+             * Variants
+             * @description The pending offers that are not filtered, itself included, with its company and base title, ignoring case and extra spaces; 1 when it is not pending or is filtered.
+             */
+            variants: number;
             /**
              * Watched Company Id
              * @description The watched company it was imported from, if still watched.
@@ -3933,6 +3944,8 @@ export interface operations {
                 job_board_id?: string | null;
                 /** @description By the triager's verdict: OK, then no verdict, then KO by the reason of their suggested discard; within each, from the most recently added. */
                 by_verdict?: boolean;
+                /** @description The variants of an offer one after another, from the most recently added, where the most recent of them would go; with `by_verdict`, only those within the same group of the verdict. */
+                variants_together?: boolean;
                 limit?: number;
                 offset?: number;
             };
