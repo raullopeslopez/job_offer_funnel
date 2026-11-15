@@ -147,11 +147,7 @@ class OfferService:
         return offer
 
     async def list_page(
-        self,
-        offer_filter: OfferFilter,
-        page: PageParams,
-        *,
-        by_verdict: bool = False,  # noqa: ARG002  # contract only: the order comes in the green step
+        self, offer_filter: OfferFilter, page: PageParams
     ) -> tuple[list[OfferRow], int]:
         profiles = await self._profiles.all_terms()
         return await self._repository.list_page(offer_filter, page, profiles)

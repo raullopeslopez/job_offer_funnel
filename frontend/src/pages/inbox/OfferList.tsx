@@ -12,7 +12,7 @@ import { GroupedList } from "../../components/GroupedList";
 import { OfferPiece } from "../../components/OfferPiece";
 import { offerSourceKind } from "../../components/offerSource";
 import { DiscardingOffer } from "./DiscardingOffer";
-import { groupByDay } from "./dayGroups";
+import { groupByDay, groupByVerdict } from "./dayGroups";
 import { discardReasonText } from "./discardReasons";
 import type { SearchProfile } from "./filterRules";
 import { OfferStrip } from "./OfferStrip";
@@ -36,6 +36,8 @@ type Props = OfferContext &
     offers: Offer[];
     /** One titled group of all the offers, instead of a group per day. */
     single?: { title: string; count: number };
+    /** Listed by verdict: once one has a verdict, grouped by verdict instead of by day. */
+    byVerdict?: boolean;
     /** The offer open to discard, if any. */
     discardingId?: string | null;
     onCancelDiscard?: () => void;
@@ -90,7 +92,8 @@ export function InboxOffer({
   );
 }
 
-// The offers of a view as pieces, grouped by the day they were added or in a single group.
+// The offers of a view as pieces, grouped by the day they were added, by verdict or in a
+// single group.
 export function OfferList({
   view,
   offers,
@@ -98,6 +101,7 @@ export function OfferList({
   profiles,
   now = new Date(),
   single,
+  byVerdict = false,
   discardingId,
   onCancelDiscard = () => {},
   onDiscarded = () => {},
@@ -138,7 +142,10 @@ export function OfferList({
   }
   return (
     <Stack spacing={4}>
-      {groupByDay(offers, now).map((group) => (
+      {(byVerdict && offers.some((offer) => offer.triage)
+        ? groupByVerdict(offers)
+        : groupByDay(offers, now)
+      ).map((group) => (
         <GroupedList key={group.title} title={group.title} count={group.offers.length}>
           {group.offers.map(piece)}
         </GroupedList>

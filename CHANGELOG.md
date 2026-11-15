@@ -10,6 +10,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Pending by verdict: `GET /offers` takes `by_verdict=true` to list the offers OK first,
+  then those with no verdict, then those KO by the reason of their suggested discard
+  (title_word, stack, location, contract, company, and those with none last), each group
+  from the most recently added. The inbox lists Pending that way and, once an offer has a
+  verdict, groups it by verdict ("AI: OK", "Not triaged", "AI: KO · {reason}", "AI: KO")
+  instead of by day, so the false positives can be discarded one after another.
 - Offer search: `GET /offers` takes `matching_company_or_title`, only the offers whose
   company or title contains it, ignoring case and the spaces around it, and
   `job_board_id`, only the offers that came from that job board. Both combine with the

@@ -223,10 +223,15 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
     """Offers from the most recently added, or by verdict."""
     offers, total = await service.list_page(
         OfferFilter(
-            status, filtered, near_miss, failed_rule, matching_company_or_title, job_board_id
+            status,
+            filtered,
+            near_miss,
+            failed_rule,
+            matching_company_or_title,
+            job_board_id,
+            is_by_verdict=by_verdict,
         ),
         page,
-        by_verdict=by_verdict,
     )
     return Page(
         items=[OfferRead.model_validate(row, from_attributes=True) for row in offers],

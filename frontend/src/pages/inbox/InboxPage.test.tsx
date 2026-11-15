@@ -295,6 +295,49 @@ describe("InboxPage groups", () => {
     const groups = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(groups).toEqual(["Today · 1 offer", "Yesterday · 1 offer", "Earlier · 1 offer"]);
   });
+
+  it("with verdicts, the pending view goes by verdict", async () => {
+    // Arrange: the API lists them by verdict when asked to.
+    const discard = (reason: "stack" | "contract") => ({ reason, evidence: "Evidence." });
+    const byVerdict = [
+      offer("Senior Backend Engineer", { triage: triaged("ok", "Fits.") }),
+      offer("Backend Engineer"),
+      offer("Go Engineer", { triage: triaged("ko", "Go."), suggested_discard: discard("stack") }),
+      offer("Part-time Engineer", {
+        triage: triaged("ko", "Part-time."),
+        suggested_discard: discard("contract"),
+      }),
+      offer("Python Engineer", { triage: triaged("ko", "Not for you.") }),
+    ];
+    const asked: (string | null)[] = [];
+    inboxWith(byVerdict);
+    server.use(
+      http.get("/api/v1/offers", ({ request }) => {
+        const query = new URL(request.url).searchParams;
+        if (query.get("limit") !== "1") asked.push(query.get("by_verdict"));
+        const items = query.get("status") === "pending" && query.get("filtered") === "false";
+        const listed = items ? byVerdict : [];
+        return HttpResponse.json({ items: listed, total: listed.length, limit: 20, offset: 0 });
+      }),
+    );
+
+    // Act
+    renderInbox();
+
+    // Assert
+    await screen.findByRole("article", { name: "Python Engineer" });
+    expect(asked).toContain("true");
+    const groups = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(groups).toEqual([
+      "AI: OK · 1 offer",
+      "Not triaged · 1 offer",
+      "AI: KO · Stack · 1 offer",
+      "AI: KO · Contract · 1 offer",
+      "AI: KO · 1 offer",
+    ]);
+    const titles = screen.getAllByRole("article").map((a) => a.getAttribute("aria-label"));
+    expect(titles).toEqual(byVerdict.map((o) => o.title));
+  });
 });
 
 describe("InboxPage reading strip", () => {

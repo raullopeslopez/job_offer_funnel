@@ -10,6 +10,7 @@ from sqlalchemy import (
     CursorResult,
     Select,
     and_,
+    case,
     exists,
     false,
     func,
@@ -31,6 +32,7 @@ from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import (
     EXPIRED_REASON,
     Decision,
+    DiscardReason,
     FilterReason,
     FitChange,
     Mistake,
@@ -369,7 +371,7 @@ class OfferRepository:
             await self._session.scalars(
                 _select_offers(profiles)
                 .where(*conditions)
-                .order_by(OfferRow.created_at.desc(), OfferRow.id.desc())
+                .order_by(*(_BY_VERDICT if offer_filter.is_by_verdict else ()), *_MOST_RECENT)
                 .limit(page.limit)
                 .offset(page.offset)
             )
@@ -596,6 +598,23 @@ _DECIDED_BY_USER = and_(
     OfferRow.description.is_not(None), OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON)
 )
 _MOST_RECENT = (OfferRow.created_at.desc(), OfferRow.id.desc())
+# OK, then no verdict, then KO by the reason of their suggested discard, in the order of
+# the list, and those with no suggested discard last.
+_SUGGESTED_ORDER = (
+    DiscardReason.TITLE_WORD,
+    DiscardReason.STACK,
+    DiscardReason.LOCATION,
+    DiscardReason.CONTRACT,
+    DiscardReason.COMPANY,
+)
+_BY_VERDICT = (
+    case((OfferRow.verdict == Verdict.OK, 0), (OfferRow.verdict.is_(None), 1), else_=2),
+    case(
+        {reason: rank for rank, reason in enumerate(_SUGGESTED_ORDER)},
+        value=OfferRow.suggested_discard_reason,
+        else_=len(_SUGGESTED_ORDER),
+    ),
+)
 
 
 class TriageRepository:
