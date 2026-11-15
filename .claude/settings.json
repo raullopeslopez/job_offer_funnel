@@ -51,5 +51,16 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "render-plugin": {
+      "source": {
+        "source": "github",
+        "repo": "render-oss/render-plugin-claude-code"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "render@render-plugin": true
   }
 }
