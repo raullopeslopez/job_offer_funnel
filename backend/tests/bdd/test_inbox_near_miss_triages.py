@@ -78,6 +78,8 @@ def state() -> ScenarioState:
 class FakeOfferTriager:
     """Answers what the scenario says; an offer it knows nothing about is OK."""
 
+    batch_size = 5  # Groq's
+
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
 
