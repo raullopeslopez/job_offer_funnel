@@ -3,9 +3,16 @@ Feature: Offer triages
   I want a language model to mark each pending offer OK or KO against what I decided before, saying why, and to tell me what to change in my criteria
   So that I see the false positives my filters let through, and each batch that reaches Pending is better than the last, while I keep the last word
 
-  A triage sends the offer triager, in a single request, up to 5 pending imported offers
-  that fit a search profile, have a description and have no verdict yet, from the most
-  recently added: their title, company and description. With them, once, it is told:
+  There are two offer triagers, and the app is set up with one: Groq, a language model
+  on an outside service (the default, and the one of the deployed app), or Claude Code on
+  my Claude subscription, which only runs on my computer where Claude Code is installed and
+  signed in (there the app can work on the production data). Both are told the same and
+  answer the same, and what they say is kept and shown the same way; Groq takes up to 5
+  offers at a time and Claude Code up to 20.
+
+  A triage sends the offer triager, in a single request, as many pending imported offers
+  as it takes at a time that fit a search profile, have a description and have no
+  verdict yet, from the most recently added: their title, company and description. With them, once, it is told:
   - the search profiles: name, titles, keywords and excluded keywords;
   - my last 30 promoted and last 30 discarded imported offers, from the most recent: their
     title and, for the discarded ones, the discard reason and its word;
@@ -256,10 +263,16 @@ Feature: Offer triages
     When I triage the offers
     Then the triage triaged 0 offers, failed on 0 and left 0
 
-  Scenario: At most 5 offers are triaged at a time
-    Given the job board "Remote OK" was imported with 4 more offers as "Backend Engineer"
+  Scenario Outline: Each offer triager takes its own number of offers at a time
+    Given the offer triager is <triager>
+    And the job board "Remote OK" was imported with 22 more offers as "Backend Engineer"
     When I triage the offers
-    Then the triage triaged 5 offers, failed on 0 and left 2
+    Then the triage triaged <triaged> offers, failed on 0 and left <left>
+
+    Examples:
+      | triager     | triaged | left |
+      | Groq        | 5       | 20   |
+      | Claude Code | 20      | 5    |
 
   # --- What the triager is told ---
 
@@ -297,9 +310,11 @@ Feature: Offer triages
     Then it is <availability>
 
     Examples:
-      | triager    | availability  |
-      | configured | available     |
-      | missing    | not available |
+      | triager                    | availability  |
+      | Groq                       | available     |
+      | Claude Code                | available     |
+      | Claude Code, not installed | not available |
+      | missing                    | not available |
 
   Scenario: Cannot triage without an offer triager
     Given the offer triager is missing

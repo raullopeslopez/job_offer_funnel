@@ -6,9 +6,9 @@ Feature: Near miss triages
   The triage (specs/inbox/offer_triages.feature) also takes the near misses: pending
   imported offers that are filtered, pass the title and fail exactly one rule of their
   reference profile (specs/inbox/filter_reasons.feature), have a description and have no
-  verdict yet. They go after the pending offers that fit, in the same batches of up to
-  5, from the most recently added, and the triager is told the same context. For each
-  near miss it is also told the rule that filtered it and why.
+  verdict yet. They go after the pending offers that fit, in the same batches (up to 5
+  with Groq, 20 with Claude Code), from the most recently added, and the triager is told
+  the same context. For each near miss it is also told the rule that filtered it and why.
 
   For a near miss, OK means a false negative: the rule filtered an offer worth my time.
   KO means it is rightly filtered. Either way it says why yes and why not, with their
