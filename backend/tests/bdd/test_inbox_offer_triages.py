@@ -384,6 +384,26 @@ def given_triager(state: ScenarioState, triager: str) -> None:
     state.triager = triager
 
 
+@given("these verdicts:")
+def given_verdicts(client: TestClient, state: ScenarioState, datatable: list[list[str]]) -> None:
+    # The triager answers for the companies of the table and leaves the others untriaged;
+    # a suggested discard comes with valid evidence: a word of the title or the description.
+    verdicts = {row["company"]: row for row in _rows(datatable)}
+    for offer in state.remoteok:
+        row = verdicts.get(offer["company"])
+        if row is None:
+            state.unanswered.add(offer["company"])
+            continue
+        reason = row["suggested discard"] or None
+        evidence = None
+        if reason is not None:
+            evidence = offer["title"].split()[0] if reason == "title_word" else offer["description"]
+        state.answers[offer["company"]] = said(
+            row["verdict"], "Why.", reason=reason, evidence=evidence
+        )
+    _ok(client.post(TRIAGES_URL))
+
+
 # --- When ---
 
 
@@ -414,6 +434,13 @@ def when_list(client: TestClient, state: ScenarioState) -> None:
 @when("I check whether the triage is available")
 def when_check(client: TestClient, state: ScenarioState) -> None:
     state.response = client.get(f"{OFFERS_URL}/triager")
+
+
+@when("I list the pending offers by verdict")
+def when_list_by_verdict(client: TestClient, state: ScenarioState) -> None:
+    state.response = client.get(
+        OFFERS_URL, params={"status": "pending", "by_verdict": "true", "limit": "100"}
+    )
 
 
 # --- Then ---
@@ -594,3 +621,9 @@ def then_available(state: ScenarioState, availability: str) -> None:
 def then_unavailable(state: ScenarioState) -> None:
     assert state.last_response.status_code == 503, state.last_response.text
     assert state.last_response.json()["type"] == "/problems/offer-triager-unavailable"
+
+
+@then(parsers.re(r"the offers are, by company: (?P<companies>.+)$"))
+def then_offers_by_company(state: ScenarioState, companies: str) -> None:
+    items = _ok(state.last_response, 200)["items"]
+    assert [o["company"] for o in items] == re.findall(r'"([^"]+)"', companies)
