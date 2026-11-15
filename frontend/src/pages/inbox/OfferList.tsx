@@ -18,6 +18,7 @@ import type { SearchProfile } from "./filterRules";
 import { OfferStrip } from "./OfferStrip";
 import { TriageVerdict } from "./TriageVerdict";
 import type { Offer, OfferView } from "./types";
+import { groupVariants, VariantGroup } from "./VariantGroup";
 
 export type JobBoard = Pick<components["schemas"]["JobBoardRead"], "id" | "import_method">;
 
@@ -38,6 +39,8 @@ type Props = OfferContext &
     single?: { title: string; count: number };
     /** Listed by verdict: once one has a verdict, grouped by verdict instead of by day. */
     byVerdict?: boolean;
+    /** Listed with their variants together: those next to each other show as one group. */
+    variants?: boolean;
     /** The offer open to discard, if any. */
     discardingId?: string | null;
     onCancelDiscard?: () => void;
@@ -102,6 +105,7 @@ export function OfferList({
   now = new Date(),
   single,
   byVerdict = false,
+  variants = false,
   discardingId,
   onCancelDiscard = () => {},
   onDiscarded = () => {},
@@ -133,6 +137,23 @@ export function OfferList({
         onDiscarded={onDiscarded}
       />
     );
+  const pieces = (listed: Offer[]) =>
+    !variants
+      ? listed.map(piece)
+      : groupVariants(listed).map(({ first, offers: run }) =>
+          run.length === 1 ? (
+            piece(first)
+          ) : (
+            <VariantGroup
+              key={`variants-${first.id}`}
+              company={first.company}
+              baseTitle={first.base_title}
+              count={run.length}
+            >
+              {run.map(piece)}
+            </VariantGroup>
+          ),
+        );
   if (single) {
     return (
       <GroupedList title={single.title} count={single.count}>
@@ -147,7 +168,7 @@ export function OfferList({
         : groupByDay(offers, now)
       ).map((group) => (
         <GroupedList key={group.title} title={group.title} count={group.offers.length}>
-          {group.offers.map(piece)}
+          {pieces(group.offers)}
         </GroupedList>
       ))}
     </Stack>

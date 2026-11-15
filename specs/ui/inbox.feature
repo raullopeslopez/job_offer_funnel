@@ -102,7 +102,7 @@ Feature: Inbox screen
     Given offers for "Acme" as "Backend Engineer - Payments", "Data Engineer" and "Backend Engineer - Platform", added in that order
     And I am on the inbox
     And I showed the group of variants "Acme · Backend Engineer · 2 variants"
-    When I discard "Backend Engineer - Platform" with no reason
+    When I discard the offer "Backend Engineer - Platform" because "No reason"
     Then I see no group of variants
     And I see the offers, in order: "Data Engineer", "Backend Engineer - Payments"
 

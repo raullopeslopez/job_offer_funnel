@@ -11,6 +11,9 @@ const titles = (page: Page) => pieces(page).getByRole("heading", { level: 3 }).g
 const row = (page: Page, title: string): Locator =>
   page.getByRole("article", { name: title, exact: true });
 
+const variantGroup = (page: Page, name: string): Locator =>
+  page.getByRole("region", { name, exact: true });
+
 async function openInbox(page: Page, status: Status = "pending") {
   await page.goto("/inbox");
   await page.getByRole("tab", { name: STATUS_TABS[status] }).click();
@@ -106,7 +109,15 @@ Given("I started discarding the offer {string}", async ({ page }, title: string)
   await expect(reasons(page)).toBeVisible();
 });
 
+Given("I showed the group of variants {string}", async ({ page }, group: string) => {
+  await variantGroup(page, group).getByRole("button", { expanded: false }).click();
+});
+
 // --- When ---
+
+When("I show the group of variants {string}", async ({ page }, group: string) => {
+  await variantGroup(page, group).getByRole("button", { expanded: false }).click();
+});
 
 When("I open the inbox", async ({ page }) => {
   await openInbox(page);
@@ -189,6 +200,14 @@ When(
 // A list like `"C", "B", "A"` is not one {string}: match the whole quoted list.
 Then(/^I see the offers, in order: (".*")$/, async ({ page }, list: string) => {
   await expect(titles(page)).toHaveText(quoted(list));
+});
+
+Then("I see the group of variants {string}", async ({ page }, group: string) => {
+  await expect(variantGroup(page, group)).toBeVisible();
+});
+
+Then("I see no group of variants", async ({ page }) => {
+  await expect(page.getByRole("region", { name: / variants$/ })).toHaveCount(0);
 });
 
 Then("the inbox says {string}", async ({ page }, heading: string) => {
