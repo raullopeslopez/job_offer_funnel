@@ -130,7 +130,11 @@ When(
 When(
   "I add an offer for {string} as {string}",
   async ({ page }, company: string, title: string) => {
-    await addOffer(page, { url: "https://jobs.example/2", company, title });
+    await addOffer(page, {
+      url: `https://jobs.example/added/${encodeURIComponent(title)}`,
+      company,
+      title,
+    });
   },
 );
 

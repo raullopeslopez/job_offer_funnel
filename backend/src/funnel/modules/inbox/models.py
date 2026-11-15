@@ -46,6 +46,7 @@ from funnel.modules.inbox.domain import (
 )
 
 UNIQUE_DUPLICATE_KEY = "uq_offers_duplicate_key"
+UNIQUE_URL_KEY = "uq_offers_url_key"
 UNIQUE_WATCHED_NAME_INDEX = "uq_watched_companies_lower_name"
 UNIQUE_READING_INDEX = "uq_offer_readings_offer_id_location"
 UNIQUE_DISMISSED_INDEX = "uq_dismissed_suggestions_profile_lower_word"
@@ -218,6 +219,9 @@ class OfferRow(Base):
     location: Mapped[str | None] = mapped_column(String(200))
     # Company and title normalized: the database rejects the same offer twice.
     duplicate_key: Mapped[str] = mapped_column(String(401), unique=True)
+    # The URL normalized: the database rejects the same posting twice, even with another
+    # title. None only for the copies of a posting kept from before it was checked.
+    url_key: Mapped[str | None] = mapped_column(String(2048), unique=True)
     # Where it was found by hand, or the job board it was imported from.
     job_board_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("job_boards.id", ondelete="RESTRICT", name=JOB_BOARD_FOREIGN_KEY), index=True

@@ -11,6 +11,7 @@ from funnel.modules.inbox.domain import (
     duplicate_key,
     is_title_word,
     next_status,
+    url_key,
 )
 
 pytestmark = pytest.mark.unit
@@ -80,6 +81,28 @@ def test_duplicate_key_ignores_case_and_extra_spaces(company: str, title: str) -
 def test_duplicate_key_keeps_company_and_title_apart() -> None:
     # Act / Assert
     assert duplicate_key("Acme Backend", "Engineer") != duplicate_key("Acme", "Backend Engineer")
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        pytest.param("https://jobs.example/1", "https://jobs.example/1", id="as-is"),
+        pytest.param("https://jobs.example/1/", "https://jobs.example/1", id="trailing-slash"),
+        pytest.param(
+            "https://jobs.example/1?utm_source=api&utm_medium=feed",
+            "https://jobs.example/1",
+            id="utm-parameters",
+        ),
+        pytest.param(
+            "https://jobs.example/apply/?job=1&utm_source=api",
+            "https://jobs.example/apply?job=1",
+            id="keeps-other-parameters",
+        ),
+    ],
+)
+def test_url_key_ignores_a_trailing_slash_and_utm_parameters(url: str, expected: str) -> None:
+    # Act / Assert
+    assert url_key(url) == expected
 
 
 @pytest.mark.parametrize(
