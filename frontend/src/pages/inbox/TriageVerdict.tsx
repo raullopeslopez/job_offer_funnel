@@ -1,6 +1,7 @@
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
+import type { components } from "../../api/schema";
 import {
   acceptLabel,
   suggestionChange,
@@ -8,27 +9,79 @@ import {
   useCriteriaSuggestions,
   useSuggestionChoice,
 } from "../../components/criteriaSuggestions";
+import { offerShape, offerType } from "../../theme";
 import { DISCARD_REASON_LABELS } from "./discardReasons";
 import type { Offer } from "./types";
 
 type Props = { offer: Offer; onDiscarded?: (offer: Offer) => void };
+type Why = components["schemas"]["WhyRead"];
+type Confidence = components["schemas"]["Confidence"];
 
-/** "AI: OK — why", or "AI: KO — why" with the suggested discard if its evidence holds. */
-export function verdictText({ triage, suggested_discard }: Offer): string {
-  if (!triage) return "";
-  const said = `AI: ${triage.verdict.toUpperCase()} — ${triage.why}`;
-  if (!suggested_discard) return said;
-  const { reason, evidence } = suggested_discard;
-  return `${said} ${DISCARD_REASON_LABELS[reason]} — “${evidence}”`;
+const CONFIDENCE: Record<Confidence, { label: string; bars: number }> = {
+  low: { label: "Low", bars: 1 },
+  medium: { label: "Medium", bars: 2 },
+  high: { label: "High", bars: 3 },
+};
+
+/** How sure the triager is: three bars, as many filled as its level, and the level. */
+function ConfidenceMeter({ confidence }: { confidence: Confidence }) {
+  const { label, bars } = CONFIDENCE[confidence];
+  return (
+    <Box
+      role="img"
+      aria-label={`${label} confidence`}
+      sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}
+    >
+      <Box aria-hidden sx={{ display: "inline-flex", gap: "3px" }}>
+        {[1, 2, 3].map((bar) => (
+          <Box
+            key={bar}
+            sx={{
+              width: 14,
+              height: 5,
+              borderRadius: 3,
+              bgcolor: bar <= bars ? "text.primary" : "divider",
+            }}
+          />
+        ))}
+      </Box>
+      <Typography variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+    </Box>
+  );
 }
 
-// What the offer triager says of a pending offer or a near miss (specs/ui/inbox.feature):
-// its verdict and why; "Discard as suggested" with a suggested discard (with title_word the
-// evidence is the word); and, for an offer a criteria suggestion comes from (a KO offer, or
-// an OK near miss), "Improve the filter", a criteria change made from this offer.
+/** One side of the triage: "Why yes: {why}" or "Why not: {why}", and its quote. */
+function WhyLine({ side, why }: { side: "yes" | "no"; why: Why }) {
+  return (
+    <Typography variant="body2">
+      <Box
+        component="span"
+        sx={{ fontWeight: 500, color: side === "yes" ? "tone.green.fg" : "tone.red.fg" }}
+      >
+        {side === "yes" ? "Why yes:" : "Why not:"}
+      </Box>{" "}
+      {why.why}
+      {why.quote && (
+        <Box component="span" sx={{ color: "text.secondary" }}>
+          {" "}
+          “{why.quote}”
+        </Box>
+      )}
+    </Typography>
+  );
+}
+
+// The AI section of a pending offer or a near miss (specs/ui/inbox.feature): its verdict and
+// confidence, why yes and why not with their quotes, and "Discard: {reason}" with a suggested
+// discard (with title_word the word goes with it); and, for an offer a criteria suggestion
+// comes from (a KO offer, or an OK near miss), "Improve the filter", a criteria change made
+// from this offer.
 export function TriageVerdict({ offer, onDiscarded }: Props) {
+  const triage = offer.triage;
   const suggestion = offer.suggested_discard;
-  const canImprove = offer.triage?.verdict === (offer.filtered ? "ok" : "ko");
+  const canImprove = triage?.verdict === (offer.filtered ? "ok" : "ko");
   const suggestions = useCriteriaSuggestions(canImprove);
   const improvement = suggestions.data?.find(
     (s) => s.source === "triager" && s.offer_ids.includes(offer.id),
@@ -47,24 +100,57 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
     onSuccess: () => onDiscarded?.(offer),
   });
 
-  if (!offer.triage) return null;
+  if (!triage) return null;
+  const isOk = triage.verdict === "ok";
   const error = discard.error ?? choose.error;
   return (
-    <Stack spacing={1}>
+    <Stack spacing={1.5}>
       {error && <Alert severity="error">{error.title}</Alert>}
-      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
-        <Typography variant="body2" color="text.secondary">
-          {verdictText(offer)}
-        </Typography>
+      <Box
+        component="section"
+        aria-label="AI verdict"
+        sx={{
+          borderTop: 1,
+          borderColor: "divider",
+          pt: 1.75,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "132px minmax(0, 1fr) auto" },
+          gap: { xs: 1.5, sm: 2.5 },
+          alignItems: "start",
+        }}
+      >
+        <Stack spacing={1} sx={{ alignItems: "flex-start" }}>
+          <Box
+            component="span"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              height: offerShape.tagHeight,
+              px: 1.25,
+              borderRadius: offerShape.tagRadius,
+              bgcolor: isOk ? "tone.green.bg" : "tone.red.bg",
+              color: isOk ? "tone.green.fg" : "tone.red.fg",
+              ...offerType.tag,
+              fontWeight: 600,
+            }}
+          >
+            AI: {triage.verdict.toUpperCase()}
+          </Box>
+          {triage.confidence && <ConfidenceMeter confidence={triage.confidence} />}
+        </Stack>
+        <Stack spacing={0.75} sx={{ minWidth: 0 }}>
+          {triage.why_yes && <WhyLine side="yes" why={triage.why_yes} />}
+          {triage.why_not && <WhyLine side="no" why={triage.why_not} />}
+        </Stack>
         {suggestion && (
           <Button
             size="small"
             variant="outlined"
             loading={discard.isPending}
             onClick={() => discard.mutate()}
-            sx={{ ml: "auto" }}
+            sx={{ alignSelf: "center", justifySelf: { xs: "start", sm: "end" } }}
           >
-            Discard as suggested
+            Discard: {DISCARD_REASON_LABELS[suggestion.reason]}
           </Button>
         )}
       </Box>

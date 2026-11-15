@@ -230,6 +230,17 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Offer triages: each triaged offer now says what speaks for it and what against it, and
+  how sure the triager is. `triage.why` is replaced by `why_yes` and `why_not` (each
+  `{why, quote}`, or null when there is nothing to say on that side; the quote is kept
+  only if it is in the title or the description letter for letter) and `confidence`
+  (`low`, `medium`, `high`, or null). Offers triaged before keep their why on the side of
+  their verdict, with no quote and no confidence. The triager now judges the work an offer
+  describes (its stack, platform and duties) against the profiles, so an offer whose title
+  passes the filters but whose job is of a kind the profiles exclude (mobile, frontend…)
+  is marked KO; its why names what in the offer decides it. In the inbox, each triaged
+  offer has an AI section under its strip with its verdict, confidence, why yes and why
+  not, and the suggested discard as "Discard: {reason}".
 - Offer readings: the offer reader is also given the offer's title and the location its
   source publishes, and an answer's evidence may be quoted from any of them, not only
   from the description. A remote job whose title or location names a place

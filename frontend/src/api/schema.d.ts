@@ -1084,6 +1084,12 @@ export interface components {
             /** Website */
             website?: string | null;
         };
+        /**
+         * Confidence
+         * @description How sure the offer triager is of its verdict.
+         * @enum {string}
+         */
+        Confidence: "low" | "medium" | "high";
         /** ConversionByChannelRead */
         ConversionByChannelRead: {
             /**
@@ -2291,13 +2297,14 @@ export interface components {
          * @description What the offer triager says of an offer; it is never applied on its own.
          */
         TriageRead: {
+            /** @description How sure the triager is of its verdict; null when it did not say, and for offers triaged before it was asked. */
+            confidence: components["schemas"]["Confidence"] | null;
             /** @description `ok`: worth the user's time; `ko`: a false positive, it passed the filters but the user would discard it. */
             verdict: components["schemas"]["Verdict"];
-            /**
-             * Why
-             * @description One sentence in the triager's words, up to 200 characters.
-             */
-            why: string;
+            /** @description What in the offer speaks against it; null when nothing does. */
+            why_not: components["schemas"]["WhyRead"] | null;
+            /** @description What in the offer speaks for it; null when nothing does. */
+            why_yes: components["schemas"]["WhyRead"] | null;
         };
         /** TriagerRead */
         TriagerRead: {
@@ -2473,6 +2480,23 @@ export interface components {
              * @description ok_near_misses_rescued ÷ ok_near_misses_reviewed, in %.
              */
             triager_rescues: number | null;
+        };
+        /**
+         * WhyRead
+         * @description One side of a triage: a sentence in the triager's words, and the text of the offer
+         *     that backs it.
+         */
+        WhyRead: {
+            /**
+             * Quote
+             * @description Copied letter for letter from the title or the description; null when the triager gave none or it was not in the offer.
+             */
+            quote: string | null;
+            /**
+             * Why
+             * @description One sentence, up to 200 characters.
+             */
+            why: string;
         };
         /**
          * WorkMode
