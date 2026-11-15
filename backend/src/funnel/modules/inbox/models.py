@@ -42,6 +42,7 @@ from funnel.modules.inbox.domain import (
     Triage,
     Verdict,
     Why,
+    base_title,
     countries,
 )
 
@@ -219,6 +220,8 @@ class OfferRow(Base):
     location: Mapped[str | None] = mapped_column(String(200))
     # Company and title normalized: the database rejects the same offer twice.
     duplicate_key: Mapped[str] = mapped_column(String(401), unique=True)
+    # Company and base title normalized: the offers that share it are variants of a role.
+    variant_key: Mapped[str] = mapped_column(String(401))
     # The URL normalized: the database rejects the same posting twice, even with another
     # title. None only for the copies of a posting kept from before it was checked.
     url_key: Mapped[str | None] = mapped_column(String(2048), unique=True)
@@ -262,6 +265,8 @@ class OfferRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # Depends on the current search profiles, so every query computes it (see repository.py).
     filtered: Mapped[bool] = query_expression()
+    # Depends on which offers are pending and not filtered now: every query computes it too.
+    variants: Mapped[int] = query_expression()
     watched_company_name: Mapped[str | None] = column_property(
         select(WatchedCompanyRow.name)
         .where(WatchedCompanyRow.id == watched_company_id)
@@ -277,6 +282,10 @@ class OfferRow(Base):
     readings: Mapped[list[OfferReadingRow]] = relationship(
         lazy="selectin", order_by=(OfferReadingRow.created_at, OfferReadingRow.id), viewonly=True
     )
+
+    @property
+    def base_title(self) -> str:
+        return base_title(self.title)
 
     @property
     def countries(self) -> list[str]:

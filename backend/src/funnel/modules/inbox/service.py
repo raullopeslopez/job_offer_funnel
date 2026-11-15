@@ -83,6 +83,7 @@ from funnel.modules.inbox.domain import (
     rule_after,
     supported,
     url_key,
+    variant_key,
 )
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.models import CriteriaChangeRow, OfferRow, WatchedCompanyRow
@@ -135,6 +136,7 @@ class OfferService:
         row = OfferRow(
             **offer.model_dump(),
             duplicate_key=duplicate_key(offer.company, offer.title),
+            variant_key=variant_key(offer.company, offer.title),
             url_key=url_key(offer.url),
             status=OfferStatus.PENDING,
         )
@@ -805,6 +807,7 @@ def _offer_row(
         description=offer.description,
         location=offer.location,
         duplicate_key=duplicate_key(offer.company, offer.title),
+        variant_key=variant_key(offer.company, offer.title),
         url_key=url_key(offer.url),
         status=OfferStatus.PENDING,
         job_board_id=job_board_id,

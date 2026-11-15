@@ -697,6 +697,26 @@ def duplicate_key(company: str, title: str) -> str:
     return "|".join(" ".join(text.split()).casefold() for text in (company, title))
 
 
+# Where a title stops being the role and starts naming a team, a place or a detail: an
+# opening parenthesis or bracket, a comma, or a dash or vertical bar set off by a space.
+_AFTER_BASE_TITLE: Final = re.compile(r"[(\[,]|\s[-–—|]|[-–—|]\s")
+
+
+def base_title(title: str) -> str:
+    """The title up to its first parenthesis, bracket, comma, or dash or vertical bar set
+    off by a space; the whole title when that leaves nothing. A hyphen inside a word
+    ("Full-Stack") is part of the word."""
+    whole = " ".join(title.split())
+    cut = _AFTER_BASE_TITLE.search(whole)
+    return (whole[: cut.start()].strip() if cut else whole) or whole
+
+
+def variant_key(company: str, title: str) -> str:
+    """Company and base title ignoring case and extra spaces: equal keys mean variants of
+    the same role."""
+    return duplicate_key(company, base_title(title))
+
+
 def url_key(url: str) -> str:
     """The URL without a trailing slash or utm_* parameters: equal keys mean the same offer,
     even if the company edited its title."""

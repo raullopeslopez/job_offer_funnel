@@ -100,7 +100,7 @@ def given_decided_offer(
     client: TestClient, state: ScenarioState, company: str, title: str, decided: str
 ) -> None:
     offer_id = _add_offer(client, state, company, title)
-    action = {"discarded": "discard", "promoted": "promote"}[decided]
+    action = {"discarded": "discard", "promoted": "promotion"}[decided]
     response = client.post(f"{URL}/{offer_id}/{action}", json={})
     assert response.status_code == 201, response.text
 
