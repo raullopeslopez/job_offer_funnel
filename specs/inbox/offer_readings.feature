@@ -32,6 +32,13 @@ Feature: Offer readings
   - the offer, when known, is a stable job, whatever the profile.
   So an offer that has not been read, or whose description says nothing, is never
   filtered for it. Whether an offer is filtered still follows the current profiles.
+  The location its source publishes can also rule an offer out, without reading it. When
+  every part of that location (between commas, "/", "|", ";", " or " and " and ") is a
+  known country (specs/inbox/offer_countries.feature) and none of them is a country the
+  profile's location names, the offer cannot be done living there: its location rule
+  fails, with the published location as evidence, whatever its reading says, and it is
+  not read for that location. "Worldwide", "Anywhere", a region ("Europe", "EMEA") or any
+  other text in the location leaves the question to the reading.
 
   Background:
     Given the time is 2026-03-10 09:00
@@ -265,16 +272,16 @@ Feature: Offer readings
       | Backend Engineer | Acme    | Fully remote. | https://remoteok.com/1 |
     And I read the offers
     And the time is 2026-03-10 15:00
-    And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "United Kingdom"
+    And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "Europe"
     And I import the job board "Remote OK"
     And the offer reader answers for "Backend Engineer":
       | admits_location | admits_location_evidence |
-      | no              | United Kingdom           |
+      | yes             | Europe                   |
     When I read the offers
     Then the reading read 1 offers, failed on 0 and left 0 to read
     And the reading of "Backend Engineer" for "Spain" says:
       | admits_location | admits_location_evidence |
-      | no              | United Kingdom           |
+      | yes             | Europe                   |
 
   Scenario Outline: An offer that is no longer pending keeps its readings when it gets its location
     Given the job board "Remote OK" was imported with:
@@ -296,6 +303,62 @@ Feature: Offer readings
       | action    |
       | discarded |
       | promoted  |
+
+  # --- The published location ---
+
+  Scenario Outline: The published location rules out an offer it limits to other countries
+    Given the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "<location>"
+    And I import the job board "Remote OK"
+    When I view the offer "Backend Engineer"
+    Then the offer is <filtered>
+
+    Examples:
+      | location                           | filtered     |
+      | USA                                | filtered     |
+      | Canada,  USA                       | filtered     |
+      | United States or Canada            | filtered     |
+      | Germany / Netherlands              | filtered     |
+      | Germany,  Ireland,  Spain,  UK     | not filtered |
+      | spain                              | not filtered |
+      | Worldwide                          | not filtered |
+      | Anywhere                           | not filtered |
+      | Europe                             | not filtered |
+      | EMEA,  UK                          | not filtered |
+      | Remote - UK                        | not filtered |
+      | San Francisco, CA                  | not filtered |
+
+  Scenario: The published location is the evidence of the location rule
+    Given the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "Canada,  USA"
+    And I import the job board "Remote OK"
+    When I view the offer "Backend Engineer"
+    Then the filter reason is against the profile "Backend" with:
+      | rule      | result  | value | evidence     |
+      | title     | passed  |       |              |
+      | work_mode | unknown |       |              |
+      | location  | failed  | no    | Canada,  USA |
+      | stable    | unknown |       |              |
+
+  Scenario: An offer the published location rules out is not read for that location
+    Given the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "USA"
+    And I import the job board "Remote OK"
+    When I read the offers
+    Then the reading read 0 offers, failed on 0 and left 0 to read
+
+  Scenario: The published location rules out only for a profile whose location it leaves out
+    Given I edit the profile "Backend" to have the location "United States"
+    And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "USA"
+    And I import the job board "Remote OK"
+    When I view the offer "Backend Engineer"
+    Then the offer is not filtered
+
+  Scenario: A profile without a location is not ruled out by the published location
+    Given I delete the profile "Backend"
+    And a search profile named "Anywhere" with:
+      | titles | Backend Engineer |
+    And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "USA"
+    And I import the job board "Remote OK"
+    When I view the offer "Backend Engineer"
+    Then the offer is not filtered
 
   # --- Errors ---
 

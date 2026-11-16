@@ -14,7 +14,8 @@ Feature: Filter reasons
   - excluded: the excluded keyword found in the offer's title;
   - work_mode, location and stable: what the reading for the profile's location says,
     with its evidence; unknown when the offer has not been read or its reading does not
-    say.
+    say. The location rule fails, with the published location as evidence, when that
+    location rules the offer out (specs/inbox/offer_readings.feature).
   Only the rules the profile asks for are listed: keywords, excluded, work_mode and
   location when the profile has some; title and stable always. Only a failed rule
   filters: an offer is filtered exactly when its reference profile has a failed rule. A

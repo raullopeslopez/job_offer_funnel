@@ -18,10 +18,13 @@ Feature: Offer countries
   (Spain, United Kingdom, Germany...), or by a few common short forms, written in
   capitals: USA and US for United States, UK for United Kingdom, UAE for United Arab
   Emirates. "Worldwide" and "Anywhere" mean the job can be done from any country and
-  are shown as "Worldwide". A location that names no known country, such as a city or
-  just "Remote", shows as published; an offer without a location shows no country.
-  The country is only shown: it does not change the filter. The location, as published,
-  is given to the offer reader (specs/inbox/offer_readings.feature).
+  are shown as "Worldwide", except "Anywhere in" a place other than "the world", which
+  only says where in that place ("Anywhere in France, Belgium, Spain"). A location
+  that names no known country, such as a city or just "Remote", shows as published;
+  an offer without a location shows no country.
+  The location, as published, is given to the offer reader, and a location made only of
+  known countries can rule an offer out for a profile's location
+  (specs/inbox/offer_readings.feature).
 
   Background:
     Given the time is 2026-03-10 09:00
@@ -162,18 +165,22 @@ Feature: Offer countries
     Then the offer "Backend Engineer" is from "<countries>"
 
     Examples:
-      | location                     | countries               |
-      | Madrid, Spain                | Spain                   |
-      | spain                        | Spain                   |
-      | Remote - UK                  | United Kingdom          |
-      | USA only                     | United States           |
-      | San Francisco, US            | United States           |
-      | Dubai, UAE                   | United Arab Emirates    |
-      | Spain, Portugal              | Spain, Portugal         |
-      | Germany, Spain, Germany      | Germany, Spain          |
-      | United States or Canada      | United States, Canada   |
-      | Worldwide                    | Worldwide               |
-      | Anywhere in the world        | Worldwide               |
+      | location                           | countries              |
+      | Madrid, Spain                      | Spain                  |
+      | spain                              | Spain                  |
+      | Remote - UK                        | United Kingdom         |
+      | USA only                           | United States          |
+      | San Francisco, US                  | United States          |
+      | Dubai, UAE                         | United Arab Emirates   |
+      | Spain, Portugal                    | Spain, Portugal        |
+      | Germany, Spain, Germany            | Germany, Spain         |
+      | United States or Canada            | United States, Canada  |
+      | Worldwide                          | Worldwide              |
+      | Anywhere in the world              | Worldwide              |
+      | Anywhere                           | Worldwide              |
+      | Remote - Anywhere                  | Worldwide              |
+      | Anywhere in France, Belgium, Spain | France, Belgium, Spain |
+      | Anywhere in the US                 | United States          |
 
   Scenario: Short forms count only in capitals
     Given the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "Join us remotely"
