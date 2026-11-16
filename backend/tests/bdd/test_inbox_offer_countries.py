@@ -42,6 +42,8 @@ class Job:
     url: str
     # As the source publishes it: a text, a list (Himalayas) or nothing.
     location: str | list[str] | None
+    # Ashby's secondary locations, after its location.
+    secondary: tuple[str, ...] = ()
 
 
 def _remoteok(jobs: list[Job]) -> object:
@@ -131,6 +133,9 @@ def _ashby(jobs: list[Job]) -> object:
             "jobUrl": j.url,
             "isListed": True,
             "location": j.location,
+            "secondaryLocations": [
+                {"location": place, "address": {"addressCountry": ""}} for place in j.secondary
+            ],
         }
         for index, j in enumerate(jobs)
     ]
@@ -168,10 +173,20 @@ class ScenarioState:
     # By source: the feed, or the ATS of a watched company.
     published: dict[str, list[Job]] = field(default_factory=dict)
     urls: count[int] = field(default_factory=count)
+    response: httpx2.Response | None = None
 
-    def publish(self, source: str, title: str, location: str | list[str] | None) -> None:
-        url = f"https://{source}.example/jobs/{next(self.urls)}"
-        self.published.setdefault(source, []).append(Job(title, "Acme", url, location))
+    def publish(
+        self,
+        source: str,
+        title: str,
+        location: str | list[str] | None,
+        secondary: tuple[str, ...] = (),
+    ) -> None:
+        """Publishing a title again publishes the same offer, at its URL, as it is now."""
+        jobs = {job.title: job for job in self.published.get(source, [])}
+        url = jobs[title].url if title in jobs else f"https://{source}.example/jobs/{next(self.urls)}"
+        jobs[title] = Job(title, "Acme", url, location, secondary)
+        self.published[source] = list(jobs.values())
 
 
 @pytest.fixture
@@ -286,14 +301,48 @@ def given_watched(
     state.published.setdefault(ats, [])
 
 
-@given(parsers.parse('the board of "{company}" publishes "{title}" located in "{location}"'))
+def _ats(client: TestClient, company: str) -> str:
+    response = client.get(WATCHED_URL)
+    assert response.status_code == 200, response.text
+    ats: str = next(w["ats"] for w in response.json() if w["name"] == company)
+    return ats
+
+
+@given(
+    parsers.re(
+        r'the board of "(?P<company>[^"]+)" publishes "(?P<title>[^"]+)" '
+        r'located in "(?P<location>[^"]+)"$'
+    )
+)
 def given_board_offer(
     client: TestClient, state: ScenarioState, company: str, title: str, location: str
 ) -> None:
-    response = client.get(WATCHED_URL)
-    assert response.status_code == 200, response.text
-    ats = next(w["ats"] for w in response.json() if w["name"] == company)
-    state.publish(ats, title, location)
+    state.publish(_ats(client, company), title, location)
+
+
+@given(
+    parsers.parse(
+        'the board of "{company}" publishes "{title}" located in "{location}" '
+        'and also in "{first}" and "{second}"'
+    )
+)
+def given_board_offer_with_secondary(  # noqa: PLR0913, PLR0917  # one per step argument
+    client: TestClient,
+    state: ScenarioState,
+    company: str,
+    title: str,
+    location: str,
+    first: str,
+    second: str,
+) -> None:
+    state.publish(_ats(client, company), title, location, (first, second))
+
+
+@given(parsers.parse('the board of "{company}" publishes "{title}" with no location'))
+def given_board_offer_nowhere(
+    client: TestClient, state: ScenarioState, company: str, title: str
+) -> None:
+    state.publish(_ats(client, company), title, None)
 
 
 @given("a LinkedIn job alert with:", target_fixture="alert")
@@ -302,19 +351,28 @@ def given_alert(datatable: list[list[str]]) -> str:
     return _linkedin_alert([dict(zip(header, values, strict=True)) for values in rows])
 
 
+@given(parsers.re(r'I (?P<action>discarded|promoted) the offer "(?P<title>[^"]+)"$'))
+def given_acted(client: TestClient, action: str, title: str) -> None:
+    path = "discard" if action == "discarded" else "promotion"
+    response = client.post(f"{OFFERS_URL}/{_offer(client, title)['id']}/{path}", json={})
+    assert response.status_code == 201, response.text
+
+
 # --- When ---
 
 
+@given(parsers.parse('I import the job board "{job_board}"'))
 @when(parsers.parse('I import the job board "{job_board}"'))
 def when_import_job_board(client: TestClient, state: ScenarioState, job_board: str) -> None:
-    response = client.post(f"{JOB_BOARDS_URL}/{state.job_boards[job_board]}/imports")
-    assert response.status_code == 201, response.text
+    state.response = client.post(f"{JOB_BOARDS_URL}/{state.job_boards[job_board]}/imports")
+    assert state.response.status_code == 201, state.response.text
 
 
+@given(parsers.parse('I import the watched company "{company}"'))
 @when(parsers.parse('I import the watched company "{company}"'))
 def when_import_watched(client: TestClient, state: ScenarioState, company: str) -> None:
-    response = client.post(f"{WATCHED_URL}/{state.watched[company]}/imports")
-    assert response.status_code == 201, response.text
+    state.response = client.post(f"{WATCHED_URL}/{state.watched[company]}/imports")
+    assert state.response.status_code == 201, state.response.text
 
 
 @when("I import the alert")
@@ -323,6 +381,7 @@ def when_import_alert(client: TestClient, alert: str) -> None:
     assert response.status_code == 201, response.text
 
 
+@given(parsers.parse('I add an offer for "{company}" as "{title}"'))
 @when(parsers.parse('I add an offer for "{company}" as "{title}"'))
 def when_add_offer(client: TestClient, company: str, title: str) -> None:
     body = {"url": "https://jobs.example/1", "company": company, "title": title}
@@ -331,6 +390,21 @@ def when_add_offer(client: TestClient, company: str, title: str) -> None:
 
 
 # --- Then ---
+
+
+@then(
+    parsers.parse(
+        "the import found {found:d} offers, {added:d} added, {filtered:d} filtered "
+        "and {already:d} already in the inbox"
+    )
+)
+def then_import_counts(
+    state: ScenarioState, found: int, added: int, filtered: int, already: int
+) -> None:
+    assert state.response is not None
+    body = state.response.json()
+    counts = (body["found"], body["added"], body["filtered"], body["already_in_inbox"])
+    assert counts == (found, added, filtered, already)
 
 
 @then(parsers.parse('the offer "{title}" is located in "{location}"'))
