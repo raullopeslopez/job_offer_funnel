@@ -24,8 +24,14 @@ Feature: Offer readings
   hand or from an email alert) are never read. A pending offer that gets its location
   after it was read (an offer imported before locations were kept,
   specs/inbox/offer_countries.feature) loses its readings and is read again with it; an
-  offer that is no longer pending keeps them. At most 5 offers are read at a time,
-  so that the offer reader's limits are respected.
+  offer that is no longer pending keeps them.
+  There are two offer readers, and the app is set up with one, as with the offer
+  triagers (specs/inbox/offer_triages.feature): Groq (the default, and the one of the
+  deployed app) or Claude Code on my Claude subscription, which only runs on my computer
+  where Claude Code is installed and signed in. Both are told the same and answer the
+  same, and what they say is kept and filters the same way. So that each reader's limits
+  are respected, Groq reads up to 5 offers at a time and Claude Code up to 20, in a
+  single request.
   A reading adds three rules to fitting a profile, and only what is known can filter:
   - the offer's work mode, when known, is one of the profile's work modes, if it has any;
   - the offer, when known, can be done living in the profile's location, if it has one;
@@ -103,10 +109,16 @@ Feature: Offer readings
       | US Remote: Backend Engineer | Remote   | US Remote             |
       | Backend Engineer            | USA only | USA only              |
 
-  Scenario: At most 5 offers are read at a time
-    Given the job board "Remote OK" was imported with 6 offers as "Backend Engineer"
+  Scenario Outline: Each offer reader reads its own number of offers at a time
+    Given the offer reader is <reader>
+    And the job board "Remote OK" was imported with 22 offers as "Backend Engineer"
     When I read the offers
-    Then the reading read 5 offers, failed on 0 and left 1 to read
+    Then the reading read <read> offers, failed on 0 and left <left> to read
+
+    Examples:
+      | reader      | read | left |
+      | Groq        | 5    | 17   |
+      | Claude Code | 20   | 2    |
 
   Scenario: Offers without a description are not read
     Given an offer for "Acme" as "Backend Engineer"
@@ -367,14 +379,19 @@ Feature: Offer readings
 
   # --- Errors ---
 
-  Scenario: Without an offer reader nothing is read
+  Scenario Outline: Without an offer reader nothing is read
     Given the job board "Remote OK" was imported with:
       | title            | company | description                 | url                    |
       | Backend Engineer | Acme    | Based in our London office. | https://remoteok.com/1 |
-    And there is no offer reader
+    And the offer reader is <reader>
     When I read the offers
     Then it is rejected because the offer reader is not available
     And the offer "Backend Engineer" has no readings
+
+    Examples:
+      | reader                     |
+      | missing                    |
+      | Claude Code, not installed |
 
   Scenario: An offer the reader fails on is left to be read again
     Given the job board "Remote OK" was imported with:
@@ -384,3 +401,13 @@ Feature: Offer readings
     And the offer reader fails on the offer of "Globex"
     When I read the offers
     Then the reading read 1 offers, failed on 1 and left 1 to read
+
+  Scenario: A request the reader fails leaves every offer of it to be read again
+    Given the offer reader is Claude Code
+    And the job board "Remote OK" was imported with:
+      | title            | company | description                         | url                    |
+      | Backend Engineer | Acme    | Fully remote. Hiring across Europe. | https://remoteok.com/1 |
+      | Backend Engineer | Globex  | Based in our London office.         | https://remoteok.com/2 |
+    And the offer reader fails
+    When I read the offers
+    Then the reading read 0 offers, failed on 2 and left 2 to read

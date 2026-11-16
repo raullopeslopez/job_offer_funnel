@@ -15,6 +15,7 @@ from support.triages import said
 from funnel.core.clock import get_clock
 from funnel.modules.discovery.domain import WorkMode
 from funnel.modules.inbox.domain import (
+    OfferReaderError,
     OfferText,
     OfferTriagerError,
     Reading,
@@ -107,10 +108,17 @@ class FakeOfferReader:
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
 
+    batch_size = 5
+
     async def read(self, offer: OfferText, _location: str | None) -> Reading:
         mode = self._state.readings.get(offer.company)
         # The description is its evidence: a reading is kept only with one.
         return Reading(work_mode=mode, work_mode_evidence=offer.description if mode else None)
+
+    async def read_batch(
+        self, questions: Sequence[tuple[OfferText, str | None]]
+    ) -> list[Reading | OfferReaderError]:
+        return [await self.read(offer, location) for offer, location in questions]
 
 
 @pytest.fixture(autouse=True)

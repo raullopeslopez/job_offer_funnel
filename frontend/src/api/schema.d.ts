@@ -519,9 +519,10 @@ export interface paths {
         put?: never;
         /**
          * Read Offers
-         * @description Have the offer reader read up to 5 pending imported offers: their work mode, whether
-         *     they can be done living in the location of the search profiles they fit, and whether
-         *     they are stable jobs. What a reading says filters the offer like the profile's words.
+         * @description Have the offer reader read up to 5 pending imported offers (20 with Claude Code):
+         *     their work mode, whether they can be done living in the location of the search
+         *     profiles they fit, and whether they are stable jobs. What a reading says filters the
+         *     offer like the profile's words.
          *
          *     An offer is read once for each location of the profiles it fits by its words; offers
          *     without a description are never read. Call it again while `left` is not 0; an offer

@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Offer readings with Claude Code: with `OFFER_READER=claude-code` the offer reader is
+  Claude Code on your Claude subscription (where `claude` is installed and signed in),
+  like the offer triager, and `POST /offers/readings` reads up to 20 offers in a single
+  request instead of 5; Groq stays the default. What it reads is kept and filters the same
+  way. `just dev-prod` reads with it as well as triaging, and `just read-prod` reads every
+  offer left to read through that API, so the reading queue no longer waits on Groq's
+  quota.
 - Published location as a filter: when the location an offer's source publishes is made
   only of known countries ("USA", "Canada, USA", "Germany / Netherlands") and none of them
   is a country the profile's location names, the offer's `location` rule fails for that

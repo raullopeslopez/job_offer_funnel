@@ -6454,7 +6454,7 @@
     },
     "/api/v1/offers/readings": {
       "post": {
-        "description": "Have the offer reader read up to 5 pending imported offers: their work mode, whether\nthey can be done living in the location of the search profiles they fit, and whether\nthey are stable jobs. What a reading says filters the offer like the profile's words.\n\nAn offer is read once for each location of the profiles it fits by its words; offers\nwithout a description are never read. Call it again while `left` is not 0; an offer\nthe reader fails on is left to be read.",
+        "description": "Have the offer reader read up to 5 pending imported offers (20 with Claude Code):\ntheir work mode, whether they can be done living in the location of the search\nprofiles they fit, and whether they are stable jobs. What a reading says filters the\noffer like the profile's words.\n\nAn offer is read once for each location of the profiles it fits by its words; offers\nwithout a description are never read. Call it again while `left` is not 0; an offer\nthe reader fails on is left to be read.",
         "operationId": "read_offers_api_v1_offers_readings_post",
         "responses": {
           "201": {
