@@ -18,4 +18,6 @@ class Settings(BaseSettings):
     # The triager: `groq` (with the key above) or `claude-code`, the `claude` CLI on the
     # user's Claude subscription, only where it is installed and signed in (`just dev-prod`).
     offer_triager: Literal["groq", "claude-code"] = "groq"
+    # The reader, the same way (specs/inbox/offer_readings.feature).
+    offer_reader: Literal["groq", "claude-code"] = "groq"
     claude_code_model: str = "sonnet"

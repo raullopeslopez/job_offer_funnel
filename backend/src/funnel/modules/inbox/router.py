@@ -22,7 +22,7 @@ from funnel.modules.discovery.service import (
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import OfferFilter, OfferStatus, Rule
 from funnel.modules.inbox.feeds import FeedReader
-from funnel.modules.inbox.reader import OfferReader
+from funnel.modules.inbox.reader import ClaudeCodeReader, OfferReader, Reader
 from funnel.modules.inbox.repository import (
     CriteriaChangeRepository,
     FeedImportRepository,
@@ -116,17 +116,21 @@ async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
         yield client
 
 
+def offer_reader(settings: Settings, client: httpx2.AsyncClient) -> Reader | None:
+    """The configured offer reader, or None when it cannot run: Groq without its API
+    key, or Claude Code where the `claude` CLI is not installed."""
+    raise NotImplementedError
+
+
 def get_offer_reader(
     request: Request, client: Annotated[httpx2.AsyncClient, Depends(get_feed_client)]
-) -> OfferReader | None:
-    """The offer reader, or None without its API key; tests replace it with a fake."""
-    settings: Settings = request.app.state.settings
-    api_key = settings.groq_api_key.get_secret_value()
-    return OfferReader(client, api_key, settings.groq_model) if api_key else None
+) -> Reader | None:
+    """The offer reader, or None when it cannot run; tests replace it with a fake."""
+    return offer_reader(request.app.state.settings, client)
 
 
 def get_offer_reading_service(
-    session: SessionDep, reader: Annotated[OfferReader | None, Depends(get_offer_reader)]
+    session: SessionDep, reader: Annotated[Reader | None, Depends(get_offer_reader)]
 ) -> OfferReadingService:
     return OfferReadingService(
         ReadingRepository(session), build_search_profile_service(session), reader
@@ -266,9 +270,10 @@ async def list_offers(  # noqa: PLR0913, PLR0917  # FastAPI injects each input a
 async def read_offers(
     service: Annotated[OfferReadingService, Depends(get_offer_reading_service)],
 ) -> ReadingBatchRead:
-    """Have the offer reader read up to 5 pending imported offers: their work mode, whether
-    they can be done living in the location of the search profiles they fit, and whether
-    they are stable jobs. What a reading says filters the offer like the profile's words.
+    """Have the offer reader read up to 5 pending imported offers (20 with Claude Code):
+    their work mode, whether they can be done living in the location of the search
+    profiles they fit, and whether they are stable jobs. What a reading says filters the
+    offer like the profile's words.
 
     An offer is read once for each location of the profiles it fits by its words; offers
     without a description are never read. Call it again while `left` is not 0; an offer

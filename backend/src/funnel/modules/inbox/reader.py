@@ -8,7 +8,8 @@ description.
 """
 
 import json
-from typing import Any, Final
+from collections.abc import Sequence
+from typing import Any, Final, Protocol
 
 import httpx2
 
@@ -146,3 +147,30 @@ class OfferReader:
             return _reading(answer)
         except (httpx2.HTTPError, ValueError, KeyError, IndexError, TypeError) as error:
             raise OfferReaderError(f"{type(error).__name__}: {error}") from error
+
+
+# An offer to read and the location to ask about, if any.
+type Question = tuple[OfferText, str | None]
+
+
+class Reader(Protocol):
+    batch_size: int
+
+    async def read_batch(self, questions: Sequence[Question]) -> list[Reading | OfferReaderError]:
+        """What the posting says of each offer, by its position, or why it was not read.
+        Raises OfferReaderError when the whole request fails."""
+        ...
+
+
+class ClaudeCodeReader:
+    """Asks Claude about a batch of offers at a time through the `claude` CLI, like the
+    Claude Code triager (triager.py)."""
+
+    batch_size = 20
+
+    def __init__(self, command: Sequence[str], model: str) -> None:
+        self._command = list(command)
+        self._model = model
+
+    async def read_batch(self, questions: Sequence[Question]) -> list[Reading | OfferReaderError]:
+        raise NotImplementedError

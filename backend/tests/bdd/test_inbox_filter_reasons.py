@@ -1,5 +1,5 @@
 import re
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import count
@@ -14,7 +14,7 @@ from support.clock import ZONE, FixedClock
 
 from funnel.core.clock import get_clock
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import OfferText, Reading
+from funnel.modules.inbox.domain import OfferReaderError, OfferText, Reading
 from funnel.modules.inbox.router import get_feed_client, get_offer_reader
 
 pytestmark = pytest.mark.bdd
@@ -64,8 +64,15 @@ class FakeOfferReader:
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
 
+    batch_size = 5
+
     async def read(self, offer: OfferText, _location: str | None) -> Reading:
         return self._state.answers.get(offer.title, Reading())
+
+    async def read_batch(
+        self, questions: Sequence[tuple[OfferText, str | None]]
+    ) -> list[Reading | OfferReaderError]:
+        return [await self.read(offer, location) for offer, location in questions]
 
 
 @pytest.fixture(autouse=True)

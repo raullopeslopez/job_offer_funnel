@@ -1,5 +1,5 @@
 import re
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import count
@@ -38,7 +38,9 @@ class ScenarioState:
     # What the fake offer reader answers, by offer title, and the companies it fails on.
     answers: dict[str, Reading] = field(default_factory=dict)
     failing: set[str] = field(default_factory=set)
-    has_reader: bool = True
+    # Which offer reader the app is set up with, and whether its whole request fails.
+    reader: str = "Groq"
+    request_fails: bool = False
     offer: dict[str, Any] | None = None
     response: httpx2.Response | None = None
     urls: count[int] = field(default_factory=count)
@@ -54,16 +56,28 @@ def state() -> ScenarioState:
     return ScenarioState()
 
 
+# Offers each offer reader takes at a time.
+BATCH_SIZES = {"Groq": 5, "Claude Code": 20}
+
+
 class FakeOfferReader:
     """Answers what the scenario says; a description it knows nothing about says nothing."""
 
     def __init__(self, state: ScenarioState) -> None:
         self._state = state
+        self.batch_size = BATCH_SIZES[state.reader]
 
-    async def read(self, offer: OfferText, _location: str | None) -> Reading:
-        if offer.company in self._state.failing:
+    async def read_batch(
+        self, questions: Sequence[tuple[OfferText, str | None]]
+    ) -> list[Reading | OfferReaderError]:
+        if self._state.request_fails:
             raise OfferReaderError("the reader is down")
-        return self._state.answers.get(offer.title, Reading())
+        return [
+            OfferReaderError("the reader failed on it")
+            if offer.company in self._state.failing
+            else self._state.answers.get(offer.title, Reading())
+            for offer, _location in questions
+        ]
 
 
 @pytest.fixture(autouse=True)
@@ -90,7 +104,9 @@ def fake_sources(client: TestClient, state: ScenarioState) -> Iterator[None]:
 
     overrides = cast(FastAPI, client.app).dependency_overrides
     overrides[get_feed_client] = fake_client
-    overrides[get_offer_reader] = lambda: FakeOfferReader(state) if state.has_reader else None
+    overrides[get_offer_reader] = lambda: (
+        FakeOfferReader(state) if state.reader in BATCH_SIZES else None
+    )
     yield
     overrides.pop(get_feed_client, None)
     overrides.pop(get_offer_reader, None)
@@ -232,9 +248,14 @@ def given_reader_fails(state: ScenarioState, company: str) -> None:
     state.failing.add(company)
 
 
-@given("there is no offer reader")
-def given_no_reader(state: ScenarioState) -> None:
-    state.has_reader = False
+@given("the offer reader fails")
+def given_reader_request_fails(state: ScenarioState) -> None:
+    state.request_fails = True
+
+
+@given(parsers.re(r"the offer reader is (?P<reader>Groq|Claude Code(, not installed)?|missing)$"))
+def given_reader(state: ScenarioState, reader: str) -> None:
+    state.reader = reader
 
 
 @given(parsers.re(r'I edit the profile "(?P<name>[^"]+)" to have (?P<change>.+)$'))
