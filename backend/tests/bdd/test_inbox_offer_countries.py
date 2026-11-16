@@ -184,7 +184,9 @@ class ScenarioState:
     ) -> None:
         """Publishing a title again publishes the same offer, at its URL, as it is now."""
         jobs = {job.title: job for job in self.published.get(source, [])}
-        url = jobs[title].url if title in jobs else f"https://{source}.example/jobs/{next(self.urls)}"
+        url = (
+            jobs[title].url if title in jobs else f"https://{source}.example/jobs/{next(self.urls)}"
+        )
         jobs[title] = Job(title, "Acme", url, location, secondary)
         self.published[source] = list(jobs.values())
 

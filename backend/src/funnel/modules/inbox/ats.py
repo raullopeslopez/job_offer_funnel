@@ -1,6 +1,7 @@
 """One adapter per ATS: read a company's public job board and turn each job into a FeedOffer.
 
-Response shapes checked against the live APIs on 2026-11-08 (the locations on 2026-11-14).
+Response shapes checked against the live APIs on 2026-11-08 (the locations on 2026-11-14,
+Ashby's secondary locations on 2026-11-16).
 An unknown board answers 404.
 """
 
@@ -49,7 +50,18 @@ async def _lever(client: httpx2.AsyncClient, board: str) -> list[Mapping[str, An
 
 async def _ashby(client: httpx2.AsyncClient, board: str) -> list[Mapping[str, Any]]:
     body = await _get_json(client, f"https://api.ashbyhq.com/posting-api/job-board/{board}")
-    return [job for job in body["jobs"] if job.get("isListed", True)]
+    # The location, then its secondary locations: a job is open in all of them.
+    return [
+        {
+            **job,
+            "location": [
+                job.get("location"),
+                *(place.get("location") for place in job.get("secondaryLocations") or []),
+            ],
+        }
+        for job in body["jobs"]
+        if job.get("isListed", True)
+    ]
 
 
 ADAPTERS: Final[Mapping[Ats, tuple[Reader, Fields]]] = {

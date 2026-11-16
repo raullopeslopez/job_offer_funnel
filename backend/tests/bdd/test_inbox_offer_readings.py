@@ -197,15 +197,14 @@ def given_many_imported(client: TestClient, state: ScenarioState, number: int, t
 
 @given(
     parsers.parse(
-        'the feed "remoteok" publishes an offer for "{company}" as "{title}" located in "{location}"'
+        'the feed "remoteok" publishes an offer for "{company}" as "{title}" '
+        'located in "{location}"'
     )
 )
 def given_published_again(state: ScenarioState, company: str, title: str, location: str) -> None:
     """The same offer, at its URL and with its description, now with a location."""
     state.remoteok = [
-        row | {"location": location}
-        if (row["company"], row["title"]) == (company, title)
-        else row
+        row | {"location": location} if (row["company"], row["title"]) == (company, title) else row
         for row in state.remoteok
     ]
 

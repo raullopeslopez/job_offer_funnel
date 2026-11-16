@@ -12,6 +12,8 @@ from sqlalchemy import (
     String,
     and_,
     case,
+    column,
+    delete,
     exists,
     false,
     func,
@@ -20,6 +22,7 @@ from sqlalchemy import (
     select,
     true,
     update,
+    values,
 )
 from sqlalchemy import (
     cast as sql_cast,
@@ -785,7 +788,39 @@ class FeedImportRepository:
         inserted = await self._session.scalars(
             insert(OfferRow).values(values).on_conflict_do_nothing().returning(OfferRow.id)
         )
-        return list(inserted.all())
+        added = list(inserted.all())
+        await self._fill_locations([offer for offer in offers if offer.location is not None])
+        return added
+
+    async def _fill_locations(self, offers: Sequence[OfferRow]) -> None:
+        """Give the offers already in the inbox without a location (imported before
+        locations were kept) the one their source publishes now. A pending one loses its
+        readings, so that it is read again with it."""
+        if not offers:
+            return
+        published = values(
+            column("duplicate_key", String),
+            column("url_key", String),
+            column("location", String),
+            name="published",
+        ).data([(offer.duplicate_key, offer.url_key, offer.location) for offer in offers])
+        filled = await self._session.execute(
+            update(OfferRow)
+            .where(
+                OfferRow.location.is_(None),
+                or_(
+                    OfferRow.duplicate_key == published.c.duplicate_key,
+                    OfferRow.url_key == published.c.url_key,
+                ),
+            )
+            .values(location=published.c.location)
+            .returning(OfferRow.id, OfferRow.status)
+        )
+        pending = [offer_id for offer_id, status in filled if status is OfferStatus.PENDING]
+        if pending:
+            await self._session.execute(
+                delete(OfferReadingRow).where(OfferReadingRow.offer_id.in_(pending))
+            )
 
     async def count_filtered(
         self, offer_ids: Collection[UUID], profiles: Sequence[SearchTerms]
