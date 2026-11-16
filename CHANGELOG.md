@@ -338,6 +338,16 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Offers imported before locations were kept get one: when a job board, a watched company
+  or a job alert publishes again an offer that is already in the inbox and has no
+  location, whatever its status, the offer keeps the location published now (an offer
+  with a location keeps its own). It still counts as already in the inbox. A pending offer
+  that gets its location loses its readings and is read again with it; one that is no
+  longer pending keeps them.
+- The offers of an Ashby board keep their secondary locations after their location
+  ("United Kingdom, Spain, Dublin"), so a job also open in Spain is no longer read as
+  only for the United Kingdom.
+
 - Feed imports: an offer whose feed publishes the title or the company with HTML
   character references ("&#038;" or "&amp;" for "&", as Jobicy does) now keeps the
   characters they stand for, so "Quest Defense Systems &#038; Solutions" is "Quest Defense

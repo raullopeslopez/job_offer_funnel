@@ -21,7 +21,10 @@ Feature: Offer readings
   An offer is read once for each location of the search profiles it fits by its title,
   keywords and exclusions (specs/inbox/filtered_offers.feature); for profiles without a
   location it is read without that question. Offers without a description (added by
-  hand or from an email alert) are never read. At most 5 offers are read at a time,
+  hand or from an email alert) are never read. A pending offer that gets its location
+  after it was read (an offer imported before locations were kept,
+  specs/inbox/offer_countries.feature) loses its readings and is read again with it; an
+  offer that is no longer pending keeps them. At most 5 offers are read at a time,
   so that the offer reader's limits are respected.
   A reading adds three rules to fitting a profile, and only what is known can filter:
   - the offer's work mode, when known, is one of the profile's work modes, if it has any;
@@ -255,6 +258,44 @@ Feature: Offer readings
     When I view the offer "Backend Engineer"
     Then the offer is not filtered
     And the offer "Backend Engineer" has no reading for "United States"
+
+  Scenario: A pending offer that gets its location is read again with it
+    Given the job board "Remote OK" was imported with:
+      | title            | company | description   | url                    |
+      | Backend Engineer | Acme    | Fully remote. | https://remoteok.com/1 |
+    And I read the offers
+    And the time is 2026-03-10 15:00
+    And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "United Kingdom"
+    And I import the job board "Remote OK"
+    And the offer reader answers for "Backend Engineer":
+      | admits_location | admits_location_evidence |
+      | no              | United Kingdom           |
+    When I read the offers
+    Then the reading read 1 offers, failed on 0 and left 0 to read
+    And the reading of "Backend Engineer" for "Spain" says:
+      | admits_location | admits_location_evidence |
+      | no              | United Kingdom           |
+
+  Scenario Outline: An offer that is no longer pending keeps its readings when it gets its location
+    Given the job board "Remote OK" was imported with:
+      | title            | company | description   | url                    |
+      | Backend Engineer | Acme    | Fully remote. | https://remoteok.com/1 |
+    And the offer reader answers for "Backend Engineer":
+      | work_mode | work_mode_evidence |
+      | remote    | Fully remote       |
+    And I read the offers
+    And I <action> the offer "Backend Engineer"
+    And the time is 2026-03-10 15:00
+    And the feed "remoteok" publishes an offer for "Acme" as "Backend Engineer" located in "United Kingdom"
+    When I import the job board "Remote OK"
+    Then the reading of "Backend Engineer" for "Spain" says:
+      | work_mode | work_mode_evidence |
+      | remote    | Fully remote       |
+
+    Examples:
+      | action    |
+      | discarded |
+      | promoted  |
 
   # --- Errors ---
 
