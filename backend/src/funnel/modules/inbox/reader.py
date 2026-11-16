@@ -1,10 +1,12 @@
-"""The offer reader: a language model on Groq that says what a job description states.
+"""The offer reader: a language model, on Groq or on Claude Code, that says what a job
+description states.
 
-One chat completion per offer and location, answered as JSON with a strict schema
-(https://console.groq.com/docs/structured-outputs, checked on 2026-11-12). The free plan
-allows 8,000 tokens a minute for the default model, so the text sent is capped. What the
-model answers is not trusted: the domain keeps only the answers whose evidence is in the
-description.
+On Groq, one chat completion per offer and location, answered as JSON with a strict
+schema (https://console.groq.com/docs/structured-outputs, checked on 2026-11-12). The free
+plan allows 8,000 tokens a minute for the default model, so the text sent is capped. On
+Claude Code (claude_code.py), one request per batch of offers, told and answering the
+same. What the model answers is not trusted: the domain keeps only the answers whose
+evidence is in the description.
 """
 
 import json
@@ -14,6 +16,7 @@ from typing import Any, Final, Protocol
 import httpx2
 
 from funnel.modules.discovery.domain import WorkMode
+from funnel.modules.inbox import claude_code
 from funnel.modules.inbox.domain import OfferReaderError, OfferText, Reading
 
 API: Final = "https://api.groq.com/openai/v1/chat/completions"
@@ -106,8 +109,24 @@ def _reading(answer: dict[str, Any]) -> Reading:
     )
 
 
+# An offer to read and the location to ask about, if any.
+type Question = tuple[OfferText, str | None]
+
+
+class Reader(Protocol):
+    batch_size: int
+
+    async def read_batch(self, questions: Sequence[Question]) -> list[Reading | OfferReaderError]:
+        """What the posting says of each offer, by its position, or why it was not read.
+        Raises OfferReaderError when the whole request fails."""
+        ...
+
+
 class OfferReader:
-    """Asks the model about one offer at a time."""
+    """Asks the model on Groq about one offer at a time."""
+
+    # The free plan allows about this many readings a minute.
+    batch_size = 5
 
     def __init__(self, client: httpx2.AsyncClient, api_key: str, model: str) -> None:
         self._client = client
@@ -148,24 +167,75 @@ class OfferReader:
         except (httpx2.HTTPError, ValueError, KeyError, IndexError, TypeError) as error:
             raise OfferReaderError(f"{type(error).__name__}: {error}") from error
 
-
-# An offer to read and the location to ask about, if any.
-type Question = tuple[OfferText, str | None]
-
-
-class Reader(Protocol):
-    batch_size: int
-
     async def read_batch(self, questions: Sequence[Question]) -> list[Reading | OfferReaderError]:
-        """What the posting says of each offer, by its position, or why it was not read.
-        Raises OfferReaderError when the whole request fails."""
-        ...
+        """Each offer in its own request: one that fails leaves the others read."""
+        answers: list[Reading | OfferReaderError] = []
+        for offer, location in questions:
+            try:
+                answers.append(await self.read(offer, location))
+            except OfferReaderError as error:
+                answers.append(error)
+        return answers
+
+
+_BATCH_INSTRUCTIONS: Final = f"""\
+{_INSTRUCTIONS}
+You are given several numbered postings. Answer for every one, by its number, with what \
+that posting states. A posting with no location to answer for gets null admits_location \
+and null admits_location_evidence."""
+
+
+def _batch_schema() -> dict[str, Any]:
+    reading = _schema(asks_location=True)
+    item = reading | {
+        "properties": {"offer": {"type": "integer"}, **reading["properties"]},
+        "required": ["offer", *reading["required"]],
+    }
+    return {
+        "type": "object",
+        "properties": {"offers": {"type": "array", "items": item}},
+        "required": ["offers"],
+        "additionalProperties": False,
+    }
+
+
+def _batch_question(questions: Sequence[Question]) -> str:
+    # Without a location to answer for, the question says none: its answer is dropped.
+    return "\n\n".join(
+        f"Posting {number}\n{_question(offer, location)}"
+        for number, (offer, location) in enumerate(questions)
+    )
+
+
+def _batch_answers(
+    answer: object, questions: Sequence[Question]
+) -> list[Reading | OfferReaderError]:
+    if not isinstance(answer, dict) or not isinstance(answer.get("offers"), list):
+        raise TypeError(f"expected an object with offers, got {answer!r}")
+    found: dict[int, dict[str, Any]] = {
+        item["offer"]: item
+        for item in answer["offers"]
+        if isinstance(item, dict) and isinstance(item.get("offer"), int)
+    }
+    answers: list[Reading | OfferReaderError] = []
+    for number, (_offer, location) in enumerate(questions):
+        item = found.get(number)
+        if item is None:
+            answers.append(OfferReaderError(f"no answer for posting {number}"))
+            continue
+        if location is None:
+            item = {**item, "admits_location": None, "admits_location_evidence": None}
+        try:
+            answers.append(_reading(item))
+        except (TypeError, ValueError) as error:
+            answers.append(OfferReaderError(f"{type(error).__name__}: {error}"))
+    return answers
 
 
 class ClaudeCodeReader:
-    """Asks Claude about a batch of offers at a time through the `claude` CLI, like the
-    Claude Code triager (triager.py)."""
+    """Asks Claude about a batch of offers at a time through the `claude` CLI."""
 
+    # No per-minute token plan to fit in: the batch is as large as stays quick to answer.
     batch_size = 20
 
     def __init__(self, command: Sequence[str], model: str) -> None:
@@ -173,4 +243,17 @@ class ClaudeCodeReader:
         self._model = model
 
     async def read_batch(self, questions: Sequence[Question]) -> list[Reading | OfferReaderError]:
-        raise NotImplementedError
+        """What the posting says of each offer, by its position; an offer Claude does not
+        answer for, or answers wrongly, is an error. Raises OfferReaderError when the
+        request fails."""
+        try:
+            answer = await claude_code.ask(
+                self._command,
+                self._model,
+                _BATCH_INSTRUCTIONS,
+                _batch_schema(),
+                _batch_question(questions),
+            )
+            return _batch_answers(answer, questions)
+        except claude_code.FAILURES as error:
+            raise OfferReaderError(f"{type(error).__name__}: {error}") from error

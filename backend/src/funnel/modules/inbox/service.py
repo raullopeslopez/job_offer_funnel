@@ -25,7 +25,6 @@ from funnel.modules.inbox.alerts import read_alert
 from funnel.modules.inbox.ats import BoardReader
 from funnel.modules.inbox.domain import (
     LATEST_ONLY_FEEDS,
-    READING_BATCH_SIZE,
     TRIAGE_DECISIONS,
     TRIAGE_MISTAKES,
     WHY_LENGTH,
@@ -51,6 +50,7 @@ from funnel.modules.inbox.domain import (
     OfferTriagerError,
     OfferTriagerUnavailableError,
     ProfileRule,
+    Reading,
     Relaxing,
     Review,
     RuleChangedSinceError,
@@ -87,7 +87,7 @@ from funnel.modules.inbox.domain import (
 )
 from funnel.modules.inbox.feeds import FeedReader
 from funnel.modules.inbox.models import CriteriaChangeRow, OfferRow, WatchedCompanyRow
-from funnel.modules.inbox.reader import OfferReader
+from funnel.modules.inbox.reader import Reader
 from funnel.modules.inbox.repository import (
     CriteriaChangeRepository,
     FeedImportRepository,
@@ -424,7 +424,7 @@ class OfferReadingService:
         self,
         readings: ReadingRepository,
         profiles: SearchProfileService,
-        reader: OfferReader | None,
+        reader: Reader | None,
     ) -> None:
         self._readings = readings
         self._profiles = profiles
@@ -434,20 +434,29 @@ class OfferReadingService:
         if self._reader is None:
             raise OfferReaderUnavailableError("No offer reader is configured")
         profiles = await self._profiles.all_terms()
-        unread, total = await self._readings.list_unread(profiles, READING_BATCH_SIZE)
-        read = 0
-        for offer, location in unread:
-            text = OfferText(
-                offer.title,
-                offer.company,
-                plain_text(offer.description or ""),
-                location=offer.location,
+        unread, total = await self._readings.list_unread(profiles, self._reader.batch_size)
+        questions = [
+            (
+                OfferText(
+                    offer.title,
+                    offer.company,
+                    plain_text(offer.description or ""),
+                    location=offer.location,
+                ),
+                location,
             )
-            try:
-                answer = await self._reader.read(text, location)
-            except OfferReaderError as error:
+            for offer, location in unread
+        ]
+        answers: list[Reading | OfferReaderError]
+        try:
+            answers = await self._reader.read_batch(questions)
+        except OfferReaderError as error:
+            answers = [error] * len(questions)
+        read = 0
+        for (offer, location), (text, _), answer in zip(unread, questions, answers, strict=True):
+            if isinstance(answer, OfferReaderError):
                 # Left unread: the next reading tries it again.
-                _logger.warning("offer_reading_failed", offer_id=str(offer.id), error=str(error))
+                _logger.warning("offer_reading_failed", offer_id=str(offer.id), error=str(answer))
                 continue
             kept = supported(answer, text.evidence, asked_location=location is not None)
             await self._readings.add(offer.id, location, kept)

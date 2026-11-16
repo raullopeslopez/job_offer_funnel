@@ -290,9 +290,6 @@ class FeedOffer:
     location: str | None = None
 
 
-# Offers read per request: the offer reader's plan allows about this many a minute.
-READING_BATCH_SIZE: Final = 5
-
 _TAG: Final = re.compile(r"<[^>]+>")
 
 

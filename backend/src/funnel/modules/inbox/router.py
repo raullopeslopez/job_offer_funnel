@@ -119,7 +119,11 @@ async def get_feed_client() -> AsyncIterator[httpx2.AsyncClient]:
 def offer_reader(settings: Settings, client: httpx2.AsyncClient) -> Reader | None:
     """The configured offer reader, or None when it cannot run: Groq without its API
     key, or Claude Code where the `claude` CLI is not installed."""
-    raise NotImplementedError
+    if settings.offer_reader == "claude-code":
+        command = shutil.which("claude")
+        return ClaudeCodeReader([command], settings.claude_code_model) if command else None
+    api_key = settings.groq_api_key.get_secret_value()
+    return OfferReader(client, api_key, settings.groq_model) if api_key else None
 
 
 def get_offer_reader(

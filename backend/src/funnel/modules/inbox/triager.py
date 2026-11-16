@@ -11,15 +11,13 @@ per request, which is what makes a batch cheaper than one request per offer. Wha
 model answers is not trusted: the domain keeps only the suggestions whose evidence holds.
 """
 
-import asyncio
 import json
-import subprocess
-import tempfile
 from collections.abc import Sequence
 from typing import Any, Final, Protocol
 
 import httpx2
 
+from funnel.modules.inbox import claude_code
 from funnel.modules.inbox.domain import (
     SUGGESTED_REASONS,
     Decision,
@@ -280,18 +278,6 @@ class OfferTriager:
             raise OfferTriagerError(f"{type(error).__name__}: {error}") from error
 
 
-# A batch of 20 takes Sonnet a minute or two.
-CLAUDE_CODE_TIMEOUT_SECONDS: Final = 600
-# Not run, timed out, or not the JSON asked for.
-_CLAUDE_CODE_FAILURES: Final = (
-    OSError,
-    subprocess.SubprocessError,
-    ValueError,
-    TypeError,
-    AttributeError,
-)
-
-
 class ClaudeCodeTriager:
     """Asks Claude about a batch of offers at a time through the `claude` CLI, with no
     tools, no settings, no MCP servers and no saved session, from an empty folder: it
@@ -305,44 +291,10 @@ class ClaudeCodeTriager:
         self._model = model
 
     async def triage(self, offers: Sequence[OfferText], context: TriageContext) -> TriageReply:
-        arguments = [
-            *self._command,
-            "-p",
-            "--model",
-            self._model,
-            "--output-format",
-            "json",
-            "--system-prompt",
-            _INSTRUCTIONS,
-            "--json-schema",
-            json.dumps(_SCHEMA),
-            "--tools",
-            "",
-            "--setting-sources",
-            "",
-            "--strict-mcp-config",
-            "--no-session-persistence",
-        ]
         try:
-            # A thread, not an asyncio subprocess: those need the proactor loop on Windows.
-            done = await asyncio.to_thread(_run, arguments, _question(offers, context))
-            result = json.loads(done.stdout)
-            if done.returncode != 0 or result.get("is_error"):
-                raise ValueError(f"claude failed ({done.returncode}): {done.stdout[:500]}")
-            return _reply(result.get("structured_output"), len(offers))
-        except _CLAUDE_CODE_FAILURES as error:
+            answer = await claude_code.ask(
+                self._command, self._model, _INSTRUCTIONS, _SCHEMA, _question(offers, context)
+            )
+            return _reply(answer, len(offers))
+        except claude_code.FAILURES as error:
             raise OfferTriagerError(f"{type(error).__name__}: {error}") from error
-
-
-def _run(arguments: list[str], question: str) -> subprocess.CompletedProcess[str]:
-    with tempfile.TemporaryDirectory() as empty:
-        return subprocess.run(  # noqa: S603  # our own arguments, never the user's
-            arguments,
-            input=question,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            timeout=CLAUDE_CODE_TIMEOUT_SECONDS,
-            check=False,
-            cwd=empty,
-        )

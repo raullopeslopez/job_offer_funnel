@@ -153,3 +153,25 @@ def test_fails_when_the_model_cannot_be_reached() -> None:
     # Act / Assert
     with pytest.raises(OfferReaderError):
         _read(handler)
+
+
+def test_an_offer_that_fails_leaves_the_others_of_the_batch_read() -> None:
+    # Arrange
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if b"Globex" in request.content:
+            return httpx2.Response(429)
+        return _completion(json.dumps(ANSWER))
+
+    other = OfferText("Backend Engineer", "Globex", "Fully remote.")
+
+    async def read() -> list[Reading | OfferReaderError]:
+        async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as client:
+            reader = OfferReader(client, "secret-key", "some-model")
+            return await reader.read_batch([(OFFER, "Spain"), (other, "Spain")])
+
+    # Act
+    first, second = asyncio.run(read())
+
+    # Assert
+    assert isinstance(first, Reading)
+    assert isinstance(second, OfferReaderError)
