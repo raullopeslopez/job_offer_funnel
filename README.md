@@ -87,8 +87,9 @@ just frontend-ci
 just frontend-e2e  # Playwright scenarios from specs/ui/
 ```
 
-GitHub Actions runs the backend and frontend checks on every push and pull request, checks
-migrations on pull requests, and a scheduled workflow triggers the offer import.
+GitHub Actions runs the backend and frontend checks on every push and pull request, and checks
+migrations on pull requests. The offer import is meant to run on a schedule against the
+deployed API (for example, every 6 hours); `just import-offers` runs it by hand.
 
 ## Documentation
 
