@@ -6,10 +6,12 @@ from typing import Any, cast
 from uuid import UUID, uuid7
 
 from sqlalchemy import (
+    Boolean,
     ColumnElement,
     CursorResult,
     Select,
     String,
+    Text,
     and_,
     case,
     column,
@@ -27,7 +29,7 @@ from sqlalchemy import (
 from sqlalchemy import (
     cast as sql_cast,
 )
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import ARRAY, array, insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import with_expression
@@ -37,7 +39,9 @@ from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import SearchTerms
 from funnel.modules.inbox.domain import (
+    COUNTRY_FORMS,
     EXPIRED_REASON,
+    LOCATION_SEPARATOR,
     Decision,
     DiscardReason,
     FilterReason,
@@ -59,6 +63,7 @@ from funnel.modules.inbox.domain import (
     UntitledOffer,
     Verdict,
     WordHits,
+    country_forms,
     filter_reason,
 )
 from funnel.modules.inbox.models import (
@@ -93,8 +98,27 @@ def _contradicted(terms: SearchTerms) -> ColumnElement[bool]:
     return exists().where(_read_for(terms.location), or_(*reasons))
 
 
+def _texts(values: Collection[str]) -> ColumnElement[Any]:
+    return sql_cast(array(sorted(values)), ARRAY(Text))
+
+
+def _ruled_out(location: str | None) -> ColumnElement[bool]:
+    """Its published location limits it to other countries than those the profile's
+    location names, as domain.rules_out says; never when that location names none."""
+    forms = country_forms(location)
+    if not forms:
+        return false()
+    published = func.btrim(func.coalesce(OfferRow.location, ""))
+    parts = func.regexp_split_to_array(func.lower(published), LOCATION_SEPARATOR)
+    return and_(
+        published != "",
+        parts.op("<@", return_type=Boolean)(_texts(COUNTRY_FORMS)),
+        not_(parts.op("&&", return_type=Boolean)(_texts(forms))),
+    )
+
+
 def _fits(terms: SearchTerms) -> ColumnElement[bool]:
-    return and_(_fits_words(terms), not_(_contradicted(terms)))
+    return and_(_fits_words(terms), not_(_contradicted(terms)), not_(_ruled_out(terms.location)))
 
 
 def _in_title(word: str) -> ColumnElement[bool]:
@@ -280,6 +304,7 @@ class OfferRepository:
                 OfferRow.id,
                 OfferRow.description != "",
                 OfferRow.review.is_not_distinct_from(Review.RIGHTLY_FILTERED),
+                OfferRow.location,
                 *_word_columns(profiles),
             ).where(_HAS_REASON, condition)
         )
@@ -295,14 +320,16 @@ class OfferRepository:
             offer_id: replace(
                 filter_reason(
                     [
-                        ProfileMatch(terms, hits, readings.get((offer_id, terms.location)))
+                        ProfileMatch(
+                            terms, hits, readings.get((offer_id, terms.location)), location
+                        )
                         for terms, hits in zip(profiles, _word_hits(profiles, flags), strict=True)
                     ],
                     has_description=has_description,
                 ),
                 is_rightly_filtered=is_rightly_filtered,
             )
-            for offer_id, has_description, is_rightly_filtered, *flags in words
+            for offer_id, has_description, is_rightly_filtered, location, *flags in words
         }
 
     async def without_a_title_of(
@@ -612,6 +639,7 @@ class ReadingRepository:
                 OfferRow.status == OfferStatus.PENDING,
                 func.coalesce(OfferRow.description, "") != "",
                 or_(*words),
+                not_(_ruled_out(location)),
                 not_(exists().where(_read_for(location))),
             )
             count = await self._session.scalar(

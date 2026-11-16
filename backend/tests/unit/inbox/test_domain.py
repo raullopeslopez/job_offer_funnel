@@ -12,6 +12,7 @@ from funnel.modules.inbox.domain import (
     duplicate_key,
     is_title_word,
     next_status,
+    rules_out,
     url_key,
 )
 
@@ -119,6 +120,12 @@ def test_url_key_ignores_a_trailing_slash_and_utm_parameters(url: str, expected:
         pytest.param("Lagos, Nigeria", ["Nigeria"], id="whole-words"),
         pytest.param("Guinea-Bissau", ["Guinea-Bissau"], id="hyphenated-name"),
         pytest.param("Anywhere in the world", ["Worldwide"], id="any-country"),
+        pytest.param("Remote - Anywhere", ["Worldwide"], id="anywhere"),
+        pytest.param(
+            "Anywhere in France, Belgium, Spain",
+            ["France", "Belgium", "Spain"],
+            id="anywhere-in-a-place",
+        ),
         pytest.param("Join us remotely", [], id="short-form-in-lowercase"),
         pytest.param("San Francisco, CA", [], id="no-known-country"),
         pytest.param(None, [], id="no-location"),
@@ -155,3 +162,35 @@ def test_countries_are_the_known_countries_a_location_names(
 def test_base_title_stops_where_the_role_ends(title: str, expected: str) -> None:
     # Act / Assert
     assert base_title(title) == expected
+
+
+@pytest.mark.parametrize(
+    ("published", "profile_location", "expected"),
+    [
+        pytest.param("USA", "Spain", True, id="other-country"),
+        pytest.param("Canada,  USA", "Spain", True, id="other-countries"),
+        pytest.param("United States or Canada", "Spain", True, id="or"),
+        pytest.param("Germany / Netherlands | France; Italy", "Spain", True, id="separators"),
+        pytest.param("Trinidad and Tobago", "Spain", False, id="and-inside-a-name"),
+        pytest.param("Germany, Spain, UK", "Spain", False, id="names-the-country"),
+        pytest.param(" spain ", "Spain", False, id="ignores-case-and-spaces"),
+        pytest.param("UK", "United Kingdom", False, id="short-form-of-the-country"),
+        pytest.param("United Kingdom", "Remote, UK", False, id="short-form-in-the-profile"),
+        pytest.param("Worldwide", "Spain", False, id="worldwide"),
+        pytest.param("Europe", "Spain", False, id="region"),
+        pytest.param("EMEA, UK", "Spain", False, id="region-and-country"),
+        pytest.param("Remote - UK", "Spain", False, id="other-text"),
+        pytest.param("", "Spain", False, id="empty"),
+        pytest.param(None, "Spain", False, id="no-location"),
+        pytest.param("USA", "Madrid", False, id="profile-names-no-country"),
+        pytest.param("USA", None, False, id="profile-without-location"),
+    ],
+)
+def test_a_published_location_rules_out_an_offer_it_limits_to_other_countries(
+    published: str | None, profile_location: str | None, expected: bool
+) -> None:
+    # Act
+    ruled_out = rules_out(published, profile_location)
+
+    # Assert
+    assert ruled_out is expected
