@@ -366,12 +366,13 @@ class WordHits:
 
 @dataclass(frozen=True)
 class ProfileMatch:
-    """An offer against one search profile: its words and its reading for the profile's
-    location, if it was read for it."""
+    """An offer against one search profile: its words, its reading for the profile's
+    location, if it was read for it, and the location its source publishes."""
 
     terms: SearchTerms
     hits: WordHits
     reading: Reading | None = None
+    location: str | None = None
 
 
 def _result(passes: bool | None) -> RuleResult:
@@ -382,7 +383,8 @@ def _result(passes: bool | None) -> RuleResult:
 
 def check_rules(match: ProfileMatch) -> list[RuleCheck]:
     """The rules the profile asks for: title and stable always, the others when it has
-    some. Only what the reading says can fail a reading rule."""
+    some. Only what the reading says can fail a reading rule, and the published location
+    the location rule."""
     terms, hits, reading = match.terms, match.hits, match.reading or Reading()
     checks = [RuleCheck(Rule.TITLE, _result(bool(hits.titles)), found=hits.titles)]
     if terms.keywords:
@@ -402,7 +404,11 @@ def check_rules(match: ProfileMatch) -> list[RuleCheck]:
                 evidence=reading.work_mode_evidence,
             )
         )
-    if terms.location is not None:
+    if terms.location is not None and rules_out(match.location, terms.location):
+        checks.append(
+            RuleCheck(Rule.LOCATION, RuleResult.FAILED, value=False, evidence=match.location)
+        )
+    elif terms.location is not None:
         admits = reading.admits_location
         checks.append(
             RuleCheck(
@@ -1312,7 +1318,7 @@ _SHORT_FORMS: Final = {
     "UK": "United Kingdom",
     "UAE": "United Arab Emirates",
 }
-_ANY_COUNTRY: Final = ("Worldwide", "Anywhere")
+_ANY_COUNTRY: Final = ("Worldwide", "Anywhere")  # any country, shown as "Worldwide"
 _CANONICAL: Final = {name.casefold(): name for name in _COUNTRY_NAMES} | {
     word.casefold(): WORLDWIDE for word in _ANY_COUNTRY
 }
@@ -1323,8 +1329,10 @@ def _alternatives(names: Iterable[str]) -> str:
     return "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
 
 
+# "Anywhere in France" only says where in France; "Anywhere in the world" is any country.
+_ANYWHERE: Final = r"anywhere(?!\s+in\s+(?!the\s+world\b))"
 _COUNTRY: Final = re.compile(
-    rf"(?<![\w-])(?:(?i:(?P<name>{_alternatives([*_COUNTRY_NAMES, *_ANY_COUNTRY])}))"
+    rf"(?<![\w-])(?:(?i:(?P<name>{_alternatives([*_COUNTRY_NAMES, 'Worldwide'])}|{_ANYWHERE}))"
     rf"|(?P<short>{_alternatives(_SHORT_FORMS)}))(?![\w-])"
 )
 
@@ -1336,3 +1344,29 @@ def countries(location: str | None) -> list[str]:
         name, short = match.group("name"), match.group("short")
         found[_CANONICAL[name.casefold()] if name else _SHORT_FORMS[short]] = None
     return list(found)
+
+
+# The parts of a published location: between commas, "/", "|", ";", " or " and " and ".
+# Written so that Python and Postgres read it alike.
+LOCATION_SEPARATOR: Final = r"\s*(?:,|/|\||;|\sor\s|\sand\s)\s*"
+# How a location part names a country, in lower case: its name or a short form.
+COUNTRY_FORMS: Final = frozenset(
+    [name.casefold() for name in _COUNTRY_NAMES] + [short.casefold() for short in _SHORT_FORMS]
+)
+
+
+def country_forms(location: str | None) -> list[str]:
+    """The forms, in lower case, of the known countries a profile's location names."""
+    named = [name for name in countries(location) if name != WORLDWIDE]
+    shorts = [short for short, name in _SHORT_FORMS.items() if name in named]
+    return [form.casefold() for form in [*named, *shorts]]
+
+
+def rules_out(published: str | None, profile_location: str | None) -> bool:
+    """Whether the published location limits the offer to other countries than those of
+    the profile's location: every part of it is a known country and none is one of them."""
+    forms = country_forms(profile_location)
+    if not forms or not published or not published.strip():
+        return False
+    parts = re.split(LOCATION_SEPARATOR, published.strip().casefold())
+    return all(part in COUNTRY_FORMS for part in parts) and not set(parts) & set(forms)

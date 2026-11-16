@@ -10,6 +10,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Published location as a filter: when the location an offer's source publishes is made
+  only of known countries ("USA", "Canada, USA", "Germany / Netherlands") and none of them
+  is a country the profile's location names, the offer's `location` rule fails for that
+  profile, with the published location as its evidence, without waiting for the offer
+  reader; such an offer is not read for that location. "Worldwide", "Anywhere", regions
+  ("Europe", "EMEA") or any other text still leave it to the reading. As any filtered
+  offer, it can be seen and rescued.
 - Offer variants: every offer says its `base_title` (its title up to the first parenthesis,
   bracket, comma, or dash or vertical bar set off by a space) and its `variants`, how many
   pending offers that are not filtered share its company and base title, itself included.
@@ -338,6 +345,9 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Offer countries: "Anywhere in France, Belgium, Spain" shows France, Belgium and Spain,
+  no longer "Worldwide" too; only "Anywhere" alone or "Anywhere in the world" means any
+  country.
 - Offers imported before locations were kept get one: when a job board, a watched company
   or a job alert publishes again an offer that is already in the inbox and has no
   location, whatever its status, the offer keeps the location published now (an offer
