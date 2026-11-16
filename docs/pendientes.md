@@ -12,7 +12,9 @@ Lo que quedó abierto al cerrar un PR y no está en ninguna spec ni issue. Cada 
 
 **Comprobado después con producción (2026-11-15)**: la regla de ubicación funciona. De las ofertas de las empresas vigiladas solo 33 encajan por título y están leídas; el lector acertó en 32: filtró las variantes de otro país (Argentina, México, USA, North Africa) y admitió las remotas. No hay cola del lector. Lo que se ve repetido son unas 21 variantes por equipo de cuatro empresas (ElevenLabs «Full-Stack Engineer» ×9, Alan «Fullstack Software Engineer» ×6, Camunda «Software Engineer, Backend» ×3), todas vacantes distintas y bien admitidas: es un problema de presentación.
 
-**En curso**: agrupar las variantes en la Bandeja (`specs/inbox/offer_variants.feature` y la sección «Variants» de `specs/ui/inbox.feature`).
+**Hecho**: agrupar las variantes en la Bandeja, en el PR #141.
+
+**En curso**: los puntos 1 y 2, juntos (sección «Offers imported before this feature» de `specs/inbox/offer_countries.feature` y la relectura en `specs/inbox/offer_readings.feature`). Decidido: la oferta pendiente que recibe ubicación se vuelve a leer; la que ya no está pendiente conserva sus lecturas.
 
 **Abierto**, por orden recomendado:
 
