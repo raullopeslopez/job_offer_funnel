@@ -253,6 +253,11 @@ def given_profile_edited(client: TestClient, state: ScenarioState, name: str, ch
     _ok(client.patch(f"{PROFILES_URL}/{state.profiles[name]}", json=body), 200)
 
 
+@given(parsers.parse('I delete the profile "{name}"'))
+def given_profile_deleted(client: TestClient, state: ScenarioState, name: str) -> None:
+    _ok(client.delete(f"{PROFILES_URL}/{state.profiles.pop(name)}"), 204)
+
+
 @given(parsers.re(r'I (?P<action>discarded|promoted) the offer "(?P<title>[^"]+)"$'))
 def given_acted(client: TestClient, action: str, title: str) -> None:
     path = "discard" if action == "discarded" else "promotion"
@@ -313,6 +318,23 @@ def then_filtered(state: ScenarioState, which: str) -> None:
     reason = state.offer["filter_reason"]
     failed = reason is not None and any(r["result"] == "failed" for r in reason["rules"])
     assert failed is state.offer["filtered"]
+
+
+@then(parsers.parse('the filter reason is against the profile "{name}" with:'))
+def then_reason_with(state: ScenarioState, name: str, datatable: list[list[str]]) -> None:
+    assert state.offer is not None
+    reason = state.offer["filter_reason"]
+    assert reason["search_profile_name"] == name
+    shown = [
+        {
+            "rule": rule["rule"],
+            "result": rule["result"],
+            "value": {True: "yes", False: "no", None: ""}.get(rule["value"], rule["value"]),
+            "evidence": rule["evidence"] or "",
+        }
+        for rule in reason["rules"]
+    ]
+    assert shown == _rows(datatable)
 
 
 @then("it is rejected because the offer reader is not available")

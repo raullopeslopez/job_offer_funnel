@@ -100,6 +100,27 @@ def test_reading_rules_follow_what_the_reading_says(
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
+    ("reading", "location"),
+    [
+        pytest.param(None, "Canada,  USA", id="not-read"),
+        pytest.param(Reading(admits_location=True), "USA", id="read-as-admitted"),
+    ],
+)
+def test_a_published_location_that_rules_out_fails_the_location_rule(
+    reading: Reading | None, location: str
+) -> None:
+    # Arrange
+    match = ProfileMatch(REMOTE_IN_SPAIN, WordHits(titles=["Backend Engineer"]), reading, location)
+
+    # Act
+    checks = check_rules(match)
+
+    # Assert
+    assert checks[2] == RuleCheck(Rule.LOCATION, FAILED, value=False, evidence=location)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
     ("names", "expected"),
     [
         pytest.param(["Zeta", "alpha"], "alpha", id="tie-first-by-name-ignoring-case"),
