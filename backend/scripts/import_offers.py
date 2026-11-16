@@ -1,7 +1,7 @@
 """Import the offers of every imported job board, watched company and email alert through
 the API.
 
-Run every 6 hours by `.github/workflows/import-offers.yml` against Render, or by hand with
+Run every 6 hours against Render by a scheduled workflow kept in a private repo, or by hand with
 `just import-offers`. The API comes from API_URL (default: the one run by `just up`) and the
 token from AUTH_TOKEN, which is never printed. A job board still in its cooldown (429) and a
 feed or board that is not available (`feed-unavailable`, `board-unavailable`: outside services
