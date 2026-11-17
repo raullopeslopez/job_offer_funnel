@@ -26,3 +26,7 @@ Lo que quedó abierto al cerrar un PR y no está en ninguna spec ni issue. Cada 
 4. **El mismo puesto en dos fuentes con un sufijo** (Askable «Software Engineer, AI Coding Tasks» y la misma con «(Contract)», en Himalayas y Remotive). Un solo caso: no se toca. Disparador: el tercero (regla de tres), y entonces se mira qué sufijos se repiten antes de normalizar nada.
 5. **Cobertura del lector**: hecho el lector con Claude Code en local (`OFFER_READER=claude-code`, 20 por petición; `just dev-prod` + `just read-prod`). Falta: vaciar la cola de prod con él y comparar sus lecturas con las de Groq (sobre todo modalidad y ubicación). Ligado al issue #135, que sigue abierto para medir la cola de Groq en Render.
 6. **Ubicaciones con texto además de países** («Remote - UK», «EMEA, UK», «Trinidad and Tobago») no filtran por la regla nueva: las decide el lector. Disparador para ampliar la regla: que se vean en Pending tres o más que debían haber caído.
+
+## Triaje con Claude Code en el uso diario (pregunta del 2026-11-15)
+
+**Abierto**: ¿cómo se traslada el triaje con Claude Code (solo en local, `just dev-prod`) al uso diario, para que los veredictos y las sugerencias de criterio alimenten el ciclo de mejora sin pasos de más? Falta: decidir cómo se lanza y dónde quedan sus resultados.
