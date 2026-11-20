@@ -256,14 +256,14 @@ describe("InboxPage filtered offers", () => {
   });
 });
 
-// specs/ui/inbox.feature: "An offer shows a tag per country of its location".
+// specs/ui/inbox.feature: "An offer shows its first country as a tag and how many more it has".
 describe("InboxPage country tags", () => {
-  it.each<[string, string[], string[]]>([
-    ["Madrid, Spain", ["Spain"], ["Spain"]],
-    ["Spain, Portugal", ["Spain", "Portugal"], ["Spain", "Portugal"]],
-    ["Worldwide", ["Worldwide"], ["Worldwide"]],
-    ["San Francisco, CA", [], ["San Francisco, CA"]],
-  ])("an offer located in %j shows the tags %j", async (location, countries, tags) => {
+  it.each<[string, string[], string, string]>([
+    ["Madrid, Spain", ["Spain"], "Spain", ""],
+    ["Spain, Portugal", ["Spain", "Portugal"], "Spain", "+1 country"],
+    ["Worldwide", ["Worldwide"], "Worldwide", ""],
+    ["San Francisco, CA", [], "San Francisco, CA", ""],
+  ])("an offer located in %j shows the tag %j and %j", async (location, countries, tag, more) => {
     // Arrange
     inboxWith([imported("Backend Engineer", rulesWith(), { location, countries })]);
 
@@ -274,8 +274,9 @@ describe("InboxPage country tags", () => {
     const piece = await screen.findByRole("article", { name: "Backend Engineer" });
     const shown = within(piece)
       .getAllByTitle("Country")
-      .map((tag) => tag.textContent);
-    expect(shown).toEqual(tags);
+      .map((shownTag) => shownTag.textContent);
+    expect(shown).toEqual([tag]);
+    if (more) expect(piece).toHaveTextContent(more);
   });
 });
 
@@ -773,9 +774,8 @@ describe("InboxPage exclusion proposal", () => {
     await user.click(within(piece).getByRole("button", { name: "Discard" }));
     // Discarding opens another piece for the same offer.
     const opened = await screen.findByRole("article", { name: title });
-    await user.click(within(opened).getByRole("button", { name: word }));
-    const reasons = screen.getByRole("group", { name: "Discard because" });
-    await user.click(within(reasons).getByRole("button", { name: "A word in the title" }));
+    const words = within(opened).getByRole("group", { name: "A word in the title" });
+    await user.click(within(words).getByRole("button", { name: word }));
   }
 
   it.each([
@@ -848,6 +848,56 @@ describe("InboxPage exclusion proposal", () => {
     expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
     expect(discarded).toEqual([{ offerId: candidate.id, reason: "title_word", word: "Lead" }]);
     expect(edited).toEqual(edits);
+  });
+});
+
+// specs/ui/inbox.feature: "Discarding opens the piece with the reasons" and "Discard an
+// offer because of a word in its title".
+describe("InboxPage discarding", () => {
+  it("keeps the title as a link and offers its words under A word in the title", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("Senior Backend Engineer")]);
+    renderInbox();
+    const piece = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+
+    // Act
+    await user.click(within(piece).getByRole("button", { name: "Discard" }));
+
+    // Assert
+    const opened = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+    expect(within(opened).getByRole("link", { name: "Senior Backend Engineer" })).toBeVisible();
+    const words = within(opened).getByRole("group", { name: "A word in the title" });
+    expect(
+      within(words)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Senior", "Backend", "Engineer"]);
+  });
+
+  it("a word of an offer without a profile discards it right away", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const candidate = offer("Senior Backend Engineer");
+    inboxWith([candidate]);
+    const discarded: unknown[] = [];
+    server.use(
+      http.post("/api/v1/offers/:offerId/discard", async ({ request }) => {
+        discarded.push(await request.json());
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderInbox();
+    const piece = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+    await user.click(within(piece).getByRole("button", { name: "Discard" }));
+    const words = await screen.findByRole("group", { name: "A word in the title" });
+
+    // Act
+    await user.click(within(words).getByRole("button", { name: "Senior" }));
+
+    // Assert
+    expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
+    expect(discarded).toEqual([{ reason: "title_word", word: "Senior" }]);
   });
 });
 

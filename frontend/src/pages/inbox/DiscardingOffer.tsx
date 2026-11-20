@@ -1,8 +1,8 @@
-import { Alert, Box, Button, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../../api/client";
-import { OfferPiece } from "../../components/OfferPiece";
+import { OfferPiece, whereText } from "../../components/OfferPiece";
 import { offerSourceKind } from "../../components/offerSource";
 import {
   CHOSEN_REASONS,
@@ -21,9 +21,12 @@ type Props = OfferContext & {
   onDiscarded: (offer: Offer) => void;
 };
 
-// The piece open to discard (specs/ui/inbox.feature): the words of the title are buttons,
-// and choosing a reason discards; "A word in the title" needs a word marked first. With a
-// reference profile, that reason first proposes excluding the word from it.
+// The reasons besides a word of the title, which has its own row of words.
+const OTHER_REASONS = CHOSEN_REASONS.filter((reason) => reason !== "title_word");
+
+// The piece open to discard (specs/ui/inbox.feature): the title stays as it is, its words are
+// buttons under "A word in the title", and choosing a word or one of the other reasons
+// discards. With a reference profile, a word first proposes excluding it from the profile.
 export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onDiscarded }: Props) {
   const [word, setWord] = useState<string | null>(null);
   const [isProposing, setIsProposing] = useState(false);
@@ -35,12 +38,12 @@ export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onD
   const discard = useMutation<
     void,
     { title: string },
-    { reason: DiscardReason; exclude?: boolean }
+    { reason: DiscardReason; word?: string; exclude?: boolean }
   >({
-    mutationFn: async ({ reason, exclude = false }) => {
+    mutationFn: async ({ reason, word, exclude = false }) => {
       // The change first, so its log counts this offer among those leaving Pending
       // (specs/inbox/criteria_changes.feature).
-      if (exclude && profile && word !== null) {
+      if (exclude && profile && word) {
         const { error } = await api.POST("/api/v1/criteria-changes", {
           body: {
             search_profile_id: profile.id,
@@ -54,46 +57,39 @@ export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onD
       }
       const { error } = await api.POST("/api/v1/offers/{offer_id}/discard", {
         params: { path: { offer_id: offer.id } },
-        body: reason === "title_word" ? { reason, word } : { reason },
+        body: reason === "title_word" ? { reason, word: word ?? null } : { reason },
       });
       if (error) throw error;
     },
     onSuccess: () => onDiscarded(offer),
   });
 
-  const choose = (reason: DiscardReason) => {
-    if (reason === "title_word" && profile) setIsProposing(true);
-    else discard.mutate({ reason });
+  // A word of the title is the reason "A word in the title": with a reference profile it
+  // first proposes excluding the word from it.
+  const chooseWord = (chosen: string) => {
+    setWord(chosen);
+    if (profile) setIsProposing(true);
+    else discard.mutate({ reason: "title_word", word: chosen });
   };
 
-  const words = (
-    <Box component="span" sx={{ display: "inline-flex", flexWrap: "wrap", gap: 0.75 }}>
-      {titleWords(offer.title).map((candidate) => {
-        const pressed = candidate === word;
-        return (
-          <Button
-            key={candidate}
-            size="small"
-            variant={pressed ? "contained" : "outlined"}
-            aria-pressed={pressed}
-            onClick={() => setWord(pressed ? null : candidate)}
-          >
-            {candidate}
-          </Button>
-        );
-      })}
-    </Box>
-  );
+  // What a reason refers to in this offer, when the piece knows it.
+  const refersTo: Partial<Record<DiscardReason, string>> = {
+    location: whereText(offer),
+    company: offer.company,
+  };
 
   return (
     <OfferPiece
       offer={offer}
       sourceKind={sourceKind}
       now={now}
-      heading={words}
       strip={<OfferStrip offer={offer} sourceKind={sourceKind} profiles={profiles} />}
       footer={
-        <Box role="group" aria-label="Discard because">
+        <Box
+          role="group"
+          aria-label="Discard because"
+          sx={{ borderTop: 1, borderColor: "divider", pt: 2 }}
+        >
           {discard.isError && (
             <Alert severity="error" sx={{ mb: 1.5 }}>
               {discard.error.title}
@@ -104,29 +100,82 @@ export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onD
               word={word}
               profile={profile}
               isBusy={discard.isPending}
-              onOnlyDiscard={() => discard.mutate({ reason: "title_word" })}
-              onDiscardAndExclude={() => discard.mutate({ reason: "title_word", exclude: true })}
+              onOnlyDiscard={() => discard.mutate({ reason: "title_word", word })}
+              onDiscardAndExclude={() =>
+                discard.mutate({ reason: "title_word", word, exclude: true })
+              }
             />
           ) : (
-            <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
+            <Stack spacing={2}>
+              <Typography variant="subtitle2" component="p">
                 Discard because
               </Typography>
-              {CHOSEN_REASONS.map((reason) => (
-                <Button
-                  key={reason}
-                  size="small"
-                  variant="outlined"
-                  disabled={discard.isPending || (reason === "title_word" && word === null)}
-                  onClick={() => choose(reason)}
+              <Box role="group" aria-labelledby={`title-words-${offer.id}`}>
+                <Typography
+                  id={`title-words-${offer.id}`}
+                  variant="caption"
+                  component="p"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
                 >
-                  {DISCARD_REASON_LABELS[reason]}
-                </Button>
-              ))}
-              <Button size="small" onClick={onCancel} sx={{ ml: "auto" }}>
+                  {DISCARD_REASON_LABELS.title_word}
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                  {titleWords(offer.title).map((candidate) => (
+                    <Button
+                      key={candidate}
+                      size="small"
+                      variant="outlined"
+                      disabled={discard.isPending}
+                      onClick={() => chooseWord(candidate)}
+                    >
+                      {candidate}
+                    </Button>
+                  ))}
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "none" },
+                  gridAutoFlow: { xs: "row", sm: "column" },
+                  justifyContent: { sm: "start" },
+                  gap: 1,
+                }}
+              >
+                {OTHER_REASONS.map((reason) => (
+                  <Button
+                    key={reason}
+                    aria-label={DISCARD_REASON_LABELS[reason]}
+                    variant="outlined"
+                    disabled={discard.isPending}
+                    onClick={() => discard.mutate({ reason })}
+                    sx={{ minHeight: 44, justifyContent: { xs: "space-between", sm: "center" } }}
+                  >
+                    {DISCARD_REASON_LABELS[reason]}
+                    {refersTo[reason] && (
+                      <Box
+                        component="span"
+                        sx={{
+                          display: { xs: "inline", sm: "none" },
+                          ml: 2,
+                          color: "text.secondary",
+                          fontWeight: 400,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {refersTo[reason]}
+                      </Box>
+                    )}
+                  </Button>
+                ))}
+              </Box>
+              <Button onClick={onCancel} sx={{ alignSelf: { xs: "stretch", sm: "flex-end" } }}>
                 Cancel
               </Button>
-            </Box>
+            </Stack>
           )}
         </Box>
       }
