@@ -276,6 +276,11 @@ def when_list_failing(client: TestClient, state: ScenarioState, rule: str) -> No
     state.response = client.get(OFFERS_URL, params=params)
 
 
+@when(parsers.parse("I list the near misses by failed rule, at most {shown:d} per rule"))
+def when_list_groups(client: TestClient, state: ScenarioState, shown: int) -> None:
+    state.response = client.get(f"{OFFERS_URL}/near-misses", params={"limit": shown})
+
+
 @when("I count the filtered offers by failed rule")
 def when_count(client: TestClient, state: ScenarioState) -> None:
     state.response = client.get(f"{OFFERS_URL}/filtered-counts")
@@ -352,6 +357,23 @@ def then_counts(
     failing = {row["rule"]: int(row["offers"]) for row in _rows(datatable)}
     counted = {key: body[key] for key in ("filtered", "near_misses", "failing")}
     assert counted == {"filtered": filtered, "near_misses": near_misses, "failing": failing}
+
+
+@then("the near miss groups are:")
+def then_groups(state: ScenarioState, datatable: list[list[str]]) -> None:
+    body = _ok(state.last_response, 200)
+    groups = [
+        (group["rule"], group["total"], [offer["company"] for offer in group["offers"]])
+        for group in body["groups"]
+    ]
+    assert groups == [
+        (row["rule"], int(row["offers"]), _quoted(row["from"])) for row in _rows(datatable)
+    ]
+
+
+@then("there are no near miss groups")
+def then_no_groups(state: ScenarioState) -> None:
+    assert _ok(state.last_response, 200) == {"groups": []}
 
 
 @then("it is rejected as invalid")
