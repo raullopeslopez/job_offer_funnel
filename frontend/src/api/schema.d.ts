@@ -487,6 +487,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/offers/near-misses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Near Misses
+         * @description The near misses grouped by the one rule they fail, each group with its total and its
+         *     most recent offers.
+         */
+        get: operations["list_near_misses_api_v1_offers_near_misses_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/offers/quality": {
         parameters: {
             query?: never;
@@ -1616,6 +1637,29 @@ export interface components {
             /** Search Url Template */
             search_url_template?: string | null;
             syntax?: components["schemas"]["Syntax"] | null;
+        };
+        /** NearMissGroupRead */
+        NearMissGroupRead: {
+            /**
+             * Offers
+             * @description Its most recent near misses, up to the limit.
+             */
+            offers: components["schemas"]["OfferRead"][];
+            /** @description The one rule its near misses fail; never `title`. */
+            rule: components["schemas"]["Rule"];
+            /**
+             * Total
+             * @description How many near misses fail it, not only the ones shown.
+             */
+            total: number;
+        };
+        /** NearMissGroupsRead */
+        NearMissGroupsRead: {
+            /**
+             * Groups
+             * @description One per rule that has near misses, in the order of the rules.
+             */
+            groups: components["schemas"]["NearMissGroupRead"][];
         };
         /** OfferCreate */
         OfferCreate: {
@@ -4156,6 +4200,47 @@ export interface operations {
             };
             /** @description Profile does not exist */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    list_near_misses_api_v1_offers_near_misses_get: {
+        parameters: {
+            query?: {
+                /** @description The most offers shown per rule. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NearMissGroupsRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
