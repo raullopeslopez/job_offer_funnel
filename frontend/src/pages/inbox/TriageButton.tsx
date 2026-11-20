@@ -12,10 +12,12 @@ type Progress = {
   isStopped: boolean;
 };
 
+export const triageMutationKey = ["triage-offers"] as const;
+
 // "Triage with AI" (specs/ui/inbox.feature): batch after batch until none is left, saying
 // how many are OK and KO, and it stops when a batch triages none (the triager's limits, or
 // it failed on all of them). Without an offer triager it does not show.
-export function TriageButton() {
+export function TriageButton({ running }: { running: boolean }) {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<Progress | null>(null);
 
@@ -29,6 +31,7 @@ export function TriageButton() {
   });
 
   const triage = useMutation({
+    mutationKey: triageMutationKey,
     mutationFn: async () => {
       let [triaged, ok, ko, toRescue] = [0, 0, 0, 0];
       for (;;) {
@@ -62,7 +65,7 @@ export function TriageButton() {
           {progress.isStopped ? ". Try again later." : ""}
         </Typography>
       )}
-      <Button variant="outlined" loading={triage.isPending} onClick={() => triage.mutate()}>
+      <Button variant="outlined" loading={running} onClick={() => triage.mutate()}>
         Triage with AI
       </Button>
     </Stack>

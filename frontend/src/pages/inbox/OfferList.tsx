@@ -16,14 +16,19 @@ import { groupByDay, groupByVerdict } from "./dayGroups";
 import { discardReasonText } from "./discardReasons";
 import type { SearchProfile } from "./filterRules";
 import { OfferStrip } from "./OfferStrip";
-import { TriageVerdict } from "./TriageVerdict";
+import { TriagePending, TriageVerdict } from "./TriageVerdict";
 import type { Offer, OfferView } from "./types";
 import { groupVariants, VariantGroup } from "./VariantGroup";
 
 export type JobBoard = Pick<components["schemas"]["JobBoardRead"], "id" | "import_method">;
 
 /** What the pieces of the inbox need besides the offer: where offers come from and the profiles. */
-export type OfferContext = { jobBoards: JobBoard[]; profiles: SearchProfile[]; now?: Date };
+export type OfferContext = {
+  jobBoards: JobBoard[];
+  profiles: SearchProfile[];
+  now?: Date;
+  triageRunning?: boolean;
+};
 
 export type OfferActions = {
   onDiscard: (offer: Offer) => void;
@@ -67,6 +72,7 @@ export function InboxOffer({
   profiles,
   now = new Date(),
   actions,
+  triageRunning,
   onDiscarded,
 }: OfferContext & {
   offer: Offer;
@@ -75,7 +81,11 @@ export function InboxOffer({
   onDiscarded?: (offer: Offer) => void;
 }) {
   const sourceKind = offerSourceKind(offer, jobBoards);
-  const isTriaged = offer.status === "pending" && offer.triage;
+  const waiting =
+    triageRunning &&
+    offer.status === "pending" &&
+    offer.filter_reason?.has_description &&
+    (!offer.filtered || offer.filter_reason.near_miss);
   return (
     <OfferPiece
       offer={offer}
@@ -89,7 +99,10 @@ export function InboxOffer({
             Reason: {discardReasonText(offer)}
           </Typography>
         )) ||
-        (isTriaged && <TriageVerdict offer={offer} onDiscarded={onDiscarded} />)
+        (offer.status === "pending" && offer.triage && (
+          <TriageVerdict offer={offer} onDiscarded={onDiscarded} />
+        )) ||
+        (waiting && <TriagePending />)
       }
     />
   );
@@ -104,6 +117,7 @@ export function OfferList({
   profiles,
   now = new Date(),
   single,
+  triageRunning,
   byVerdict = false,
   variants = false,
   discardingId,
@@ -128,6 +142,7 @@ export function OfferList({
       />
     ) : (
       <InboxOffer
+        triageRunning={triageRunning}
         key={offer.id}
         offer={offer}
         jobBoards={jobBoards}

@@ -1,6 +1,7 @@
 import { Box, Button, Snackbar, Stack, Typography } from "@mui/material";
 import {
   useInfiniteQuery,
+  useIsMutating,
   useMutation,
   useQueries,
   useQuery,
@@ -17,7 +18,7 @@ import { MaybeGroup } from "./MaybeGroup";
 import { NearMissGroups } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
-import { TriageButton } from "./TriageButton";
+import { TriageButton, triageMutationKey } from "./TriageButton";
 import { TriagerSuggestion } from "./TriagerSuggestion";
 import type { Offer, OfferStatus, OfferView } from "./types";
 
@@ -164,7 +165,8 @@ export function InboxPage() {
   const viewIndex = VIEWS.findIndex(({ value }) => value === view);
   const total = counts[viewIndex]?.data ?? 0;
   const heading = VIEWS[viewIndex]?.heading;
-  const context = { jobBoards: jobBoards.data ?? [], profiles: profiles.data ?? [] };
+  const triageRunning = useIsMutating({ mutationKey: triageMutationKey }) > 0;
+  const context = { triageRunning, jobBoards: jobBoards.data ?? [], profiles: profiles.data ?? [] };
 
   return (
     <>
@@ -195,7 +197,7 @@ export function InboxPage() {
             "& .MuiButton-root": { whiteSpace: "nowrap" },
           }}
         >
-          {view === "pending" && <TriageButton />}
+          {view === "pending" && <TriageButton running={triageRunning} />}
           <Button variant="outlined" onClick={() => setDialog("import")}>
             Import job board
           </Button>

@@ -472,7 +472,8 @@ Feature: Inbox screen
   # triages none. A pending offer with a verdict says it under its strip, in its AI
   # section: "AI: OK" or "AI: KO", its confidence ("High", "Medium" or "Low", none if it
   # has none), and a line per side it has: "Why yes: {why}" and "Why not: {why}", each
-  # followed by its quote in quotes when it has one. With a suggested discard it adds
+  # with its quote under "View evidence" when it has one. During a triage run, eligible
+  # cards awaiting a verdict show three dots (static with reduced motion). With a suggested discard it adds
   # "Discard: {reason}", which discards it with that reason and word, like any
   # discard. The criteria suggestions from the triager show above the offers, one at a
   # time, the first first: "AI suggests: exclude “{word}” from {profile}", its why, the
@@ -521,8 +522,10 @@ Feature: Inbox screen
     Then the AI section of the offer "Backend Engineer Lead" says:
       | AI: KO                                                  |
       | High                                                    |
-      | Why yes: A backend role. “Backend Engineer”             |
-      | Why not: A part-time role. “Part-time, 20 hours a week” |
+      | Why yes: A backend role.                                |
+      | Why not: A part-time role.                              |
+    When I expand "View evidence"
+    Then I see the quotes "Backend Engineer" and "Part-time, 20 hours a week"
 
   @component
   Scenario Outline: The AI section shows only what the triage has

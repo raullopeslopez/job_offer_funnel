@@ -52,7 +52,44 @@ function ConfidenceMeter({ confidence }: { confidence: Confidence }) {
   );
 }
 
-/** One side of the triage: "Why yes: {why}" or "Why not: {why}", and its quote. */
+export function TriagePending() {
+  return (
+    <Stack
+      direction="row"
+      spacing={1.5}
+      sx={{ alignItems: "center", borderTop: 1, borderColor: "divider", pt: 1.75 }}
+    >
+      <Box
+        aria-hidden="true"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          height: offerShape.tagHeight,
+          px: 1.25,
+          bgcolor: "fill",
+          borderRadius: offerShape.tagRadius,
+          "& span": { width: 5, height: 5, bgcolor: "text.secondary", borderRadius: "50%" },
+          "@media (prefers-reduced-motion: no-preference)": {
+            "& span": { animation: "triagePulse 1.2s ease-in-out infinite" },
+            "& span:nth-of-type(2)": { animationDelay: "150ms" },
+            "& span:nth-of-type(3)": { animationDelay: "300ms" },
+            "@keyframes triagePulse": { "50%": { transform: "translateY(-3px)", opacity: 0.45 } },
+          },
+        }}
+      >
+        <span />
+        <span />
+        <span />
+      </Box>
+      <Typography variant="body2" color="text.secondary">
+        Triage in progress · Awaiting verdict
+      </Typography>
+    </Stack>
+  );
+}
+
+/** One side of the triage: "Why yes: {why}" or "Why not: {why}",. */
 function WhyLine({ side, why }: { side: "yes" | "no"; why: Why }) {
   return (
     <Typography variant="body2">
@@ -63,12 +100,6 @@ function WhyLine({ side, why }: { side: "yes" | "no"; why: Why }) {
         {side === "yes" ? "Why yes:" : "Why not:"}
       </Box>{" "}
       {why.why}
-      {why.quote && (
-        <Box component="span" sx={{ color: "text.secondary" }}>
-          {" "}
-          “{why.quote}”
-        </Box>
-      )}
     </Typography>
   );
 }
@@ -101,6 +132,13 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
   });
 
   if (!triage) return null;
+  const quotes = [
+    ...new Set(
+      [triage.why_yes?.quote, triage.why_not?.quote].filter((quote): quote is string =>
+        Boolean(quote),
+      ),
+    ),
+  ];
   const isOk = triage.verdict === "ok";
   const error = discard.error ?? choose.error;
   return (
@@ -145,6 +183,28 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
         <Stack spacing={0.75} sx={{ minWidth: 0 }}>
           {triage.why_yes && <WhyLine side="yes" why={triage.why_yes} />}
           {triage.why_not && <WhyLine side="no" why={triage.why_not} />}
+          {quotes.length > 0 && (
+            <Box
+              component="details"
+              sx={{
+                typography: "body2",
+                color: "text.secondary",
+                "& summary": { cursor: "pointer" },
+              }}
+            >
+              <summary>View evidence</summary>
+              {quotes.map((quote) => (
+                <Typography
+                  key={quote}
+                  component="blockquote"
+                  variant="body2"
+                  sx={{ mx: 0, my: 0.75, pl: 1.5, borderLeft: 2, borderColor: "divider" }}
+                >
+                  “{quote}”
+                </Typography>
+              ))}
+            </Box>
+          )}
         </Stack>
         {suggestion && (
           <Button
