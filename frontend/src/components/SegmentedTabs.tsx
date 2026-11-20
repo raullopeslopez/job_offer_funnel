@@ -11,6 +11,7 @@ type Props<T extends string> = {
 };
 
 // A pill of tabs with their counts; the active one in ink. Tab roles and arrow keys from MUI.
+// When they do not fit, they scroll sideways inside the pill.
 export function SegmentedTabs<T extends string>({
   items,
   value,
@@ -26,6 +27,8 @@ export function SegmentedTabs<T extends string>({
       scrollButtons={false}
       sx={{
         display: "inline-flex",
+        // Never wider than the page: on a phone the tabs scroll inside the pill.
+        maxWidth: "100%",
         minHeight: 0,
         p: 0.5,
         borderRadius: 999,
