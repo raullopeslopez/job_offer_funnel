@@ -269,6 +269,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Inbox on a phone: the title of an offer stays readable while discarding it, its words
+  show under "A word in the title" and choosing one discards (or, with a profile, proposes
+  excluding it) in one tap; the other reasons are full-width rows that say what they refer
+  to (its country, its company). The actions go full width at the foot of each offer, the
+  rule strip shows two rules to a row without cutting their values, and an offer with many
+  countries shows the first one and how many more ("Spain +27 countries").
+
 - Excluded keywords only filter an offer when they are in its title as a whole word or
   its plural in "s" or "es": "Lead" filters "Lead Engineer", "Engineer (Tech-Lead)" and
   "Engineer for Leads", but no longer "Leading" nor "Mislead". Titles and keywords still

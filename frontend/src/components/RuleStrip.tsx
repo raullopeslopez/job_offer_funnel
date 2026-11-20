@@ -2,7 +2,8 @@ import { Box } from "@mui/material";
 import type { ReactNode } from "react";
 import { offerShape, offerType } from "../theme";
 
-// The rules of a profile side by side, in equal columns.
+// The rules of a profile side by side, in equal columns; on a phone, two to a row so that
+// their values fit.
 export function RuleStrip({ children }: { children: ReactNode }) {
   return (
     <Box
@@ -10,7 +11,8 @@ export function RuleStrip({ children }: { children: ReactNode }) {
       aria-label="Rules"
       sx={{
         display: "grid",
-        gridAutoFlow: "column",
+        gridAutoFlow: { xs: "row", sm: "column" },
+        gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "none" },
         gridAutoColumns: "minmax(0, 1fr)",
         gap: offerShape.ruleGap,
       }}
@@ -28,7 +30,7 @@ export function MergedRuleCell({ span, children }: MergedProps) {
     <Box
       data-state="unknown"
       sx={{
-        gridColumn: `span ${span}`,
+        gridColumn: { xs: "1 / -1", sm: `span ${span}` },
         display: "flex",
         alignItems: "center",
         px: 1.25,

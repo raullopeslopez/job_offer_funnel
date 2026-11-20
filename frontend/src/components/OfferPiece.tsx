@@ -17,8 +17,6 @@ type Props = {
   actions?: ReactNode;
   strip?: ReactNode;
   footer?: ReactNode;
-  /** Shown in place of the title's link, inside the same heading. */
-  heading?: ReactNode;
   now?: Date;
 };
 
@@ -28,57 +26,107 @@ function countryLabels({ countries, location }: Offer): string[] {
   return location ? [location] : [];
 }
 
-// One offer: where it came from, company, country and age, the title as a link, and slots for its
-// actions, its rule strip and a footer.
-export function OfferPiece({ offer, sourceKind, actions, strip, footer, heading, now }: Props) {
+/** How many countries an offer has besides the one shown: "+1 country", "+27 countries". */
+export function moreCountries(count: number): string {
+  return count === 1 ? "+1 country" : `+${count} countries`;
+}
+
+/** Where the job is, in one line: its first country, and how many more it has. */
+export function whereText(offer: Offer): string {
+  const [first, ...rest] = countryLabels(offer);
+  if (!first) return "";
+  return rest.length > 0 ? `${first} ${moreCountries(rest.length)}` : first;
+}
+
+// One offer: where it came from, its age, the title as a link, company and country, and slots
+// for its actions, its rule strip and a footer. On a phone the actions go full width at its
+// foot, after the rest.
+export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: Props) {
   const sourceName = sourceKind === "watched" ? undefined : offer.job_board_name;
+  const [country, ...otherCountries] = countryLabels(offer);
   return (
     <Box
       component="article"
       aria-label={offer.title}
       sx={{
-        p: 2.5,
+        p: { xs: 2, sm: 2.5 },
         bgcolor: "background.paper",
         border: 1,
         borderColor: "divider",
         borderRadius: offerShape.pieceRadius,
+        display: "grid",
+        gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "minmax(0, 1fr) auto" },
+        gridTemplateAreas: {
+          xs: '"main" "strip" "footer" "actions"',
+          sm: '"main actions" "strip strip" "footer footer"',
+        },
+        columnGap: 2,
+        rowGap: 0,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 1.25,
-              color: "text.secondary",
-              typography: "body2",
-            }}
-          >
-            <SourceTag kind={sourceKind} name={sourceName} />
-            {countryLabels(offer).map((label) => (
-              <CountryTag key={label} label={label} />
-            ))}
-            <span>
-              {offer.company} ·{" "}
-              <Box component="span" sx={{ fontFamily: mono }}>
-                <RelativeDate value={offer.created_at} now={now} />
-              </Box>
-            </span>
+      <Box sx={{ gridArea: "main", minWidth: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 1.25,
+            color: "text.secondary",
+            typography: "body2",
+          }}
+        >
+          <SourceTag kind={sourceKind} name={sourceName} />
+          <Box component="span" sx={{ fontFamily: mono }}>
+            <RelativeDate value={offer.created_at} now={now} />
           </Box>
-          <Typography variant="h6" component="h3" sx={{ mt: 1 }}>
-            {heading ?? (
-              <Link href={offer.url} target="_blank" rel="noopener noreferrer" color="inherit">
-                {offer.title}
-              </Link>
-            )}
-          </Typography>
         </Box>
-        {actions && <Box sx={{ display: "flex", gap: 1, flexShrink: 0 }}>{actions}</Box>}
+        <Typography variant="h6" component="h3" sx={{ mt: 1 }}>
+          <Link href={offer.url} target="_blank" rel="noopener noreferrer" color="inherit">
+            {offer.title}
+          </Link>
+        </Typography>
+        <Box
+          sx={{
+            mt: 0.75,
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 1,
+            color: "text.secondary",
+            typography: "body2",
+          }}
+        >
+          <span>{offer.company}</span>
+          {country && <CountryTag label={country} />}
+          {otherCountries.length > 0 && (
+            <Box
+              component="span"
+              title={otherCountries.join(", ")}
+              sx={{ color: "text.secondary" }}
+            >
+              {moreCountries(otherCountries.length)}
+            </Box>
+          )}
+        </Box>
       </Box>
-      {strip && <Box sx={{ mt: 2 }}>{strip}</Box>}
-      {footer && <Box sx={{ mt: 1.5 }}>{footer}</Box>}
+      {actions && (
+        <Box
+          sx={{
+            gridArea: "actions",
+            mt: { xs: 2, sm: 0 },
+            alignSelf: "start",
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: { xs: "minmax(0, 1fr)", sm: "auto" },
+            gap: 1,
+            "& .MuiButton-root": { minHeight: { xs: 44, sm: "auto" } },
+          }}
+        >
+          {actions}
+        </Box>
+      )}
+      {strip && <Box sx={{ gridArea: "strip", mt: 2 }}>{strip}</Box>}
+      {footer && <Box sx={{ gridArea: "footer", mt: 1.5 }}>{footer}</Box>}
     </Box>
   );
 }

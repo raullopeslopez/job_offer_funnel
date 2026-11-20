@@ -119,7 +119,11 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
           alignItems: "start",
         }}
       >
-        <Stack spacing={1} sx={{ alignItems: "flex-start" }}>
+        <Stack
+          direction={{ xs: "row", sm: "column" }}
+          spacing={{ xs: 1.5, sm: 1 }}
+          sx={{ alignItems: { xs: "center", sm: "flex-start" } }}
+        >
           <Box
             component="span"
             sx={{
