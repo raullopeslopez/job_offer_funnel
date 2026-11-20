@@ -1,5 +1,5 @@
 import WorkOutlined from "@mui/icons-material/WorkOutlined";
-import { Box, Link } from "@mui/material";
+import { Box, Link, Stack, type Theme, useMediaQuery } from "@mui/material";
 import {
   DataGrid,
   type GridColDef,
@@ -7,6 +7,7 @@ import {
   type GridPaginationModel,
 } from "@mui/x-data-grid";
 import { Link as RouterLink } from "react-router";
+import { CardList } from "../../components/CardList";
 import { CompanyAvatar } from "../../components/CompanyAvatar";
 import { EmptyState } from "../../components/EmptyState";
 import { channelIcons } from "../../components/icons";
@@ -103,9 +104,65 @@ const NoApplications = () => (
   />
 );
 
+/** One application on a phone: the same as its row, with nothing cut. */
+function ApplicationCard({ application: row }: { application: Application }) {
+  return (
+    <Stack spacing={1.25}>
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+        <CompanyAvatar name={row.company_name} />
+        <Box sx={{ minWidth: 0 }}>
+          <Link component={RouterLink} to={`/applications/${row.id}`} sx={{ fontWeight: 500 }}>
+            {row.role}
+          </Link>
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "6px",
+              typography: "caption",
+              color: "text.secondary",
+            }}
+          >
+            <span>{row.company_name}</span>
+            <Sep />
+            <Meta icon={channelIcons[row.channel]}>{row.channel}</Meta>
+          </Box>
+        </Box>
+      </Box>
+      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
+        <StatusChip value={row.stage} />
+        {row.outcome && <StatusChip value={row.outcome} />}
+        <StageProgress stage={row.stage} outcome={row.outcome} size="small" />
+        <PriorityBars value={row.priority} />
+        <Box sx={{ ml: "auto", typography: "caption", color: "text.secondary" }}>
+          <RelativeDate value={row.created_at} />
+        </Box>
+      </Box>
+    </Stack>
+  );
+}
+
 export function ApplicationsGrid({ applications, total, loading, pagination, ...props }: Props) {
-  // Below NARROW_GRID_PX of grid width only role and stage are shown.
+  // Below NARROW_GRID_PX of grid width only role and stage are shown; on a phone, cards.
   const [ref, narrow] = useNarrowGrid();
+  const isPhone = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
+
+  if (isPhone) {
+    return (
+      <CardList
+        aria-label="Applications"
+        rows={applications}
+        rowKey={(row) => row.id}
+        renderCard={(row) => <ApplicationCard application={row} />}
+        total={total}
+        loading={loading}
+        pagination={pagination}
+        onPaginationChange={props.onPaginationChange}
+        empty={<NoApplications />}
+      />
+    );
+  }
 
   return (
     <Box ref={ref}>

@@ -2,12 +2,13 @@ import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
 import DomainOutlined from "@mui/icons-material/DomainOutlined";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
-import { Button, Stack } from "@mui/material";
+import { Box, Button, Stack, type Theme, useMediaQuery } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
+import { CardList } from "../../components/CardList";
 import { CompanyAvatar, domainOf } from "../../components/CompanyAvatar";
 import { EmptyState } from "../../components/EmptyState";
 import { RowAction, RowActions, rowActionsSx } from "../../components/RowActions";
@@ -46,19 +47,33 @@ export function CompaniesSection() {
   // Also refreshes the company options of the application form.
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["companies"] });
 
+  const isPhone = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
+  const actions = (row: Company) => (
+    <RowActions>
+      <RowAction icon={EditOutlined} label={`Edit “${row.name}”`} onClick={() => setEditing(row)} />
+      <RowAction
+        icon={DeleteOutlineOutlined}
+        label={`Delete “${row.name}”`}
+        onClick={() => setDeleting(row)}
+      />
+    </RowActions>
+  );
+  const identity = (row: Company) => (
+    <TwoLineCell
+      lead={<CompanyAvatar name={row.name} domain={domainOf(row.website)} />}
+      primary={row.name}
+      secondary={row.website ? <Meta icon={LanguageOutlined}>{row.website}</Meta> : "—"}
+    />
+  );
+  const noCompanies = <EmptyState icon={DomainOutlined} title="No companies" />;
+
   const columns: GridColDef<Company>[] = [
     {
       field: "name",
       headerName: "Name",
       flex: 1,
       sortable: false,
-      renderCell: ({ row }) => (
-        <TwoLineCell
-          lead={<CompanyAvatar name={row.name} domain={domainOf(row.website)} />}
-          primary={row.name}
-          secondary={row.website ? <Meta icon={LanguageOutlined}>{row.website}</Meta> : "—"}
-        />
-      ),
+      renderCell: ({ row }) => identity(row),
     },
     {
       field: "actions",
@@ -66,20 +81,7 @@ export function CompaniesSection() {
       width: 100,
       sortable: false,
       align: "right",
-      renderCell: ({ row }) => (
-        <RowActions>
-          <RowAction
-            icon={EditOutlined}
-            label={`Edit “${row.name}”`}
-            onClick={() => setEditing(row)}
-          />
-          <RowAction
-            icon={DeleteOutlineOutlined}
-            label={`Delete “${row.name}”`}
-            onClick={() => setDeleting(row)}
-          />
-        </RowActions>
-      ),
+      renderCell: ({ row }) => actions(row),
     },
   ];
 
@@ -91,22 +93,56 @@ export function CompaniesSection() {
         </Button>
       </Stack>
 
-      <DataGrid
-        rows={companies.data?.items ?? []}
-        columns={columns}
-        rowCount={companies.data?.total ?? 0}
-        loading={companies.isFetching}
-        paginationMode="server"
-        paginationModel={pagination}
-        onPaginationModelChange={setPagination}
-        pageSizeOptions={[pagination.pageSize]}
-        disableColumnMenu
-        disableRowSelectionOnClick
-        autoHeight
-        rowHeight={64}
-        sx={rowActionsSx}
-        slots={{ noRowsOverlay: () => <EmptyState icon={DomainOutlined} title="No companies" /> }}
-      />
+      {isPhone ? (
+        // On a phone, a card per company with its actions always shown.
+        <CardList
+          aria-label="Companies"
+          rows={companies.data?.items ?? []}
+          rowKey={(row) => row.id}
+          renderCard={(row) => (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                // Touch targets of 44 px for its actions.
+                "& .MuiIconButton-root": { width: 44, height: 44 },
+              }}
+            >
+              <CompanyAvatar name={row.name} domain={domainOf(row.website)} />
+              <Box sx={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
+                <Box sx={{ fontWeight: 500 }}>{row.name}</Box>
+                <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                  {row.website ?? "—"}
+                </Box>
+              </Box>
+              {actions(row)}
+            </Box>
+          )}
+          total={companies.data?.total ?? 0}
+          loading={companies.isFetching}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          empty={noCompanies}
+        />
+      ) : (
+        <DataGrid
+          rows={companies.data?.items ?? []}
+          columns={columns}
+          rowCount={companies.data?.total ?? 0}
+          loading={companies.isFetching}
+          paginationMode="server"
+          paginationModel={pagination}
+          onPaginationModelChange={setPagination}
+          pageSizeOptions={[pagination.pageSize]}
+          disableColumnMenu
+          disableRowSelectionOnClick
+          autoHeight
+          rowHeight={64}
+          sx={rowActionsSx}
+          slots={{ noRowsOverlay: () => noCompanies }}
+        />
+      )}
 
       {editing && (
         <CompanyDialog

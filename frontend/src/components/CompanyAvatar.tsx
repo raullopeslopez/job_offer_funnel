@@ -53,7 +53,9 @@ export function CompanyAvatar({ name, domain, size = 32 }: Props) {
           ...box,
           ...ring(theme),
           objectFit: "contain",
-          p: "14%",
+          // In px: a padding in % is a share of the container's width, not of the avatar's.
+          boxSizing: "border-box",
+          p: `${Math.round(size * 0.14)}px`,
           bgcolor: "background.paper",
         })}
       />

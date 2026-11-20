@@ -366,7 +366,9 @@ While the version is `0.x`, the API may change without a major version bump.
 - The rest of the app on a phone: the filters of Applications wrap two to a row, the
   tables of Metrics scroll sideways inside their box instead of widening the page, page
   titles are smaller so the buttons beside them keep their labels on one line, and
-  dialogs take nearly the whole width of the screen.
+  dialogs take nearly the whole width of the screen. Applications and Companies show a
+  card per row instead of a table, with nothing cut and the same pages.
+- Company logos keep their size: they no longer grow with a wide row or card.
 
 - Offer countries: "Anywhere in France, Belgium, Spain" shows France, Belgium and Spain,
   no longer "Worldwide" too; only "Anywhere" alone or "Anywhere in the world" means any

@@ -25,6 +25,17 @@ describe("CompanyAvatar", () => {
     expect(container.querySelector("img")).toHaveAttribute("src", LOGO_URL("acme.com"));
   });
 
+  it("keeps the logo at its size, with a padding in px whatever its container", () => {
+    // Arrange / Act
+    const { container } = renderAvatar(<CompanyAvatar name="Acme" domain="acme.com" />);
+
+    // Assert
+    const style = getComputedStyle(container.querySelector("img") as HTMLImageElement);
+    expect(style.boxSizing).toBe("border-box");
+    expect(style.width).toBe("32px");
+    expect(style.paddingLeft).toBe("4px");
+  });
+
   it("falls back to the initial when the image fails", () => {
     // Arrange
     const { container } = renderAvatar(<CompanyAvatar name="Acme" domain="acme.com" />);
