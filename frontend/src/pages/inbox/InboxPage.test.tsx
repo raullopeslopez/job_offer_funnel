@@ -1052,6 +1052,33 @@ describe("InboxPage triage", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(said));
   });
 
+  it("shows outstanding verdicts only while a triage request is pending", async () => {
+    inboxWith([
+      imported("Backend Engineer", rulesWith()),
+      imported("Empty posting", rulesWith(), { hasDescription: false }),
+    ]);
+    triagerAnswering();
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post("/api/v1/offers/triages", async () => {
+        await pending;
+        return HttpResponse.json({ triaged: 0, ok: 0, ko: 0, left: 1, failed: 1, to_rescue: 0 });
+      }),
+    );
+    renderInbox();
+    await userEvent.click(await screen.findByRole("button", { name: "Triage with AI" }));
+    try {
+      const indicator = await screen.findByText(/Awaiting verdict/);
+      expect(indicator.closest("article")).toHaveAccessibleName("Backend Engineer");
+    } finally {
+      release();
+    }
+    await waitFor(() => expect(screen.queryByText(/Awaiting verdict/)).not.toBeInTheDocument());
+  });
+
   it("shows the AI section of a triaged offer", async () => {
     // Arrange
     inboxWith([
@@ -1075,8 +1102,13 @@ describe("InboxPage triage", () => {
     const section = within(piece).getByRole("region", { name: "AI verdict" });
     expect(section).toHaveTextContent("AI: KO");
     expect(within(section).getByRole("img", { name: "High confidence" })).toBeInTheDocument();
-    expect(section).toHaveTextContent("Why yes: A backend role. “Backend Engineer”");
-    expect(section).toHaveTextContent("Why not: A part-time role. “Part-time, 20 hours a week”");
+    expect(section).toHaveTextContent("Why yes: A backend role.");
+    expect(section).toHaveTextContent("Why not: A part-time role.");
+    const evidence = within(section).getByText("View evidence");
+    expect(evidence.parentElement).not.toHaveAttribute("open");
+    await userEvent.click(evidence);
+    expect(evidence.parentElement).toHaveAttribute("open");
+    expect(section).toHaveTextContent("“Part-time, 20 hours a week”");
   });
 
   it.each([
