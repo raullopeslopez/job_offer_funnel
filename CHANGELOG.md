@@ -363,6 +363,10 @@ While the version is `0.x`, the API may change without a major version bump.
   scroll inside their pill), so the browser does not zoom it out; and in dark mode the
   form fields, such as "Job board" in "Import job board", are dark instead of white. The
   buttons at the top wrap to a new row instead of breaking their labels.
+- The rest of the app on a phone: the filters of Applications wrap two to a row, the
+  tables of Metrics scroll sideways inside their box instead of widening the page, page
+  titles are smaller so the buttons beside them keep their labels on one line, and
+  dialogs take nearly the whole width of the screen.
 
 - Offer countries: "Anywhere in France, Belgium, Spain" shows France, Belgium and Spain,
   no longer "Worldwide" too; only "Anywhere" alone or "Anywhere in the world" means any

@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -276,28 +277,30 @@ export function OfferQualityPanel() {
       <Typography variant="h6" component="h3" gutterBottom>
         By source
       </Typography>
-      <Table size="small" aria-label="By source">
-        <TableHead>
-          <TableRow>
-            <TableCell>Source</TableCell>
-            <TableCell align="right">Imported</TableCell>
-            <TableCell align="right">Fit</TableCell>
-            <TableCell align="right">Promoted</TableCell>
-            <TableCell align="right">Discarded</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {quality.data.sources.map((source) => (
-            <TableRow key={source.source}>
-              <TableCell>{source.source}</TableCell>
-              <TableCell align="right">{source.imported}</TableCell>
-              <TableCell align="right">{source.fitting}</TableCell>
-              <TableCell align="right">{source.promoted}</TableCell>
-              <TableCell align="right">{source.discarded}</TableCell>
+      <TableContainer>
+        <Table size="small" aria-label="By source">
+          <TableHead>
+            <TableRow>
+              <TableCell>Source</TableCell>
+              <TableCell align="right">Imported</TableCell>
+              <TableCell align="right">Fit</TableCell>
+              <TableCell align="right">Promoted</TableCell>
+              <TableCell align="right">Discarded</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {quality.data.sources.map((source) => (
+              <TableRow key={source.source}>
+                <TableCell>{source.source}</TableCell>
+                <TableCell align="right">{source.imported}</TableCell>
+                <TableCell align="right">{source.fitting}</TableCell>
+                <TableCell align="right">{source.promoted}</TableCell>
+                <TableCell align="right">{source.discarded}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Box>
   );
 }

@@ -77,7 +77,8 @@ export function ApplicationsPage() {
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+      {/* On a phone the filters wrap, two to a row. */}
+      <Stack direction="row" spacing={2} useFlexGap sx={{ mb: 2, flexWrap: "wrap" }}>
         {FILTERS.map(({ name, label, values }) => (
           <TextField
             key={name}
@@ -87,7 +88,7 @@ export function ApplicationsPage() {
             value={params.get(name) ?? ""}
             onChange={(event) => changeFilter(name, event.target.value)}
             slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: { xs: 0, sm: 160 }, flex: { xs: "1 1 140px", sm: "0 0 auto" } }}
           >
             <MenuItem value="">Any</MenuItem>
             {values.map((value) => (

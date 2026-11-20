@@ -166,7 +166,14 @@ export const theme = createTheme({
     fontFamily: sans,
     fontSize: 14,
     // Page headline, in-between heading and section title.
-    h4: { fontWeight: 700, fontSize: "2.75rem", lineHeight: 1.05, letterSpacing: "-0.04em" },
+    // Smaller on a phone, so the buttons next to it keep their labels on one line.
+    h4: {
+      fontWeight: 700,
+      fontSize: "2.75rem",
+      lineHeight: 1.05,
+      letterSpacing: "-0.04em",
+      "@media (max-width:599.95px)": { fontSize: "2rem" },
+    },
     h5: { fontWeight: 600, fontSize: "1.5rem", lineHeight: 1.2, letterSpacing: "-0.03em" },
     h6: { fontWeight: 600, fontSize: "1.125rem", lineHeight: 1.35, letterSpacing: "-0.02em" },
     body1: { fontSize: "0.9375rem", lineHeight: 1.55, letterSpacing: 0 },
@@ -203,6 +210,8 @@ export const theme = createTheme({
       styleOverrides: {
         paper: {
           borderRadius: 14,
+          // On a phone, nearly the whole width: the default margins leave the fields narrow.
+          "@media (max-width:599.95px)": { margin: 16, width: "calc(100% - 32px)" },
           boxShadow: "0 24px 64px rgba(16,18,28,0.18), 0 0 0 1px rgba(16,18,28,0.06)",
         },
       },

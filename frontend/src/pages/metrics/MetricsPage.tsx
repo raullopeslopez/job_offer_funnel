@@ -9,6 +9,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   ToggleButton,
@@ -143,22 +144,24 @@ function FunnelMetrics() {
           <Typography color="text.secondary" gutterBottom>
             {pipeline.total} active applications in total
           </Typography>
-          <Table size="small" aria-label="Active pipeline">
-            <TableHead>
-              <TableRow>
-                <TableCell>Stage</TableCell>
-                <TableCell align="right">Applications</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {pipeline.stages.map(({ stage, applications }) => (
-                <TableRow key={stage}>
-                  <TableCell>{stage}</TableCell>
-                  <TableCell align="right">{applications}</TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Active pipeline">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Stage</TableCell>
+                  <TableCell align="right">Applications</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {pipeline.stages.map(({ stage, applications }) => (
+                  <TableRow key={stage}>
+                    <TableCell>{stage}</TableCell>
+                    <TableCell align="right">{applications}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <Box sx={{ height: (theme) => theme.spacing(30) }}>
             <BarChart
               xAxis={[{ data: pipeline.stages.map(({ stage }) => stage) }]}
