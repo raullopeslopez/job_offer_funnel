@@ -49,6 +49,7 @@ from funnel.modules.inbox.schemas import (
     FrequentTitleRead,
     FrequentTitlesRead,
     ImportRead,
+    NearMissGroupRead,
     NearMissGroupsRead,
     OfferCreate,
     OfferQualityRead,
@@ -350,7 +351,17 @@ async def list_near_misses(
 ) -> NearMissGroupsRead:
     """The near misses grouped by the one rule they fail, each group with its total and its
     most recent offers."""
-    raise NotImplementedError
+    groups = await service.near_miss_groups(limit)
+    return NearMissGroupsRead(
+        groups=[
+            NearMissGroupRead(
+                rule=rule,
+                total=total,
+                offers=[OfferRead.model_validate(row, from_attributes=True) for row in rows],
+            )
+            for rule, total, rows in groups
+        ]
+    )
 
 
 @offers_router.post(

@@ -1,5 +1,5 @@
 import { Box, Button, Link, Stack, Typography } from "@mui/material";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../../api/client";
 import { GroupedList } from "../../components/GroupedList";
@@ -8,7 +8,7 @@ import { RuleCell } from "../../components/RuleCell";
 import { SourceTag } from "../../components/SourceTag";
 import { mono, offerShape } from "../../theme";
 import { breakdown, NEAR_MISS_GROUPS, ruleCells } from "./filterRules";
-import { type NearMissActions, NearMissButtons, nearMissesQuery } from "./MaybeGroup";
+import { type NearMissActions, NearMissButtons } from "./MaybeGroup";
 import type { OfferContext } from "./OfferList";
 import { Evidence } from "./OfferStrip";
 import type { Offer } from "./types";
@@ -16,38 +16,38 @@ import type { Offer } from "./types";
 // Enough to break a group down exactly while it has no more near misses than this.
 const GROUP_LIMIT = 100;
 
-export const filteredCountsQuery = {
-  queryKey: ["offers", "filtered-counts"],
+export const nearMissGroupsQuery = {
+  queryKey: ["offers", "near-miss-groups"],
   queryFn: async () => {
-    const { data, error } = await api.GET("/api/v1/offers/filtered-counts");
+    const { data, error } = await api.GET("/api/v1/offers/near-misses", {
+      params: { query: { limit: GROUP_LIMIT } },
+    });
     if (error) throw error;
-    return data;
+    return data.groups;
   },
 };
 
 type Props = OfferContext & NearMissActions;
 
-// "One rule away": the near misses grouped by the rule that filtered them.
+// "One rule away": the near misses grouped by the rule that filtered them, in one request.
 export function NearMissGroups({ onPromote, onRightlyFiltered, ...context }: Props) {
-  const counts = useQuery(filteredCountsQuery);
-  const groups = useQueries({
-    queries: NEAR_MISS_GROUPS.map(({ rule }) => nearMissesQuery(GROUP_LIMIT, rule)),
-  });
-  const total = counts.data?.near_misses ?? 0;
+  const groups = useQuery(nearMissGroupsQuery).data ?? [];
+  const byRule = new Map(groups.map((group) => [group.rule, group]));
+  const total = groups.reduce((sum, group) => sum + group.total, 0);
   if (total === 0) return null;
   return (
     <Box sx={{ mb: 4 }}>
       <GroupedList title="One rule away" count={total}>
-        {NEAR_MISS_GROUPS.map(({ rule, label }, index) => {
-          const page = groups[index]?.data;
-          if (!page || page.total === 0) return null;
+        {NEAR_MISS_GROUPS.map(({ rule, label }) => {
+          const page = byRule.get(rule);
+          if (!page) return null;
           return (
             <NearMissGroup
               key={rule}
               label={label}
               total={page.total}
-              breakdown={breakdown(page.items, rule, context.profiles)}
-              offers={page.items}
+              breakdown={breakdown(page.offers, rule, context.profiles)}
+              offers={page.offers}
               context={context}
               actions={{ onPromote, onRightlyFiltered }}
             />

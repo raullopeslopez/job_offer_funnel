@@ -182,16 +182,19 @@ function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] 
         offset: 0,
       });
     }),
-    http.get("/api/v1/offers/filtered-counts", () => {
-      const filtered = offers.filter((o) => o.status === "pending" && o.filtered);
-      const rules: Rule[] = ["title", "keywords", "excluded", "work_mode", "location", "stable"];
-      return HttpResponse.json({
-        filtered: filtered.length,
-        near_misses: filtered.filter((o) => o.filter_reason?.near_miss).length,
-        failing: Object.fromEntries(
-          rules.map((name) => [name, filtered.filter((o) => isFailing(o, name)).length]),
-        ),
-      });
+    http.get("/api/v1/offers/near-misses", ({ request }) => {
+      const limit = Number(new URL(request.url).searchParams.get("limit") ?? 20);
+      const nearMisses = offers.filter((o) => o.status === "pending" && o.filter_reason?.near_miss);
+      const rules: Rule[] = ["keywords", "excluded", "work_mode", "location", "stable"];
+      const groups = rules
+        .map((rule) => ({ rule, offers: nearMisses.filter((o) => isFailing(o, rule)) }))
+        .filter(({ offers }) => offers.length > 0)
+        .map(({ rule, offers }) => ({
+          rule,
+          total: offers.length,
+          offers: offers.slice(0, limit),
+        }));
+      return HttpResponse.json({ groups });
     }),
     http.get("/api/v1/job-boards", () =>
       HttpResponse.json({ items: jobBoards, total: jobBoards.length, limit: 100, offset: 0 }),

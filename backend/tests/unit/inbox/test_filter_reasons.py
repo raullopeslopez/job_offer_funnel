@@ -1,4 +1,5 @@
 from dataclasses import replace
+from uuid import uuid7
 
 import pytest
 
@@ -16,6 +17,7 @@ from funnel.modules.inbox.domain import (
     check_rules,
     count_filtered,
     filter_reason,
+    near_misses_by_rule,
 )
 
 PASSED, UNKNOWN, FAILED = RuleResult.PASSED, RuleResult.UNKNOWN, RuleResult.FAILED
@@ -244,3 +246,28 @@ def test_counts_the_reviews_made_on_near_misses_and_the_rescues_among_them() -> 
 
     # Assert
     assert (counts.reviewed_near_misses, counts.rescued_near_misses) == (2, 1)
+
+
+@pytest.mark.unit
+def test_groups_the_near_misses_by_the_rule_they_fail_in_the_order_of_the_rules() -> None:
+    # Arrange
+    excluded, keywords, other_keywords, two_rules, rightly, fits = (uuid7() for _ in range(6))
+    reasons = {
+        excluded: _reason((Rule.TITLE, PASSED), (Rule.EXCLUDED, FAILED)),
+        keywords: _reason((Rule.TITLE, PASSED), (Rule.KEYWORDS, FAILED)),
+        two_rules: _reason((Rule.KEYWORDS, FAILED), (Rule.EXCLUDED, FAILED)),
+        other_keywords: _reason((Rule.TITLE, PASSED), (Rule.KEYWORDS, FAILED)),
+        rightly: replace(
+            _reason((Rule.TITLE, PASSED), (Rule.STABLE, FAILED)), is_rightly_filtered=True
+        ),
+        fits: _reason((Rule.TITLE, PASSED), (Rule.STABLE, UNKNOWN)),
+    }
+
+    # Act
+    groups = near_misses_by_rule(reasons)
+
+    # Assert
+    assert list(groups.items()) == [
+        (Rule.KEYWORDS, [keywords, other_keywords]),
+        (Rule.EXCLUDED, [excluded]),
+    ]

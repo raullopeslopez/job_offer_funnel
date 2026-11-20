@@ -1,20 +1,17 @@
 import { Box, Button, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import type { components } from "../../api/schema";
 import { groupedPiecesSx } from "../../components/GroupedList";
 import { mono } from "../../theme";
 import { InboxOffer, type OfferContext } from "./OfferList";
 import type { Offer } from "./types";
 
-type Rule = components["schemas"]["Rule"];
-
 const SHOWN = 3;
 
-/** The near misses, the most recent first, optionally only those failing one rule. */
-export function nearMissesQuery(limit: number, failedRule?: Rule) {
+/** The near misses, the most recent first. */
+export function nearMissesQuery(limit: number) {
   return {
-    queryKey: ["offers", "near-misses", limit, failedRule ?? "any"],
+    queryKey: ["offers", "near-misses", limit],
     queryFn: async () => {
       const { data, error } = await api.GET("/api/v1/offers", {
         params: {
@@ -22,7 +19,6 @@ export function nearMissesQuery(limit: number, failedRule?: Rule) {
             status: "pending",
             filtered: true,
             near_miss: true,
-            ...(failedRule && { failed_rule: failedRule }),
             limit,
           },
         },

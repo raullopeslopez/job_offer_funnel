@@ -53,6 +53,7 @@ from funnel.modules.inbox.domain import (
     Reading,
     Relaxing,
     Review,
+    Rule,
     RuleChangedSinceError,
     RuleCheck,
     RuleResult,
@@ -153,6 +154,9 @@ class OfferService:
     ) -> tuple[list[OfferRow], int]:
         profiles = await self._profiles.all_terms()
         return await self._repository.list_page(offer_filter, page, profiles)
+
+    async def near_miss_groups(self, limit: int) -> list[tuple[Rule, int, list[OfferRow]]]:
+        return await self._repository.near_miss_groups(await self._profiles.all_terms(), limit)
 
     async def count_filtered(self) -> FilteredCounts:
         profiles = await self._profiles.all_terms()

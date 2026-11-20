@@ -13,12 +13,14 @@ from sqlalchemy import (
     String,
     Text,
     and_,
+    any_,
     case,
     column,
     delete,
     exists,
     false,
     func,
+    literal,
     not_,
     or_,
     select,
@@ -26,6 +28,7 @@ from sqlalchemy import (
     update,
     values,
 )
+from sqlalchemy import Uuid as UuidType
 from sqlalchemy import (
     cast as sql_cast,
 )
@@ -65,6 +68,7 @@ from funnel.modules.inbox.domain import (
     WordHits,
     country_forms,
     filter_reason,
+    near_misses_by_rule,
 )
 from funnel.modules.inbox.models import (
     JOB_BOARD_FOREIGN_KEY,
@@ -100,6 +104,12 @@ def _contradicted(terms: SearchTerms) -> ColumnElement[bool]:
 
 def _texts(values: Collection[str]) -> ColumnElement[Any]:
     return sql_cast(array(sorted(values)), ARRAY(Text))
+
+
+def _among(offer_ids: Collection[UUID]) -> ColumnElement[bool]:
+    """One array parameter, however many ids: a parameter per id would hit the driver's
+    limit (32,767) with enough near misses."""
+    return OfferRow.id == any_(literal(list(offer_ids), ARRAY(UuidType)))
 
 
 def _ruled_out(location: str | None) -> ColumnElement[bool]:
@@ -458,6 +468,27 @@ class OfferRepository:
         )
         return rows, total or 0
 
+    async def near_miss_groups(
+        self, profiles: Sequence[SearchTerms], limit: int
+    ) -> list[tuple[Rule, int, list[OfferRow]]]:
+        """Each rule with near misses, how many fail it and its most recent ones, up to the
+        limit; the filter reasons are worked out once for all of them."""
+        reasons = await self._reasons(true(), profiles)
+        groups = []
+        for rule, offer_ids in near_misses_by_rule(reasons).items():
+            rows = list(
+                await self._session.scalars(
+                    _select_offers(profiles)
+                    .where(_among(offer_ids))
+                    .order_by(*_MOST_RECENT)
+                    .limit(limit)
+                )
+            )
+            for row in rows:
+                row.filter_reason = reasons[row.id]
+            groups.append((rule, len(offer_ids), rows))
+        return groups
+
     async def _conditions(
         self, offer_filter: OfferFilter, profiles: Sequence[SearchTerms]
     ) -> list[ColumnElement[bool]]:
@@ -482,7 +513,7 @@ class OfferRepository:
         reasons = await self._reasons(true(), profiles)
         if offer_filter.is_near_miss is not None:
             near_misses = [offer_id for offer_id, reason in reasons.items() if reason.near_miss]
-            in_near_misses = OfferRow.id.in_(near_misses)
+            in_near_misses = _among(near_misses)
             conditions.append(in_near_misses if offer_filter.is_near_miss else not_(in_near_misses))
         if offer_filter.failed_rule is not None:
             failing = [
@@ -490,7 +521,7 @@ class OfferRepository:
                 for offer_id, reason in reasons.items()
                 if offer_filter.failed_rule in reason.failed
             ]
-            conditions.append(OfferRow.id.in_(failing))
+            conditions.append(_among(failing))
         return conditions
 
 

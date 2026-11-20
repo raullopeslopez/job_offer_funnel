@@ -442,6 +442,16 @@ def filter_reason(matches: Sequence[ProfileMatch], *, has_description: bool) -> 
     return FilterReason(terms.search_profile_id, terms.name, has_description, rules)
 
 
+def near_misses_by_rule(reasons: Mapping[UUID, FilterReason]) -> dict[Rule, list[UUID]]:
+    """The near misses by the one rule they fail, in the order of the rules; the rules
+    without near misses are left out."""
+    by_rule: dict[Rule, list[UUID]] = {rule: [] for rule in Rule}
+    for offer_id, reason in reasons.items():
+        if reason.near_miss:
+            by_rule[reason.failed[0]].append(offer_id)
+    return {rule: offer_ids for rule, offer_ids in by_rule.items() if offer_ids}
+
+
 def count_filtered(
     reasons: Iterable[FilterReason], reviews: Iterable[ReviewMade]
 ) -> FilteredCounts:
