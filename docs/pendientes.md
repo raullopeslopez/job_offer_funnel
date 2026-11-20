@@ -33,7 +33,9 @@ Medido en local con datos sintéticos (3 perfiles, descripciones de ~3 KB, 60 % 
 
 **Hecho**: el JIT de Postgres desactivado en las conexiones de la API (PR #147). Compilaba en cada lectura ~2 s de una consulta que tarda ~0,1 s.
 
-**En curso**: los casi de la vista Filtered en una sola respuesta. Antes, cada carga y cada clic recalculaban los motivos de filtrado de todas las pendientes 7 veces (~12 s con 20.000 ofertas).
+**Hecho**: los casi de la vista Filtered en una sola respuesta (`GET /offers/near-misses`). Cada carga y cada clic recalculaban los motivos de filtrado de todas las pendientes 7 veces; ahora 2 (la lista y los grupos). Con 20.000 ofertas sintéticas, la vista pasó de ~13 s a ~6,5 s. Los ids de los casi van a SQL como un solo array: sin el tope de 32.767 parámetros de asyncpg.
+
+**Lo que queda en esa vista** (~6,5 s con 20.000): la lista y los grupos (~2 s cada uno, casi todo el cálculo del motivo en Python, que bloquea el único worker), `frequent-titles` y los recuentos de las pestañas, que se sirven uno detrás de otro por la CPU. Son los puntos 4, 5 y 7 de abajo.
 
 **Abierto**, por orden recomendado:
 

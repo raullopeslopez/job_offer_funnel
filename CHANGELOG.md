@@ -10,6 +10,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Near misses by rule in one request: `GET /offers/near-misses` gives the near misses
+  grouped by the one rule they fail, in the order of the rules, each group with how many
+  offers fail it and its most recent ones (`limit`, 1 to 100 per rule, 20 by default).
+  The Filtered view's "One rule away" now loads with it, instead of one request per rule
+  and another for the counts.
 - Offer readings with Claude Code: with `OFFER_READER=claude-code` the offer reader is
   Claude Code on your Claude subscription (where `claude` is installed and signed in),
   like the offer triager, and `POST /offers/readings` reads up to 20 offers in a single
@@ -359,6 +364,8 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Listing the pending offers that are near misses, or that fail a rule, no longer fails
+  when there are tens of thousands of them.
 - Faster inbox reads: listing and counting offers no longer waits about two seconds on
   every request while the database compiles the filter (Postgres JIT, now turned off for
   the API's connections, on any Postgres it runs against).
