@@ -269,6 +269,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Inbox on a phone: the title of an offer stays readable while discarding it, its words
+  show under "A word in the title" and choosing one discards (or, with a profile, proposes
+  excluding it) in one tap; the other reasons are full-width rows that say what they refer
+  to (its country, its company). The actions go full width at the foot of each offer, the
+  rule strip shows two rules to a row without cutting their values, and an offer with many
+  countries shows the first one and how many more ("Spain +27 countries").
+
 - Excluded keywords only filter an offer when they are in its title as a whole word or
   its plural in "s" or "es": "Lead" filters "Lead Engineer", "Engineer (Tech-Lead)" and
   "Engineer for Leads", but no longer "Leading" nor "Mislead". Titles and keywords still
@@ -355,6 +362,11 @@ While the version is `0.x`, the API may change without a major version bump.
 - Faster inbox reads: listing and counting offers no longer waits about two seconds on
   every request while the database compiles the filter (Postgres JIT, now turned off for
   the API's connections, on any Postgres it runs against).
+- Inbox on a phone: the page no longer grows wider than the screen (the status tabs
+  scroll inside their pill), so the browser does not zoom it out; and in dark mode the
+  form fields, such as "Job board" in "Import job board", are dark instead of white. The
+  buttons at the top wrap to a new row instead of breaking their labels.
+
 - Offer countries: "Anywhere in France, Belgium, Spain" shows France, Belgium and Spain,
   no longer "Worldwide" too; only "Anywhere" alone or "Anywhere in the world" means any
   country.

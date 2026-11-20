@@ -7,6 +7,7 @@ type Props = { label: string; value?: string | null; state: RuleState };
 
 // One rule of the profile and what the offer gave for it. The three states differ by
 // shape, not only by color: filled (pass), dashed border (unknown), ink with a suffix (failed).
+// On a phone the value wraps instead of being cut.
 export function RuleCell({ label, value, state }: Props) {
   return (
     <Box
@@ -35,7 +36,8 @@ export function RuleCell({ label, value, state }: Props) {
           ...offerType.cellValue,
           overflow: "hidden",
           textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          whiteSpace: { xs: "normal", sm: "nowrap" },
+          overflowWrap: "anywhere",
           fontWeight: state === "unknown" ? 400 : 600,
           color: state === "unknown" ? "text.secondary" : "inherit",
         }}

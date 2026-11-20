@@ -1,6 +1,6 @@
 // "Ink and signal" theme (v3): the only place for color, typography, spacing and shape.
 // Neutrals and ink carry the interface; the only saturated color tells where an offer came from.
-import { createTheme } from "@mui/material/styles";
+import { type CssVarsTheme, createTheme } from "@mui/material/styles";
 import type {} from "@mui/x-data-grid/themeAugmentation";
 
 const sans = '"Geist Sans", "Helvetica Neue", Arial, sans-serif';
@@ -128,6 +128,9 @@ export const toneOf: Record<string, Tone> = {
   promoted: "green",
 };
 
+type ThemeWithVars = { vars?: CssVarsTheme["vars"]; palette: CssVarsTheme["palette"] };
+const vars = (theme: ThemeWithVars) => theme.vars ?? theme;
+
 export const theme = createTheme({
   cssVariables: { colorSchemeSelector: "data" },
   colorSchemes: {
@@ -173,6 +176,8 @@ export const theme = createTheme({
   },
   spacing: 8,
   shape: { borderRadius: 10 },
+  // Overrides take their colors from theme.vars (CSS variables), so they follow the color
+  // scheme; theme.palette is only the light one.
   components: {
     MuiButton: {
       defaultProps: { disableElevation: true },
@@ -181,7 +186,7 @@ export const theme = createTheme({
     MuiIconButton: { styleOverrides: { root: { borderRadius: 10 } } },
     MuiOutlinedInput: {
       styleOverrides: {
-        root: ({ theme }) => ({ backgroundColor: theme.palette.background.paper }),
+        root: ({ theme }) => ({ backgroundColor: vars(theme).palette.background.paper }),
       },
     },
     MuiPaper: {
@@ -190,7 +195,7 @@ export const theme = createTheme({
         // Thin lines instead of shadows. Menus and dialogs float, so they keep theirs.
         elevation1: ({ theme }) => ({
           boxShadow: "none",
-          border: `1px solid ${theme.palette.divider}`,
+          border: `1px solid ${vars(theme).palette.divider}`,
         }),
       },
     },
@@ -211,8 +216,8 @@ export const theme = createTheme({
           borderRadius: 8,
           margin: "1px 8px",
           "&.active": {
-            backgroundColor: theme.palette.action.selected,
-            color: theme.palette.primary.main,
+            backgroundColor: vars(theme).palette.action.selected,
+            color: vars(theme).palette.primary.main,
             fontWeight: 500,
           },
         }),
@@ -224,7 +229,7 @@ export const theme = createTheme({
           fontSize: "0.75rem",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          color: theme.palette.text.secondary,
+          color: vars(theme).palette.text.secondary,
         }),
         body: { fontVariantNumeric: "tabular-nums" },
       },
@@ -236,14 +241,15 @@ export const theme = createTheme({
       styleOverrides: {
         root: ({ theme }) => ({
           borderRadius: 14,
-          backgroundColor: theme.palette.background.paper,
-          "--DataGrid-containerBackground": theme.palette.mode === "dark" ? "#1a1b20" : "#fafafb",
+          backgroundColor: vars(theme).palette.background.paper,
+          "--DataGrid-containerBackground": "#fafafb",
+          ...theme.applyStyles("dark", { "--DataGrid-containerBackground": "#1a1b20" }),
         }),
         columnHeaderTitle: ({ theme }) => ({
           fontSize: "0.75rem",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          color: theme.palette.text.secondary,
+          color: vars(theme).palette.text.secondary,
         }),
         columnSeparator: { display: "none" },
       },

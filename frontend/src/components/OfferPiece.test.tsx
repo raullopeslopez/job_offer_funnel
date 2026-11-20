@@ -27,7 +27,8 @@ describe("OfferPiece", () => {
 
     // Assert
     const piece = screen.getByRole("article", { name: "Backend Engineer" });
-    expect(piece).toHaveTextContent("Acme · 3d ago");
+    expect(piece).toHaveTextContent("3d ago");
+    expect(piece).toHaveTextContent("Acme");
     expect(screen.getByRole("link", { name: "Backend Engineer" })).toHaveAttribute(
       "href",
       "https://example.com/jobs/1",
@@ -46,11 +47,31 @@ describe("OfferPiece", () => {
     expect(screen.getByText(tag)).toBeInTheDocument();
   });
 
-  it.each<[string, string | null, string[], string[]]>([
-    ["one tag per country", "Spain, Portugal", ["Spain", "Portugal"], ["Spain", "Portugal"]],
-    ["the location when it names no known country", "San Francisco, CA", [], ["San Francisco, CA"]],
-    ["no tag without a location", null, [], []],
-  ])("shows %s", (_name, location, countries, tags) => {
+  it.each<[string, string | null, string[], string[], string | null]>([
+    ["one country as a tag", "Madrid, Spain", ["Spain"], ["Spain"], null],
+    [
+      "the first country and how many more",
+      "Spain, Portugal",
+      ["Spain", "Portugal"],
+      ["Spain"],
+      "+1 country",
+    ],
+    [
+      "the first of many countries",
+      "Europe",
+      ["Spain", "Portugal", "France"],
+      ["Spain"],
+      "+2 countries",
+    ],
+    [
+      "the location when it names no known country",
+      "San Francisco, CA",
+      [],
+      ["San Francisco, CA"],
+      null,
+    ],
+    ["no tag without a location", null, [], [], null],
+  ])("shows %s", (_name, location, countries, tags, more) => {
     // Arrange / Act
     renderThemed(
       <OfferPiece offer={{ ...offer, location, countries }} sourceKind="api" now={now} />,
@@ -59,6 +80,9 @@ describe("OfferPiece", () => {
     // Assert
     const shown = screen.queryAllByTitle("Country").map((tag) => tag.textContent);
     expect(shown).toEqual(tags);
+    const piece = screen.getByRole("article");
+    if (more) expect(piece).toHaveTextContent(more);
+    else expect(piece).not.toHaveTextContent(/\+\d+ countr/);
   });
 
   it("renders its actions, strip and footer slots", () => {

@@ -10,12 +10,15 @@ Feature: Inbox screen
   most recent first; the filtered ones (specs/inbox/filtered_offers.feature) have
   their own view.
 
-  Every offer is a piece with the same parts, wherever it came from: its source,
-  company, country and age, its title, its actions and a strip of rules. The country
-  is a tag per country of the offer (specs/inbox/offer_countries.feature); when its
-  location names no known country the tag shows the location as published, and an
-  offer without a location has no tag. The pieces are
-  grouped by the day they were added: Today, Yesterday and Earlier.
+  Every offer is a piece with the same parts, wherever it came from: its source and
+  age, its title, its company and country, its actions and a strip of rules. The
+  country is a tag with the first country of the offer
+  (specs/inbox/offer_countries.feature), followed by how many more it has ("+1
+  country", "+27 countries"); when its location names no known country the tag shows
+  the location as published, and an offer without a location has no tag. On a phone
+  the actions go full width at the foot of the piece and the strip shows two rules
+  to a row, so no value is cut. The pieces are grouped by the day they were added:
+  Today, Yesterday and Earlier.
 
   An imported pending offer has a filter reason (specs/inbox/filter_reasons.feature),
   and its strip has five cells, one per rule of its reference profile: Title,
@@ -112,17 +115,17 @@ Feature: Inbox screen
   # reach the feeds.
 
   @component
-  Scenario Outline: An offer shows a tag per country of its location
+  Scenario Outline: An offer shows its first country as a tag and how many more it has
     Given an imported offer for "Acme" as "Backend Engineer" located in "<location>"
     When I open the inbox
-    Then the offer "Backend Engineer" shows the country tags: "<tags>"
+    Then the offer "Backend Engineer" shows the country tag "<tag>" and "<more>"
 
     Examples:
-      | location          | tags                  |
-      | Madrid, Spain     | Spain                 |
-      | Spain, Portugal   | Spain, Portugal       |
-      | Worldwide         | Worldwide             |
-      | San Francisco, CA | San Francisco, CA     |
+      | location          | tag               | more       |
+      | Madrid, Spain     | Spain             |            |
+      | Spain, Portugal   | Spain             | +1 country |
+      | Worldwide         | Worldwide         |            |
+      | San Francisco, CA | San Francisco, CA |            |
 
   Scenario: An offer without a location shows no country tag
     Given an offer for "Acme" as "Backend Engineer"
@@ -374,17 +377,19 @@ Feature: Inbox screen
 
   # --- Discarding and restoring ---
 
-  # Discarding happens inside the piece: "Discard" opens it, the words of the title
-  # become buttons and, after "Discard because", the reasons show as pills: "A word in
-  # the title", "Stack", "Location", "Contract", "Company" and "No reason". Choosing a
-  # reason discards; "A word in the title" needs a word marked first.
+  # Discarding happens inside the piece: "Discard" opens it under "Discard because", and
+  # the title stays as it is. The words of the title show as buttons under "A word in
+  # the title", and the other reasons follow: "Stack", "Location", "Contract", "Company"
+  # and "No reason". Choosing a word or a reason discards. On a phone the reasons are
+  # full-width rows that also say what they refer to in the offer (its country, its
+  # company).
 
   Scenario: Discarding opens the piece with the reasons
     Given an offer for "Acme" as "Senior Backend Engineer"
     And I am on the inbox
     When I start discarding the offer "Senior Backend Engineer"
-    Then the offer shows the words "Senior", "Backend" and "Engineer" as buttons
-    And it shows "Discard because" with the reasons "A word in the title", "Stack", "Location", "Contract", "Company" and "No reason"
+    Then the offer keeps its title and shows the words "Senior", "Backend" and "Engineer" under "A word in the title"
+    And it shows "Discard because" with the reasons "Stack", "Location", "Contract", "Company" and "No reason"
 
   Scenario Outline: Discard an offer with a reason
     Given an offer for "Acme" as "Backend Engineer"
@@ -404,8 +409,8 @@ Feature: Inbox screen
     When I discard the offer "Senior Backend Engineer" because of the word "Senior"
     Then the "discarded" offers show "Senior Backend Engineer" with reason "A word in the title: Senior"
 
-  # An offer with a filter reason checks the word against its reference profile: "A word
-  # in the title" then proposes excluding the word from that profile, with what the change
+  # An offer with a filter reason checks the word against its reference profile: choosing
+  # a word then proposes excluding it from that profile, with what the change
   # would do (specs/inbox/criteria_previews.feature), before discarding. Excluding it is a
   # criteria change made from the offer (specs/inbox/criteria_changes.feature).
 
@@ -414,7 +419,7 @@ Feature: Inbox screen
     Given an imported offer for "Acme" as "Lead Backend Engineer" that fits the profile "Backend"
     And excluding "Lead" from "Backend" would take <leaving> offers out of Pending and filter <promoted> I promoted and <discarded> I discarded
     And I am on the inbox
-    When I choose "A word in the title" for the offer "Lead Backend Engineer" with the word "Lead"
+    When I choose the word "Lead" of the offer "Lead Backend Engineer"
     Then it asks "Exclude “Lead” from the profile Backend?"
     And it says "<effect>"
     And it offers "Only discard this one" and "Discard and exclude “Lead”"
@@ -428,7 +433,7 @@ Feature: Inbox screen
   Scenario Outline: Discard only the offer, or also exclude the word from the profile
     Given an imported offer for "Acme" as "Lead Backend Engineer" that fits the profile "Backend"
     And I am on the inbox
-    And I chose "A word in the title" for the offer "Lead Backend Engineer" with the word "Lead"
+    And I chose the word "Lead" of the offer "Lead Backend Engineer"
     When I choose "<choice>"
     Then the offer is discarded because of the word "Lead"
     And the excluded keywords of "Backend" are <excluded>
@@ -437,12 +442,6 @@ Feature: Inbox screen
       | choice                     | excluded         |
       | Only discard this one      | "Senior"         |
       | Discard and exclude “Lead” | "Senior", "Lead" |
-
-  Scenario: A word in the title needs a word marked first
-    Given an offer for "Acme" as "Senior Backend Engineer"
-    And I am on the inbox
-    When I start discarding the offer "Senior Backend Engineer"
-    Then the reason "A word in the title" cannot be chosen yet
 
   Scenario: Cancel a discard
     Given an offer for "Acme" as "Backend Engineer"
