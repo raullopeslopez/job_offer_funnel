@@ -1873,6 +1873,51 @@
         "title": "JobBoardUpdate",
         "type": "object"
       },
+      "NearMissGroupRead": {
+        "properties": {
+          "offers": {
+            "description": "Its most recent near misses, up to the limit.",
+            "items": {
+              "$ref": "#/components/schemas/OfferRead"
+            },
+            "title": "Offers",
+            "type": "array"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/Rule",
+            "description": "The one rule its near misses fail; never `title`."
+          },
+          "total": {
+            "description": "How many near misses fail it, not only the ones shown.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rule",
+          "total",
+          "offers"
+        ],
+        "title": "NearMissGroupRead",
+        "type": "object"
+      },
+      "NearMissGroupsRead": {
+        "properties": {
+          "groups": {
+            "description": "One per rule that has near misses, in the order of the rules.",
+            "items": {
+              "$ref": "#/components/schemas/NearMissGroupRead"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "NearMissGroupsRead",
+        "type": "object"
+      },
       "OfferCreate": {
         "properties": {
           "company": {
@@ -6400,6 +6445,69 @@
           }
         ],
         "summary": "List Frequent Titles",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/near-misses": {
+      "get": {
+        "description": "The near misses grouped by the one rule they fail, each group with its total and its\nmost recent offers.",
+        "operationId": "list_near_misses_api_v1_offers_near_misses_get",
+        "parameters": [
+          {
+            "description": "The most offers shown per rule.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "The most offers shown per rule.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NearMissGroupsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Near Misses",
         "tags": [
           "inbox"
         ]

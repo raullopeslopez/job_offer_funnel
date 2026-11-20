@@ -480,3 +480,15 @@ class OfferRead(BaseModel):
     )
     watched_company_name: str | None
     created_at: datetime
+
+
+class NearMissGroupRead(BaseModel):
+    rule: Rule = Field(description="The one rule its near misses fail; never `title`.")
+    total: int = Field(description="How many near misses fail it, not only the ones shown.")
+    offers: list[OfferRead] = Field(description="Its most recent near misses, up to the limit.")
+
+
+class NearMissGroupsRead(BaseModel):
+    groups: list[NearMissGroupRead] = Field(
+        description="One per rule that has near misses, in the order of the rules."
+    )

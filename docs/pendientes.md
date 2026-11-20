@@ -26,3 +26,23 @@ Lo que quedó abierto al cerrar un PR y no está en ninguna spec ni issue. Cada 
 4. **El mismo puesto en dos fuentes con un sufijo** (Askable «Software Engineer, AI Coding Tasks» y la misma con «(Contract)», en Himalayas y Remotive). Un solo caso: no se toca. Disparador: el tercero (regla de tres), y entonces se mira qué sufijos se repiten antes de normalizar nada.
 5. **Cobertura del lector**: hecho el lector con Claude Code en local (`OFFER_READER=claude-code`, 20 por petición; `just dev-prod` + `just read-prod`). Falta: vaciar la cola de prod con él y comparar sus lecturas con las de Groq (sobre todo modalidad y ubicación). Ligado al issue #135, que sigue abierto para medir la cola de Groq en Render.
 6. **Ubicaciones con texto además de países** («Remote - UK», «EMEA, UK», «Trinidad and Tobago») no filtran por la regla nueva: las decide el lector. Disparador para ampliar la regla: que se vean en Pending tres o más que debían haber caído.
+
+## Rendimiento de la Bandeja (revisión del 2026-11-20)
+
+Medido en local con datos sintéticos (3 perfiles, descripciones de ~3 KB, 60 % pendientes), no con producción.
+
+**Hecho**: el JIT de Postgres desactivado en las conexiones de la API (PR #147). Compilaba en cada lectura ~2 s de una consulta que tarda ~0,1 s.
+
+**Hecho**: los casi de la vista Filtered en una sola respuesta (`GET /offers/near-misses`). Cada carga y cada clic recalculaban los motivos de filtrado de todas las pendientes 7 veces; ahora 2 (la lista y los grupos). Con 20.000 ofertas sintéticas, la vista pasó de ~13 s a ~6,5 s. Los ids de los casi van a SQL como un solo array: sin el tope de 32.767 parámetros de asyncpg.
+
+**Lo que queda en esa vista** (~6,5 s con 20.000): la lista y los grupos (~2 s cada uno, casi todo el cálculo del motivo en Python, que bloquea el único worker), `frequent-titles` y los recuentos de las pestañas, que se sirven uno detrás de otro por la CPU. Son los puntos 4, 5 y 7 de abajo.
+
+**Abierto**, por orden recomendado:
+
+1. **Región de la BD.** Cada petición de la Bandeja lanza de 4 a 6 consultas seguidas: la BD debe estar en la misma región que la API. Falta: comprobarlo en el host de `DATABASE_URL`, y elegir la misma región si cambia el proveedor.
+2. **Conexiones cortadas tras una pausa.** El engine no usa `pool_pre_ping`; si la BD suspende la base o corta las conexiones inactivas, la primera petición tras una pausa puede dar 500. Disparador: ver un «connection closed» en los logs de Render. Arreglo: `pool_pre_ping=True` en el engine.
+3. **Pooler de conexiones.** `jit=off` va como parámetro de arranque; un pooler en modo transacción (PgBouncer) puede rechazarlo, y asyncpg necesitaría `statement_cache_size=0`. Disparador: pasar a una URL con pooler. Entonces, `SET LOCAL jit = off` por transacción.
+4. **Recuentos de las pestañas.** Piden `limit=1` a la lista completa, con sus funciones de ventana y el motivo de filtrado de esa fila. Disparador: que un recuento pase de ~0,5 s en producción.
+5. **Vistas previas en bucle.** `frequent-titles` y `suggestions` hacen una vista previa (dos recorridos de todas las importadas) por cada candidato. Disparador: que alguna de las dos pase de ~2 s en producción.
+6. **Crecimiento sin límite.** Las alertas por email y los feeds de solo lo último nunca caducan ofertas, así que Pending crece y con él todo lo que recalcula el filtro. Falta: decidir si caducan por antigüedad (cambio de spec).
+7. **Guardar el motivo de filtrado** en vez de recalcularlo en cada lectura. Choca con «recalculadas al instante»: solo si, hecho lo anterior, la vista Filtered sigue por encima de ~2 s en producción.
