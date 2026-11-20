@@ -39,11 +39,17 @@ async function startDiscarding(page: Page, title: string) {
   await row(page, title).getByRole("button", { name: "Discard" }).click();
 }
 
-async function discard(page: Page, title: string, reason: string, word?: string) {
+const titleWords = (page: Page) =>
+  reasons(page).getByRole("group", { name: "A word in the title" });
+
+async function discard(page: Page, title: string, reason: string) {
   await startDiscarding(page, title);
-  const piece = row(page, title);
-  if (word) await piece.getByRole("button", { name: word, exact: true }).click();
   await reasons(page).getByRole("button", { name: reason, exact: true }).click();
+}
+
+async function discardByWord(page: Page, title: string, word: string) {
+  await startDiscarding(page, title);
+  await titleWords(page).getByRole("button", { name: word, exact: true }).click();
 }
 
 // --- Given ---
@@ -159,7 +165,7 @@ When(
 When(
   "I discard the offer {string} because of the word {string}",
   async ({ page }, title: string, word: string) => {
-    await discard(page, title, "A word in the title", word);
+    await discardByWord(page, title, word);
   },
 );
 
@@ -272,41 +278,23 @@ Then("the {string} offers show {string}", async ({ page }, status: Status, title
 });
 
 Then(
-  "the offer shows the words {string}, {string} and {string} as buttons",
-  async ({ page }, first: string, second: string, third: string) => {
-    const heading = pieces(page).getByRole("heading", { level: 3 });
-    await expect(heading.getByRole("button")).toHaveText([first, second, third]);
-    await expect(heading.getByRole("button").first()).toHaveAttribute("aria-pressed", "false");
+  "the offer keeps its title and shows the words {string}, {string} and {string} under {string}",
+  async ({ page }, first: string, second: string, third: string, group: string) => {
+    await expect(pieces(page).getByRole("heading", { level: 3 }).getByRole("link")).toBeVisible();
+    const words = reasons(page).getByRole("group", { name: group });
+    await expect(words.getByRole("button")).toHaveText([first, second, third]);
   },
 );
 
+// A list like `"A", "B" and "C"` is not one {string}: match the whole quoted list.
 Then(
-  "it shows {string} with the reasons {string}, {string}, {string}, {string}, {string} and {string}",
-  async (
-    { page },
-    label: string,
-    first: string,
-    second: string,
-    third: string,
-    fourth: string,
-    fifth: string,
-    sixth: string,
-  ) => {
-    const group = page.getByRole("group", { name: label });
-    await expect(group.getByRole("button").filter({ hasNotText: "Cancel" })).toHaveText([
-      first,
-      second,
-      third,
-      fourth,
-      fifth,
-      sixth,
-    ]);
+  /^it shows "([^"]+)" with the reasons (".*")$/,
+  async ({ page }, label: string, list: string) => {
+    // The reasons are named by their label; on a wide screen they show only that.
+    const others = page.getByRole("group", { name: label }).locator("button[aria-label]");
+    await expect(others).toHaveText(quoted(list), { useInnerText: true });
   },
 );
-
-Then("the reason {string} cannot be chosen yet", async ({ page }, reason: string) => {
-  await expect(reasons(page).getByRole("button", { name: reason, exact: true })).toBeDisabled();
-});
 
 Then("the offer shows no reasons", async ({ page }) => {
   await expect(reasons(page)).toHaveCount(0);
