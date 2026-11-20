@@ -352,6 +352,9 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Faster inbox reads: listing and counting offers no longer waits about two seconds on
+  every request while the database compiles the filter (Postgres JIT, now turned off for
+  the API's connections, on any Postgres it runs against).
 - Offer countries: "Anywhere in France, Belgium, Spain" shows France, Belgium and Spain,
   no longer "Worldwide" too; only "Anywhere" alone or "Anywhere in the world" means any
   country.

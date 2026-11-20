@@ -21,7 +21,13 @@ from funnel.modules.metrics import router as metrics
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
-    engine = create_async_engine(settings.database_url)
+    # No JIT: the filter's expressions make the planner overestimate the cost, and Postgres
+    # spent ~2 s compiling them on every inbox read, against ~0.1 s running the query. Set
+    # on the connection, so it holds on any Postgres; behind a transaction pooler that
+    # rejects startup parameters (PgBouncer), use SET LOCAL per transaction instead.
+    engine = create_async_engine(
+        settings.database_url, connect_args={"server_settings": {"jit": "off"}}
+    )
     app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
     yield
     await engine.dispose()
