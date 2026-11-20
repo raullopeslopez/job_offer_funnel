@@ -184,7 +184,17 @@ export function InboxPage() {
             </Typography>
           )}
         </Box>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        {/* On a phone the buttons wrap to a new row instead of breaking their labels. */}
+        <Stack
+          direction="row"
+          spacing={1}
+          useFlexGap
+          sx={{
+            alignItems: "center",
+            flexWrap: "wrap",
+            "& .MuiButton-root": { whiteSpace: "nowrap" },
+          }}
+        >
           {view === "pending" && <TriageButton />}
           <Button variant="outlined" onClick={() => setDialog("import")}>
             Import job board

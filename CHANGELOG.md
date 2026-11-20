@@ -359,6 +359,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Inbox on a phone: the page no longer grows wider than the screen (the status tabs
+  scroll inside their pill), so the browser does not zoom it out; and in dark mode the
+  form fields, such as "Job board" in "Import job board", are dark instead of white. The
+  buttons at the top wrap to a new row instead of breaking their labels.
+
 - Offer countries: "Anywhere in France, Belgium, Spain" shows France, Belgium and Spain,
   no longer "Worldwide" too; only "Anywhere" alone or "Anywhere in the world" means any
   country.

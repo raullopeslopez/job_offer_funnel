@@ -85,3 +85,20 @@ describe("theme tones", () => {
     expect(theme.vars?.palette.source.api.tint).toContain("var(--mui-palette-source-api-tint");
   });
 });
+
+// The fields and the lines of the overrides follow the color scheme: a white field in dark mode
+// was the bug.
+describe("theme overrides", () => {
+  it("take their colors from the CSS variables", () => {
+    // Arrange
+    const overrides = theme.components?.MuiOutlinedInput?.styleOverrides?.root;
+
+    // Act
+    const style = typeof overrides === "function" ? overrides({ theme } as never) : overrides;
+
+    // Assert
+    expect(style).toMatchObject({
+      backgroundColor: expect.stringContaining("var(--mui-palette-background-paper"),
+    });
+  });
+});
