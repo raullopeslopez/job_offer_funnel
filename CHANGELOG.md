@@ -359,6 +359,9 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- Faster inbox reads: listing and counting offers no longer waits about two seconds on
+  every request while the database compiles the filter (Postgres JIT, now turned off for
+  the API's connections, on any Postgres it runs against).
 - Inbox on a phone: the page no longer grows wider than the screen (the status tabs
   scroll inside their pill), so the browser does not zoom it out; and in dark mode the
   form fields, such as "Job board" in "Import job board", are dark instead of white. The
