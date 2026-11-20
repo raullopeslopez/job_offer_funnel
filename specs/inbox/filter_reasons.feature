@@ -20,6 +20,8 @@ Feature: Filter reasons
   location when the profile has some; title and stable always. Only a failed rule
   filters: an offer is filtered exactly when its reference profile has a failed rule. A
   near miss is a filtered offer whose title passes and that fails exactly one rule.
+  The near misses can be listed at once grouped by the rule they fail, in the order of
+  the rules, each group with how many offers it has and its most recent ones.
   The reason also says whether the offer has a description, so that an unknown rule can
   be told apart from an offer with nothing to read. Like filtering, the reason always
   follows the current profiles. Offers added by hand, discarded or promoted have no
@@ -244,8 +246,44 @@ Feature: Filter reasons
       | keywords | 3      |
       | excluded | 1      |
 
+  Scenario Outline: List the near misses grouped by the rule they fail
+    Given the job board "Remote OK" was imported with:
+      | title                   | company  | description       | url                    |
+      | Backend Engineer        | Acme     | Python and Django | https://remoteok.com/1 |
+      | Backend Engineer        | Globex   | Python services   | https://remoteok.com/2 |
+      | Senior Python Developer | Hooli    | Python and Django | https://remoteok.com/3 |
+      | Backend Engineer        | Initech  | Django services   | https://remoteok.com/4 |
+      | Data Engineer           | Umbrella | Go services       | https://remoteok.com/5 |
+    When I list the near misses by failed rule, at most <shown> per rule
+    Then the near miss groups are:
+      | rule     | offers | from        |
+      | keywords | 2      | <keywords>  |
+      | excluded | 1      | "Hooli"     |
+
+    Examples:
+      | shown | keywords            |
+      | 20    | "Initech", "Globex" |
+      | 1     | "Initech"           |
+
+  Scenario: Without near misses there are no groups
+    Given the job board "Remote OK" was imported with:
+      | title            | company  | description       | url                    |
+      | Backend Engineer | Acme     | Python and Django | https://remoteok.com/1 |
+      | Data Engineer    | Umbrella | Go services       | https://remoteok.com/2 |
+    When I list the near misses by failed rule, at most 20 per rule
+    Then there are no near miss groups
+
   # --- Errors ---
 
   Scenario: Listing by an unknown rule is rejected
     When I list the pending offers that are failing the rule "salary"
     Then it is rejected as invalid
+
+  Scenario Outline: Listing the near misses by rule takes from 1 to 100 per rule
+    When I list the near misses by failed rule, at most <shown> per rule
+    Then it is rejected as invalid
+
+    Examples:
+      | shown |
+      | 0     |
+      | 101   |
