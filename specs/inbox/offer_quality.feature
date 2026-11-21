@@ -8,9 +8,13 @@ Feature: Offer quality
   figure also comes week by week, from the oldest of the 4 weeks to the current one. An
   offer counts in the week it was added. A rate is a percentage with one decimal, or
   nothing when there is nothing to divide by.
-  - Precision: of the offers decided from Pending, the promoted ones over the promoted and
-    discarded ones. Rescues (specs/inbox/rescues.feature) were decided from Filtered, and
-    expired offers were discarded by the import, not by the user: neither counts.
+  - Precision: of the offers I decided from Pending, the promoted ones over the promoted
+    and discarded ones. Rescues (specs/inbox/rescues.feature) were decided from Filtered,
+    expired offers were discarded by the import and triager discards
+    (specs/inbox/triager_discards.feature) by the triager, not by me: none counts.
+  - Precision with the triager: the same, counting as discarded the triager discards that
+    are still discarded, and how many those are.
+  - Discards by reason and by source count only my discards.
   - Losses: of the near misses reviewed, the share rescued, and how many near misses are
     still to review.
   - Flow: the imported offers that fit the profiles as they are now, per week and on
@@ -23,7 +27,9 @@ Feature: Offer quality
   - The triager (specs/inbox/offer_triages.feature), over the triaged offers I promoted or
     discarded: its precision, the suggested discards I discarded over the suggested
     discards I decided; and its misses, the missed discards (offers it marked OK) over the
-    triaged offers I discarded. Over the near misses it triaged and I reviewed
+    triaged offers I discarded. Over its own discards: how many it discarded, still
+    discarded or restored, and its restores, the ones I restored over those. Over the near
+    misses it triaged and I reviewed
     (specs/inbox/near_miss_triages.feature): its rescues, the OK ones I rescued over the
     OK ones I reviewed; and its lost rescues, the KO ones I rescued over those I rescued.
 
@@ -55,6 +61,15 @@ Feature: Offer quality
     And the job board "Remote OK" was imported again without the offer of "Globex"
     When I view the offer quality
     Then the precision is 100.0% of 1 decided offer
+
+  Scenario: Triager discards do not count in my precision, and count in the precision with the triager
+    Given I promoted the offer of "Acme"
+    And I discarded the offer of "Globex" because "stack"
+    And the offer of "Initech" has the verdict KO with high confidence
+    And I let the triager discard
+    When I view the offer quality
+    Then the precision is 50.0% of 2 decided offers
+    And the precision with the triager is 33.3%, with 1 triager discard
 
   Scenario: Without decided offers there is no precision
     When I view the offer quality
@@ -145,6 +160,15 @@ Feature: Offer quality
     When I view the offer quality
     Then the triager's rescues are 50.0% of 2 OK near misses reviewed
     And the triager's lost rescues are 50.0% of 2 near misses rescued
+
+  Scenario: The triager's restores are the share of its discards I restored
+    Given the offer of "Acme" has the verdict KO with high confidence, with a suggested discard because "stack" with "Python services"
+    And the offer of "Globex" has the verdict KO with high confidence
+    And I let the triager discard
+    And I restored the offer of "Acme"
+    When I view the offer quality
+    Then the triager's restores are 50.0% of 2 triager discards
+    And the triager's precision has no suggested discards decided
 
   Scenario: Without triaged offers decided there are no triager figures
     Given I triaged the offers

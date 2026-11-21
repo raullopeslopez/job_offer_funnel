@@ -25,6 +25,16 @@ Feature: Metrics screen
       Then the card "Precision" says "33.3%" and "1 promoted of 3 decided from Pending"
       And the card "Precision" links to the inbox
 
+    # The card "Precision" is mine; under it, "With the AI's discards: {rate}" and "{n}
+    # discarded by AI" when the triager discarded any.
+
+    @component
+    Scenario: The precision says apart the AI's discards
+      Given the offer quality has a precision of 50.0% from 2 decided offers and 33.3% with 1 triager discard
+      When I open the metrics
+      Then the card "Precision" says "50.0%" and "1 promoted of 2 decided from Pending"
+      And it says "With the AI's discards: 33.3%" and "1 discarded by AI"
+
     @component
     Scenario: A card without data shows a dash
       Given there is no offer quality yet
@@ -78,6 +88,12 @@ Feature: Metrics screen
       When I open the metrics
       Then "The AI triage" says "75.0%" and "3 right of 4 suggested discards you decided"
       And it says "25.0%" and "1 missed of 4 triaged offers you discarded"
+
+    @component
+    Scenario: The triager's restores
+      Given the triager discarded 4 offers and I restored 1
+      When I open the metrics
+      Then "The AI triage" says "25.0%" and "1 restored of 4 offers the AI discarded"
 
     @component
     Scenario: The triager's rescues and lost rescues
