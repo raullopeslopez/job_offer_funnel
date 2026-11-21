@@ -4,6 +4,9 @@ from funnel.modules.inbox.domain import (
     Confidence,
     DiscardReason,
     OfferText,
+    Rule,
+    RuleCheck,
+    RuleResult,
     SuggestedDiscard,
     Triage,
     TriageAnswer,
@@ -139,3 +142,38 @@ def test_keeps_a_quote_only_if_the_offer_says_it(quote: str | None, kept: str | 
     # Assert
     assert triage is not None
     assert triage.why_not == Why("Part-time.", kept)
+
+
+NEAR_MISS = OfferText(
+    "Backend Engineer",
+    "Acme",
+    "Java APIs. Remote from anywhere in Europe.",
+    RuleCheck(Rule.LOCATION, RuleResult.FAILED, value=False, evidence="USA"),
+    "USA",
+)
+
+
+@pytest.mark.parametrize(
+    ("quote", "verdict"),
+    [
+        pytest.param("Remote from anywhere in  Europe.", Verdict.OK, id="rebuts-spaces-aside"),
+        pytest.param("Remote from anywhere", Verdict.KO, id="three-words"),
+        pytest.param("Remote", Verdict.KO, id="one-word"),
+        pytest.param("Backend Engineer", Verdict.KO, id="from-the-title"),
+        pytest.param("USA", Verdict.KO, id="the-published-location"),
+        pytest.param("Fully remote from Spain.", Verdict.KO, id="not-in-the-offer"),
+        pytest.param(None, Verdict.KO, id="no-quote"),
+    ],
+)
+def test_keeps_an_ok_near_miss_only_with_a_quote_that_rebuts_its_rule(
+    quote: str | None, verdict: Verdict
+) -> None:
+    # Arrange
+    answer = TriageAnswer("ok", "Java APIs.", "US only.", quote_yes=quote)
+
+    # Act
+    triage = kept_triage(answer, NEAR_MISS)
+
+    # Assert
+    assert triage is not None
+    assert (triage.verdict, triage.why_not) == (verdict, Why("US only."))

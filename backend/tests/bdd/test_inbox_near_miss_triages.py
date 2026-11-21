@@ -50,6 +50,7 @@ class ScenarioState:
     # exclusions it suggests, with the companies they come from; those it leaves out;
     # whether it fails.
     answers: dict[str, TriageAnswer] = field(default_factory=dict)
+    quoting_descriptions: set[str] = field(default_factory=set)
     suggestions: list[tuple[str, str, str, list[str]]] = field(default_factory=list)
     unanswered: set[str] = field(default_factory=set)
     is_failing: bool = False
@@ -89,7 +90,7 @@ class FakeOfferTriager:
         if self._state.is_failing:
             raise OfferTriagerError("the triager is down")
         answers: Mapping[int, TriageAnswer] = {
-            number: self._state.answers.get(offer.company, TriageAnswer("ok", "Fits."))
+            number: self._state.answers.get(offer.company, _fits(offer, self._state))
             for number, offer in enumerate(offers)
             if offer.company not in self._state.unanswered
         }
@@ -99,6 +100,12 @@ class FakeOfferTriager:
             for profile, word, why, companies in self._state.suggestions
         ]
         return TriageReply(answers, suggestions)
+
+
+def _fits(offer: OfferText, state: ScenarioState) -> TriageAnswer:
+    """OK, quoting its description when the scenario says so."""
+    quote = offer.description if offer.company in state.quoting_descriptions else None
+    return TriageAnswer("ok", "Fits.", quote_yes=quote)
 
 
 class FakeOfferReader:
@@ -133,6 +140,7 @@ def fake_sources(client: TestClient, state: ScenarioState) -> Iterator[None]:
                 "company": r["company"],
                 "description": r["description"],
                 "url": r["url"],
+                "location": r.get("location"),
             }
             for r in state.remoteok
         ]
@@ -260,17 +268,23 @@ def given_discarded_imported(
 @given(
     parsers.re(
         r'the offer triager says the offer of "(?P<company>[^"]+)" is (?P<verdict>OK|KO)'
-        r'(?: because "(?P<why>[^"]*)")?$'
+        r'(?: because "(?P<why>[^"]*)")?(?:, quoting "(?P<quote>[^"]*)")?$'
     )
 )
-def given_answer(state: ScenarioState, company: str, verdict: str, why: str | None) -> None:
-    state.answers[company] = said(verdict, why or "Why.")
+def given_answer(
+    state: ScenarioState, company: str, verdict: str, why: str | None, quote: str | None
+) -> None:
+    state.answers[company] = said(verdict, why or "Why.", quote=quote)
 
 
-@given(parsers.re(r"the offer triager says the offers of (?P<companies>.+) are OK$"))
+@given(
+    parsers.re(
+        r"the offer triager says the offers of (?P<companies>.+) are OK, quoting their "
+        r"descriptions$"
+    )
+)
 def given_ok_offers(state: ScenarioState, companies: str) -> None:
-    for company in re.findall(r'"([^"]+)"', companies):
-        state.answers[company] = TriageAnswer("ok", "Fits.")
+    state.quoting_descriptions |= set(re.findall(r'"([^"]+)"', companies))
 
 
 # --- When ---
@@ -335,6 +349,18 @@ def then_told_rules(
     assert (told[first], told[second]) == (first_rule, second_rule)
 
 
+@then(
+    parsers.parse(
+        'it was told that "{company}" was filtered by "{rule}" and is published in "{where}"'
+    )
+)
+def then_told_location(state: ScenarioState, company: str, rule: str, where: str) -> None:
+    offers, _ = state.last_request
+    offer = next(o for o in offers if o.company == company)
+    assert offer.filtered_by is not None
+    assert (offer.filtered_by.rule, offer.location) == (rule, where)
+
+
 @then(parsers.parse('the offer triager was not asked about the offer of "{company}"'))
 def then_not_asked(state: ScenarioState, company: str) -> None:
     assert all(offer.company != company for offers, _ in state.requests for offer in offers)
@@ -345,6 +371,11 @@ def then_verdict(client: TestClient, company: str, verdict: str, why: str) -> No
     triage = _offer(client, company)["triage"]
     side = "why_yes" if verdict == "OK" else "why_not"
     assert (triage["verdict"], triage[side]["why"]) == (verdict.lower(), why)
+
+
+@then(parsers.re(r'the offer of "(?P<company>[^"]+)" has the verdict "(?P<verdict>OK|KO)"$'))
+def then_only_verdict(client: TestClient, company: str, verdict: str) -> None:
+    assert _offer(client, company)["triage"]["verdict"] == verdict.lower()
 
 
 @then(parsers.re(r'the offer of "(?P<company>[^"]+)" is (?P<negation>not )?filtered$'))

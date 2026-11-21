@@ -70,9 +70,16 @@ from the title.
 - stack, location, contract or company: the evidence is one short excerpt copied character \
 by character from the description that shows it.
 Reasons: {", ".join(sorted(SUGGESTED_REASONS))}; for an ok, null reason and evidence.
-Some new offers are near misses: their filters stopped them, by the one rule told with \
-each. For those, ok is a false negative (the rule stopped an offer worth their time) and \
-ko means rightly filtered; give no reason for them.
+Some new offers are near misses: their title fits a profile, and their filters stopped \
+them by the one rule told with each. For those, judge that rule, not the role: the title \
+already fits, so what the role is decides nothing. ok is a false negative: the rule is \
+wrong for this offer, and its description shows it. Then why yes says why the rule is \
+wrong, and its quote is a sentence of at least four words copied character by character \
+from the description that shows it; for the location rule, one that says the job can be \
+done remotely while living in the profile's location. Where a job can be done from is \
+decided by what its description says, never by the words of its title, and its published \
+location is what made the rule fail, so it never rebuts it. Without such a quote, say ko: \
+rightly filtered. Give no reason for near misses.
 Then, to make their filters better, you may suggest words to exclude from a profile: a \
 word that is in the ko offers you name and in the offers they discarded, and in none they \
 promoted. Give the profile's name, the word, why, and the numbers of those ko offers. \
@@ -163,6 +170,8 @@ def _filtered_by(check: RuleCheck | None) -> str:
         why = f"it has the excluded word {_listed(check.found)}"
     elif check.rule is Rule.KEYWORDS:
         why = f"it lacks the keywords {_listed(check.missing)}"
+    elif check.rule is Rule.LOCATION:
+        why = f'it is not open to the profile\'s location ("{check.evidence}")'
     else:
         why = f"its description says {check.value}" + (
             f' ("{check.evidence}")' if check.evidence else ""
@@ -177,11 +186,13 @@ def _listed(words: Sequence[str]) -> str:
 def _question(offers: Sequence[OfferText], context: TriageContext) -> str:
     profiles = [
         f"- {terms.name}: titles {_listed(terms.titles)}; keywords {_listed(terms.keywords)}; "
-        f"excluded {_listed(terms.excluded_keywords)}"
+        f"excluded {_listed(terms.excluded_keywords)}; location {terms.location or 'any'}; "
+        f"work modes {_listed(terms.work_modes)}"
         for terms in context.profiles
     ]
     new = [
         f"Offer {number}\nTitle: {offer.title}\nCompany: {offer.company}\n"
+        f"Location: {offer.location or 'not published'}\n"
         f"{_filtered_by(offer.filtered_by)}Description:\n{_excerpt(offer.description)}"
         for number, offer in enumerate(offers)
     ]

@@ -546,6 +546,7 @@ class OfferTriageService:
                 offer.company,
                 plain_text(offer.description or ""),
                 _failed_check(offer) if number >= len(fitting) else None,
+                offer.location,
             )
             for number, offer in enumerate(offers)
         ]

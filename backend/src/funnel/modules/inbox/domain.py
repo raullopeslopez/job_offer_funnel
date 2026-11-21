@@ -570,6 +570,9 @@ class TriageContext:
 
 
 WHY_LENGTH: Final = 200
+# The fewest words of a quote that rebuts the rule of a near miss: "remote" alone says
+# nothing about where it can be done from.
+REBUTTAL_WORDS: Final = 4
 
 
 def _why(why: str | None, quote: str | None, offer: OfferText) -> Why | None:
@@ -581,13 +584,23 @@ def _why(why: str | None, quote: str | None, offer: OfferText) -> Why | None:
     return Why(sentence, _quoted(quote, offer.title) or _quoted(quote, offer.description))
 
 
+def _rebuts(answer: TriageAnswer, offer: OfferText) -> bool:
+    """Whether the quote of an OK near miss is a sentence of its description that can rebut
+    the rule: not its title nor its published location, and not a lone word."""
+    quote = _quoted(answer.quote_yes, offer.description)
+    return quote is not None and len(quote.split()) >= REBUTTAL_WORDS
+
+
 def kept_triage(answer: TriageAnswer, offer: OfferText) -> Triage | None:
     """The verdict, why yes and why not and the confidence, if the verdict is OK or KO; a
-    confidence that is not low, medium or high is left out. None is no answer: the offer is
-    left to be triaged again."""
+    confidence that is not low, medium or high is left out. An OK near miss without a quote
+    that rebuts its rule is KO: rightly filtered. None is no answer: the offer is left to be
+    triaged again."""
     verdict = next((v for v in Verdict if v == (answer.verdict or "").lower()), None)
     if verdict is None:
         return None
+    if verdict is Verdict.OK and offer.filtered_by is not None and not _rebuts(answer, offer):
+        verdict = Verdict.KO
     return Triage(
         verdict,
         _why(answer.why_yes, answer.quote_yes, offer),

@@ -35,6 +35,8 @@ class ScenarioState:
     remoteok_id: str | None = None
     # What the fake offer triager answers, by company.
     answers: dict[str, TriageAnswer] = field(default_factory=dict)
+    # The companies whose description it quotes when it says OK.
+    quoting_descriptions: set[str] = field(default_factory=set)
     response: httpx2.Response | None = None
 
     @property
@@ -58,10 +60,16 @@ class FakeOfferTriager:
 
     async def triage(self, offers: Sequence[OfferText], _context: TriageContext) -> TriageReply:
         answers: Mapping[int, TriageAnswer] = {
-            number: self._state.answers.get(offer.company, TriageAnswer("ok", "Fits."))
+            number: self._state.answers.get(offer.company, _fits(offer, self._state))
             for number, offer in enumerate(offers)
         }
         return TriageReply(answers, [])
+
+
+def _fits(offer: OfferText, state: ScenarioState) -> TriageAnswer:
+    """OK, quoting its description when the scenario says so."""
+    quote = offer.description if offer.company in state.quoting_descriptions else None
+    return TriageAnswer("ok", "Fits.", quote_yes=quote)
 
 
 @pytest.fixture(autouse=True)
@@ -212,10 +220,14 @@ def given_triaged(client: TestClient) -> None:
     _ok(client.post(f"{OFFERS_URL}/triages"))
 
 
-@given(parsers.re(r"the offer triager says the offers of (?P<companies>.+) are OK$"))
+@given(
+    parsers.re(
+        r"the offer triager says the offers of (?P<companies>.+) are OK, quoting their "
+        r"descriptions$"
+    )
+)
 def given_ok_offers(state: ScenarioState, companies: str) -> None:
-    for company in re.findall(r'"([^"]+)"', companies):
-        state.answers[company] = TriageAnswer("ok", "Fits.")
+    state.quoting_descriptions |= set(re.findall(r'"([^"]+)"', companies))
 
 
 # --- When ---
