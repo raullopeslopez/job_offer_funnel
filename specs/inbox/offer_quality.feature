@@ -135,7 +135,7 @@ Feature: Offer quality
       | title            | company  | description | url                    |
       | Backend Engineer | Wayne    | Go services | https://remoteok.com/6 |
       | Backend Engineer | Umbrella | Go services | https://remoteok.com/7 |
-    And the offer triager says the offers of "Hooli" and "Wayne" are OK
+    And the offer triager says the offers of "Hooli" and "Wayne" are OK, quoting their descriptions
     And the offer triager says the offer of "Umbrella" is KO because "Not for you."
     And I triaged the offers
     And I triaged the offers again, past the first 5
