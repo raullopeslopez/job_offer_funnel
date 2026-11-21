@@ -60,6 +60,7 @@ from funnel.modules.inbox.domain import (
     SuggestionSource,
     Triage,
     TriageContext,
+    TriagerDiscard,
     TriageReply,
     TriagerSuggestion,
     Verdict,
@@ -83,6 +84,7 @@ from funnel.modules.inbox.domain import (
     relaxing,
     rule_after,
     supported,
+    triager_discard_reason,
     url_key,
     variant_key,
 )
@@ -232,6 +234,9 @@ class OfferService:
         offer.status = next_status(offer.status, OfferAction.RESTORE)
         offer.discard_reason = None
         offer.discard_word = None
+        if offer.triager_discard is TriagerDiscard.DISCARDED:
+            # Kept, so that the triager never discards it again.
+            offer.triager_discard = TriagerDiscard.RESTORED
         await self._repository.save(offer, await self._profiles.all_terms())
 
     async def promote(self, offer_id: UUID, channel: Channel) -> OfferRow:
@@ -526,12 +531,21 @@ class OfferTriageService:
 
     async def count_discardable(self) -> int:
         """How many pending offers the triager would discard if asked."""
-        raise NotImplementedError
+        return await self._triages.count_sure_ko(await self._profiles.all_terms())
 
     async def discard_sure(self) -> list[UUID]:
         """Discard, as the triager's, the fitting pending offers it marked KO with high
-        confidence and never discarded before; the ids of those discarded."""
-        raise NotImplementedError
+        confidence and never discarded before; the ids of those discarded. Asks nothing of
+        the triager: the verdicts are given already."""
+        offers = await self._triages.list_sure_ko(await self._profiles.all_terms())
+        for offer in offers:
+            offer.status = next_status(offer.status, OfferAction.DISCARD)
+            offer.discard_reason, offer.discard_word = triager_discard_reason(
+                offer.suggested_discard
+            )
+            offer.triager_discard = TriagerDiscard.DISCARDED
+        await self._triages.flush()
+        return [offer.id for offer in offers]
 
     async def triage_pending(self) -> TriageBatch:
         if self._triager is None:

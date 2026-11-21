@@ -224,7 +224,7 @@ def given_restored(client: TestClient, company: str) -> None:
 )
 def given_discarded_with_word(client: TestClient, company: str, reason: str, word: str) -> None:
     body = {"reason": reason, "word": word}
-    _ok(client.post(f"{_offer_url(client, company)}/discard", json=body), 200)
+    _ok(client.post(f"{_offer_url(client, company)}/discard", json=body))
 
 
 # --- When ---

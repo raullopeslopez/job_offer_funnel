@@ -45,6 +45,7 @@ from funnel.modules.inbox.domain import (
     COUNTRY_FORMS,
     EXPIRED_REASON,
     LOCATION_SEPARATOR,
+    Confidence,
     Decision,
     DiscardReason,
     FilterReason,
@@ -62,6 +63,7 @@ from funnel.modules.inbox.domain import (
     SuggestedDiscard,
     Triage,
     TriageMistake,
+    TriagerDiscard,
     UnknownJobBoardError,
     UntitledOffer,
     Verdict,
@@ -226,6 +228,10 @@ def filtered(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
     )
 
 
+# The triager's discards are never the user's decisions (specs/inbox/triager_discards.feature).
+_NOT_DISCARDED_BY_TRIAGER = OfferRow.triager_discard.is_distinct_from(TriagerDiscard.DISCARDED)
+
+
 def _to_decide(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
     """Pending and not filtered: the offers that have variants."""
     return and_(OfferRow.status == OfferStatus.PENDING, not_(filtered(profiles)))
@@ -387,6 +393,7 @@ class OfferRepository:
             .where(
                 OfferRow.description.is_not(None),
                 OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON),
+                _NOT_DISCARDED_BY_TRIAGER,
             )
             .group_by(OfferRow.status, fits_now, fits_after)
         )
@@ -408,6 +415,7 @@ class OfferRepository:
                 OfferRow.review_rules,
                 OfferRow.verdict,
                 OfferRow.suggested_discard_reason,
+                OfferRow.triager_discard,
                 OfferRow.application_id,
             ).where(OfferRow.created_at >= since)
         )
@@ -425,6 +433,7 @@ class OfferRepository:
                     review_rules=[Rule(rule) for rule in review_rules],
                     verdict=verdict,
                     suggested_discard=suggested_discard,
+                    triager_discard=triager_discard,
                 ),
                 application_id,
             )
@@ -439,6 +448,7 @@ class OfferRepository:
                 review_rules,
                 verdict,
                 suggested_discard,
+                triager_discard,
                 application_id,
             ) in rows
         ]
@@ -591,12 +601,14 @@ class SuggestionRepository:
         self._session = session
 
     async def discarded_titles(self) -> list[tuple[UUID, str]]:
-        """The imported offers the user discarded: expired ones were discarded by imports."""
+        """The imported offers the user discarded: expired ones were discarded by imports,
+        and the triager's by the triager."""
         rows = await self._session.execute(
             select(OfferRow.id, OfferRow.title).where(
                 OfferRow.status == OfferStatus.DISCARDED,
                 OfferRow.description.is_not(None),
                 OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON),
+                _NOT_DISCARDED_BY_TRIAGER,
             )
         )
         return [(offer_id, title) for offer_id, title in rows]
@@ -722,7 +734,9 @@ class ReadingRepository:
 
 
 _DECIDED_BY_USER = and_(
-    OfferRow.description.is_not(None), OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON)
+    OfferRow.description.is_not(None),
+    OfferRow.discard_reason.is_distinct_from(EXPIRED_REASON),
+    _NOT_DISCARDED_BY_TRIAGER,
 )
 _MOST_RECENT = (OfferRow.created_at.desc(), OfferRow.id.desc())
 # OK, then no verdict, then KO by the reason of their suggested discard, in the order of
@@ -752,6 +766,19 @@ def _order(
     return (*groups, *together, *_MOST_RECENT)
 
 
+def _sure_ko(profiles: Sequence[SearchTerms]) -> tuple[ColumnElement[bool], ...]:
+    """The pending imported offers that fit a profile, marked KO with high confidence and
+    never discarded by the triager: those it discards when asked."""
+    return (
+        OfferRow.status == OfferStatus.PENDING,
+        OfferRow.description.is_not(None),
+        _fits_any(profiles),
+        OfferRow.verdict == Verdict.KO,
+        OfferRow.confidence == Confidence.HIGH,
+        OfferRow.triager_discard.is_(None),
+    )
+
+
 class TriageRepository:
     """What the offer triager is given and what it suggested. Never commits."""
 
@@ -776,6 +803,18 @@ class TriageRepository:
             select(OfferRow).where(*conditions).order_by(*_MOST_RECENT).limit(limit)
         )
         return list(offers), total or 0
+
+    async def count_sure_ko(self, profiles: Sequence[SearchTerms]) -> int:
+        total = await self._session.scalar(
+            select(func.count()).select_from(OfferRow).where(*_sure_ko(profiles))
+        )
+        return total or 0
+
+    async def list_sure_ko(self, profiles: Sequence[SearchTerms]) -> list[OfferRow]:
+        offers = await self._session.scalars(
+            select(OfferRow).where(*_sure_ko(profiles)).order_by(*_MOST_RECENT)
+        )
+        return list(offers)
 
     async def decisions(self, limit: int) -> list[Decision]:
         """The last promoted and the last discarded imported offers, expired ones left out."""
@@ -819,6 +858,9 @@ class TriageRepository:
             ),
             *(TriageMistake(title, Mistake.MISSED_DISCARD) for title in missed),
         ]
+
+    async def flush(self) -> None:
+        await self._session.flush()
 
     async def save(
         self, offer: OfferRow, triage: Triage, suggestion: SuggestedDiscard | None

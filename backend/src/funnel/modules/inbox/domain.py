@@ -538,6 +538,17 @@ class SuggestedDiscard:
     evidence: str
 
 
+def triager_discard_reason(
+    suggestion: SuggestedDiscard | None,
+) -> tuple[DiscardReason, str | None]:
+    """The reason and word the triager discards an offer with: those of its suggested
+    discard, or none without one."""
+    if suggestion is None:
+        return DiscardReason.NONE, None
+    is_word = suggestion.reason is DiscardReason.TITLE_WORD
+    return suggestion.reason, suggestion.evidence if is_word else None
+
+
 @dataclass(frozen=True)
 class TriageAnswer:
     """What the triager says of an offer, not trusted yet: its verdict, why yes and why not
@@ -969,6 +980,7 @@ class QualityOffer:
     stage: Stage | None = None
     verdict: Verdict | None = None
     suggested_discard: DiscardReason | None = None
+    triager_discard: TriagerDiscard | None = None
 
     @property
     def is_triaged(self) -> bool:
@@ -977,8 +989,14 @@ class QualityOffer:
     @property
     def is_decided_from_pending(self) -> bool:
         return self.review is not Review.RESCUED and (
-            self.status is OfferStatus.PROMOTED
-            or (self.status is OfferStatus.DISCARDED and self.discard_reason is not EXPIRED_REASON)
+            self.status is OfferStatus.PROMOTED or self.is_discarded
+        )
+
+    @property
+    def is_discarded_by_triager(self) -> bool:
+        return (
+            self.status is OfferStatus.DISCARDED
+            and self.triager_discard is TriagerDiscard.DISCARDED
         )
 
     @property
@@ -987,7 +1005,12 @@ class QualityOffer:
 
     @property
     def is_discarded(self) -> bool:
-        return self.status is OfferStatus.DISCARDED and self.discard_reason is not EXPIRED_REASON
+        """Discarded by the user: not expired by an import, nor by the triager."""
+        return (
+            self.status is OfferStatus.DISCARDED
+            and self.discard_reason is not EXPIRED_REASON
+            and not self.is_discarded_by_triager
+        )
 
 
 @dataclass(frozen=True)
@@ -1016,6 +1039,11 @@ class QualityFigures:
     triaged_near_misses_rescued: int
     lost_rescues: int
     triager_lost_rescues: float | None
+    discarded_by_triager: int
+    precision_with_triager: float | None
+    triager_discards: int
+    restored_triager_discards: int
+    triager_restores: float | None
 
 
 @dataclass(frozen=True)
@@ -1072,6 +1100,9 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
     ok_rescued = sum(o.review is Review.RESCUED for o in ok_reviewed)
     triaged_rescued = [o for o in reviewed if o.is_triaged and o.review is Review.RESCUED]
     lost = sum(o.verdict is Verdict.KO for o in triaged_rescued)
+    by_triager = sum(offer.is_discarded_by_triager for offer in offers)
+    triager_discards = [offer for offer in offers if offer.triager_discard is not None]
+    restored = sum(o.triager_discard is TriagerDiscard.RESTORED for o in triager_discards)
     return QualityFigures(
         decided=len(decided),
         promoted_from_pending=promoted_from_pending,
@@ -1095,6 +1126,11 @@ def _figures(offers: Sequence[QualityOffer]) -> QualityFigures:
         triaged_near_misses_rescued=len(triaged_rescued),
         lost_rescues=lost,
         triager_lost_rescues=rate(lost, len(triaged_rescued)),
+        discarded_by_triager=by_triager,
+        precision_with_triager=rate(promoted_from_pending, len(decided) + by_triager),
+        triager_discards=len(triager_discards),
+        restored_triager_discards=restored,
+        triager_restores=rate(restored, len(triager_discards)),
     )
 
 
