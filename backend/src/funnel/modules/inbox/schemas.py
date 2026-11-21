@@ -18,6 +18,7 @@ from funnel.modules.inbox.domain import (
     Rule,
     RuleResult,
     SuggestionSource,
+    TriagerDiscard,
     Verdict,
 )
 
@@ -164,6 +165,15 @@ class TriageBatchRead(BaseModel):
 
 class TriagerRead(BaseModel):
     is_available: bool = Field(description="Whether an offer triager is configured.")
+    discardable: int = Field(
+        description="Pending offers the triager would discard if asked: fitting a profile, "
+        "marked `ko` with `high` confidence and never discarded by it before."
+    )
+
+
+class TriagerDiscardsRead(BaseModel):
+    discarded: int = Field(description="Offers the triager discarded now.")
+    offer_ids: list[UUID] = Field(description="Those offers, to restore them if need be.")
 
 
 class WhyRead(BaseModel):
@@ -356,8 +366,8 @@ class CriteriaPreviewRead(BaseModel):
 
 class QualityFiguresRead(BaseModel):
     decided: int = Field(
-        description="Offers decided from Pending: promoted or discarded, without rescues "
-        "and expired ones."
+        description="Offers the user decided from Pending: promoted or discarded, without "
+        "rescues, expired ones and triager discards."
     )
     promoted_from_pending: int
     precision: float | None = Field(description="promoted_from_pending ÷ decided, in %.")
@@ -390,6 +400,17 @@ class QualityFiguresRead(BaseModel):
     triager_lost_rescues: float | None = Field(
         description="lost_rescues ÷ triaged_near_misses_rescued, in %."
     )
+    discarded_by_triager: int = Field(
+        description="Triager discards still discarded; not in `decided`."
+    )
+    precision_with_triager: float | None = Field(
+        description="promoted_from_pending ÷ (decided + discarded_by_triager), in %."
+    )
+    triager_discards: int = Field(description="Offers the triager discarded, restored included.")
+    restored_triager_discards: int = Field(description="Of those, the ones restored.")
+    triager_restores: float | None = Field(
+        description="restored_triager_discards ÷ triager_discards, in %."
+    )
 
 
 class WeekQualityRead(QualityFiguresRead):
@@ -406,7 +427,9 @@ class SourceQualityRead(BaseModel):
     imported: int
     fitting: int
     promoted: int
-    discarded: int = Field(description="Discarded by the user: expired ones are left out.")
+    discarded: int = Field(
+        description="Discarded by the user: expired ones and triager discards are left out."
+    )
 
 
 class OfferQualityRead(BaseModel):
@@ -416,7 +439,8 @@ class OfferQualityRead(BaseModel):
     fitting_per_week: float = Field(description="Fitting offers a week, on average.")
     near_misses_left: int = Field(description="Pending near misses not reviewed yet.")
     discard_reasons: list[DiscardReasonCountRead] = Field(
-        description="Discards by reason, the most frequent first; expired ones left out."
+        description="The user's discards by reason, the most frequent first; expired ones "
+        "and triager discards left out."
     )
     sources: list[SourceQualityRead]
 
@@ -481,6 +505,10 @@ class OfferRead(BaseModel):
     )
     discard_reason: DiscardReason | None = Field(description="Set while the offer is discarded.")
     discard_word: str | None = Field(description="The word of the title, with `title_word`.")
+    triager_discard: TriagerDiscard | None = Field(
+        description="`discarded`: discarded by the offer triager, not by the user; "
+        "`restored`: the triager discarded it and the user restored it."
+    )
     application_id: UUID | None = Field(description="Set once the offer is promoted.")
     review: Review | None = Field(
         description="`rescued`: promoted while filtered; `rightly_filtered`: marked so while "

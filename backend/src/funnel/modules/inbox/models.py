@@ -40,6 +40,7 @@ from funnel.modules.inbox.domain import (
     Review,
     SuggestedDiscard,
     Triage,
+    TriagerDiscard,
     Verdict,
     Why,
     base_title,
@@ -267,6 +268,11 @@ class OfferRow(Base):
         _enum_column_type(DiscardReason, "suggested_discard_reason")
     )
     suggested_discard_evidence: Mapped[str | None] = mapped_column(Text)
+    # Set when the triager discards it; it stays once restored, so it is never discarded by
+    # the triager again.
+    triager_discard: Mapped[TriagerDiscard | None] = mapped_column(
+        _enum_column_type(TriagerDiscard, "triager_discard")
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # Depends on the current search profiles, so every query computes it (see repository.py).
     filtered: Mapped[bool] = query_expression()

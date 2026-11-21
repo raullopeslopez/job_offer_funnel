@@ -99,6 +99,14 @@ class Verdict(StrEnum):
     KO = "ko"
 
 
+class TriagerDiscard(StrEnum):
+    """A discard the offer triager made: still discarded, or restored by the user, after
+    which the triager never discards the offer again. Never a decision of the user."""
+
+    DISCARDED = "discarded"
+    RESTORED = "restored"
+
+
 class Confidence(StrEnum):
     """How sure the offer triager is of its verdict."""
 

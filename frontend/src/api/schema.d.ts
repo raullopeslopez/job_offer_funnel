@@ -566,10 +566,36 @@ export interface paths {
         /**
          * Read Offer Triager
          * @description Whether the offers can be triaged: without an offer triager the app works as always.
+         *     It also says how many offers the triager would discard if asked.
          */
         get: operations["read_offer_triager_api_v1_offers_triager_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/offers/triager-discards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discard As Triager
+         * @description Let the offer triager discard the pending offers it is sure are false positives:
+         *     those that fit a profile, marked `ko` with `high` confidence and never discarded by it
+         *     before. Each one goes with the reason and word of its suggested discard, or `none`, and
+         *     is marked as the triager's (`triager_discard`), never as a decision of yours. Asks
+         *     nothing of the triager: it uses the verdicts already given. Restore any of them as any
+         *     discard; the triager never discards a restored offer again.
+         */
+        post: operations["discard_as_triager_api_v1_offers_triager_discards_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -639,7 +665,8 @@ export interface paths {
         post: operations["discard_offer_api_v1_offers__offer_id__discard_post"];
         /**
          * Restore Offer
-         * @description Undo the discard: the offer is pending again.
+         * @description Undo the discard: the offer is pending again. A triager discard stays marked as
+         *     `restored`.
          */
         delete: operations["restore_offer_api_v1_offers__offer_id__discard_delete"];
         options?: never;
@@ -1691,7 +1718,7 @@ export interface components {
         OfferQualityRead: {
             /**
              * Discard Reasons
-             * @description Discards by reason, the most frequent first; expired ones left out.
+             * @description The user's discards by reason, the most frequent first; expired ones and triager discards left out.
              */
             discard_reasons: components["schemas"]["DiscardReasonCountRead"][];
             /**
@@ -1797,6 +1824,8 @@ export interface components {
             title: string;
             /** @description The triager's verdict; null until triaged. */
             triage: components["schemas"]["TriageRead"] | null;
+            /** @description `discarded`: discarded by the offer triager, not by the user; `restored`: the triager discarded it and the user restored it. */
+            triager_discard: components["schemas"]["TriagerDiscard"] | null;
             /** Url */
             url: string;
             /**
@@ -1982,9 +2011,14 @@ export interface components {
             applied: number;
             /**
              * Decided
-             * @description Offers decided from Pending: promoted or discarded, without rescues and expired ones.
+             * @description Offers the user decided from Pending: promoted or discarded, without rescues, expired ones and triager discards.
              */
             decided: number;
+            /**
+             * Discarded By Triager
+             * @description Triager discards still discarded; not in `decided`.
+             */
+            discarded_by_triager: number;
             /**
              * Fitting
              * @description Imported offers that fit the profiles as they are now.
@@ -2021,6 +2055,11 @@ export interface components {
              */
             precision: number | null;
             /**
+             * Precision With Triager
+             * @description promoted_from_pending ÷ (decided + discarded_by_triager), in %.
+             */
+            precision_with_triager: number | null;
+            /**
              * Promoted
              * @description Promoted offers, rescues included.
              */
@@ -2029,6 +2068,11 @@ export interface components {
             promoted_from_pending: number;
             /** Rescued Near Misses */
             rescued_near_misses: number;
+            /**
+             * Restored Triager Discards
+             * @description Of those, the ones restored.
+             */
+            restored_triager_discards: number;
             /**
              * Reviewed Near Misses
              * @description Near misses rescued or rightly filtered.
@@ -2055,6 +2099,11 @@ export interface components {
              */
             triaged_near_misses_rescued: number;
             /**
+             * Triager Discards
+             * @description Offers the triager discarded, restored included.
+             */
+            triager_discards: number;
+            /**
              * Triager Lost Rescues
              * @description lost_rescues ÷ triaged_near_misses_rescued, in %.
              */
@@ -2074,6 +2123,11 @@ export interface components {
              * @description ok_near_misses_rescued ÷ ok_near_misses_reviewed, in %.
              */
             triager_rescues: number | null;
+            /**
+             * Triager Restores
+             * @description restored_triager_discards ÷ triager_discards, in %.
+             */
+            triager_restores: number | null;
         };
         /** ReadingBatchRead */
         ReadingBatchRead: {
@@ -2254,7 +2308,7 @@ export interface components {
         SourceQualityRead: {
             /**
              * Discarded
-             * @description Discarded by the user: expired ones are left out.
+             * @description Discarded by the user: expired ones and triager discards are left out.
              */
             discarded: number;
             /** Fitting */
@@ -2377,8 +2431,33 @@ export interface components {
             /** @description What in the offer speaks for it; null when nothing does. */
             why_yes: components["schemas"]["WhyRead"] | null;
         };
+        /**
+         * TriagerDiscard
+         * @description A discard the offer triager made: still discarded, or restored by the user, after
+         *     which the triager never discards the offer again. Never a decision of the user.
+         * @enum {string}
+         */
+        TriagerDiscard: "discarded" | "restored";
+        /** TriagerDiscardsRead */
+        TriagerDiscardsRead: {
+            /**
+             * Discarded
+             * @description Offers the triager discarded now.
+             */
+            discarded: number;
+            /**
+             * Offer Ids
+             * @description Those offers, to restore them if need be.
+             */
+            offer_ids: string[];
+        };
         /** TriagerRead */
         TriagerRead: {
+            /**
+             * Discardable
+             * @description Pending offers the triager would discard if asked: fitting a profile, marked `ko` with `high` confidence and never discarded by it before.
+             */
+            discardable: number;
             /**
              * Is Available
              * @description Whether an offer triager is configured.
@@ -2454,9 +2533,14 @@ export interface components {
             applied: number;
             /**
              * Decided
-             * @description Offers decided from Pending: promoted or discarded, without rescues and expired ones.
+             * @description Offers the user decided from Pending: promoted or discarded, without rescues, expired ones and triager discards.
              */
             decided: number;
+            /**
+             * Discarded By Triager
+             * @description Triager discards still discarded; not in `decided`.
+             */
+            discarded_by_triager: number;
             /**
              * Fitting
              * @description Imported offers that fit the profiles as they are now.
@@ -2493,6 +2577,11 @@ export interface components {
              */
             precision: number | null;
             /**
+             * Precision With Triager
+             * @description promoted_from_pending ÷ (decided + discarded_by_triager), in %.
+             */
+            precision_with_triager: number | null;
+            /**
              * Promoted
              * @description Promoted offers, rescues included.
              */
@@ -2501,6 +2590,11 @@ export interface components {
             promoted_from_pending: number;
             /** Rescued Near Misses */
             rescued_near_misses: number;
+            /**
+             * Restored Triager Discards
+             * @description Of those, the ones restored.
+             */
+            restored_triager_discards: number;
             /**
              * Reviewed Near Misses
              * @description Near misses rescued or rightly filtered.
@@ -2532,6 +2626,11 @@ export interface components {
              */
             triaged_near_misses_rescued: number;
             /**
+             * Triager Discards
+             * @description Offers the triager discarded, restored included.
+             */
+            triager_discards: number;
+            /**
              * Triager Lost Rescues
              * @description lost_rescues ÷ triaged_near_misses_rescued, in %.
              */
@@ -2551,6 +2650,11 @@ export interface components {
              * @description ok_near_misses_rescued ÷ ok_near_misses_reviewed, in %.
              */
             triager_rescues: number | null;
+            /**
+             * Triager Restores
+             * @description restored_triager_discards ÷ triager_discards, in %.
+             */
+            triager_restores: number | null;
         };
         /**
          * WhyRead
@@ -4374,6 +4478,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TriagerRead"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemRead"];
+                };
+            };
+            /** @description Invalid request (`validation-error`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationProblemRead"];
+                };
+            };
+        };
+    };
+    discard_as_triager_api_v1_offers_triager_discards_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriagerDiscardsRead"];
                 };
             };
             /** @description Missing or invalid token */

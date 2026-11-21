@@ -524,6 +524,15 @@ class OfferTriageService:
         )
         return [o for o in near_misses if o.verdict is None and (o.description or "").strip()]
 
+    async def count_discardable(self) -> int:
+        """How many pending offers the triager would discard if asked."""
+        raise NotImplementedError
+
+    async def discard_sure(self) -> list[UUID]:
+        """Discard, as the triager's, the fitting pending offers it marked KO with high
+        confidence and never discarded before; the ids of those discarded."""
+        raise NotImplementedError
+
     async def triage_pending(self) -> TriageBatch:
         if self._triager is None:
             raise OfferTriagerUnavailableError("No offer triager is configured")
