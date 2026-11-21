@@ -443,6 +443,21 @@ Feature: Inbox screen
       | Only discard this one      | "Senior"         |
       | Discard and exclude “Lead” | "Senior", "Lead" |
 
+  # A discard shows at once: the offer leaves the list and the message "Offer discarded"
+  # appears as soon as the discard is done, without waiting for the inbox to list its
+  # offers again. While the discard is being done, its reasons and "Cancel" are disabled.
+
+  # @component: only MSW can make the inbox slow to list the offers again.
+
+  @component
+  Scenario: A discarded offer leaves the inbox at once
+    Given an offer for "Acme" as "Backend Engineer"
+    And the inbox is slow to list the offers again
+    And I am on the inbox
+    When I discard the offer "Backend Engineer" because "No reason"
+    Then I see the message "Offer discarded" without waiting for the inbox
+    And the offer "Backend Engineer" is no longer listed
+
   Scenario: Cancel a discard
     Given an offer for "Acme" as "Backend Engineer"
     And I am on the inbox
@@ -602,6 +617,15 @@ Feature: Inbox screen
       | reason     | evidence                   | word                |
       | contract   | Part-time, 20 hours a week | with no word        |
       | title_word | Lead                       | with the word "Lead" |
+
+  @component
+  Scenario: An offer discarded as suggested leaves the inbox at once
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with a suggested discard because "contract" with "Part-time"
+    And the inbox is slow to list the offers again
+    And I am on the inbox
+    When I discard the offer "Backend Engineer Lead" as suggested
+    Then I see the message "Offer discarded" without waiting for the inbox
+    And the offer "Backend Engineer Lead" is no longer listed
 
   # --- Triage of the near misses ---
 

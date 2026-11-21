@@ -128,7 +128,10 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
       });
       if (error) throw error;
     },
-    onSuccess: () => onDiscarded?.(offer),
+    // Not returned: the discard is done once its request is, whatever the inbox does next.
+    onSuccess: () => {
+      onDiscarded?.(offer);
+    },
   });
 
   if (!triage) return null;

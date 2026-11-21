@@ -52,8 +52,8 @@ export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onD
           },
         });
         if (error) throw error;
-        await queryClient.invalidateQueries({ queryKey: ["search-profiles"] });
-        await queryClient.invalidateQueries({ queryKey: ["criteria-changes"] });
+        void queryClient.invalidateQueries({ queryKey: ["search-profiles"] });
+        void queryClient.invalidateQueries({ queryKey: ["criteria-changes"] });
       }
       const { error } = await api.POST("/api/v1/offers/{offer_id}/discard", {
         params: { path: { offer_id: offer.id } },
@@ -61,7 +61,10 @@ export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onD
       });
       if (error) throw error;
     },
-    onSuccess: () => onDiscarded(offer),
+    // Not returned: the discard is done once its request is, whatever the inbox does next.
+    onSuccess: () => {
+      onDiscarded(offer);
+    },
   });
 
   // A word of the title is the reason "A word in the title": with a reference profile it
@@ -172,7 +175,11 @@ export function DiscardingOffer({ offer, jobBoards, profiles, now, onCancel, onD
                   </Button>
                 ))}
               </Box>
-              <Button onClick={onCancel} sx={{ alignSelf: { xs: "stretch", sm: "flex-end" } }}>
+              <Button
+                disabled={discard.isPending}
+                onClick={onCancel}
+                sx={{ alignSelf: { xs: "stretch", sm: "flex-end" } }}
+              >
                 Cancel
               </Button>
             </Stack>

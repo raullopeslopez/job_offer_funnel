@@ -114,7 +114,29 @@ export function InboxPage() {
     queries: VIEWS.map(({ value }) => offerCountQuery(value)),
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["offers"] });
+  // Not awaited: listing the offers again can take long, and what was done shows at once.
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["offers"] });
+  };
+
+  // An offer that left the view (discarded, restored, promoted) leaves its list and its
+  // count at once, before the inbox lists its offers again.
+  const leaveView = (offerId: string) => {
+    type Listed = NonNullable<typeof offers.data>;
+    const data = queryClient.getQueryData<Listed>(["offers", view]);
+    if (!data?.pages.some((page) => page.items.some((o) => o.id === offerId))) return;
+    queryClient.setQueryData<Listed>(["offers", view], {
+      ...data,
+      pages: data.pages.map((page) => ({
+        ...page,
+        items: page.items.filter((o) => o.id !== offerId),
+        total: page.total - 1,
+      })),
+    });
+    queryClient.setQueryData<number>(["offers", "count", view], (count) =>
+      count === undefined ? count : Math.max(count - 1, 0),
+    );
+  };
 
   const restore = useMutation({
     mutationFn: async (offerId: string) => {
@@ -122,10 +144,12 @@ export function InboxPage() {
         params: { path: { offer_id: offerId } },
       });
       if (error) throw error;
+      return offerId;
     },
-    onSuccess: async () => {
-      await refresh();
+    onSuccess: (offerId) => {
+      leaveView(offerId);
       setNotice({ message: "Offer restored" });
+      refresh();
     },
   });
 
@@ -137,7 +161,7 @@ export function InboxPage() {
       });
       if (error) throw error;
     },
-    onSuccess: refresh,
+    onSuccess: () => refresh(),
   });
   const markRightlyFiltered = useMutation({
     mutationFn: async (offer: Offer) => {
@@ -147,9 +171,9 @@ export function InboxPage() {
       if (error) throw error;
       return offer;
     },
-    onSuccess: async (offer) => {
-      await refresh();
+    onSuccess: (offer) => {
       setNotice({ message: "Marked as rightly filtered", undo: () => unmark.mutate(offer.id) });
+      refresh();
     },
   });
   const nearMissActions = {
@@ -235,10 +259,11 @@ export function InboxPage() {
           onDiscard={setDiscarding}
           discardingId={discarding?.id}
           onCancelDiscard={() => setDiscarding(null)}
-          onDiscarded={async (offer) => {
+          onDiscarded={(offer) => {
             setDiscarding(null);
-            await refresh();
+            leaveView(offer.id);
             setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
+            refresh();
           }}
           onPromote={setPromoting}
           onRestore={(offer) => restore.mutate(offer.id)}
@@ -262,20 +287,21 @@ export function InboxPage() {
       <AddOfferDialog
         open={dialog === "add"}
         onClose={() => setDialog(null)}
-        onAdded={async () => {
+        onAdded={() => {
           setDialog(null);
           changeView("pending");
-          await refresh();
+          refresh();
         }}
       />
       <ImportJobBoardDialog open={dialog === "import"} onClose={() => setDialog(null)} />
       <PromoteDialog
         offer={promoting}
         onClose={() => setPromoting(null)}
-        onPromoted={async () => {
+        onPromoted={() => {
+          if (promoting) leaveView(promoting.id);
           setPromoting(null);
-          await refresh();
           setNotice({ message: "Application created" });
+          refresh();
         }}
       />
 
