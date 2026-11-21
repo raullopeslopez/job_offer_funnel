@@ -9,7 +9,8 @@ Feature: Inbox
   "promoted" to an application. Offers do not count in the funnel metrics.
   The reason for a discard is one of a closed list: "title_word" (with the word of the
   title that does not fit), "stack", "location", "contract", "company" or "none", the
-  one given when no other is. "expired" is only set by the imports.
+  one given when no other is. "expired" is only set by the imports. A discard is mine,
+  or the offer triager's when I let it discard (specs/inbox/triager_discards.feature).
   The same company and title, ignoring case and extra spaces, is the same offer,
   even if it was discarded: the same posting found in another job board is rejected.
   So is the same URL, ignoring a trailing slash and its utm_* parameters, even with

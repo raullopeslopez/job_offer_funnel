@@ -1978,7 +1978,7 @@
       "OfferQualityRead": {
         "properties": {
           "discard_reasons": {
-            "description": "Discards by reason, the most frequent first; expired ones left out.",
+            "description": "The user's discards by reason, the most frequent first; expired ones and triager discards left out.",
             "items": {
               "$ref": "#/components/schemas/DiscardReasonCountRead"
             },
@@ -2224,6 +2224,17 @@
             ],
             "description": "The triager's verdict; null until triaged."
           },
+          "triager_discard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TriagerDiscard"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`discarded`: discarded by the offer triager, not by the user; `restored`: the triager discarded it and the user restored it."
+          },
           "url": {
             "title": "Url",
             "type": "string"
@@ -2277,6 +2288,7 @@
           "readings",
           "discard_reason",
           "discard_word",
+          "triager_discard",
           "application_id",
           "review",
           "review_rules",
@@ -2677,8 +2689,13 @@
             "type": "integer"
           },
           "decided": {
-            "description": "Offers decided from Pending: promoted or discarded, without rescues and expired ones.",
+            "description": "Offers the user decided from Pending: promoted or discarded, without rescues, expired ones and triager discards.",
             "title": "Decided",
+            "type": "integer"
+          },
+          "discarded_by_triager": {
+            "description": "Triager discards still discarded; not in `decided`.",
+            "title": "Discarded By Triager",
             "type": "integer"
           },
           "fitting": {
@@ -2730,6 +2747,18 @@
             "description": "promoted_from_pending \u00f7 decided, in %.",
             "title": "Precision"
           },
+          "precision_with_triager": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "promoted_from_pending \u00f7 (decided + discarded_by_triager), in %.",
+            "title": "Precision With Triager"
+          },
           "promoted": {
             "description": "Promoted offers, rescues included.",
             "title": "Promoted",
@@ -2741,6 +2770,11 @@
           },
           "rescued_near_misses": {
             "title": "Rescued Near Misses",
+            "type": "integer"
+          },
+          "restored_triager_discards": {
+            "description": "Of those, the ones restored.",
+            "title": "Restored Triager Discards",
             "type": "integer"
           },
           "reviewed_near_misses": {
@@ -2766,6 +2800,11 @@
           "triaged_near_misses_rescued": {
             "description": "Near misses triaged and rescued.",
             "title": "Triaged Near Misses Rescued",
+            "type": "integer"
+          },
+          "triager_discards": {
+            "description": "Offers the triager discarded, restored included.",
+            "title": "Triager Discards",
             "type": "integer"
           },
           "triager_lost_rescues": {
@@ -2815,6 +2854,18 @@
             ],
             "description": "ok_near_misses_rescued \u00f7 ok_near_misses_reviewed, in %.",
             "title": "Triager Rescues"
+          },
+          "triager_restores": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "restored_triager_discards \u00f7 triager_discards, in %.",
+            "title": "Triager Restores"
           }
         },
         "required": [
@@ -2839,7 +2890,12 @@
           "triager_rescues",
           "triaged_near_misses_rescued",
           "lost_rescues",
-          "triager_lost_rescues"
+          "triager_lost_rescues",
+          "discarded_by_triager",
+          "precision_with_triager",
+          "triager_discards",
+          "restored_triager_discards",
+          "triager_restores"
         ],
         "title": "QualityFiguresRead",
         "type": "object"
@@ -3352,7 +3408,7 @@
       "SourceQualityRead": {
         "properties": {
           "discarded": {
-            "description": "Discarded by the user: expired ones are left out.",
+            "description": "Discarded by the user: expired ones and triager discards are left out.",
             "title": "Discarded",
             "type": "integer"
           },
@@ -3635,8 +3691,46 @@
         "title": "TriageRead",
         "type": "object"
       },
+      "TriagerDiscard": {
+        "description": "A discard the offer triager made: still discarded, or restored by the user, after\nwhich the triager never discards the offer again. Never a decision of the user.",
+        "enum": [
+          "discarded",
+          "restored"
+        ],
+        "title": "TriagerDiscard",
+        "type": "string"
+      },
+      "TriagerDiscardsRead": {
+        "properties": {
+          "discarded": {
+            "description": "Offers the triager discarded now.",
+            "title": "Discarded",
+            "type": "integer"
+          },
+          "offer_ids": {
+            "description": "Those offers, to restore them if need be.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Offer Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "discarded",
+          "offer_ids"
+        ],
+        "title": "TriagerDiscardsRead",
+        "type": "object"
+      },
       "TriagerRead": {
         "properties": {
+          "discardable": {
+            "description": "Pending offers the triager would discard if asked: fitting a profile, marked `ko` with `high` confidence and never discarded by it before.",
+            "title": "Discardable",
+            "type": "integer"
+          },
           "is_available": {
             "description": "Whether an offer triager is configured.",
             "title": "Is Available",
@@ -3644,7 +3738,8 @@
           }
         },
         "required": [
-          "is_available"
+          "is_available",
+          "discardable"
         ],
         "title": "TriagerRead",
         "type": "object"
@@ -3779,8 +3874,13 @@
             "type": "integer"
           },
           "decided": {
-            "description": "Offers decided from Pending: promoted or discarded, without rescues and expired ones.",
+            "description": "Offers the user decided from Pending: promoted or discarded, without rescues, expired ones and triager discards.",
             "title": "Decided",
+            "type": "integer"
+          },
+          "discarded_by_triager": {
+            "description": "Triager discards still discarded; not in `decided`.",
+            "title": "Discarded By Triager",
             "type": "integer"
           },
           "fitting": {
@@ -3832,6 +3932,18 @@
             "description": "promoted_from_pending \u00f7 decided, in %.",
             "title": "Precision"
           },
+          "precision_with_triager": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "promoted_from_pending \u00f7 (decided + discarded_by_triager), in %.",
+            "title": "Precision With Triager"
+          },
           "promoted": {
             "description": "Promoted offers, rescues included.",
             "title": "Promoted",
@@ -3843,6 +3955,11 @@
           },
           "rescued_near_misses": {
             "title": "Rescued Near Misses",
+            "type": "integer"
+          },
+          "restored_triager_discards": {
+            "description": "Of those, the ones restored.",
+            "title": "Restored Triager Discards",
             "type": "integer"
           },
           "reviewed_near_misses": {
@@ -3873,6 +3990,11 @@
           "triaged_near_misses_rescued": {
             "description": "Near misses triaged and rescued.",
             "title": "Triaged Near Misses Rescued",
+            "type": "integer"
+          },
+          "triager_discards": {
+            "description": "Offers the triager discarded, restored included.",
+            "title": "Triager Discards",
             "type": "integer"
           },
           "triager_lost_rescues": {
@@ -3922,6 +4044,18 @@
             ],
             "description": "ok_near_misses_rescued \u00f7 ok_near_misses_reviewed, in %.",
             "title": "Triager Rescues"
+          },
+          "triager_restores": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "restored_triager_discards \u00f7 triager_discards, in %.",
+            "title": "Triager Restores"
           }
         },
         "required": [
@@ -3947,6 +4081,11 @@
           "triaged_near_misses_rescued",
           "lost_rescues",
           "triager_lost_rescues",
+          "discarded_by_triager",
+          "precision_with_triager",
+          "triager_discards",
+          "restored_triager_discards",
+          "triager_restores",
           "starts_on"
         ],
         "title": "WeekQualityRead",
@@ -6666,7 +6805,7 @@
     },
     "/api/v1/offers/triager": {
       "get": {
-        "description": "Whether the offers can be triaged: without an offer triager the app works as always.",
+        "description": "Whether the offers can be triaged: without an offer triager the app works as always.\nIt also says how many offers the triager would discard if asked.",
         "operationId": "read_offer_triager_api_v1_offers_triager_get",
         "responses": {
           "200": {
@@ -6706,6 +6845,53 @@
           }
         ],
         "summary": "Read Offer Triager",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/offers/triager-discards": {
+      "post": {
+        "description": "Let the offer triager discard the pending offers it is sure are false positives:\nthose that fit a profile, marked `ko` with `high` confidence and never discarded by it\nbefore. Each one goes with the reason and word of its suggested discard, or `none`, and\nis marked as the triager's (`triager_discard`), never as a decision of yours. Asks\nnothing of the triager: it uses the verdicts already given. Restore any of them as any\ndiscard; the triager never discards a restored offer again.",
+        "operationId": "discard_as_triager_api_v1_offers_triager_discards_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriagerDiscardsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRead"
+                }
+              }
+            },
+            "description": "Missing or invalid token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemRead"
+                }
+              }
+            },
+            "description": "Invalid request (`validation-error`)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Discard As Triager",
         "tags": [
           "inbox"
         ]
@@ -6838,7 +7024,7 @@
     },
     "/api/v1/offers/{offer_id}/discard": {
       "delete": {
-        "description": "Undo the discard: the offer is pending again.",
+        "description": "Undo the discard: the offer is pending again. A triager discard stays marked as\n`restored`.",
         "operationId": "restore_offer_api_v1_offers__offer_id__discard_delete",
         "parameters": [
           {

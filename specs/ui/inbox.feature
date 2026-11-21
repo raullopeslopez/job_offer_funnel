@@ -647,6 +647,45 @@ Feature: Inbox screen
     Then I see the message "Offer discarded" without waiting for the inbox
     And the offer "Backend Engineer Lead" is no longer listed
 
+  # --- Triager discards ---
+
+  # When the triager would discard offers (specs/inbox/triager_discards.feature), the
+  # pending view offers "Let AI discard {n}", next to "Triage with AI", with the line
+  # "The ones it marked KO with high confidence. You can restore any of them." Choosing it
+  # discards them and shows "AI discarded {n} offers" with "Undo", which restores all of
+  # them. In the discarded view a triager discard says "Discarded by AI" before its
+  # reason, and is restored like any discard.
+  # @component: the E2E tests cannot reach the triager.
+
+  @component
+  Scenario: Let the AI discard the offers it is sure of
+    Given the triager would discard 3 offers
+    And I am on the inbox
+    When I let the AI discard
+    Then the app lets the triager discard
+    And I see the message "AI discarded 3 offers" with "Undo"
+
+  @component
+  Scenario: Undo the AI's discards right away
+    Given the triager would discard 3 offers
+    And I am on the inbox
+    And I let the AI discard
+    When I undo the AI's discards
+    Then the app restores those 3 offers
+
+  @component
+  Scenario: With nothing for the AI to discard there is no "Let AI discard"
+    Given the triager would discard 0 offers
+    When I open the inbox
+    Then there is no "Let AI discard"
+
+  @component
+  Scenario: A triager discard says it is the AI's
+    Given an offer for "Acme" as "Backend Engineer" that the triager discarded because "contract"
+    When I open the inbox showing the "discarded" offers
+    Then the offer "Backend Engineer" shows the reason "Discarded by AI · Contract"
+    And it can be restored
+
   # --- Triage of the near misses ---
 
   # The triage also marks the near misses (specs/inbox/near_miss_triages.feature), and

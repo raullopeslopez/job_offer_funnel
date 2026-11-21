@@ -614,7 +614,7 @@ def then_told_mistakes(state: ScenarioState, datatable: list[list[str]]) -> None
 
 @then(parsers.re(r"it is (?P<availability>available|not available)$"))
 def then_available(state: ScenarioState, availability: str) -> None:
-    assert _ok(state.last_response, 200) == {"is_available": availability == "available"}
+    assert _ok(state.last_response, 200)["is_available"] == (availability == "available")
 
 
 @then("it is rejected because the offer triager is not available")

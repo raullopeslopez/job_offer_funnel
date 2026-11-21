@@ -10,6 +10,7 @@ from funnel.modules.inbox.domain import (
     QualityOffer,
     Review,
     Rule,
+    TriagerDiscard,
     Verdict,
     offer_quality,
     rate,
@@ -135,3 +136,31 @@ def test_the_triager_is_judged_by_what_was_done_with_the_triaged_offers() -> Non
     total = quality.total
     assert (total.triager_precision, total.suggested_decided) == (50.0, 2)
     assert (total.triager_misses, total.triaged_discarded) == (50.0, 2)
+
+
+@pytest.mark.unit
+def test_triager_discards_are_not_decisions_of_the_user() -> None:
+    # Arrange
+    by_triager: dict[str, Any] = {
+        "discard_reason": DiscardReason.STACK,
+        "verdict": Verdict.KO,
+        "suggested_discard": DiscardReason.STACK,
+    }
+    offers = [
+        _offer(1, OfferStatus.PROMOTED),
+        _offer(1, OfferStatus.DISCARDED, discard_reason=DiscardReason.LOCATION),
+        _offer(1, OfferStatus.DISCARDED, triager_discard=TriagerDiscard.DISCARDED, **by_triager),
+        _offer(1, OfferStatus.DISCARDED, triager_discard=TriagerDiscard.DISCARDED, **by_triager),
+        _offer(1, triager_discard=TriagerDiscard.RESTORED, verdict=Verdict.KO),
+    ]
+
+    # Act
+    quality = offer_quality(offers, TODAY, near_misses_left=0)
+
+    # Assert
+    total = quality.total
+    assert (total.precision, total.decided) == (50.0, 2)
+    assert (total.precision_with_triager, total.discarded_by_triager) == (25.0, 2)
+    assert (total.triager_restores, total.triager_discards) == (33.3, 3)
+    assert (total.suggested_decided, total.triaged_discarded) == (0, 0)
+    assert quality.discard_reasons == [(DiscardReason.LOCATION, 1)]

@@ -1,6 +1,6 @@
 import re
 from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -37,6 +37,9 @@ class ScenarioState:
     answers: dict[str, TriageAnswer] = field(default_factory=dict)
     # The companies whose description it quotes when it says OK.
     quoting_descriptions: set[str] = field(default_factory=set)
+    # Once a scenario gives an offer a verdict with its confidence, the triager answers only
+    # for the offers it was told about.
+    is_answering_only_told: bool = False
     response: httpx2.Response | None = None
 
     @property
@@ -62,6 +65,7 @@ class FakeOfferTriager:
         answers: Mapping[int, TriageAnswer] = {
             number: self._state.answers.get(offer.company, _fits(offer, self._state))
             for number, offer in enumerate(offers)
+            if offer.company in self._state.answers or not self._state.is_answering_only_told
         }
         return TriageReply(answers, [])
 
@@ -230,6 +234,35 @@ def given_ok_offers(state: ScenarioState, companies: str) -> None:
     state.quoting_descriptions |= set(re.findall(r'"([^"]+)"', companies))
 
 
+@given(
+    parsers.re(
+        r'the offer of "(?P<company>[^"]+)" has the verdict KO with high confidence'
+        r'(?:, with a suggested discard because "(?P<reason>[^"]+)" with "(?P<evidence>[^"]+)")?$'
+    )
+)
+def given_sure_ko(
+    client: TestClient,
+    state: ScenarioState,
+    company: str,
+    reason: str | None,
+    evidence: str | None,
+) -> None:
+    answer = said("KO", "Not for you.", reason=reason, evidence=evidence)
+    state.answers[company] = replace(answer, confidence="high")
+    state.is_answering_only_told = True
+    _ok(client.post(f"{OFFERS_URL}/triages"))
+
+
+@given("I let the triager discard")
+def given_triager_discarded(client: TestClient) -> None:
+    _ok(client.post(f"{OFFERS_URL}/triager-discards"))
+
+
+@given(parsers.parse('I restored the offer of "{company}"'))
+def given_restored(client: TestClient, company: str) -> None:
+    _ok(client.delete(f"{_offer_url(client, company)}/discard"), 204)
+
+
 # --- When ---
 
 
@@ -365,3 +398,33 @@ def then_triager_lost_rescues(state: ScenarioState, lost: str, rescued: str) -> 
     total = state.quality["total"]
     found = (total["triager_lost_rescues"], total["triaged_near_misses_rescued"])
     assert found == (float(lost), int(rescued))
+
+
+@then(
+    parsers.re(
+        r"the precision with the triager is (?P<precision>[\d.]+)%, with (?P<discards>\d+) "
+        r"triager discards?$"
+    )
+)
+def then_precision_with_triager(state: ScenarioState, precision: str, discards: str) -> None:
+    total = state.quality["total"]
+    found = (total["precision_with_triager"], total["discarded_by_triager"])
+    assert found == (float(precision), int(discards))
+
+
+@then(
+    parsers.re(
+        r"the triager's restores are (?P<restores>[\d.]+)% of (?P<discards>\d+) triager "
+        r"discards$"
+    )
+)
+def then_triager_restores(state: ScenarioState, restores: str, discards: str) -> None:
+    total = state.quality["total"]
+    found = (total["triager_restores"], total["triager_discards"])
+    assert found == (float(restores), int(discards))
+
+
+@then("the triager's precision has no suggested discards decided")
+def then_no_suggested_decided(state: ScenarioState) -> None:
+    total = state.quality["total"]
+    assert (total["triager_precision"], total["suggested_decided"]) == (None, 0)

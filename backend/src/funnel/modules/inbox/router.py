@@ -59,6 +59,7 @@ from funnel.modules.inbox.schemas import (
     ReadingBatchRead,
     SourceQualityRead,
     TriageBatchRead,
+    TriagerDiscardsRead,
     TriagerRead,
     WatchedCompanyCreate,
     WatchedCompanyRead,
@@ -291,8 +292,23 @@ async def read_offers(
 
 @offers_router.get("/triager")
 async def read_offer_triager(service: TriageService) -> TriagerRead:
-    """Whether the offers can be triaged: without an offer triager the app works as always."""
-    return TriagerRead(is_available=service.is_available)
+    """Whether the offers can be triaged: without an offer triager the app works as always.
+    It also says how many offers the triager would discard if asked."""
+    return TriagerRead(
+        is_available=service.is_available, discardable=await service.count_discardable()
+    )
+
+
+@offers_router.post("/triager-discards", status_code=HTTPStatus.CREATED)
+async def discard_as_triager(service: TriageService) -> TriagerDiscardsRead:
+    """Let the offer triager discard the pending offers it is sure are false positives:
+    those that fit a profile, marked `ko` with `high` confidence and never discarded by it
+    before. Each one goes with the reason and word of its suggested discard, or `none`, and
+    is marked as the triager's (`triager_discard`), never as a decision of yours. Asks
+    nothing of the triager: it uses the verdicts already given. Restore any of them as any
+    discard; the triager never discards a restored offer again."""
+    discarded = await service.discard_sure()
+    return TriagerDiscardsRead(discarded=len(discarded), offer_ids=discarded)
 
 
 @offers_router.post(
@@ -462,7 +478,8 @@ async def discard_offer(offer_id: UUID, discard: DiscardCreate, service: Service
     responses={**_NOT_FOUND, **_WRONG_STATUS},
 )
 async def restore_offer(offer_id: UUID, service: Service) -> None:
-    """Undo the discard: the offer is pending again."""
+    """Undo the discard: the offer is pending again. A triager discard stays marked as
+    `restored`."""
     await service.restore(offer_id)
 
 

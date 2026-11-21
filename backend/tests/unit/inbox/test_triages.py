@@ -14,6 +14,7 @@ from funnel.modules.inbox.domain import (
     Why,
     kept_suggestion,
     kept_triage,
+    triager_discard_reason,
 )
 
 pytestmark = pytest.mark.unit
@@ -177,3 +178,29 @@ def test_keeps_an_ok_near_miss_only_with_a_quote_that_rebuts_its_rule(
     # Assert
     assert triage is not None
     assert (triage.verdict, triage.why_not) == (verdict, Why("US only."))
+
+
+@pytest.mark.parametrize(
+    ("suggestion", "expected"),
+    [
+        pytest.param(
+            SuggestedDiscard(DiscardReason.TITLE_WORD, "Lead"),
+            (DiscardReason.TITLE_WORD, "Lead"),
+            id="title-word-with-its-word",
+        ),
+        pytest.param(
+            SuggestedDiscard(DiscardReason.CONTRACT, "Part-time, 20 hours a week"),
+            (DiscardReason.CONTRACT, None),
+            id="other-reason-without-a-word",
+        ),
+        pytest.param(None, (DiscardReason.NONE, None), id="no-suggested-discard"),
+    ],
+)
+def test_the_triager_discards_with_its_suggested_reason_or_none(
+    suggestion: SuggestedDiscard | None, expected: tuple[DiscardReason, str | None]
+) -> None:
+    # Act
+    result = triager_discard_reason(suggestion)
+
+    # Assert
+    assert result == expected

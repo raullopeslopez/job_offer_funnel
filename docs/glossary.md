@@ -125,6 +125,7 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Cita de un porqué (texto copiado letra por letra del título o la descripción; solo se guarda si está) | `quote` |
 | Confianza del triaje (cuánto se fía el triador de su veredicto) | `confidence`: `low` · `medium` · `high` |
 | Descarte sugerido (veredicto `ko` con motivo y evidencia que se sostiene; nunca se aplica solo) | `suggested discard` |
+| Descarte del triador (lo hace el triador cuando se lo pido, sobre las pendientes que marcó KO con confianza alta; nunca cuenta como decisión mía) | `triager discard`: `triager_discard`: `discarded` · `restored` |
 | Sugerencia rechazada (descarte sugerido de una oferta que promoví) | `rejected suggestion` |
 | Descarte no visto (oferta que el triador marcó OK y que descarté) | `missed discard` |
 | Relajar una regla (cambio de criterio que deja entrar más ofertas: dejar de excluir una palabra, dejar de exigir una palabra clave, aceptar una modalidad) | `relax` |

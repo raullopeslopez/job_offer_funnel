@@ -57,7 +57,7 @@ Dirección acordada el 2026-11-13 para todo lo que toque la Bandeja, los perfile
 
 **Resultados clave** (sin metas hasta medir la línea base en producción):
 
-1. **Precisión**: promovidas ÷ (promovidas + descartadas) de Pending, sin las caducadas.
+1. **Precisión**: promovidas ÷ (promovidas + descartadas por mí) de Pending, sin las caducadas; aparte, la misma con los descartes de la IA y cuántos de ellos restauré.
 2. **Pérdidas**: de los *casi* de Filtered (encajan por título y fallan una sola regla), % que se rescata.
 3. **Ruido por causa**: descartes agrupados por motivo; cada iteración ataca el motivo nº 1.
 4. **Caudal**: ofertas nuevas que encajan por semana y por fuente. Es el freno: impide mejorar la precisión filtrando de más.
@@ -65,12 +65,12 @@ Dirección acordada el 2026-11-13 para todo lo que toque la Bandeja, los perfile
 
 **Ciclo de mejora**: ver (KR 1, 2 y 4) → entender (KR 3) → cambiar (un criterio por iteración) → comprobar. Un cambio de criterio se acepta si, contra el historial, no filtra ninguna oferta promovida y quita al menos una descartada.
 
-**Inputs del usuario**: solo dos gestos, de un clic: promover y descartar con motivo (lista corta ligada a reglas, con "sin más" siempre disponible). Todo lo demás se deriva y nunca se pregunta: el rescate (promover una oferta que estaba filtrada), el motivo del filtrado, las metas y el efecto de cada cambio.
+**Inputs del usuario**: solo dos gestos, de un clic: promover y descartar con motivo (lista corta ligada a reglas, con "sin más" siempre disponible). Un tercer gesto, de delegación: dejar que la IA descarte sus KO seguras. Todo lo demás se deriva y nunca se pregunta: el rescate (promover una oferta que estaba filtrada), el motivo del filtrado, las metas y el efecto de cada cambio.
 
 **Reglas de diseño**:
 
 - Se itera desde la oferta, no desde el formulario del perfil: la app traduce "esta sobra" o "esta debería estar" a un cambio de criterio.
-- El filtro son reglas del usuario, explicables y recalculadas al instante. La IA extrae hechos con su evidencia y propone cambios; nunca decide sola, y la app funciona sin ella.
+- El filtro son reglas del usuario, explicables y recalculadas al instante. La IA extrae hechos con su evidencia y propone cambios; nunca cambia un criterio ni decide sola, y la app funciona sin ella. Solo descarta cuando yo se lo pido, en un clic, sobre las pendientes que marcó KO con confianza alta, viendo antes cuántas son. Cada descarte suyo se ve como suyo, se deshace en un clic y nunca cuenta como decisión mía: ni en mi precisión, ni en la regla de un cambio de criterio, ni en lo que se le cuenta al triador. No restaurarlo no lo confirma.
 - Toda oferta filtrada dice qué regla la filtró. Nada se pierde: lo filtrado se puede ver y rescatar.
 - El efecto de un cambio se ve antes de confirmarlo, en el mismo paso.
 - Sin señales pasivas (abrir el enlace, tiempo sin tocar) para medir los resultados clave.

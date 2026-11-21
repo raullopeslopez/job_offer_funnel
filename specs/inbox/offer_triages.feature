@@ -14,7 +14,8 @@ Feature: Offer triages
   as it takes at a time that fit a search profile, have a description and have no
   verdict yet, from the most recently added: their title, company and description. With them, once, it is told:
   - the search profiles: name, titles, keywords and excluded keywords;
-  - my last 30 promoted and last 30 discarded imported offers, from the most recent: their
+  - my last 30 promoted and last 30 discarded imported offers (the triager discards are
+    not mine), from the most recent: their
     title and, for the discarded ones, the discard reason and its word;
   - its own mistakes, the last 20 of each, from the most recent: the rejected suggestions
     (offers with a suggested discard that I promoted) and the missed discards (offers
@@ -57,7 +58,9 @@ Feature: Offer triages
   accepting it there is a criteria change made from that offer.
 
   Nothing is ever applied on its own: the offer stays pending, discarding it with the
-  suggested reason and word is a normal discard (specs/inbox/inbox.feature), and
+  suggested reason and word is a normal discard (specs/inbox/inbox.feature), letting the
+  triager discard the offers it is sure of is something I ask for
+  (specs/inbox/triager_discards.feature), and
   accepting a suggestion is a criteria change (specs/inbox/criteria_changes.feature). How
   well the triager does is part of the offer quality (specs/inbox/offer_quality.feature).
   Without an offer triager the app offers no triage and works as always.
