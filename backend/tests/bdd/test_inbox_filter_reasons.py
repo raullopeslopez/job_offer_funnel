@@ -25,6 +25,7 @@ OFFERS_URL = "/api/v1/offers"
 PROFILES_URL = "/api/v1/search-profiles"
 LIST_FIELDS = frozenset({"titles", "keywords", "excluded_keywords", "work_modes"})
 YES_NO = {"yes": True, "no": False, "": None}
+YES_NO_COLUMNS = frozenset({"admits_location", "stable", "engineering"})
 
 Row = dict[str, str]
 
@@ -135,18 +136,24 @@ def _ok(response: httpx2.Response, status: int = 201) -> dict[str, Any]:
     return body
 
 
+def _answer(column: str, value: str) -> Any:  # noqa: ANN401  # the type of the column
+    if column in YES_NO_COLUMNS:
+        return YES_NO[value]
+    if column == "stack":
+        return _words(value)
+    return value or None
+
+
 def _reading(row: Row) -> Reading:
-    answers: dict[str, Any] = {
-        column: YES_NO[value] if column in {"admits_location", "stable"} else value or None
-        for column, value in row.items()
-    }
+    answers = {column: _answer(column, value) for column, value in row.items()}
     work_mode = answers.pop("work_mode", None)
     return Reading(work_mode=None if work_mode is None else WorkMode(work_mode), **answers)
 
 
 def _expected_value(rule: str, text: str) -> str | bool | None:
-    """A table cell as the API shows a rule's value: yes/no for location and stable."""
-    if rule in {"location", "stable"}:
+    """A table cell as the API shows a rule's value: yes/no for location, stable and
+    engineering."""
+    if rule in {"location", "stable", "engineering"}:
         return YES_NO[text]
     return text or None
 

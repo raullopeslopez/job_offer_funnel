@@ -26,6 +26,7 @@ READINGS_URL = f"{OFFERS_URL}/readings"
 PROFILES_URL = "/api/v1/search-profiles"
 LIST_FIELDS = frozenset({"titles", "keywords", "excluded_keywords", "work_modes"})
 YES_NO = {"yes": True, "no": False, "": None}
+YES_NO_COLUMNS = frozenset({"admits_location", "stable", "engineering"})
 
 Row = dict[str, str]
 
@@ -142,8 +143,10 @@ def _answers(row: Row) -> dict[str, Any]:
     """A table row as the API shows a reading: only the columns the scenario gives."""
     answers: dict[str, Any] = {}
     for column, value in row.items():
-        if column in {"admits_location", "stable"}:
+        if column in YES_NO_COLUMNS:
             answers[column] = YES_NO[value]
+        elif column == "stack":
+            answers[column] = _words(value) if value else []
         else:
             answers[column] = value or None
     return answers
@@ -265,12 +268,9 @@ def given_profile_edited(client: TestClient, state: ScenarioState, name: str, ch
         body["location"] = None
     if "no work modes" in change:
         body["work_modes"] = []
-    if quoted := re.search(r'the (location|work modes) "([^"]+)"', change):
-        body |= (
-            {"location": quoted[2]}
-            if quoted[1] == "location"
-            else {"work_modes": _words(quoted[2])}
-        )
+    if quoted := re.search(r'the (location|work modes|excluded keywords) "([^"]+)"', change):
+        key = quoted[1].replace(" ", "_")
+        body[key] = quoted[2] if key == "location" else _words(quoted[2])
     _ok(client.patch(f"{PROFILES_URL}/{state.profiles[name]}", json=body), 200)
 
 
