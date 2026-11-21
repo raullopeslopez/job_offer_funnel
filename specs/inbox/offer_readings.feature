@@ -11,8 +11,8 @@ Feature: Offer readings
   - its work mode: remote, hybrid or onsite;
   - whether the job can be done living in a location: yes or no;
   - whether it is a stable job: yes for a full-time position with no end date, as an
-    employee or as a contractor; no when it is paid by the task or by the hour,
-    temporary or part-time;
+    employee or as a contractor; no when it is freelance, paid by the task or by the
+    hour (even if it says full-time), temporary or part-time;
   - whether it is an engineering job: yes when the role is mainly building software,
     in a product team or with customers; no when it is mainly sales, pre-sales,
     customer support, consulting, or product or project management, whatever its
@@ -230,6 +230,8 @@ Feature: Offer readings
       | Up to $85 per hour, flexible hours. | no     | $85 per hour         | filtered     |
       | Six-month contract.                 | no     | Six-month contract   | filtered     |
       | Part-time, 20 hours a week.         | no     | Part-time            | filtered     |
+      | Full-time, paid $40 per hour.       | no     | $40 per hour         | filtered     |
+      | Freelance engagement, full-time.    | no     | Freelance engagement | filtered     |
       | Python services.                    |        |                      | not filtered |
 
   Scenario Outline: A read offer that is not an engineering job is filtered

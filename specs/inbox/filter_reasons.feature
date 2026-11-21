@@ -11,9 +11,9 @@ Feature: Filter reasons
   - title: the profile's title found in the offer's title;
   - keywords: the profile's keywords found in the title or the description, and those
     missing;
-  - excluded: the excluded keyword found in the offer's title or in its main stack
-    (specs/inbox/offer_readings.feature), with the evidence of the main stack when it
-    is found there;
+  - excluded: the excluded keywords found in the offer's title or, when there are
+    none, in its main stack (specs/inbox/offer_readings.feature), with the evidence of
+    the main stack when they are found there;
   - work_mode, location, stable and engineering: what the reading for the profile's
     location says, with its evidence; unknown when the offer has not been read or its
     reading does not say. The location rule fails, with the published location as
