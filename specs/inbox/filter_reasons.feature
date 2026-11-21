@@ -11,14 +11,17 @@ Feature: Filter reasons
   - title: the profile's title found in the offer's title;
   - keywords: the profile's keywords found in the title or the description, and those
     missing;
-  - excluded: the excluded keyword found in the offer's title;
-  - work_mode, location and stable: what the reading for the profile's location says,
-    with its evidence; unknown when the offer has not been read or its reading does not
-    say. The location rule fails, with the published location as evidence, when that
-    location rules the offer out (specs/inbox/offer_readings.feature).
+  - excluded: the excluded keyword found in the offer's title or in its main stack
+    (specs/inbox/offer_readings.feature), with the evidence of the main stack when it
+    is found there;
+  - work_mode, location, stable and engineering: what the reading for the profile's
+    location says, with its evidence; unknown when the offer has not been read or its
+    reading does not say. The location rule fails, with the published location as
+    evidence, when that location rules the offer out
+    (specs/inbox/offer_readings.feature).
   Only the rules the profile asks for are listed: keywords, excluded, work_mode and
-  location when the profile has some; title and stable always. Only a failed rule
-  filters: an offer is filtered exactly when its reference profile has a failed rule. A
+  location when the profile has some; title, stable and engineering always. Only a
+  failed rule filters: an offer is filtered exactly when its reference profile has a failed rule. A
   near miss is a filtered offer whose title passes and that fails exactly one rule.
   The near misses can be listed at once grouped by the rule they fail, in the order of
   the rules, each group with how many offers it has and its most recent ones.
@@ -44,11 +47,12 @@ Feature: Filter reasons
       | <title> | Acme    | <description> | https://remoteok.com/1 |
     When I view the offer "<title>"
     Then the filter reason is against the profile "Backend" with:
-      | rule     | result         | found            | missing       |
-      | title    | <title_result> | <title_found>    |               |
-      | keywords | <kw_result>    | <kw_found>       | <kw_missing>  |
-      | excluded | <ex_result>    | <ex_found>       |               |
-      | stable   | unknown        |                  |               |
+      | rule        | result         | found         | missing      |
+      | title       | <title_result> | <title_found> |              |
+      | keywords    | <kw_result>    | <kw_found>    | <kw_missing> |
+      | excluded    | <ex_result>    | <ex_found>    |              |
+      | stable      | unknown        |               |              |
+      | engineering | unknown        |               |              |
 
     Examples:
       | title                   | description       | title_result | title_found      | kw_result | kw_found       | kw_missing     | ex_result | ex_found |
@@ -67,22 +71,50 @@ Feature: Filter reasons
       | title            | company | description   | url                    |
       | Backend Engineer | Acme    | <description> | https://remoteok.com/1 |
     And the offer reader answers for "Backend Engineer":
-      | work_mode   | work_mode_evidence   | admits_location | admits_location_evidence | stable   | stable_evidence   |
-      | <work_mode> | <work_mode_evidence> | <admits>        | <admits_evidence>        | <stable> | <stable_evidence> |
+      | work_mode   | work_mode_evidence   | admits_location | admits_location_evidence | stable   | stable_evidence   | engineering   | engineering_evidence   |
+      | <work_mode> | <work_mode_evidence> | <admits>        | <admits_evidence>        | <stable> | <stable_evidence> | <engineering> | <engineering_evidence> |
     And I read the offers
     When I view the offer "Backend Engineer"
     Then the filter reason is against the profile "Remote in Spain" with:
-      | rule      | result          | value       | evidence             |
-      | title     | passed          |             |                      |
-      | work_mode | <mode_result>   | <work_mode> | <work_mode_evidence> |
-      | location  | <loc_result>    | <admits>    | <admits_evidence>    |
-      | stable    | <stable_result> | <stable>    | <stable_evidence>    |
+      | rule        | result          | value         | evidence               |
+      | title       | passed          |               |                        |
+      | work_mode   | <mode_result>   | <work_mode>   | <work_mode_evidence>   |
+      | location    | <loc_result>    | <admits>      | <admits_evidence>      |
+      | stable      | <stable_result> | <stable>      | <stable_evidence>      |
+      | engineering | <eng_result>    | <engineering> | <engineering_evidence> |
 
     Examples:
-      | description                                     | work_mode | work_mode_evidence         | admits | admits_evidence               | stable | stable_evidence    | mode_result | loc_result | stable_result |
-      | Fully remote. Hiring across Europe. Full-time.  | remote    | Fully remote               | yes    | Hiring across Europe          | yes    | Full-time          | passed      | passed     | passed        |
-      | Fully remote, anywhere in the United States.    | remote    | Fully remote               | no     | anywhere in the United States |        |                    | passed      | failed     | unknown       |
-      | Based in our London office. Six-month contract. | onsite    | Based in our London office |        |                               | no     | Six-month contract | failed      | unknown    | failed        |
+      | description                                                          | work_mode | work_mode_evidence         | admits | admits_evidence               | stable | stable_evidence    | engineering | engineering_evidence | mode_result | loc_result | stable_result | eng_result |
+      | Fully remote. Hiring across Europe. Full-time. Ship production code. | remote    | Fully remote               | yes    | Hiring across Europe          | yes    | Full-time          | yes         | Ship production code | passed      | passed     | passed        | passed     |
+      | Fully remote, anywhere in the United States.                         | remote    | Fully remote               | no     | anywhere in the United States |        |                    |             |                      | passed      | failed     | unknown       | unknown    |
+      | Based in our London office. Six-month contract.                      | onsite    | Based in our London office |        |                               | no     | Six-month contract |             |                      | failed      | unknown    | failed        | unknown    |
+      | Fully remote. Run technical demos for prospects.                     | remote    | Fully remote               |        |                               |        |                    | no          | Run technical demos  | passed      | unknown    | unknown       | failed     |
+
+  Scenario Outline: The excluded rule says when the excluded keyword is in the main stack
+    Given I delete the profile "Backend"
+    And a search profile named "No Node" with:
+      | titles            | Backend Engineer |
+      | excluded_keywords | Senior, Node     |
+    And the job board "Remote OK" was imported with:
+      | title   | company | description                                       | url                    |
+      | <title> | Acme    | Our backend is <stack_evidence>, deployed on AWS. | https://remoteok.com/1 |
+    And the offer reader answers for "<title>":
+      | stack   | stack_evidence   |
+      | <stack> | <stack_evidence> |
+    And I read the offers
+    When I view the offer "<title>"
+    Then the filter reason is against the profile "No Node" with:
+      | rule        | result      | found            | evidence   |
+      | title       | passed      | Backend Engineer |            |
+      | excluded    | <ex_result> | <ex_found>       | <evidence> |
+      | stable      | unknown     |                  |            |
+      | engineering | unknown     |                  |            |
+
+    Examples:
+      | title                   | stack               | stack_evidence         | ex_result | ex_found | evidence               |
+      | Backend Engineer        | Python, Django      | Python and Django      | passed    |          |                        |
+      | Backend Engineer        | Node.js, TypeScript | Node.js and TypeScript | failed    | Node     | Node.js and TypeScript |
+      | Senior Backend Engineer | Python, Django      | Python and Django      | failed    | Senior   |                        |
 
   Scenario: The reading rules are unknown until the offer is read
     Given I delete the profile "Backend"
@@ -95,11 +127,12 @@ Feature: Filter reasons
       | Backend Engineer | Acme    | Based in our London office. | https://remoteok.com/1 |
     When I view the offer "Backend Engineer"
     Then the filter reason is against the profile "Remote in Spain" with:
-      | rule      | result  |
-      | title     | passed  |
-      | work_mode | unknown |
-      | location  | unknown |
-      | stable    | unknown |
+      | rule        | result  |
+      | title       | passed  |
+      | work_mode   | unknown |
+      | location    | unknown |
+      | stable      | unknown |
+      | engineering | unknown |
     And the filter reason says the offer has a description
 
   Scenario: An imported offer without a description says so
@@ -147,11 +180,12 @@ Feature: Filter reasons
     And I edit the profile "Backend" to have the keywords "Python"
     When I view the offer "Backend Engineer"
     Then the filter reason is against the profile "Backend" with:
-      | rule     | result  | found            | missing |
-      | title    | passed  | Backend Engineer |         |
-      | keywords | passed  | Python           |         |
-      | excluded | passed  |                  |         |
-      | stable   | unknown |                  |         |
+      | rule        | result  | found            | missing |
+      | title       | passed  | Backend Engineer |         |
+      | keywords    | passed  | Python           |         |
+      | excluded    | passed  |                  |         |
+      | stable      | unknown |                  |         |
+      | engineering | unknown |                  |         |
 
   # --- Near misses ---
 
@@ -256,9 +290,9 @@ Feature: Filter reasons
       | Data Engineer           | Umbrella | Go services       | https://remoteok.com/5 |
     When I list the near misses by failed rule, at most <shown> per rule
     Then the near miss groups are:
-      | rule     | offers | from        |
-      | keywords | 2      | <keywords>  |
-      | excluded | 1      | "Hooli"     |
+      | rule     | offers | from       |
+      | keywords | 2      | <keywords> |
+      | excluded | 1      | "Hooli"    |
 
     Examples:
       | shown | keywords            |

@@ -1,20 +1,29 @@
 Feature: Offer readings
   As a job seeker
-  I want the app to read what each offer says about remote work and where I can live
+  I want the app to read what each offer says about remote work, where I can live, the kind of role and its stack
   So that offers I cannot take are filtered even when their title fits
 
   A title says little: "Backend Engineer" may be remote from anywhere or three days a
-  week in an office. Reading the offers sends the title, the location its source
+  week in an office, and a "Forward Deployed Engineer" may write the product's code or
+  run pre-sales demos. Reading the offers sends the title, the location its source
   publishes (specs/inbox/offer_countries.feature) and the description of each pending
-  imported offer to the offer reader, which answers three things:
+  imported offer to the offer reader, which answers five things:
   - its work mode: remote, hybrid or onsite;
   - whether the job can be done living in a location: yes or no;
   - whether it is a stable job: yes for a full-time position with no end date, as an
     employee or as a contractor; no when it is paid by the task or by the hour,
-    temporary or part-time.
+    temporary or part-time;
+  - whether it is an engineering job: yes when the role is mainly building software,
+    in a product team or with customers; no when it is mainly sales, pre-sales,
+    customer support, consulting, or product or project management, whatever its
+    title says;
+  - its main stack: the languages and frameworks the role mainly works with, not every
+    tool the description names.
   Each answer comes with its evidence, the words of the title, the location or the
   description that say so. An answer whose evidence is in none of them, letter for
-  letter, is not kept. What none of them says stays unknown.
+  letter, is not kept, and a name of the main stack is only kept if its evidence says
+  it, as a whole word and ignoring case. What none of them says stays unknown, and an
+  unknown main stack is empty.
   Where the company is does not matter; where I can live does. A remote job whose title
   or location names a place, such as "Backend Engineer - UK", "US Remote" or "USA only",
   can only be done living there, unless the description opens it to other places.
@@ -32,10 +41,16 @@ Feature: Offer readings
   same, and what they say is kept and filters the same way. So that each reader's limits
   are respected, Groq reads up to 5 offers at a time and Claude Code up to 20, in a
   single request.
-  A reading adds three rules to fitting a profile, and only what is known can filter:
+  A reading adds four rules to fitting a profile and widens a fifth, and only what is
+  known can filter:
   - the offer's work mode, when known, is one of the profile's work modes, if it has any;
   - the offer, when known, can be done living in the profile's location, if it has one;
-  - the offer, when known, is a stable job, whatever the profile.
+  - the offer, when known, is a stable job, whatever the profile;
+  - the offer, when known, is an engineering job, whatever the profile;
+  - the profile's excluded keywords, which exclude an offer whose title has one as a
+    whole word (specs/inbox/filtered_offers.feature), also exclude it when a name of
+    its main stack has one as a whole word, ignoring case ("Node" excludes a main stack
+    of "Node.js, TypeScript").
   So an offer that has not been read, or whose description says nothing, is never
   filtered for it. Whether an offer is filtered still follows the current profiles.
   The location its source publishes can also rule an offer out, without reading it. When
@@ -108,6 +123,25 @@ Feature: Offer readings
       | Backend Engineer - UK       |          | Backend Engineer - UK |
       | US Remote: Backend Engineer | Remote   | US Remote             |
       | Backend Engineer            | USA only | USA only              |
+
+  Scenario Outline: The main stack keeps only the names its evidence says
+    Given the job board "Remote OK" was imported with:
+      | title            | company | description                                 | url                    |
+      | Backend Engineer | Acme    | Our services are written in Node.js and Go. | https://remoteok.com/1 |
+    And the offer reader answers for "Backend Engineer":
+      | stack   | stack_evidence   |
+      | <stack> | <stack_evidence> |
+    When I read the offers
+    Then the reading of "Backend Engineer" for "Spain" says:
+      | stack  | stack_evidence  |
+      | <kept> | <kept_evidence> |
+
+    Examples:
+      | stack                 | stack_evidence            | kept        | kept_evidence             |
+      | Node.js, Go           | written in Node.js and Go | Node.js, Go | written in Node.js and Go |
+      | node.js, Go, Postgres | written in Node.js and Go | node.js, Go | written in Node.js and Go |
+      | Python                | written in Python         |             |                           |
+      | Node.js, Go           |                           |             |                           |
 
   Scenario Outline: Each offer reader reads its own number of offers at a time
     Given the offer reader is <reader>
@@ -198,17 +232,74 @@ Feature: Offer readings
       | Part-time, 20 hours a week.         | no     | Part-time            | filtered     |
       | Python services.                    |        |                      | not filtered |
 
-  Scenario: An offer that is not a stable job is filtered for a profile that asks for nothing else
+  Scenario Outline: A read offer that is not an engineering job is filtered
+    Given the job board "Remote OK" was imported with:
+      | title                              | company | description   | url                    |
+      | Backend Engineer, Forward Deployed | Acme    | <description> | https://remoteok.com/1 |
+    And the offer reader answers for "Backend Engineer, Forward Deployed":
+      | engineering   | engineering_evidence   |
+      | <engineering> | <engineering_evidence> |
+    And I read the offers
+    When I view the offer "Backend Engineer, Forward Deployed"
+    Then the offer is <filtered>
+    And the reading of "Backend Engineer, Forward Deployed" for "Spain" says:
+      | engineering   | engineering_evidence   |
+      | <engineering> | <engineering_evidence> |
+
+    Examples:
+      | description                                               | engineering | engineering_evidence               | filtered     |
+      | Ship production code with our customers' engineers.       | yes         | Ship production code               | not filtered |
+      | Run technical demos for prospects and support the sales.  | no          | Run technical demos for prospects  | filtered     |
+      | Be the first line of support for our enterprise accounts. | no          | first line of support              | filtered     |
+      | Advise our clients as a consultant on their AI strategy.  | no          | Advise our clients as a consultant | filtered     |
+      | Own the product roadmap and write the specs.              | no          | Own the product roadmap            | filtered     |
+      | Python services.                                          |             |                                    | not filtered |
+
+  Scenario Outline: An offer that is not a stable or an engineering job is filtered for a profile that asks for nothing else
     Given I edit the profile "Backend" to have no location and no work modes
     And the job board "Remote OK" was imported with:
-      | title            | company | description                      | url                    |
-      | Backend Engineer | Acme    | Task based, up to $500 per task. | https://remoteok.com/1 |
+      | title            | company | description   | url                    |
+      | Backend Engineer | Acme    | <description> | https://remoteok.com/1 |
     And the offer reader answers for "Backend Engineer":
-      | stable | stable_evidence |
-      | no     | Task based      |
+      | stable   | stable_evidence   | engineering   | engineering_evidence   |
+      | <stable> | <stable_evidence> | <engineering> | <engineering_evidence> |
     And I read the offers
     When I view the offer "Backend Engineer"
     Then the offer is filtered
+
+    Examples:
+      | description                        | stable | stable_evidence | engineering | engineering_evidence |
+      | Task based, up to $500 per task.   | no     | Task based      |             |                      |
+      | Run technical demos for prospects. |        |                 | no          | Run technical demos  |
+
+  Scenario Outline: An excluded keyword in the main stack filters the offer
+    Given I edit the profile "Backend" to have the excluded keywords "<excluded>"
+    And the job board "Remote OK" was imported with:
+      | title            | company | description   | url                    |
+      | Backend Engineer | Acme    | <description> | https://remoteok.com/1 |
+    And the offer reader answers for "Backend Engineer":
+      | stack   | stack_evidence   |
+      | <stack> | <stack_evidence> |
+    And I read the offers
+    When I view the offer "Backend Engineer"
+    Then the offer is <filtered>
+
+    Examples:
+      | excluded   | description                                 | stack               | stack_evidence                        | filtered     |
+      | Node       | Our backend is Node.js and TypeScript.      | Node.js, TypeScript | Our backend is Node.js and TypeScript | filtered     |
+      | typescript | Our backend is Node.js and TypeScript.      | Node.js, TypeScript | Our backend is Node.js and TypeScript | filtered     |
+      | .NET       | You will build APIs in C# and .NET.         | C#, .NET            | APIs in C# and .NET                   | filtered     |
+      | Java       | Our frontend is JavaScript and Vue.         | JavaScript, Vue     | Our frontend is JavaScript and Vue    | not filtered |
+      | Node       | Python services, with some Node.js tooling. | Python              | Python services                       | not filtered |
+      | Node       | Python services.                            |                     |                                       | not filtered |
+
+  Scenario: An excluded keyword does not filter by the main stack of an offer that has not been read
+    Given I edit the profile "Backend" to have the excluded keywords "Node"
+    And the job board "Remote OK" was imported with:
+      | title            | company | description                            | url                    |
+      | Backend Engineer | Acme    | Our backend is Node.js and TypeScript. | https://remoteok.com/1 |
+    When I view the offer "Backend Engineer"
+    Then the offer is not filtered
 
   Scenario: An offer that has not been read is not filtered by its description
     Given the job board "Remote OK" was imported with:
@@ -326,19 +417,19 @@ Feature: Offer readings
     Then the offer is <filtered>
 
     Examples:
-      | location                           | filtered     |
-      | USA                                | filtered     |
-      | Canada,  USA                       | filtered     |
-      | United States or Canada            | filtered     |
-      | Germany / Netherlands              | filtered     |
-      | Germany,  Ireland,  Spain,  UK     | not filtered |
-      | spain                              | not filtered |
-      | Worldwide                          | not filtered |
-      | Anywhere                           | not filtered |
-      | Europe                             | not filtered |
-      | EMEA,  UK                          | not filtered |
-      | Remote - UK                        | not filtered |
-      | San Francisco, CA                  | not filtered |
+      | location                       | filtered     |
+      | USA                            | filtered     |
+      | Canada,  USA                   | filtered     |
+      | United States or Canada        | filtered     |
+      | Germany / Netherlands          | filtered     |
+      | Germany,  Ireland,  Spain,  UK | not filtered |
+      | spain                          | not filtered |
+      | Worldwide                      | not filtered |
+      | Anywhere                       | not filtered |
+      | Europe                         | not filtered |
+      | EMEA,  UK                      | not filtered |
+      | Remote - UK                    | not filtered |
+      | San Francisco, CA              | not filtered |
 
   Scenario: The published location is the evidence of the location rule
     Given the job board "Remote OK" was imported with:
@@ -346,11 +437,12 @@ Feature: Offer readings
       | Backend Engineer | Acme    | Fully remote. | https://remoteok.com/1 | Canada,  USA |
     When I view the offer "Backend Engineer"
     Then the filter reason is against the profile "Backend" with:
-      | rule      | result  | value | evidence     |
-      | title     | passed  |       |              |
-      | work_mode | unknown |       |              |
-      | location  | failed  | no    | Canada,  USA |
-      | stable    | unknown |       |              |
+      | rule        | result  | value | evidence     |
+      | title       | passed  |       |              |
+      | work_mode   | unknown |       |              |
+      | location    | failed  | no    | Canada,  USA |
+      | stable      | unknown |       |              |
+      | engineering | unknown |       |              |
 
   Scenario: An offer the published location rules out is not read for that location
     Given the job board "Remote OK" was imported with:
