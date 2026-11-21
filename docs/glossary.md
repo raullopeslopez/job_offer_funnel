@@ -104,7 +104,9 @@ Fuente única de nombres. El producto (specs, código, API, BD) usa solo la colu
 | Plantilla de la URL del RSS de un portal (con `{query}`, donde va cada título de los perfiles) | `rss_url_template` |
 | Importación de un portal | `import` |
 | Oferta filtrada (importada, pendiente y sin encaje con ningún perfil) | `filtered` |
-| Regla del encaje con un perfil | `rule`: `title` · `keywords` · `excluded` · `work_mode` · `location` · `stable` |
+| Regla del encaje con un perfil | `rule`: `title` · `keywords` · `excluded` · `work_mode` · `location` · `stable` · `engineering` |
+| Puesto de ingeniería (construir software; no ventas, preventa, soporte, consultoría ni gestión de producto) | `engineering` |
+| Stack principal de una oferta (lenguajes y frameworks con los que se trabaja sobre todo) | `stack` |
 | Resultado de una regla | `passed` · `unknown` (la lectura no lo dice o no hay lectura) · `failed` |
 | Perfil de referencia de una oferta (el que menos reglas incumple; empate: el primero por nombre) | `reference profile` |
 | Motivo del filtrado (resultado de cada regla frente al perfil de referencia) | `filter reason` |

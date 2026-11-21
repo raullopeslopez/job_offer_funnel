@@ -25,10 +25,11 @@ Feature: Near miss triages
 
   An OK near miss may carry a suggestion to relax the rule that filtered it, for its
   reference profile:
-  - excluded: stop excluding the word that filtered it;
+  - excluded: stop excluding the word that filtered it, found in its title or in its
+    main stack;
   - keywords: stop asking for the keywords it lacks (a profile asks for all of them);
   - work_mode: accept the work mode its reading says.
-  Location and stable are not relaxed: the offer can only be rescued. A suggestion is
+  Location, stable and engineering are not relaxed: the offer can only be rescued. A suggestion is
   kept only if it holds the rule for relaxing a criterion: against the imported offers,
   no offer I discarded would fit the profile with the change and does not fit it now.
   It says how many offers it would bring into Pending. Kept suggestions join the criteria suggestions

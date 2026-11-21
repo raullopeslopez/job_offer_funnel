@@ -94,12 +94,23 @@ def _read_for(location: str | None) -> ColumnElement[bool]:
 def _contradicted(terms: SearchTerms) -> ColumnElement[bool]:
     """Its reading for the profile's location says something the profile rules out. Only
     what is known counts: an offer not read, or a NULL answer, contradicts nothing."""
-    reasons = [OfferReadingRow.stable.is_(False)]
+    reasons: list[ColumnElement[bool]] = [
+        OfferReadingRow.stable.is_(False),
+        OfferReadingRow.engineering.is_(False),
+    ]
     if terms.work_modes:
         reasons.append(OfferReadingRow.work_mode.not_in(terms.work_modes))
     if terms.location is not None:
         reasons.append(OfferReadingRow.admits_location.is_(False))
+    reasons += [_in_stack(excluded) for excluded in terms.excluded_keywords]
     return exists().where(_read_for(terms.location), or_(*reasons))
+
+
+def _in_stack(word: str) -> ColumnElement[bool]:
+    """A name of the reading's main stack has the word as a whole word, ignoring case, as
+    domain.in_stack says."""
+    pattern = rf"(^|[^[:alnum:]_]){re.escape(word)}($|[^[:alnum:]_])"
+    return func.array_to_string(OfferReadingRow.stack, ", ").regexp_match(pattern, flags="i")
 
 
 def _texts(values: Collection[str]) -> ColumnElement[Any]:
@@ -191,6 +202,10 @@ def _reading(row: OfferReadingRow) -> Reading:
         admits_location_evidence=row.admits_location_evidence,
         stable=row.stable,
         stable_evidence=row.stable_evidence,
+        engineering=row.engineering,
+        engineering_evidence=row.engineering_evidence,
+        stack=tuple(row.stack),
+        stack_evidence=row.stack_evidence,
     )
 
 
@@ -697,6 +712,10 @@ class ReadingRepository:
                 admits_location_evidence=reading.admits_location_evidence,
                 stable=reading.stable,
                 stable_evidence=reading.stable_evidence,
+                engineering=reading.engineering,
+                engineering_evidence=reading.engineering_evidence,
+                stack=list(reading.stack),
+                stack_evidence=reading.stack_evidence,
             )
         )
         await self._session.flush()

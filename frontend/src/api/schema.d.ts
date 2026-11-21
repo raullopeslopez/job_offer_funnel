@@ -1403,7 +1403,7 @@ export interface components {
             near_miss: boolean;
             /**
              * Rules
-             * @description The rules the reference profile asks for: title and stable always, the others when the profile has some. The offer is filtered exactly when one fails.
+             * @description The rules the reference profile asks for: title, stable and engineering always, the others when the profile has some. The offer is filtered exactly when one fails.
              */
             rules: components["schemas"]["RuleRead"][];
             /**
@@ -2107,17 +2107,31 @@ export interface components {
             /** Admits Location Evidence */
             admits_location_evidence: string | null;
             /**
+             * Engineering
+             * @description Mainly building software, in a product team or with customers (true); mainly sales, pre-sales, customer support, consulting, or product or project management (false).
+             */
+            engineering: boolean | null;
+            /** Engineering Evidence */
+            engineering_evidence: string | null;
+            /**
              * Location
              * @description The search profile location it was read for; null for profiles without one.
              */
             location: string | null;
             /**
              * Stable
-             * @description Full-time with no end date, as an employee or a contractor (true); paid by the task or the hour, temporary or part-time (false).
+             * @description Full-time with no end date, as an employee or a contractor (true); freelance, paid by the task or the hour, temporary or part-time (false).
              */
             stable: boolean | null;
             /** Stable Evidence */
             stable_evidence: string | null;
+            /**
+             * Stack
+             * @description The languages and frameworks the role mainly works with, each said by `stack_evidence`; empty when unknown.
+             */
+            stack: string[];
+            /** Stack Evidence */
+            stack_evidence: string | null;
             work_mode: components["schemas"]["WorkMode"] | null;
             /** Work Mode Evidence */
             work_mode_evidence: string | null;
@@ -2133,17 +2147,17 @@ export interface components {
          * @description The rules an imported offer is checked against to fit a search profile.
          * @enum {string}
          */
-        Rule: "title" | "keywords" | "excluded" | "work_mode" | "location" | "stable";
+        Rule: "title" | "keywords" | "excluded" | "work_mode" | "location" | "stable" | "engineering";
         /** RuleRead */
         RuleRead: {
             /**
              * Evidence
-             * @description The sentence of the description behind `value`.
+             * @description The sentence of the description behind `value`; for excluded, the evidence of the main stack when the excluded keywords are found there.
              */
             evidence: string | null;
             /**
              * Found
-             * @description title: the profile's title in the offer's title; keywords: those found in the title or the description; excluded: the excluded keyword in the title.
+             * @description title: the profile's title in the offer's title; keywords: those found in the title or the description; excluded: the excluded keywords in the title or, when there are none, in the offer's main stack.
              */
             found: string[];
             /**
@@ -2155,7 +2169,7 @@ export interface components {
             rule: components["schemas"]["Rule"];
             /**
              * Value
-             * @description work_mode: the work mode read; location: whether it can be done living in the profile's location; stable: whether it is a stable job. Null when unknown.
+             * @description work_mode: the work mode read; location: whether it can be done living in the profile's location; stable: whether it is a stable job; engineering: whether it is an engineering job. Null when unknown.
              */
             value: components["schemas"]["WorkMode"] | boolean | null;
         };

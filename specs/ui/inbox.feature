@@ -21,16 +21,19 @@ Feature: Inbox screen
   Today, Yesterday and Earlier.
 
   An imported pending offer has a filter reason (specs/inbox/filter_reasons.feature),
-  and its strip has five cells, one per rule of its reference profile: Title,
-  Keywords, Mode, Location and Contract. The Title cell also holds the excluded
-  keywords. Each cell says the value that passed the rule, "Not stated" when it is
-  unknown, or, when the rule filtered the offer, the value against what the profile
-  asks, marked "filtered it". A cell whose rule the profile does not ask for says
-  "Any". Only filtered offers have a failed cell, so it only shows in "Maybe" and in
-  the filtered view. Without a description to read, Mode, Location and Contract merge
-  into one cell that says why. Offers with no filter reason (added by hand, discarded
-  or promoted) keep the strip of what their reading says of the mode, the location
-  and the contract (specs/inbox/offer_readings.feature).
+  and its strip has a cell per rule of its reference profile: Title, Keywords, Mode,
+  Location, Contract and Role, and then Stack. The Title cell also holds the excluded
+  keywords, found in the title or in the main stack of the offer. Stack is not a rule:
+  it says the main stack the reading of the offer says, whether it filters or not, or
+  "Not stated". Each cell says the
+  value that passed the rule, "Not stated" when it is unknown, or, when the rule
+  filtered the offer, the value against what the profile asks, marked "filtered it". A
+  cell whose rule the profile does not ask for says "Any". Only filtered offers have a
+  failed cell, so it only shows in "Maybe" and in the filtered view. Without a
+  description to read, Mode, Location, Contract, Role and Stack merge into one cell
+  that says why. Offers with no filter reason (added by hand, discarded
+  or promoted) keep the strip of what their reading says of the mode, the location,
+  the contract, the role and the stack (specs/inbox/offer_readings.feature).
 
   The near misses (a filtered offer whose title passes and that fails exactly one rule)
   are the filtered offers worth a second look: the last group of the pending view,
@@ -137,7 +140,7 @@ Feature: Inbox screen
   Scenario: An offer added by hand says it has nothing to read
     Given an offer for "Acme" as "Backend Engineer"
     When I open the inbox
-    Then the offer "Backend Engineer" shows "Mode, location and contract unknown: you added it by hand"
+    Then the offer "Backend Engineer" shows "Mode, location, contract, role and stack unknown: you added it by hand"
 
   # @component: only an import gives an offer a filter reason, only the external reader
   # makes readings, and the E2E tests cannot reach the feeds nor the reader.
@@ -145,13 +148,15 @@ Feature: Inbox screen
   @component
   Scenario: An offer without a filter reason shows what its reading says
     Given an offer for "Acme" as "Backend Engineer" that was discarded
-    And its reading says the mode is "hybrid", the location "Spain" is admitted and the contract is stable
+    And its reading says the mode is "hybrid", the location "Spain" is admitted, the contract is stable, the role is engineering and the stack is "Python, Django"
     When I open the inbox showing the "discarded" offers
     Then the offer "Backend Engineer" shows the cells:
-      | rule     | state | value    |
-      | Mode     | pass  | Hybrid   |
-      | Location | pass  | Spain    |
-      | Contract | pass  | Stable   |
+      | rule     | state | value          |
+      | Mode     | pass  | Hybrid         |
+      | Location | pass  | Spain          |
+      | Contract | pass  | Stable         |
+      | Role     | pass  | Engineering    |
+      | Stack    | pass  | Python, Django |
 
   @component
   Scenario Outline: Each cell of an imported offer says the value that passed its rule
@@ -165,14 +170,27 @@ Feature: Inbox screen
     Then the offer "Backend Engineer" shows "<shown>" in its "<cell>" cell, as "<state>"
 
     Examples:
-      | rule      | result  | value            | cell     | shown            | state   |
-      | title     | passed  | Backend Engineer | Title    | Backend Engineer | pass    |
-      | keywords  | passed  | Python, Django   | Keywords | Python, Django   | pass    |
-      | work_mode | passed  | remote           | Mode     | Remote           | pass    |
-      | work_mode | unknown |                  | Mode     | Not stated       | unknown |
-      | location  | passed  | yes              | Location | Spain            | pass    |
-      | stable    | passed  | yes              | Contract | Stable           | pass    |
-      | stable    | unknown |                  | Contract | Not stated       | unknown |
+      | rule        | result  | value            | cell     | shown            | state   |
+      | title       | passed  | Backend Engineer | Title    | Backend Engineer | pass    |
+      | keywords    | passed  | Python, Django   | Keywords | Python, Django   | pass    |
+      | work_mode   | passed  | remote           | Mode     | Remote           | pass    |
+      | work_mode   | unknown |                  | Mode     | Not stated       | unknown |
+      | location    | passed  | yes              | Location | Spain            | pass    |
+      | stable      | passed  | yes              | Contract | Stable           | pass    |
+      | stable      | unknown |                  | Contract | Not stated       | unknown |
+      | engineering | passed  | yes              | Role     | Engineering      | pass    |
+
+  @component
+  Scenario Outline: The Stack cell says the main stack the reading says
+    Given a search profile named "Backend" with the title "Backend Engineer"
+    And an imported offer for "Acme" as "Backend Engineer" that fits it, whose reading says the stack is "<stack>"
+    When I open the inbox
+    Then the offer "Backend Engineer" shows "<shown>" in its "Stack" cell, as "<state>"
+
+    Examples:
+      | stack          | shown          | state   |
+      | Python, Django | Python, Django | pass    |
+      |                | Not stated     | unknown |
 
   @component
   Scenario: A rule the profile does not ask for says "Any"
@@ -190,9 +208,9 @@ Feature: Inbox screen
     And the offer "Backend Engineer" shows "<merged>"
 
     Examples:
-      | method   | merged                                                                                  |
-      | an email | Mode, location and contract unknown: email alerts arrive without a description to read |
-      | a feed   | Mode, location and contract unknown: the offer has no description to read              |
+      | method   | merged                                                                                              |
+      | an email | Mode, location, contract, role and stack unknown: email alerts arrive without a description to read |
+      | a feed   | Mode, location, contract, role and stack unknown: the offer has no description to read              |
 
   # --- Filtered offers ---
   # @component: only an import makes filtered offers.
@@ -211,13 +229,15 @@ Feature: Inbox screen
     And the offer "<title>" shows the evidence "<evidence>"
 
     Examples:
-      | title                   | rule      | value  | evidence                 | cell     | shown                    |
-      | Senior Backend Engineer | excluded  | Senior |                          | Title    | "Senior", you exclude it |
-      | Backend Engineer        | keywords  | Django |                          | Keywords | Missing: Django          |
-      | Backend Engineer        | work_mode | hybrid | Two days in the office   | Mode     | Hybrid, you ask Remote   |
-      | Backend Engineer        | location  | no     | Only residents of the US | Location | Not from Spain           |
-      | Backend Engineer        | stable    | no     | A six-month contract     | Contract | Not stable               |
-      | Data Engineer           | title     |        |                          | Title    | No title of yours        |
+      | title                   | rule        | value  | evidence                 | cell     | shown                               |
+      | Senior Backend Engineer | excluded    | Senior |                          | Title    | "Senior", you exclude it            |
+      | Backend Engineer        | keywords    | Django |                          | Keywords | Missing: Django                     |
+      | Backend Engineer        | work_mode   | hybrid | Two days in the office   | Mode     | Hybrid, you ask Remote              |
+      | Backend Engineer        | location    | no     | Only residents of the US | Location | Not from Spain                      |
+      | Backend Engineer        | stable      | no     | A six-month contract     | Contract | Not stable                          |
+      | Backend Engineer        | engineering | no     | Run technical demos      | Role     | Not engineering                     |
+      | Backend Engineer        | excluded    | Node   | Node.js and TypeScript   | Title    | "Node" in its stack, you exclude it |
+      | Data Engineer           | title       |        |                          | Title    | No title of yours                   |
 
   @component
   Scenario: The pending view leaves out the filtered offers
@@ -261,9 +281,9 @@ Feature: Inbox screen
     And "<group>" no longer lists "Backend Engineer"
 
     Examples:
-      | view     | group                |
-      | pending  | Maybe                |
-      | filtered | A word you exclude   |
+      | view     | group              |
+      | pending  | Maybe              |
+      | filtered | A word you exclude |
 
   @component
   Scenario: The filtered view groups the near misses by the rule that filtered them
@@ -425,8 +445,8 @@ Feature: Inbox screen
     And it offers "Only discard this one" and "Discard and exclude “Lead”"
 
     Examples:
-      | leaving | promoted | discarded | effect                                                                           |
-      | 3       | 0        | 2         | Takes 3 offers out of Pending. Loses none you promoted. 2 you discarded had it. |
+      | leaving | promoted | discarded | effect                                                                                       |
+      | 3       | 0        | 2         | Takes 3 offers out of Pending. Loses none you promoted. 2 you discarded had it.              |
       | 1       | 1        | 0         | Takes 1 offer out of Pending. Would have filtered 1 you promoted. None you discarded had it. |
 
   @component
@@ -535,10 +555,10 @@ Feature: Inbox screen
       | why not | A part-time role. | Part-time, 20 hours a week |
     When I open the inbox
     Then the AI section of the offer "Backend Engineer Lead" says:
-      | AI: KO                                                  |
-      | High                                                    |
-      | Why yes: A backend role.                                |
-      | Why not: A part-time role.                              |
+      | AI: KO                     |
+      | High                       |
+      | Why yes: A backend role.   |
+      | Why not: A part-time role. |
     When I expand "View evidence"
     Then I see the quotes "Backend Engineer" and "Part-time, 20 hours a week"
 
@@ -614,8 +634,8 @@ Feature: Inbox screen
     And I see the message "Offer discarded"
 
     Examples:
-      | reason     | evidence                   | word                |
-      | contract   | Part-time, 20 hours a week | with no word        |
+      | reason     | evidence                   | word                 |
+      | contract   | Part-time, 20 hours a week | with no word         |
       | title_word | Lead                       | with the word "Lead" |
 
   @component
@@ -650,8 +670,8 @@ Feature: Inbox screen
     Then the offer "Senior Backend Engineer" says "<shown>"
 
     Examples:
-      | suggested                                                                 | shown                                                                                               |
-      |                                                                           | Why yes: Worth it.                                                                                  |
+      | suggested                                                                 | shown                                                                                              |
+      |                                                                           | Why yes: Worth it.                                                                                 |
       | , suggesting to stop excluding "Senior" in "Backend", bringing 1 offer in | Improve the filter: stop excluding “Senior” in Backend. Brings 1 into Pending, none you discarded. |
 
   @component

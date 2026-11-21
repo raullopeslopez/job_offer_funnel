@@ -53,6 +53,7 @@ def test_lists_only_the_rules_the_profile_asks_for() -> None:
     assert [(check.rule, check.result) for check in checks] == [
         (Rule.TITLE, PASSED),
         (Rule.STABLE, UNKNOWN),
+        (Rule.ENGINEERING, UNKNOWN),
     ]
 
 
@@ -69,20 +70,62 @@ def test_keywords_say_which_are_found_and_which_are_missing() -> None:
     assert keywords == RuleCheck(Rule.KEYWORDS, FAILED, found=["Python"], missing=["Django"])
 
 
+NO_NODE = SearchTerms(
+    titles=["Backend Engineer"], keywords=[], excluded_keywords=["Senior", "Node"]
+)
+NODE_STACK = Reading(stack=("Node.js", "TypeScript"), stack_evidence="Node.js and TypeScript")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("excluded_in_title", "reading", "expected"),
+    [
+        pytest.param(
+            [], Reading(stack=("Python",)), RuleCheck(Rule.EXCLUDED, PASSED, found=[]), id="none"
+        ),
+        pytest.param(
+            [],
+            NODE_STACK,
+            RuleCheck(Rule.EXCLUDED, FAILED, found=["Node"], evidence="Node.js and TypeScript"),
+            id="in-the-stack",
+        ),
+        pytest.param(
+            ["Senior"],
+            NODE_STACK,
+            RuleCheck(Rule.EXCLUDED, FAILED, found=["Senior"]),
+            id="the-title-first",
+        ),
+    ],
+)
+def test_the_excluded_rule_looks_in_the_title_and_then_in_the_stack(
+    excluded_in_title: list[str], reading: Reading, expected: RuleCheck
+) -> None:
+    # Arrange
+    hits = WordHits(titles=["Backend Engineer"], excluded=excluded_in_title)
+
+    # Act
+    excluded = check_rules(ProfileMatch(NO_NODE, hits, reading))[1]
+
+    # Assert
+    assert excluded == expected
+
+
 @pytest.mark.unit
 @pytest.mark.parametrize(
     ("reading", "expected"),
     [
-        pytest.param(None, [UNKNOWN, UNKNOWN, UNKNOWN], id="not-read"),
-        pytest.param(Reading(), [UNKNOWN, UNKNOWN, UNKNOWN], id="says-nothing"),
+        pytest.param(None, [UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN], id="not-read"),
+        pytest.param(Reading(), [UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN], id="says-nothing"),
         pytest.param(
-            Reading(work_mode=WorkMode.REMOTE, admits_location=True, stable=True),
-            [PASSED, PASSED, PASSED],
+            Reading(work_mode=WorkMode.REMOTE, admits_location=True, stable=True, engineering=True),
+            [PASSED, PASSED, PASSED, PASSED],
             id="all-pass",
         ),
         pytest.param(
-            Reading(work_mode=WorkMode.HYBRID, admits_location=False, stable=False),
-            [FAILED, FAILED, FAILED],
+            Reading(
+                work_mode=WorkMode.HYBRID, admits_location=False, stable=False, engineering=False
+            ),
+            [FAILED, FAILED, FAILED, FAILED],
             id="all-fail",
         ),
     ],

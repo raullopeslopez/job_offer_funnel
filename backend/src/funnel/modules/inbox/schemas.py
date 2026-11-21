@@ -129,9 +129,20 @@ class ReadingRead(BaseModel):
     admits_location_evidence: str | None
     stable: bool | None = Field(
         description="Full-time with no end date, as an employee or a contractor (true); "
-        "paid by the task or the hour, temporary or part-time (false)."
+        "freelance, paid by the task or the hour, temporary or part-time (false)."
     )
     stable_evidence: str | None
+    engineering: bool | None = Field(
+        description="Mainly building software, in a product team or with customers (true); "
+        "mainly sales, pre-sales, customer support, consulting, or product or project "
+        "management (false)."
+    )
+    engineering_evidence: str | None
+    stack: list[str] = Field(
+        description="The languages and frameworks the role mainly works with, each said by "
+        "`stack_evidence`; empty when unknown."
+    )
+    stack_evidence: str | None
 
 
 class ReadingBatchRead(BaseModel):
@@ -200,14 +211,19 @@ class RuleRead(BaseModel):
     result: RuleResult
     found: list[str] = Field(
         description="title: the profile's title in the offer's title; keywords: those found "
-        "in the title or the description; excluded: the excluded keyword in the title."
+        "in the title or the description; excluded: the excluded keywords in the title or, "
+        "when there are none, in the offer's main stack."
     )
     missing: list[str] = Field(description="keywords: those not found.")
     value: WorkMode | bool | None = Field(
         description="work_mode: the work mode read; location: whether it can be done living "
-        "in the profile's location; stable: whether it is a stable job. Null when unknown."
+        "in the profile's location; stable: whether it is a stable job; engineering: whether "
+        "it is an engineering job. Null when unknown."
     )
-    evidence: str | None = Field(description="The sentence of the description behind `value`.")
+    evidence: str | None = Field(
+        description="The sentence of the description behind `value`; for excluded, the "
+        "evidence of the main stack when the excluded keywords are found there."
+    )
 
 
 class FilterReasonRead(BaseModel):
@@ -222,7 +238,8 @@ class FilterReasonRead(BaseModel):
     )
     near_miss: bool = Field(description="Filtered, its title passes and it fails exactly one rule.")
     rules: list[RuleRead] = Field(
-        description="The rules the reference profile asks for: title and stable always, "
+        description="The rules the reference profile asks for: title, stable and "
+        "engineering always, "
         "the others when the profile has some. The offer is filtered exactly when one fails."
     )
 

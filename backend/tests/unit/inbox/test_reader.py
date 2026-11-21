@@ -20,6 +20,10 @@ ANSWER = {
     "admits_location_evidence": "Hiring across Europe",
     "stable": None,
     "stable_evidence": None,
+    "engineering": None,
+    "engineering_evidence": None,
+    "stack": ["Python", "Django"],
+    "stack_evidence": "Python and Django",
 }
 
 Handler = Callable[[httpx2.Request], httpx2.Response]
@@ -59,6 +63,8 @@ def test_reads_what_the_model_answers() -> None:
         work_mode_evidence="Fully remote",
         admits_location=True,
         admits_location_evidence="Hiring across Europe",
+        stack=("Python", "Django"),
+        stack_evidence="Python and Django",
     )
 
 
@@ -136,6 +142,14 @@ def test_sends_the_start_and_the_end_of_a_long_description() -> None:
         pytest.param(
             lambda _request: _completion(json.dumps(ANSWER | {"stable": "yes"})),
             id="answer-of-another-type",
+        ),
+        pytest.param(
+            lambda _request: _completion(json.dumps(ANSWER | {"stack": "Python"})),
+            id="stack-not-a-list",
+        ),
+        pytest.param(
+            lambda _request: _completion(json.dumps(ANSWER | {"stack": ["Python", 3]})),
+            id="stack-name-not-a-string",
         ),
     ],
 )

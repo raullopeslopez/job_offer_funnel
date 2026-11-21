@@ -1,11 +1,14 @@
 import pytest
 
 from funnel.modules.discovery.domain import WorkMode
-from funnel.modules.inbox.domain import OfferText, Reading, plain_text, supported
+from funnel.modules.inbox.domain import OfferText, Reading, in_stack, plain_text, supported
 
 pytestmark = pytest.mark.unit
 
-TEXT = "Fully remote. Hiring across Europe. Full-time, permanent position."
+TEXT = (
+    "Fully remote. Hiring across Europe. Full-time, permanent position. "
+    "Ship production code in Python and Django."
+)
 ANSWER = Reading(
     work_mode=WorkMode.REMOTE,
     work_mode_evidence="Fully remote",
@@ -13,6 +16,10 @@ ANSWER = Reading(
     admits_location_evidence="Hiring across Europe",
     stable=True,
     stable_evidence="Full-time, permanent",
+    engineering=True,
+    engineering_evidence="Ship production code",
+    stack=("Python", "Django"),
+    stack_evidence="in Python and Django",
 )
 
 
@@ -107,3 +114,46 @@ def test_the_location_answer_is_dropped_when_no_location_was_asked() -> None:
     # Assert
     assert (kept.admits_location, kept.admits_location_evidence) == (None, None)
     assert kept.work_mode is WorkMode.REMOTE
+
+
+@pytest.mark.parametrize(
+    ("stack", "evidence", "expected"),
+    [
+        pytest.param(
+            ("Python", "Django"), "in Python and Django", ("Python", "Django"), id="all-said"
+        ),
+        pytest.param(("python", "Go"), "in Python and Django", ("python",), id="only-those-said"),
+        pytest.param(("Py",), "in Python and Django", (), id="part-of-a-word"),
+        pytest.param(("Python",), "in Python and Rust", (), id="evidence-not-in-the-text"),
+        pytest.param(("Python",), None, (), id="no-evidence"),
+    ],
+)
+def test_the_main_stack_keeps_the_names_its_evidence_says(
+    stack: tuple[str, ...], evidence: str | None, expected: tuple[str, ...]
+) -> None:
+    # Arrange
+    answer = Reading(stack=stack, stack_evidence=evidence)
+
+    # Act
+    kept = supported(answer, TEXT, asked_location=True)
+
+    # Assert
+    assert kept.stack == expected
+    assert kept.stack_evidence == (evidence if expected else None)
+
+
+@pytest.mark.parametrize(
+    ("excluded", "stack", "expected"),
+    [
+        pytest.param(["Node"], ("Node.js", "TypeScript"), ["Node"], id="part-of-a-name"),
+        pytest.param(["typescript"], ("TypeScript",), ["typescript"], id="ignoring-case"),
+        pytest.param([".NET"], ("C#", ".NET"), [".NET"], id="symbols"),
+        pytest.param(["Java"], ("JavaScript",), [], id="not-a-whole-word"),
+        pytest.param(["Node"], (), [], id="unknown-stack"),
+    ],
+)
+def test_an_excluded_keyword_is_in_the_stack_as_a_whole_word(
+    excluded: list[str], stack: tuple[str, ...], expected: list[str]
+) -> None:
+    # Act / Assert
+    assert in_stack(excluded, stack) == expected

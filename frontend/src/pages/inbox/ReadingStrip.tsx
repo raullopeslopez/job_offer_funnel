@@ -1,7 +1,7 @@
 import type { components } from "../../api/schema";
 import { RuleCell } from "../../components/RuleCell";
 import { MergedRuleCell, RuleStrip } from "../../components/RuleStrip";
-import { MODES } from "./filterRules";
+import { MODES, stackCell } from "./filterRules";
 
 type Reading = components["schemas"]["ReadingRead"];
 
@@ -18,13 +18,19 @@ function contract({ stable }: Reading): string | null {
   return stable ? "Stable" : "Not stable";
 }
 
-// What the description of an offer says of the mode, the location and the contract.
+function role({ engineering }: Reading): string | null {
+  if (engineering === null) return null;
+  return engineering ? "Engineering" : "Not engineering";
+}
+
+// What the description of an offer says of the mode, the location, the contract, the role
+// and the stack.
 export function ReadingStrip({ readings }: { readings: Reading[] }) {
   const reading = readings[0];
   if (!reading) {
     return (
       <RuleStrip>
-        <MergedRuleCell span={3}>Not read yet, or no description to read</MergedRuleCell>
+        <MergedRuleCell span={5}>Not read yet, or no description to read</MergedRuleCell>
       </RuleStrip>
     );
   }
@@ -33,6 +39,8 @@ export function ReadingStrip({ readings }: { readings: Reading[] }) {
       <RuleCell label="Mode" {...cell(reading.work_mode && MODES[reading.work_mode])} />
       <RuleCell label="Location" {...cell(location(reading))} />
       <RuleCell label="Contract" {...cell(contract(reading))} />
+      <RuleCell label="Role" {...cell(role(reading))} />
+      <RuleCell {...stackCell(readings)} />
     </RuleStrip>
   );
 }

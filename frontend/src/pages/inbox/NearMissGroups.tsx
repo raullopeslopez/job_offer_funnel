@@ -110,7 +110,7 @@ type RowProps = { offer: Offer; context: OfferContext; actions: NearMissActions 
 function NearMissRow({ offer, context, actions }: RowProps) {
   const reason = offer.filter_reason;
   const profile = context.profiles.find((p) => p.id === reason?.search_profile_id);
-  const cells = reason ? ruleCells(reason, profile) : [];
+  const cells = reason ? ruleCells(reason, offer.readings, profile) : [];
   const failed = cells.find((cell) => cell.state === "failed");
   const sourceKind = offerSourceKind(offer, context.jobBoards);
   return (
