@@ -10,6 +10,21 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Let the AI discard the offers it is sure of: `POST /offers/triager-discards` discards
+  the pending offers that fit a profile and that the offer triager marked `ko` with
+  `high` confidence, with the reason and word of its suggested discard, or `none`. It
+  only happens when you ask for it ("Let AI discard {n}" in the inbox, with the count
+  before you click, from the new `discardable` of `GET /offers/triager`), and "Undo"
+  restores them all. Each such discard is marked as the AI's (`triager_discard`:
+  `discarded`, or `restored` once you restore it, after which the AI never discards that
+  offer again) and shows as "Discarded by AI" in the discarded view. It never counts as
+  your decision: your precision, the triager's precision and misses, the discards by
+  reason and by source, the criteria previews and suggestions, and what the triager is
+  told all leave it out. The offer quality says it apart: `precision_with_triager`,
+  `discarded_by_triager`, and how many of the AI's discards you restored
+  (`triager_discards`, `restored_triager_discards`, `triager_restores`), shown under the
+  Precision card and in "The AI triage".
+
 - The offer reader tells the kind of role and the main stack: each reading now says
   whether the offer is an engineering job (`engineering`: building software, in a product
   team or with customers; not sales, pre-sales, customer support, consulting or product
