@@ -45,6 +45,7 @@ class Rule(StrEnum):
     WORK_MODE = "work_mode"
     LOCATION = "location"
     STABLE = "stable"
+    ENGINEERING = "engineering"
 
 
 class RuleResult(StrEnum):
@@ -328,6 +329,11 @@ class Reading:
     admits_location_evidence: str | None = None
     stable: bool | None = None
     stable_evidence: str | None = None
+    engineering: bool | None = None
+    engineering_evidence: str | None = None
+    # The languages and frameworks the role mainly works with; empty when unknown.
+    stack: tuple[str, ...] = ()
+    stack_evidence: str | None = None
 
 
 def _quoted(evidence: str | None, text: str) -> str | None:
@@ -336,11 +342,21 @@ def _quoted(evidence: str | None, text: str) -> str | None:
     return quote if quote and quote in text else None
 
 
+def _stack(answer: Reading, text: str) -> tuple[tuple[str, ...], str | None]:
+    """The names of the main stack its evidence says as whole words, and that evidence."""
+    quote = _quoted(answer.stack_evidence, text)
+    names = [name.strip() for name in answer.stack if name.strip()]
+    kept = tuple(name for name in names if quote and is_title_word(name, quote))
+    return kept, quote if kept else None
+
+
 def supported(answer: Reading, text: str, *, asked_location: bool) -> Reading:
     """Only the answers whose evidence is in the text: the reader cannot make one up."""
     work_mode = _quoted(answer.work_mode_evidence, text)
     admits = _quoted(answer.admits_location_evidence, text) if asked_location else None
     stable = _quoted(answer.stable_evidence, text)
+    engineering = _quoted(answer.engineering_evidence, text)
+    stack, stack_evidence = _stack(answer, text)
     return Reading(
         work_mode=answer.work_mode if work_mode else None,
         work_mode_evidence=work_mode if answer.work_mode is not None else None,
@@ -348,6 +364,10 @@ def supported(answer: Reading, text: str, *, asked_location: bool) -> Reading:
         admits_location_evidence=admits if answer.admits_location is not None else None,
         stable=answer.stable if stable else None,
         stable_evidence=stable if answer.stable is not None else None,
+        engineering=answer.engineering if engineering else None,
+        engineering_evidence=engineering if answer.engineering is not None else None,
+        stack=stack,
+        stack_evidence=stack_evidence,
     )
 
 
@@ -378,10 +398,29 @@ def _result(passes: bool | None) -> RuleResult:
     return RuleResult.PASSED if passes else RuleResult.FAILED
 
 
+def in_stack(excluded: Iterable[str], stack: Sequence[str]) -> list[str]:
+    """The excluded keywords that a name of the main stack has as a whole word."""
+    return [word for word in excluded if any(is_title_word(word, name) for name in stack)]
+
+
+def _excluded(terms: SearchTerms, hits: WordHits, reading: Reading) -> RuleCheck:
+    """The excluded keywords in the title or, when there are none, in the main stack, with
+    the stack's evidence."""
+    if hits.excluded:
+        return RuleCheck(Rule.EXCLUDED, RuleResult.FAILED, found=hits.excluded)
+    found = in_stack(terms.excluded_keywords, reading.stack)
+    evidence = reading.stack_evidence if found else None
+    return RuleCheck(Rule.EXCLUDED, _result(not found), found=found, evidence=evidence)
+
+
+def _read_fact(rule: Rule, value: bool | None, evidence: str | None) -> RuleCheck:
+    return RuleCheck(rule, _result(value), value=value, evidence=evidence)
+
+
 def check_rules(match: ProfileMatch) -> list[RuleCheck]:
-    """The rules the profile asks for: title and stable always, the others when it has
-    some. Only what the reading says can fail a reading rule, and the published location
-    the location rule."""
+    """The rules the profile asks for: title, stable and engineering always, the others
+    when it has some. Only what the reading says can fail a reading rule, and the
+    published location the location rule."""
     terms, hits, reading = match.terms, match.hits, match.reading or Reading()
     checks = [RuleCheck(Rule.TITLE, _result(bool(hits.titles)), found=hits.titles)]
     if terms.keywords:
@@ -390,7 +429,7 @@ def check_rules(match: ProfileMatch) -> list[RuleCheck]:
             RuleCheck(Rule.KEYWORDS, _result(not missing), found=hits.keywords, missing=missing)
         )
     if terms.excluded_keywords:
-        checks.append(RuleCheck(Rule.EXCLUDED, _result(not hits.excluded), found=hits.excluded))
+        checks.append(_excluded(terms, hits, reading))
     if terms.work_modes:
         mode = reading.work_mode
         checks.append(
@@ -406,23 +445,11 @@ def check_rules(match: ProfileMatch) -> list[RuleCheck]:
             RuleCheck(Rule.LOCATION, RuleResult.FAILED, value=False, evidence=match.location)
         )
     elif terms.location is not None:
-        admits = reading.admits_location
         checks.append(
-            RuleCheck(
-                Rule.LOCATION,
-                _result(admits),
-                value=admits,
-                evidence=reading.admits_location_evidence,
-            )
+            _read_fact(Rule.LOCATION, reading.admits_location, reading.admits_location_evidence)
         )
-    checks.append(
-        RuleCheck(
-            Rule.STABLE,
-            _result(reading.stable),
-            value=reading.stable,
-            evidence=reading.stable_evidence,
-        )
-    )
+    checks.append(_read_fact(Rule.STABLE, reading.stable, reading.stable_evidence))
+    checks.append(_read_fact(Rule.ENGINEERING, reading.engineering, reading.engineering_evidence))
     return checks
 
 
@@ -675,7 +702,7 @@ class Relaxing:
 
 def relaxing(check: RuleCheck) -> Relaxing | None:
     """Stop excluding the word that filtered it, stop asking for the keyword it lacks, or
-    accept its work mode. Location and stable are not relaxed."""
+    accept its work mode. Location, stable and engineering are not relaxed."""
     if check.rule is Rule.EXCLUDED and check.found:
         return Relaxing(ProfileRule.EXCLUDED_KEYWORDS, check.found[0])
     if check.rule is Rule.KEYWORDS and check.missing:

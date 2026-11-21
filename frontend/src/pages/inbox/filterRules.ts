@@ -2,6 +2,7 @@ import type { components } from "../../api/schema";
 import type { RuleState } from "../../components/RuleCell";
 
 type FilterReason = components["schemas"]["FilterReasonRead"];
+type Reading = components["schemas"]["ReadingRead"];
 type RuleRead = components["schemas"]["RuleRead"];
 type Rule = components["schemas"]["Rule"];
 type WorkMode = components["schemas"]["WorkMode"];
@@ -23,6 +24,7 @@ const LABELS: Record<ReadRule, string> = {
   work_mode: "Mode",
   location: "Location",
   stable: "Contract",
+  engineering: "Role",
 };
 
 const mode = (value: RuleRead["value"]) => MODES[value as WorkMode] ?? "—";
@@ -41,12 +43,15 @@ function ruleValue({ rule, result, found, missing, value }: RuleRead, profile?: 
       return passed
         ? (profile?.location ?? "Yes")
         : `Not from ${profile?.location ?? "your location"}`;
+    case "engineering":
+      return passed ? "Engineering" : "Not engineering";
     default:
       return passed ? "Stable" : "Not stable";
   }
 }
 
-// The title and the excluded keywords share the Title cell: both are about the words of the title.
+// The title and the excluded keywords share the Title cell: both are about the words of the
+// title, and an excluded keyword found in the main stack comes with the stack's evidence.
 function titleCell(rules: RuleRead[]): Cell {
   const title = rules.find((r) => r.rule === "title");
   const excluded = rules.find((r) => r.rule === "excluded");
@@ -54,7 +59,13 @@ function titleCell(rules: RuleRead[]): Cell {
     return { label: "Title", state: "failed", value: "No title of yours" };
   }
   if (excluded?.result === "failed") {
-    return { label: "Title", state: "failed", value: `"${excluded.found[0]}", you exclude it` };
+    const where = excluded.evidence ? " in its stack" : "";
+    return {
+      label: "Title",
+      state: "failed",
+      value: `"${excluded.found[0]}"${where}, you exclude it`,
+      evidence: excluded.evidence,
+    };
   }
   return { label: "Title", state: "pass", value: title?.found[0] };
 }
@@ -73,11 +84,25 @@ function ruleCell(name: ReadRule, rules: RuleRead[], profile?: SearchProfile): C
   };
 }
 
-/** The five cells of an offer's filter reason: Title, Keywords, Mode, Location, Contract. */
-export function ruleCells(reason: FilterReason, profile?: SearchProfile): Cell[] {
+/** The main stack its readings say: not a rule, so its cell never filters. */
+export function stackCell(readings: Reading[]): Cell {
+  const stack = readings.find((reading) => reading.stack.length > 0)?.stack ?? [];
+  return stack.length > 0
+    ? { label: "Stack", state: "pass", value: stack.join(", ") }
+    : { label: "Stack", state: "unknown" };
+}
+
+/** The cells of an offer's filter reason: Title, Keywords, Mode, Location, Contract, Role,
+ * and then the Stack its readings say. */
+export function ruleCells(
+  reason: FilterReason,
+  readings: Reading[],
+  profile?: SearchProfile,
+): Cell[] {
   return [
     titleCell(reason.rules),
     ...(Object.keys(LABELS) as ReadRule[]).map((name) => ruleCell(name, reason.rules, profile)),
+    stackCell(readings),
   ];
 }
 
@@ -88,6 +113,7 @@ export const NEAR_MISS_GROUPS: { rule: Exclude<Rule, "title">; label: string }[]
   { rule: "work_mode", label: "Mode" },
   { rule: "location", label: "Location" },
   { rule: "stable", label: "Not stable" },
+  { rule: "engineering", label: "Not engineering" },
 ];
 
 // What a failed rule is about, to break a group down: the word or the value behind it.

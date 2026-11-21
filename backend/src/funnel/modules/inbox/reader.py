@@ -45,8 +45,17 @@ requirements. But a remote job whose title or location names a place, in any spe
 living there: answer false if that place excludes the given location, quoting it, unless \
 the description opens the job to other places.
 - stable: true if it is a full-time position with no end date, as an employee or as a \
-contractor; false if it is paid by the task or by the hour, temporary, or part-time. \
-Weekly hours or a salary alone say nothing: null."""
+contractor; false if it is freelance, paid by the task or by the hour (an hourly or per \
+task rate makes it false even if it says full-time), temporary, or part-time. Weekly \
+hours or a salary alone say nothing: null.
+- engineering: true if the role is mainly building software (writing and shipping code), \
+in a product team or with customers, as a forward deployed engineer who builds can be; \
+false if it is mainly sales, pre-sales, solutions or sales engineering, customer support, \
+consulting, or product or project management, whatever its title says.
+- stack: the programming languages and frameworks the role mainly works with, at most \
+five, each written as in the evidence; not every tool, cloud or database the posting \
+names, and not those it only mentions in passing or as a plus. The evidence is one \
+excerpt that names all of them. Empty and null evidence if it names none."""
 
 
 def _nullable(json_type: str, **keywords: Any) -> dict[str, Any]:
@@ -59,6 +68,10 @@ def _schema(asks_location: bool) -> dict[str, Any]:
         "work_mode_evidence": _nullable("string"),
         "stable": _nullable("boolean"),
         "stable_evidence": _nullable("string"),
+        "engineering": _nullable("boolean"),
+        "engineering_evidence": _nullable("string"),
+        "stack": {"type": "array", "items": {"type": "string"}},
+        "stack_evidence": _nullable("string"),
     }
     if asks_location:
         properties |= {
@@ -106,7 +119,18 @@ def _reading(answer: dict[str, Any]) -> Reading:
         admits_location_evidence=_optional(answer.get("admits_location_evidence"), str),
         stable=_optional(answer.get("stable"), bool),
         stable_evidence=_optional(answer.get("stable_evidence"), str),
+        engineering=_optional(answer.get("engineering"), bool),
+        engineering_evidence=_optional(answer.get("engineering_evidence"), str),
+        stack=_names(answer.get("stack")),
+        stack_evidence=_optional(answer.get("stack_evidence"), str),
     )
+
+
+def _names(value: object) -> tuple[str, ...]:
+    names = _optional(value, list) or []
+    if not all(isinstance(name, str) for name in names):
+        raise TypeError(f"expected a list of strings, got {value!r}")
+    return tuple(names)
 
 
 # An offer to read and the location to ask about, if any.

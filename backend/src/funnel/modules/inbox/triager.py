@@ -166,8 +166,12 @@ def _filtered_by(check: RuleCheck | None) -> str:
     """The rule that stopped a near miss, with what explains it."""
     if check is None:
         return ""
-    if check.rule is Rule.EXCLUDED:
+    if check.rule is Rule.EXCLUDED and check.evidence:
+        why = f'its main stack has the excluded word {_listed(check.found)} ("{check.evidence}")'
+    elif check.rule is Rule.EXCLUDED:
         why = f"it has the excluded word {_listed(check.found)}"
+    elif check.rule is Rule.ENGINEERING:
+        why = f'it is not an engineering job ("{check.evidence}")'
     elif check.rule is Rule.KEYWORDS:
         why = f"it lacks the keywords {_listed(check.missing)}"
     elif check.rule is Rule.LOCATION:

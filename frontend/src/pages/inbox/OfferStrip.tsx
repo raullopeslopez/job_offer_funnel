@@ -8,7 +8,9 @@ import type { Offer } from "./types";
 
 type Props = { offer: Offer; sourceKind: Source; profiles: SearchProfile[] };
 
-const UNKNOWN = "Mode, location and contract unknown";
+const UNKNOWN = "Mode, location, contract, role and stack unknown";
+// The cells a reading fills: Mode, Location, Contract, Role and Stack.
+const READ_CELLS = 5;
 
 const NOTHING_TO_READ: Partial<Record<Source, string>> = {
   email: `${UNKNOWN}: email alerts arrive without a description to read`,
@@ -29,7 +31,7 @@ export function Evidence({ cells }: { cells: Cell[] }) {
   );
 }
 
-// The strip of an offer: its five rules when it has a filter reason, or else what its
+// The strip of an offer: its rules and stack when it has a filter reason, or else what its
 // reading says (specs/ui/inbox.feature).
 export function OfferStrip({ offer, sourceKind, profiles }: Props) {
   const reason = offer.filter_reason;
@@ -37,14 +39,14 @@ export function OfferStrip({ offer, sourceKind, profiles }: Props) {
     if (sourceKind === "manual" && offer.readings.length === 0) {
       return (
         <RuleStrip>
-          <MergedRuleCell span={3}>{nothingToRead("manual")}</MergedRuleCell>
+          <MergedRuleCell span={READ_CELLS}>{nothingToRead("manual")}</MergedRuleCell>
         </RuleStrip>
       );
     }
     return <ReadingStrip readings={offer.readings} />;
   }
   const profile = profiles.find((p) => p.id === reason.search_profile_id);
-  const cells = ruleCells(reason, profile);
+  const cells = ruleCells(reason, offer.readings, profile);
   const shown = reason.has_description ? cells : cells.slice(0, 2);
   return (
     <>
@@ -53,7 +55,7 @@ export function OfferStrip({ offer, sourceKind, profiles }: Props) {
           <RuleCell key={cell.label} label={cell.label} value={cell.value} state={cell.state} />
         ))}
         {!reason.has_description && (
-          <MergedRuleCell span={3}>{nothingToRead(sourceKind)}</MergedRuleCell>
+          <MergedRuleCell span={READ_CELLS}>{nothingToRead(sourceKind)}</MergedRuleCell>
         )}
       </RuleStrip>
       <Evidence cells={cells} />

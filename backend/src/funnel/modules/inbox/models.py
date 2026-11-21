@@ -191,6 +191,11 @@ class OfferReadingRow(Base):
     admits_location_evidence: Mapped[str | None] = mapped_column(Text)
     stable: Mapped[bool | None] = mapped_column(Boolean)
     stable_evidence: Mapped[str | None] = mapped_column(Text)
+    engineering: Mapped[bool | None] = mapped_column(Boolean)
+    engineering_evidence: Mapped[str | None] = mapped_column(Text)
+    # Empty when the description does not say it.
+    stack: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default=text("'{}'"))
+    stack_evidence: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

@@ -10,6 +10,19 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- The offer reader tells the kind of role and the main stack: each reading now says
+  whether the offer is an engineering job (`engineering`: building software, in a product
+  team or with customers; not sales, pre-sales, customer support, consulting or product
+  management, whatever the title says) and its main stack (`stack`: the languages and
+  frameworks the role mainly works with), each with its evidence, like the other answers.
+  An offer read as not an engineering job is filtered by the new rule `engineering`,
+  whatever the profile, so a Forward Deployed Engineer doing pre-sales stays out and one
+  writing code fits. A profile's excluded keywords now also exclude an offer whose main
+  stack has one as a whole word ("Node" excludes "Node.js, TypeScript"; "Java" does not
+  exclude "JavaScript"), with the stack's evidence in the `excluded` rule. The inbox strip
+  gains a "Role" cell and a "Stack" cell that shows the stack read even when it filters
+  nothing. Readings made before say neither, so they filter nothing new until read again.
+
 - Near misses by rule in one request: `GET /offers/near-misses` gives the near misses
   grouped by the one rule they fail, in the order of the rules, each group with how many
   offers fail it and its most recent ones (`limit`, 1 to 100 per rule, 20 by default).
@@ -274,6 +287,8 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- An offer is not a stable job when it is freelance or paid by the hour or by the task,
+  even if it says full-time: the offer reader is told so.
 - Inbox on a phone: the title of an offer stays readable while discarding it, its words
   show under "A word in the title" and choosing one discards (or, with a profile, proposes
   excluding it) in one tap; the other reasons are full-width rows that say what they refer

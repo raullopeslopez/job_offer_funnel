@@ -82,6 +82,10 @@ const reading = (fields: Partial<Reading>): Reading => ({
   location: null,
   stable: null,
   stable_evidence: null,
+  engineering: null,
+  engineering_evidence: null,
+  stack: [],
+  stack_evidence: null,
   work_mode: null,
   work_mode_evidence: null,
   ...fields,
@@ -108,6 +112,7 @@ function rulesWith(...replaced: RuleRead[]): RuleRead[] {
     rule("work_mode", "passed", { value: "remote" }),
     rule("location", "passed", { value: true }),
     rule("stable", "passed", { value: true }),
+    rule("engineering", "passed", { value: true }),
   ];
   return passing.map((r) => replaced.find((x) => x.rule === r.rule) ?? r);
 }
@@ -185,7 +190,14 @@ function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] 
     http.get("/api/v1/offers/near-misses", ({ request }) => {
       const limit = Number(new URL(request.url).searchParams.get("limit") ?? 20);
       const nearMisses = offers.filter((o) => o.status === "pending" && o.filter_reason?.near_miss);
-      const rules: Rule[] = ["keywords", "excluded", "work_mode", "location", "stable"];
+      const rules: Rule[] = [
+        "keywords",
+        "excluded",
+        "work_mode",
+        "location",
+        "stable",
+        "engineering",
+      ];
       const groups = rules
         .map((rule) => ({ rule, offers: nearMisses.filter((o) => isFailing(o, rule)) }))
         .filter(({ offers }) => offers.length > 0)
@@ -419,6 +431,9 @@ describe("InboxPage reading strip", () => {
     [{ admits_location: false, location: "Spain" }, "Not from Spain"],
     [{ stable: true }, "Stable"],
     [{ stable: false }, "Not stable"],
+    [{ engineering: true }, "Engineering"],
+    [{ engineering: false }, "Not engineering"],
+    [{ stack: ["Python", "Django"] }, "Python, Django"],
   ])("a reading %o shows %s", async (fields, shown) => {
     // Arrange
     inboxWith([offer("Backend Engineer", { status: "discarded", readings: [reading(fields)] })]);
@@ -446,6 +461,7 @@ describe("InboxPage rule strip", () => {
     [rule("location", "passed", { value: true }), "Location", "Spain", "pass"],
     [rule("stable", "passed", { value: true }), "Contract", "Stable", "pass"],
     [rule("stable", "unknown"), "Contract", "Not stated", "unknown"],
+    [rule("engineering", "passed", { value: true }), "Role", "Engineering", "pass"],
   ])("a %o rule shows in %s as %s", async (given, label, shown, state) => {
     // Arrange
     inboxWith([imported("Backend Engineer", rulesWith(given))]);
@@ -487,9 +503,12 @@ describe("InboxPage rule strip", () => {
   it.each([
     [
       LINKEDIN_ID,
-      "Mode, location and contract unknown: email alerts arrive without a description to read",
+      "Mode, location, contract, role and stack unknown: email alerts arrive without a description to read",
     ],
-    [REMOTE_OK_ID, "Mode, location and contract unknown: the offer has no description to read"],
+    [
+      REMOTE_OK_ID,
+      "Mode, location, contract, role and stack unknown: the offer has no description to read",
+    ],
   ])("an offer of %s without a description merges its reading rules", async (boardId, merged) => {
     // Arrange
     inboxWith(
@@ -522,8 +541,33 @@ describe("InboxPage rule strip", () => {
     // Assert
     const piece = await screen.findByRole("article", { name: "Backend Engineer" });
     expect(
-      within(piece).getByText("Mode, location and contract unknown: you added it by hand"),
+      within(piece).getByText(
+        "Mode, location, contract, role and stack unknown: you added it by hand",
+      ),
     ).toBeInTheDocument();
+  });
+});
+
+describe("InboxPage stack cell", () => {
+  it.each([
+    [["Python", "Django"], "Python, Django", "pass"],
+    [[], "Not stated", "unknown"],
+  ])("a reading with the stack %o shows %s", async (stack, shown, state) => {
+    // Arrange
+    inboxWith([
+      imported("Backend Engineer", rulesWith(), {
+        readings: [reading({ stack, location: "Spain" })],
+      }),
+    ]);
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const cell = cellOf(piece, "Stack");
+    expect(cell).toHaveTextContent(shown);
+    expect(cell).toHaveAttribute("data-state", state);
   });
 });
 
@@ -558,6 +602,18 @@ describe("InboxPage failed cells", () => {
       rule("stable", "failed", { value: false, evidence: "A six-month contract" }),
       "Contract",
       "Not stable",
+    ],
+    [
+      "Backend Engineer",
+      rule("engineering", "failed", { value: false, evidence: "Run technical demos" }),
+      "Role",
+      "Not engineering",
+    ],
+    [
+      "Backend Engineer",
+      rule("excluded", "failed", { found: ["Node"], evidence: "Node.js and TypeScript" }),
+      "Title",
+      '"Node" in its stack, you exclude it',
     ],
     ["Data Engineer", rule("title", "failed"), "Title", "No title of yours"],
   ])("%s failing %o shows in %s %s", async (title, failing, label, shown) => {
