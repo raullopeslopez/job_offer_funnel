@@ -364,6 +364,13 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- The triager no longer marks near misses OK just for the role: it judges the rule that
+  filtered them, and is told each offer's published location and each profile's location.
+  A near miss is OK (to rescue) only when its why yes quotes, letter for letter, a sentence
+  of at least four words of its description that rebuts that rule (for the location rule,
+  one saying it can be done from the profile's location); a quote of its title or its
+  published location does not count. Otherwise it is kept as KO, rightly filtered, and
+  suggests no rule to relax.
 - Listing the pending offers that are near misses, or that fail a rule, no longer fails
   when there are tens of thousands of them.
 - Faster inbox reads: listing and counting offers no longer waits about two seconds on

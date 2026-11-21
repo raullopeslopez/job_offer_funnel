@@ -44,11 +44,11 @@ Feature: Near miss triages
       | keywords          | Python           |
       | excluded_keywords | Senior           |
     And the job board "Remote OK" was imported with:
-      | title                   | company | description               | url                    |
-      | Backend Engineer        | Acme    | Python services.          | https://remoteok.com/1 |
-      | Backend Engineer        | Globex  | Go services for payments. | https://remoteok.com/2 |
-      | Senior Backend Engineer | Initech | Python platform.          | https://remoteok.com/3 |
-      | Data Engineer           | Hooli   | Spark pipelines.          | https://remoteok.com/4 |
+      | title                   | company | description                   | url                    |
+      | Backend Engineer        | Acme    | Python services.              | https://remoteok.com/1 |
+      | Backend Engineer        | Globex  | Go services for payments.     | https://remoteok.com/2 |
+      | Senior Backend Engineer | Initech | Python platform for payments. | https://remoteok.com/3 |
+      | Data Engineer           | Hooli   | Spark pipelines.              | https://remoteok.com/4 |
 
   # --- Which offers are triaged ---
 
@@ -135,9 +135,9 @@ Feature: Near miss triages
     And it would bring 1 offer into Pending
 
     Examples:
-      | company | quote                     | change                                  |
-      | Initech | Python platform.          | to stop excluding "Senior"              |
-      | Globex  | Go services for payments. | to stop asking for the keyword "Python" |
+      | company | quote                         | change                                  |
+      | Initech | Python platform for payments. | to stop excluding "Senior"              |
+      | Globex  | Go services for payments.     | to stop asking for the keyword "Python" |
 
   Scenario: An OK near miss filtered by its work mode suggests accepting that work mode
     Given a search profile named "Remote" with:
@@ -153,7 +153,7 @@ Feature: Near miss triages
 
   Scenario: A suggestion that would make an offer I discarded fit is not kept
     Given I discarded an imported offer as "Senior Backend Engineer" with the description "Python services."
-    And the offer triager says the offer of "Initech" is OK because "Worth it.", quoting "Python platform."
+    And the offer triager says the offer of "Initech" is OK because "Worth it.", quoting "Python platform for payments."
     When I triage the offers
     Then the criteria suggestions include nothing from the offer of "Initech"
 
@@ -163,13 +163,13 @@ Feature: Near miss triages
     Then the criteria suggestions include nothing from the offer of "Initech"
 
   Scenario: "Not now" hides a suggestion to relax a rule
-    Given the offer triager says the offer of "Initech" is OK because "Worth it.", quoting "Python platform."
+    Given the offer triager says the offer of "Initech" is OK because "Worth it.", quoting "Python platform for payments."
     And I triaged the offers
     When I say "Not now" to the suggestion to stop excluding "Senior" in "Backend"
     Then the criteria suggestions include nothing from the offer of "Initech"
 
   Scenario: Accepting a suggestion is a criteria change made from that near miss
-    Given the offer triager says the offer of "Initech" is OK because "Worth it.", quoting "Python platform."
+    Given the offer triager says the offer of "Initech" is OK because "Worth it.", quoting "Python platform for payments."
     And I triaged the offers
     When I accept the suggestion carried by the offer of "Initech"
     Then the profile "Backend" has no excluded_keywords

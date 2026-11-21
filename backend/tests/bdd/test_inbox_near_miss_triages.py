@@ -350,7 +350,9 @@ def then_told_rules(
 
 
 @then(
-    parsers.parse('it was told that "{company}" was filtered by "{rule}" and is published in "{where}"')
+    parsers.parse(
+        'it was told that "{company}" was filtered by "{rule}" and is published in "{where}"'
+    )
 )
 def then_told_location(state: ScenarioState, company: str, rule: str, where: str) -> None:
     offers, _ = state.last_request

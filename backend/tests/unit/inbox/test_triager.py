@@ -14,6 +14,9 @@ from funnel.modules.inbox.domain import (
     OfferStatus,
     OfferText,
     OfferTriagerError,
+    Rule,
+    RuleCheck,
+    RuleResult,
     TriageAnswer,
     TriageContext,
     TriageMistake,
@@ -30,7 +33,7 @@ OFFERS = [
     OfferText("Backend Engineer", "Globex", "Go services."),
 ]
 CONTEXT = TriageContext(
-    profiles=[SearchTerms(["Backend Engineer"], [], ["Senior"], name="Backend")],
+    profiles=[SearchTerms(["Backend Engineer"], [], ["Senior"], "Spain", name="Backend")],
     decisions=[
         Decision("Data Engineer", OfferStatus.DISCARDED, DiscardReason.STACK),
         Decision("Backend Engineer Lead", OfferStatus.PROMOTED),
@@ -139,6 +142,21 @@ def test_tells_each_decision_with_its_reason_apart_from_the_title() -> None:
     question = body["messages"][-1]["content"]
     assert '- discarded (reason: stack): "Data Engineer"' in question
     assert '- promoted: "Backend Engineer Lead"' in question
+
+
+def test_tells_where_a_near_miss_is_published_and_the_location_its_profile_asks_for() -> None:
+    # Arrange
+    check = RuleCheck(Rule.LOCATION, RuleResult.FAILED, value=False, evidence="USA")
+    offers = [OfferText("Backend Engineer", "Acme", "Java APIs.", check, "USA")]
+
+    # Act
+    _request, body = _sent(offers)
+
+    # Assert
+    question = body["messages"][-1]["content"]
+    assert "location Spain" in question
+    assert "Location: USA" in question
+    assert "Near miss, filtered by location: it is not open to the profile's location" in question
 
 
 def test_sends_the_start_and_the_end_of_a_long_description() -> None:
