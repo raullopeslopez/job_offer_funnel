@@ -40,9 +40,9 @@ frontend/src/
 - Buscar por rol, etiqueta o texto visible, nunca por clases ni `data-testid` salvo que no haya otra forma.
 - MSW con `onUnhandledFrame: "error"`: cada test declara con `server.use` las peticiones que espera. `localStorage` se limpia tras cada test.
 - **E2E** (Playwright + playwright-bdd): ejecuta `specs/ui/*.feature` en Chromium. Steps en `frontend/e2e/*.steps.ts`; `Given`/`When`/`Then` y el fixture `api` salen de `e2e/support/fixtures.ts`.
-  - Contra la API real de `backend/tests/support/e2e_server.py` (Postgres de testcontainers, token `e2e-token`, puerto 8001) y un Vite en el 5174 con el proxy hacia ella. Playwright arranca los dos.
+  - Contra la API real de `backend/tests/support/e2e_server.py` (Postgres de testcontainers, token `e2e-token`) y un Vite con el proxy hacia ella. Playwright arranca los dos.
   - Cada escenario empieza con la BD vacía (el fixture `api` llama a `POST /e2e/reset`, que solo existe en ese servidor de test). Los `Given` preparan los datos por la API (`e2e/support/api.ts`), nunca por la UI salvo que el paso sea de la UI.
-  - Un solo worker: comparten BD. Paralelizar (una BD y una API por worker) entra cuando la suite pase de ~3 minutos.
+  - En paralelo: cada worker tiene su API, su Postgres y su Vite, en los puertos 8001 + i y 5174 + i (`e2e/support/env.ts`; el fixture elige los suyos por `parallelIndex`). Workers con `E2E_WORKERS`: por defecto la mitad de las CPU, con tope 4; en CI, 2. Subir el tope o los de CI solo si la suite vuelve a pasar de ~3 minutos y la máquina tiene margen.
   - Escenarios con `@component`: los que el E2E no puede reproducir (los feeds públicos). Playwright los excluye y los cubre un test de componente con MSW que cita la spec.
 - El listado (DataGrid) lo cubre el E2E; los tests de componente, los diálogos y los casos de MSW.
 
