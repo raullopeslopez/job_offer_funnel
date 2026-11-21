@@ -1,6 +1,6 @@
 import { type APIRequestContext, expect } from "@playwright/test";
 import type { components } from "../../src/api/schema";
-import { API_URL, E2E_TOKEN } from "./env";
+import { E2E_TOKEN } from "./env";
 
 type Schemas = components["schemas"];
 
@@ -11,15 +11,18 @@ export class Api {
   readonly applicationIds = new Map<string, string>();
   lastApplicationId = "";
 
-  constructor(private readonly request: APIRequestContext) {}
+  constructor(
+    private readonly request: APIRequestContext,
+    private readonly apiUrl: string,
+  ) {}
 
   async reset(): Promise<void> {
-    const response = await this.request.post(`${API_URL}/e2e/reset`);
+    const response = await this.request.post(`${this.apiUrl}/e2e/reset`);
     expect(response.ok()).toBe(true);
   }
 
   private async post<T>(path: string, body: unknown): Promise<T> {
-    const response = await this.request.post(`${API_URL}/api/v1${path}`, {
+    const response = await this.request.post(`${this.apiUrl}/api/v1${path}`, {
       headers: { Authorization: `Bearer ${E2E_TOKEN}` },
       data: body,
     });

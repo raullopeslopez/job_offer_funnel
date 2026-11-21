@@ -54,8 +54,11 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
         working-directory: frontend
+      # Each worker has its own API, Postgres and Vite: 2 fit the runner's 4 vCPU.
       - name: Run E2E
         run: just frontend-e2e
+        env:
+          E2E_WORKERS: 2
       # The traces of the failed or flaky scenarios (trace: retain-on-failure).
       - name: Upload E2E traces
         if: ${{ !cancelled() }}
