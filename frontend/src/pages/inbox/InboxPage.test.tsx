@@ -208,6 +208,29 @@ function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] 
   );
 }
 
+/**
+ * "The inbox is slow to list the offers again": once an offer is discarded, listing the
+ * offers waits until `release` is called. Returns `release`, for the end of the test.
+ */
+function slowToListAfterDiscard(): () => void {
+  let isDiscarded = false;
+  let release!: () => void;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  server.use(
+    // Falls through to the inbox handlers once released.
+    http.get("/api/v1/offers", async () => {
+      if (isDiscarded) await released;
+    }),
+    http.post("/api/v1/offers/:offerId/discard", () => {
+      isDiscarded = true;
+      return HttpResponse.json({}, { status: 201 });
+    }),
+  );
+  return release;
+}
+
 function renderInbox(path = "/inbox") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter([{ path: "/inbox", element: <InboxPage /> }], {
@@ -904,6 +927,61 @@ describe("InboxPage discarding", () => {
   });
 });
 
+// specs/ui/inbox.feature: "A discarded offer leaves the inbox at once".
+describe("InboxPage discarding with a slow inbox", () => {
+  it("shows the message and takes the offer out without waiting for the inbox", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("Backend Engineer")]);
+    const release = slowToListAfterDiscard();
+    renderInbox();
+    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    await user.click(within(piece).getByRole("button", { name: "Discard" }));
+    const reasons = await screen.findByRole("group", { name: "Discard because" });
+
+    try {
+      // Act
+      await user.click(within(reasons).getByRole("button", { name: "No reason" }));
+
+      // Assert
+      expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
+      expect(screen.queryByRole("article", { name: "Backend Engineer" })).not.toBeInTheDocument();
+    } finally {
+      release();
+    }
+  });
+
+  it("disables Cancel while the discard is being done", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("Backend Engineer")]);
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post("/api/v1/offers/:offerId/discard", async () => {
+        await released;
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderInbox();
+    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    await user.click(within(piece).getByRole("button", { name: "Discard" }));
+    const reasons = await screen.findByRole("group", { name: "Discard because" });
+
+    try {
+      // Act
+      await user.click(within(reasons).getByRole("button", { name: "No reason" }));
+
+      // Assert
+      expect(within(reasons).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    } finally {
+      release();
+    }
+  });
+});
+
 // specs/ui/inbox.feature: "The titles that keep coming without a title of yours".
 describe("InboxPage frequent titles", () => {
   it("lists them in Filtered and adds one as a criteria change", async () => {
@@ -1185,6 +1263,35 @@ describe("InboxPage triage", () => {
     // Assert
     expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
     expect(discarded).toEqual([{ offerId: suggested.id, ...body }]);
+  });
+
+  // specs/ui/inbox.feature: "An offer discarded as suggested leaves the inbox at once".
+  it("an offer discarded as suggested leaves the inbox at once", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([
+      offer("Backend Engineer Lead", {
+        triage: triaged("ko", "Not for you."),
+        suggested_discard: { reason: "contract", evidence: "Part-time" },
+      }),
+    ]);
+    noCriteriaSuggestions();
+    const release = slowToListAfterDiscard();
+    renderInbox();
+    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+
+    try {
+      // Act
+      await user.click(within(piece).getByRole("button", { name: /^Discard: / }));
+
+      // Assert
+      expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("article", { name: "Backend Engineer Lead" }),
+      ).not.toBeInTheDocument();
+    } finally {
+      release();
+    }
   });
 
   it("improves the filter from the offer the suggestion comes from", async () => {
