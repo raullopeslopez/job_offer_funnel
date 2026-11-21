@@ -75,7 +75,13 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: P
             typography: "body2",
           }}
         >
-          <SourceTag kind={sourceKind} name={sourceName} />
+          {sourceName?.toLowerCase() === "adzuna" ? (
+            <Link href="https://www.adzuna.co.uk/" sx={{ minWidth: 116, minHeight: 23 }}>
+              Adzuna
+            </Link>
+          ) : (
+            <SourceTag kind={sourceKind} name={sourceName} />
+          )}
           <Box component="span" sx={{ fontFamily: mono }}>
             <RelativeDate value={offer.created_at} now={now} />
           </Box>

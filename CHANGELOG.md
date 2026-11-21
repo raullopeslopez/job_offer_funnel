@@ -10,6 +10,8 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Import Adzuna UK offers for one saved search profile with `just import-adzuna`.
+
 - Near misses by rule in one request: `GET /offers/near-misses` gives the near misses
   grouped by the one rule they fail, in the order of the rules, each group with how many
   offers fail it and its most recent ones (`limit`, 1 to 100 per rule, 20 by default).

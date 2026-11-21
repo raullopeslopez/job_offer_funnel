@@ -35,6 +35,10 @@ seed-job-boards:
 import-offers:
     uv run python scripts/import_offers.py
 
+# Run one Adzuna UK import using ADZUNA_PROFILE (default: oldest saved profile)
+import-adzuna:
+    uv run python scripts/import_adzuna.py
+
 # Follow the API logs
 logs:
     {{compose}} --profile app logs -f api

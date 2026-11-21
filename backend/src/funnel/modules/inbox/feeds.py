@@ -21,6 +21,7 @@ Reader = Callable[[httpx2.AsyncClient, Sequence[str]], Awaitable[list[FeedOffer]
 
 # Offers are stored in VARCHAR(200) columns.
 _MAX_TEXT = 200
+_MAX_URL = 2048
 # Jobicy publishes about 14 offers an hour, newest first, 100 a page at most: 3 pages
 # cover the hours between two imports with room to spare.
 _JOBICY_PAGE_SIZE = 100
@@ -59,6 +60,35 @@ def _offer(job: Mapping[str, Any], fields: Fields) -> FeedOffer | None:
 
 def _kept(offers: Sequence[FeedOffer | None]) -> list[FeedOffer]:
     return [offer for offer in offers if offer is not None]
+
+
+async def read_adzuna(
+    client: httpx2.AsyncClient,
+    titles: Sequence[str],
+    location: str | None,
+) -> list[FeedOffer]:
+    """Search the UK board in the catalogue, one page per distinct profile title."""
+    offers: dict[str, FeedOffer] = {}
+    for title in dict.fromkeys(titles):
+        params = {"what": title, "results_per_page": "20"}
+        if location:
+            params["where"] = location
+        body = await _get_json(client, "https://api.adzuna.com/v1/api/jobs/gb/search/1", params)
+        jobs = body["results"]
+        if not isinstance(jobs, list):
+            raise ValueError("Invalid Adzuna results")
+        for job in jobs:
+            flat = {
+                "title": job.get("title"),
+                "company": (job.get("company") or {}).get("display_name"),
+                "location": (job.get("location") or {}).get("display_name"),
+                "description": job.get("description"),
+                "url": job.get("redirect_url"),
+            }
+            offer = _offer(flat, ("title", "company", "description", "url", "location"))
+            if offer and offer.url.startswith("https://") and len(offer.url) <= _MAX_URL:
+                offers.setdefault(offer.url, offer)
+    return list(offers.values())
 
 
 async def _remoteok(client: httpx2.AsyncClient, _titles: Sequence[str]) -> list[FeedOffer]:

@@ -690,7 +690,7 @@ class FeedImportService:
             # Network failure, error status or an unexpected shape: the source is unusable now.
             raise FeedUnavailableError(f"{job_board.name} could not be read") from error
         added = await self._imports.add_new(
-            [_offer_row(offer, job_board_id=job_board.id) for offer in published]
+            [offer_row(offer, job_board_id=job_board.id) for offer in published]
         )
         filtered = await self._imports.count_filtered(added, profiles)
         expired = (
@@ -745,7 +745,7 @@ class EmailAlertService:
         if job_board is None:
             raise EmailAlertNotImportedError(f"No job board imports the {email_alert} alerts")
         added = await self._imports.add_new(
-            [_offer_row(offer, job_board_id=job_board.id) for offer in offers]
+            [offer_row(offer, job_board_id=job_board.id) for offer in offers]
         )
         filtered = await self._imports.count_filtered(added, await self._profiles.all_terms())
         return AlertImportResult(job_board.id, len(offers), len(added), filtered, now)
@@ -793,7 +793,7 @@ class WatchedCompanyService:
         company = await self.get(company_id)
         published = await self._read(company)
         added = await self._companies.add_new_offers(
-            [_offer_row(offer, watched_company_id=company.id) for offer in published]
+            [offer_row(offer, watched_company_id=company.id) for offer in published]
         )
         filtered = await self._companies.count_filtered(added, await self._profiles.all_terms())
         expired = await self._companies.expire_missing_offers(
@@ -811,7 +811,7 @@ class WatchedCompanyService:
             ) from error
 
 
-def _offer_row(
+def offer_row(
     offer: FeedOffer, *, job_board_id: UUID | None = None, watched_company_id: UUID | None = None
 ) -> OfferRow:
     return OfferRow(
