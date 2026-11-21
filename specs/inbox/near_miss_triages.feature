@@ -15,7 +15,7 @@ Feature: Near miss triages
   For a near miss, OK means a false negative: the rule that filtered it is wrong for this
   offer. KO means it is rightly filtered. Either way it says why yes and why not, with their
   quotes, and its confidence, as for any offer. An OK must quote, letter for letter, a
-  sentence of its description that rebuts the rule (for the location rule, one that says
+  sentence of at least four words of its description that rebuts the rule (for the location rule, one that says
   it can be done from the profile's location); a quote of its title or its published
   location does not. An OK without such a quote is kept as KO, with the triager's whys:
   rightly filtered, and it suggests nothing.
@@ -84,7 +84,7 @@ Feature: Near miss triages
       | OK      | Payments backend: Python is not a must here. |
       | KO      | Go only, and you discard Go roles.           |
 
-  Scenario Outline: An OK near miss whose quote is not in its description is kept as KO
+  Scenario Outline: An OK near miss without a quote of four words of its description is kept as KO
     Given the offer triager says the offer of "Globex" is OK because "Backend services and APIs.", quoting "<quote>"
     When I triage the offers
     Then the offer of "Globex" has the verdict "KO"
@@ -94,6 +94,7 @@ Feature: Near miss triages
       | quote                    |
       | Backend Engineer         |
       | Fully remote from Spain. |
+      | Go services              |
 
   Scenario: An OK near miss with no quote is kept as KO
     Given the offer triager says the offer of "Globex" is OK because "Backend services and APIs."
@@ -116,6 +117,7 @@ Feature: Near miss triages
       | why                          | quote                                         | verdict |
       | Open to Spain.               | Remote from the US or Europe, Spain included. | OK      |
       | Java microservices and APIs. | USA                                           | KO      |
+      | Remote.                      | Remote                                        | KO      |
 
   Scenario: The triage says how many near misses it marked OK
     Given the offer triager says the offers of "Globex" and "Initech" are OK, quoting their descriptions
