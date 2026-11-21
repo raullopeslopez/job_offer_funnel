@@ -371,6 +371,11 @@ While the version is `0.x`, the API may change without a major version bump.
   one saying it can be done from the profile's location); a quote of its title or its
   published location does not count. Otherwise it is kept as KO, rightly filtered, and
   suggests no rule to relax.
+- Discarding in the inbox shows at once: the offer leaves the list and "Offer discarded"
+  (with Undo) appears as soon as the discard is done, instead of after the inbox lists
+  its offers again, which could take half a minute. "Discard: {reason}" no longer keeps
+  spinning meanwhile, and "Cancel" is disabled while the discard is being done.
+  Restoring, promoting and marking as rightly filtered also say so without that wait.
 - Listing the pending offers that are near misses, or that fail a rule, no longer fails
   when there are tens of thousands of them.
 - Faster inbox reads: listing and counting offers no longer waits about two seconds on
