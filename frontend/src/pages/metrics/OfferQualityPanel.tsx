@@ -29,6 +29,8 @@ type Card = {
   sentence: string;
   trend: (number | null)[];
   to: string;
+  // Lines under the sentence: the precision says apart the AI's discards.
+  notes?: string[];
 };
 
 /** The four key results of specs/ui/metrics.feature, "—" when there is nothing to show. */
@@ -42,6 +44,13 @@ export function qualityCards(quality: Quality): Card[] {
       sentence: `${total.promoted_from_pending} promoted of ${total.decided} decided from Pending`,
       trend: trend((week) => week.precision),
       to: "/inbox",
+      notes:
+        total.discarded_by_triager === 0
+          ? undefined
+          : [
+              `With the AI's discards: ${formatRate(total.precision_with_triager)}`,
+              `${total.discarded_by_triager} discarded by AI`,
+            ],
     },
     {
       label: "Losses",
@@ -89,8 +98,8 @@ function Trend({ values }: { values: (number | null)[] }) {
 }
 
 /** How the offer triager does, once it triaged an offer you decided on: in Pending, its
- * precision and misses; among the near misses you reviewed, its rescues and lost rescues.
- * Null before. */
+ * precision and misses; once it discarded offers, how many of those you restored; among the
+ * near misses you reviewed, its rescues and lost rescues. Null before. */
 function TriageFigures({ quality }: { quality: Quality }) {
   const { total, weeks } = quality;
   const pending =
@@ -110,6 +119,17 @@ function TriageFigures({ quality }: { quality: Quality }) {
             trend: weeks.map((week) => week.triager_misses),
           },
         ];
+  const discards =
+    total.triager_discards === 0
+      ? []
+      : [
+          {
+            label: "Restores",
+            value: formatRate(total.triager_restores),
+            sentence: `${total.restored_triager_discards} restored of ${total.triager_discards} offers the AI discarded`,
+            trend: weeks.map((week) => week.triager_restores),
+          },
+        ];
   const nearMisses =
     total.ok_near_misses_reviewed + total.triaged_near_misses_rescued === 0
       ? []
@@ -127,7 +147,7 @@ function TriageFigures({ quality }: { quality: Quality }) {
             trend: weeks.map((week) => week.triager_lost_rescues),
           },
         ];
-  const figures = [...pending, ...nearMisses];
+  const figures = [...pending, ...discards, ...nearMisses];
   if (figures.length === 0) return null;
   return (
     <Box component="section" aria-labelledby="ai-triage" sx={{ mb: 4 }}>
@@ -257,6 +277,11 @@ export function OfferQualityPanel() {
             <Typography variant="caption" color="text.secondary">
               {card.sentence}
             </Typography>
+            {card.notes?.map((note) => (
+              <Typography key={note} variant="caption" color="text.secondary">
+                {note}
+              </Typography>
+            ))}
           </Link>
         ))}
       </Paper>

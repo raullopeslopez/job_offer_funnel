@@ -65,6 +65,7 @@ const offer = (title: string, fields: Partial<Offer> = {}): Offer => ({
   readings: [],
   discard_reason: null,
   discard_word: null,
+  triager_discard: null,
   application_id: null,
   review: null,
   review_rules: [],
@@ -216,7 +217,9 @@ function inboxWith(offers: Offer[], profiles = [BACKEND], jobBoards: JobBoard[] 
     ),
     http.get("/api/v1/offers/frequent-titles", () => HttpResponse.json({ offers: 0, titles: [] })),
     // Without an offer triager, as the E2E tests; the triage tests make one available.
-    http.get("/api/v1/offers/triager", () => HttpResponse.json({ is_available: false })),
+    http.get("/api/v1/offers/triager", () =>
+      HttpResponse.json({ is_available: false, discardable: 0 }),
+    ),
   );
 }
 
@@ -1498,5 +1501,104 @@ describe("InboxPage triage", () => {
     expect(sent).toEqual([
       { search_profile_id: PROFILE_ID, excluded_keywords: [], offer_id: nearMiss.id },
     ]);
+  });
+});
+
+describe("InboxPage triager discards", () => {
+  const ids = ["0193a000-0000-7000-8000-0000000000a1", "0193a000-0000-7000-8000-0000000000a2"];
+
+  /** "The triager would discard {n} offers": it says so, and discards them when asked. */
+  function triagerWouldDiscard(count: number) {
+    const sent = { discards: 0, restored: [] as string[] };
+    server.use(
+      http.get("/api/v1/offers/triager", () =>
+        HttpResponse.json({ is_available: false, discardable: count }),
+      ),
+      http.post("/api/v1/offers/triager-discards", () => {
+        sent.discards += 1;
+        return HttpResponse.json(
+          { discarded: ids.slice(0, count).length, offer_ids: ids.slice(0, count) },
+          { status: 201 },
+        );
+      }),
+      http.delete("/api/v1/offers/:offerId/discard", ({ params }) => {
+        sent.restored.push(String(params.offerId));
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    return sent;
+  }
+
+  // specs/ui/inbox.feature, "Let the AI discard the offers it is sure of"
+  it("lets the AI discard the offers it is sure of", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([]);
+    const sent = triagerWouldDiscard(2);
+    renderInbox();
+    expect(
+      await screen.findByText(
+        "The ones it marked KO with high confidence. You can restore any of them.",
+      ),
+    ).toBeInTheDocument();
+
+    // Act
+    await user.click(await screen.findByRole("button", { name: "Let AI discard 2" }));
+
+    // Assert
+    expect(sent.discards).toBe(1);
+    expect(await screen.findByText("AI discarded 2 offers")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+  });
+
+  // specs/ui/inbox.feature, "Undo the AI's discards right away"
+  it("undoes the AI's discards right away", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([]);
+    const sent = triagerWouldDiscard(2);
+    renderInbox();
+    await user.click(await screen.findByRole("button", { name: "Let AI discard 2" }));
+
+    // Act
+    await user.click(await screen.findByRole("button", { name: "Undo" }));
+
+    // Assert
+    expect(await screen.findByText("Offers restored")).toBeInTheDocument();
+    expect(sent.restored).toEqual(ids);
+  });
+
+  // specs/ui/inbox.feature, 'With nothing for the AI to discard there is no "Let AI discard"'
+  it('without anything for the AI to discard there is no "Let AI discard"', async () => {
+    // Arrange
+    inboxWith([offer("Backend Engineer")]);
+    triagerWouldDiscard(0);
+
+    // Act
+    renderInbox();
+
+    // Assert
+    expect(await screen.findByRole("article", { name: "Backend Engineer" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Let AI discard/ })).not.toBeInTheDocument();
+  });
+
+  // specs/ui/inbox.feature, "A triager discard says it is the AI's"
+  it("says a triager discard is the AI's, and restores it", async () => {
+    // Arrange
+    inboxWith([
+      offer("Backend Engineer", {
+        status: "discarded",
+        discard_reason: "contract",
+        triager_discard: "discarded",
+      }),
+    ]);
+
+    // Act
+    renderInbox("/inbox?status=discarded");
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    expect(piece).toHaveTextContent("Discarded by AI · Contract");
+    expect(within(piece).getByRole("button", { name: "Restore" })).toBeInTheDocument();
   });
 });

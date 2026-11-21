@@ -32,9 +32,13 @@ export function titleWords(title: string): string[] {
   return [...new Set(words)];
 }
 
-/** What a discarded piece says of its reason. */
-export function discardReasonText(offer: Pick<Offer, "discard_reason" | "discard_word">): string {
+/** What a discarded piece says of its reason, and whether the AI discarded it
+ * (specs/inbox/triager_discards.feature). */
+export function discardReasonText(
+  offer: Pick<Offer, "discard_reason" | "discard_word" | "triager_discard">,
+): string {
   if (!offer.discard_reason) return "—";
   const label = DISCARD_REASON_LABELS[offer.discard_reason];
-  return offer.discard_word ? `${label}: ${offer.discard_word}` : label;
+  const reason = offer.discard_word ? `${label}: ${offer.discard_word}` : label;
+  return offer.triager_discard === "discarded" ? `Discarded by AI · ${reason}` : reason;
 }

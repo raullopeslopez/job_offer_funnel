@@ -155,6 +155,11 @@ const figures = (fields: Partial<Figures> = {}): Figures => ({
   triaged_near_misses_rescued: 0,
   lost_rescues: 0,
   triager_lost_rescues: null,
+  discarded_by_triager: 0,
+  precision_with_triager: null,
+  triager_discards: 0,
+  restored_triager_discards: 0,
+  triager_restores: null,
   ...fields,
 });
 
@@ -238,6 +243,29 @@ describe("MetricsPage offer quality", () => {
     expect(await card("Real result")).toHaveTextContent("2 applied1 answered of 2 promoted");
   });
 
+  // specs/ui/metrics.feature, "The precision says apart the AI's discards"
+  it("says apart the AI's discards under the precision", async () => {
+    // Arrange
+    qualityOf(
+      figures({
+        decided: 2,
+        promoted_from_pending: 1,
+        precision: 50,
+        discarded_by_triager: 1,
+        precision_with_triager: 33.3,
+      }),
+    );
+
+    // Act
+    renderPage("/metrics");
+
+    // Assert
+    const precision = await card("Precision");
+    expect(precision).toHaveTextContent("50.0%1 promoted of 2 decided from Pending");
+    expect(precision).toHaveTextContent("With the AI's discards: 33.3%");
+    expect(precision).toHaveTextContent("1 discarded by AI");
+  });
+
   it("shows a dash on each card without data, never 0%", async () => {
     // Arrange
     qualityOf(figures());
@@ -297,6 +325,20 @@ describe("MetricsPage offer quality", () => {
     expect(triage).toHaveTextContent("3 right of 4 suggested discards you decided");
     expect(triage).toHaveTextContent("25.0%");
     expect(triage).toHaveTextContent("1 missed of 4 triaged offers you discarded");
+  });
+
+  // specs/ui/metrics.feature, "The triager's restores"
+  it("shows how many of the AI's discards you restored", async () => {
+    // Arrange
+    qualityOf(figures({ triager_discards: 4, restored_triager_discards: 1, triager_restores: 25 }));
+
+    // Act
+    renderPage("/metrics");
+
+    // Assert
+    const triage = await screen.findByRole("region", { name: "The AI triage" });
+    expect(triage).toHaveTextContent("25.0%");
+    expect(triage).toHaveTextContent("1 restored of 4 offers the AI discarded");
   });
 
   // specs/ui/metrics.feature, "The triager's rescues and lost rescues"

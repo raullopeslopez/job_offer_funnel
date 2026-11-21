@@ -19,6 +19,7 @@ import { NearMissGroups } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
 import { TriageButton, triageMutationKey } from "./TriageButton";
+import { TriagerDiscardButton } from "./TriagerDiscardButton";
 import { TriagerSuggestion } from "./TriagerSuggestion";
 import type { Offer, OfferStatus, OfferView } from "./types";
 
@@ -153,6 +154,22 @@ export function InboxPage() {
     },
   });
 
+  // Undoing the AI's discards restores each of them (specs/inbox/triager_discards.feature).
+  const restoreAll = useMutation({
+    mutationFn: async (offerIds: string[]) => {
+      for (const offerId of offerIds) {
+        const { error } = await api.DELETE("/api/v1/offers/{offer_id}/discard", {
+          params: { path: { offer_id: offerId } },
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      setNotice({ message: "Offers restored" });
+      refresh();
+    },
+  });
+
   // A near miss left filtered (specs/inbox/rescues.feature); undone from the notice.
   const unmark = useMutation({
     mutationFn: async (offerId: string) => {
@@ -221,6 +238,18 @@ export function InboxPage() {
             "& .MuiButton-root": { whiteSpace: "nowrap" },
           }}
         >
+          {view === "pending" && (
+            <TriagerDiscardButton
+              onDiscarded={(offerIds) => {
+                for (const offerId of offerIds) leaveView(offerId);
+                setNotice({
+                  message: `AI discarded ${offerIds.length} offers`,
+                  undo: () => restoreAll.mutate(offerIds),
+                });
+                refresh();
+              }}
+            />
+          )}
           {view === "pending" && <TriageButton running={triageRunning} />}
           <Button variant="outlined" onClick={() => setDialog("import")}>
             Import job board
