@@ -33,12 +33,12 @@ Feature: Offer quality
       | titles   | Backend Engineer |
       | keywords | Python           |
     And the job board "Remote OK" was imported with:
-      | title            | company | description     | url                    |
-      | Backend Engineer | Acme    | Python services | https://remoteok.com/1 |
-      | Backend Engineer | Globex  | Python services | https://remoteok.com/2 |
-      | Backend Engineer | Initech | Python services | https://remoteok.com/3 |
-      | Backend Engineer | Hooli   | Go services     | https://remoteok.com/4 |
-      | Data Engineer    | Umbrella| Go pipelines    | https://remoteok.com/5 |
+      | title            | company  | description              | url                    |
+      | Backend Engineer | Acme     | Python services          | https://remoteok.com/1 |
+      | Backend Engineer | Globex   | Python services          | https://remoteok.com/2 |
+      | Backend Engineer | Initech  | Python services          | https://remoteok.com/3 |
+      | Backend Engineer | Hooli    | Go services for payments | https://remoteok.com/4 |
+      | Data Engineer    | Umbrella | Go pipelines             | https://remoteok.com/5 |
 
   # --- Precision ---
 
@@ -132,9 +132,9 @@ Feature: Offer quality
 
   Scenario: The triager's rescues and lost rescues follow what I did with the near misses
     Given the job board "Remote OK" was imported with:
-      | title            | company  | description | url                    |
-      | Backend Engineer | Wayne    | Go services | https://remoteok.com/6 |
-      | Backend Engineer | Umbrella | Go services | https://remoteok.com/7 |
+      | title            | company  | description              | url                    |
+      | Backend Engineer | Wayne    | Go services for payments | https://remoteok.com/6 |
+      | Backend Engineer | Umbrella | Go services for payments | https://remoteok.com/7 |
     And the offer triager says the offers of "Hooli" and "Wayne" are OK, quoting their descriptions
     And the offer triager says the offer of "Umbrella" is KO because "Not for you."
     And I triaged the offers
