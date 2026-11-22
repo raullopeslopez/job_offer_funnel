@@ -112,9 +112,10 @@ export function DiscardChoices({ offer, profiles, phone = false, onCancel, onDis
               {DISCARD_REASON_LABELS.title_word}
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-              {titleWords(offer.title).map((candidate) => (
+              {titleWords(offer.title).map((candidate, index) => (
                 <Button
                   key={candidate}
+                  autoFocus={index === 0}
                   size="small"
                   variant="outlined"
                   disabled={discard.isPending}

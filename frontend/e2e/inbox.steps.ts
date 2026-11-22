@@ -244,7 +244,9 @@ Given("I focus the offer list", async ({ page }) => {
 // A key press goes where the focus is, so it first waits for the focus to be on a row, which
 // is where the previous action leaves it, and then for what the key does.
 async function press(page: Page, key: string) {
-  const moves = ["j", "k", "ArrowDown", "ArrowUp"].includes(key.length === 1 ? key.toLowerCase() : key);
+  const moves = ["j", "k", "ArrowDown", "ArrowUp"].includes(
+    key.length === 1 ? key.toLowerCase() : key,
+  );
   const before = moves ? await selectedRow(page).textContent() : null;
   if (key.toLowerCase() === "p" || moves || key.toLowerCase() === "d") {
     await expect(focusedRow(page)).toHaveCount(1);
@@ -267,18 +269,15 @@ When("I press {string} {int} times", async ({ page }, key: string, times: number
   for (let i = 0; i < times; i++) await press(page, key);
 });
 
-When(
-  "I tab to {string} and press {string}",
-  async ({ page }, name: string, key: string) => {
-    const target = reasons(page).getByRole("button", { name, exact: true });
-    for (let i = 0; i < 12 && !(await target.evaluate((el) => el === document.activeElement)); i++) {
-      await page.keyboard.press("Tab");
-    }
-    await expect(target).toBeFocused();
-    await page.keyboard.press(key);
-    await expect(reasons(page)).toBeHidden();
-  },
-);
+When("I tab to {string} and press {string}", async ({ page }, name: string, key: string) => {
+  const target = reasons(page).getByRole("button", { name, exact: true });
+  for (let i = 0; i < 12 && !(await target.evaluate((el) => el === document.activeElement)); i++) {
+    await page.keyboard.press("Tab");
+  }
+  await expect(target).toBeFocused();
+  await page.keyboard.press(key);
+  await expect(reasons(page)).toBeHidden();
+});
 
 Then("I see the reasons to discard", async ({ page }) => {
   await expect(reasons(page)).toBeVisible();

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { Count, GroupedList } from "../../components/GroupedList";
 import { offerSourceKind } from "../../components/offerSource";
+import { KeyHint } from "./KeyHint";
 import type { OfferContext, RowSelection } from "./OfferList";
 import { OfferRow } from "./OfferRow";
 import type { Offer } from "./types";
@@ -43,8 +44,9 @@ export function NearMissButtons({
 }: NearMissActions & { offer: Offer }) {
   return (
     <>
-      <Button variant="outlined" onClick={() => onPromote(offer)}>
+      <Button variant="outlined" aria-keyshortcuts="P" onClick={() => onPromote(offer)}>
         Promote anyway
+        <KeyHint>P</KeyHint>
       </Button>
       <Button onClick={() => onRightlyFiltered(offer)}>Rightly filtered</Button>
     </>

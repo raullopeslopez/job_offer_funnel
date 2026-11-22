@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
 import { SegmentedTabs } from "../../components/SegmentedTabs";
@@ -18,7 +18,7 @@ import { MaybeGroup, nearMissesQuery } from "./MaybeGroup";
 import { NearMissGroups, nearMissGroupsQuery } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
-import { ReadingPane } from "./ReadingPane";
+import { isNearMiss, ReadingPane } from "./ReadingPane";
 import { rowOrder } from "./rowOrder";
 import { TriageButton, triageMutationKey } from "./TriageButton";
 import { TriagerDiscardButton } from "./TriagerDiscardButton";
@@ -80,6 +80,10 @@ export function InboxPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openVariants, setOpenVariants] = useState<string[]>([]);
   const isWide = useMediaQuery((theme) => theme.breakpoints.up("md"));
+  const list = useRef<HTMLElement>(null);
+  // The offer whose reasons to discard are open, and whether the focus follows the selection.
+  const [discardingId, setDiscardingId] = useState<string | null>(null);
+  const focusSelected = useRef(false);
 
   const offers = useInfiniteQuery({
     queryKey: ["offers", view],
@@ -251,12 +255,45 @@ export function InboxPage() {
     }
     const index = order.findIndex((o) => o.id === offerId);
     if (index < 0) return;
+    focusSelected.current = true;
     setSelectedId((order[index + 1] ?? order[index - 1])?.id ?? null);
   }
   const selection = {
     selectedId: selected?.id ?? null,
     onSelect: (offer: Offer) => setSelectedId(offer.id),
   };
+  // Keyboard triage on the focused list (specs/ui/inbox.feature): J/K move, P promotes, D opens
+  // the reasons. Only on the selected row, so the arrows of the tabs are left alone.
+  const onListKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    if (event.ctrlKey || event.metaKey || event.altKey || !selected) return;
+    if (target.closest("input, textarea, select, [contenteditable]")) return;
+    if (!target.closest("li") || target.getAttribute("aria-current") !== "true") return;
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    const move = key === "j" || key === "ArrowDown" ? 1 : key === "k" || key === "ArrowUp" ? -1 : 0;
+    if (move !== 0) {
+      event.preventDefault();
+      const next = order[orderIndex + move];
+      if (!next) return;
+      focusSelected.current = true;
+      setSelectedId(next.id);
+    } else if (key === "p" && selected.status === "pending") {
+      setPromoting(selected);
+    } else if (key === "d" && selected.status === "pending" && !isNearMiss(selected)) {
+      setDiscardingId(selected.id);
+    }
+  };
+  // The focus follows the selection after a key or an action, as the row it was on may be gone.
+  const selectedKey = selected?.id;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the selection changes
+  useEffect(() => {
+    if (!focusSelected.current) return;
+    const row = list.current?.querySelector<HTMLElement>('li button[aria-current="true"]');
+    if (!row) return;
+    focusSelected.current = false;
+    row.focus({ preventScroll: true });
+    if (isWide) row.scrollIntoView?.({ block: "nearest" });
+  }, [selectedKey]);
 
   // The variants of the selected offer, when its row stands for them (specs/ui/inbox.feature).
   const run =
@@ -298,8 +335,11 @@ export function InboxPage() {
       {...context}
       variants={variants}
       position={position}
+      isDiscarding={selected?.id === discardingId}
+      onDiscarding={(open) => setDiscardingId(open && selected ? selected.id : null)}
       onBack={isWide ? undefined : () => setSelectedId(null)}
       onDiscarded={(offer) => {
+        setDiscardingId(null);
         openNextAfter(offer.id);
         leaveView(offer.id);
         setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
@@ -324,6 +364,8 @@ export function InboxPage() {
           component="section"
           aria-label="Offer list"
           inert={!isWide && selected !== null}
+          ref={list}
+          onKeyDown={onListKeyDown}
           sx={{ minWidth: 0, borderRight: { md: 1 }, borderColor: { md: "divider" } }}
         >
           <Box sx={{ px: 2, pb: 1 }}>
@@ -414,6 +456,17 @@ export function InboxPage() {
           )}
 
           {view === "pending" && <MaybeGroup {...context} {...selection} />}
+
+          {(view === "pending" || view === "filtered") && (
+            <Typography
+              variant="caption"
+              component="p"
+              color="text.secondary"
+              sx={{ display: { xs: "none", md: "block" }, px: 2, py: 2 }}
+            >
+              J/K move · P promote · D discard
+            </Typography>
+          )}
         </Box>
 
         {isWide ? (

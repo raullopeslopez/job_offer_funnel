@@ -73,7 +73,7 @@ export function PromoteDialog({ offer, onClose, onPromoted }: Props) {
         </DialogContent>
         <DialogActions>
           <Button onClick={close}>Cancel</Button>
-          <Button type="submit" variant="contained" loading={isSubmitting}>
+          <Button type="submit" variant="contained" loading={isSubmitting} autoFocus>
             Promote
           </Button>
         </DialogActions>

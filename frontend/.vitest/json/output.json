@@ -1,1 +1,1081 @@
-{"numTotalTestSuites":20,"numPassedTestSuites":18,"numFailedTestSuites":2,"numPendingTestSuites":0,"numTotalTests":103,"numPassedTests":2,"numFailedTests":3,"numPendingTests":98,"numTodoTests":0,"snapshot":{"added":0,"failure":false,"filesAdded":0,"filesRemoved":0,"filesRemovedList":[],"filesUnmatched":0,"filesUpdated":0,"matched":0,"total":0,"unchecked":0,"uncheckedKeysByFile":[],"unmatched":0,"updated":0,"didUpdate":false},"startTime":1795354664982,"success":false,"testResults":[{"assertionResults":[{"ancestorTitles":["InboxPage filtered offers"],"fullName":"InboxPage filtered offers the filtered view shows only the filtered offers","status":"skipped","title":"the filtered view shows only the filtered offers","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage filtered offers"],"fullName":"InboxPage filtered offers the pending view leaves out the filtered offers","status":"skipped","title":"the pending view leaves out the filtered offers","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage country tags"],"fullName":"InboxPage country tags an offer located in \"Madrid, Spain\" shows the tag [\"Spain\"] and \"Spain\"","status":"skipped","title":"an offer located in \"Madrid, Spain\" shows the tag [\"Spain\"] and \"Spain\"","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage country tags"],"fullName":"InboxPage country tags an offer located in \"Spain, Portugal\" shows the tag [\"Spain\",\"Portugal\"] and \"Spain\"","status":"skipped","title":"an offer located in \"Spain, Portugal\" shows the tag [\"Spain\",\"Portugal\"] and \"Spain\"","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage country tags"],"fullName":"InboxPage country tags an offer located in \"Worldwide\" shows the tag [\"Worldwide\"] and \"Worldwide\"","status":"skipped","title":"an offer located in \"Worldwide\" shows the tag [\"Worldwide\"] and \"Worldwide\"","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage country tags"],"fullName":"InboxPage country tags an offer located in \"San Francisco, CA\" shows the tag [] and \"San Francisco, CA\"","status":"skipped","title":"an offer located in \"San Francisco, CA\" shows the tag [] and \"San Francisco, CA\"","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage groups"],"fullName":"InboxPage groups groups the offers by the day they were added","status":"skipped","title":"groups the offers by the day they were added","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage groups"],"fullName":"InboxPage groups shows the variants next to each other as one closed row that opens","status":"skipped","title":"shows the variants next to each other as one closed row that opens","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage groups"],"fullName":"InboxPage groups selects the first offer of the view, and the offer of the row chosen","status":"skipped","title":"selects the first offer of the view, and the offer of the row chosen","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage groups"],"fullName":"InboxPage groups with verdicts, the pending view goes by verdict","status":"skipped","title":"with verdicts, the pending view goes by verdict","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading with the mode remote shows Remote","status":"skipped","title":"a reading with the mode remote shows Remote","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading with the mode hybrid shows Hybrid","status":"skipped","title":"a reading with the mode hybrid shows Hybrid","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading with the mode null shows Not stated","status":"skipped","title":"a reading with the mode null shows Not stated","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading { admits_location: true, …(1) } shows Spain","status":"skipped","title":"a reading { admits_location: true, …(1) } shows Spain","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading { admits_location: false, …(1) } shows Not from Spain","status":"skipped","title":"a reading { admits_location: false, …(1) } shows Not from Spain","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading { stable: true } shows Stable","status":"skipped","title":"a reading { stable: true } shows Stable","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading { stable: false } shows Not stable","status":"skipped","title":"a reading { stable: false } shows Not stable","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading { engineering: true } shows Engineering","status":"skipped","title":"a reading { engineering: true } shows Engineering","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading { engineering: false } shows Not engineering","status":"skipped","title":"a reading { engineering: false } shows Not engineering","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage reading strip"],"fullName":"InboxPage reading strip a reading { stack: [ 'Python', 'Django' ] } shows Python, Django","status":"skipped","title":"a reading { stack: [ 'Python', 'Django' ] } shows Python, Django","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'title', …(5) } rule shows in Title as Backend Engineer","status":"skipped","title":"a { rule: 'title', …(5) } rule shows in Title as Backend Engineer","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'keywords', …(5) } rule shows in Keywords as Python, Django","status":"skipped","title":"a { rule: 'keywords', …(5) } rule shows in Keywords as Python, Django","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'work_mode', …(5) } rule shows in Mode as Remote","status":"skipped","title":"a { rule: 'work_mode', …(5) } rule shows in Mode as Remote","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'work_mode', …(5) } rule shows in Mode as Not stated","status":"skipped","title":"a { rule: 'work_mode', …(5) } rule shows in Mode as Not stated","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'location', …(5) } rule shows in Location as Spain","status":"skipped","title":"a { rule: 'location', …(5) } rule shows in Location as Spain","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'stable', …(5) } rule shows in Contract as Stable","status":"skipped","title":"a { rule: 'stable', …(5) } rule shows in Contract as Stable","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'stable', …(5) } rule shows in Contract as Not stated","status":"skipped","title":"a { rule: 'stable', …(5) } rule shows in Contract as Not stated","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a { rule: 'engineering', …(5) } rule shows in Role as Engineering","status":"skipped","title":"a { rule: 'engineering', …(5) } rule shows in Role as Engineering","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip a rule the profile does not ask for says \"Any\"","status":"skipped","title":"a rule the profile does not ask for says \"Any\"","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip an offer of 6f1c1d2e-0000-4000-8000-000000000006 without a description merges its reading rules","status":"skipped","title":"an offer of 6f1c1d2e-0000-4000-8000-000000000006 without a description merges its reading rules","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip an offer of 6f1c1d2e-0000-4000-8000-000000000005 without a description merges its reading rules","status":"skipped","title":"an offer of 6f1c1d2e-0000-4000-8000-000000000005 without a description merges its reading rules","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rule strip"],"fullName":"InboxPage rule strip an offer added by hand says it has nothing to read","status":"skipped","title":"an offer added by hand says it has nothing to read","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage stack cell"],"fullName":"InboxPage stack cell a reading with the stack [ 'Python', 'Django' ] shows Python, Django","status":"skipped","title":"a reading with the stack [ 'Python', 'Django' ] shows Python, Django","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage stack cell"],"fullName":"InboxPage stack cell a reading with the stack [] shows Not stated","status":"skipped","title":"a reading with the stack [] shows Not stated","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Senior Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Senior\", you exclude it","status":"skipped","title":"Senior Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Senior\", you exclude it","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Backend Engineer failing { rule: 'keywords', …(5) } shows in Keywords Missing: Django","status":"skipped","title":"Backend Engineer failing { rule: 'keywords', …(5) } shows in Keywords Missing: Django","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Backend Engineer failing { rule: 'work_mode', …(5) } shows in Mode Hybrid, you ask Remote","status":"skipped","title":"Backend Engineer failing { rule: 'work_mode', …(5) } shows in Mode Hybrid, you ask Remote","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Backend Engineer failing { rule: 'location', …(5) } shows in Location Not from Spain","status":"skipped","title":"Backend Engineer failing { rule: 'location', …(5) } shows in Location Not from Spain","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Backend Engineer failing { rule: 'stable', …(5) } shows in Contract Not stable","status":"skipped","title":"Backend Engineer failing { rule: 'stable', …(5) } shows in Contract Not stable","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Backend Engineer failing { rule: 'engineering', …(5) } shows in Role Not engineering","status":"skipped","title":"Backend Engineer failing { rule: 'engineering', …(5) } shows in Role Not engineering","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Node\" in its stack, you exclude it","status":"skipped","title":"Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Node\" in its stack, you exclude it","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage failed cells"],"fullName":"InboxPage failed cells Data Engineer failing { rule: 'title', …(5) } shows in Title No title of yours","status":"skipped","title":"Data Engineer failing { rule: 'title', …(5) } shows in Title No title of yours","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage maybe"],"fullName":"InboxPage maybe closes the pending view with the three most recent near misses","status":"skipped","title":"closes the pending view with the three most recent near misses","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage maybe"],"fullName":"InboxPage maybe without near misses there is no \"Maybe\"","status":"skipped","title":"without near misses there is no \"Maybe\"","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage maybe"],"fullName":"InboxPage maybe promotes a near miss anyway","status":"skipped","title":"promotes a near miss anyway","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rightly filtered"],"fullName":"InboxPage rightly filtered marks a near miss in Maybe as rightly filtered","status":"skipped","title":"marks a near miss in Maybe as rightly filtered","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage rightly filtered"],"fullName":"InboxPage rightly filtered marks a near miss in A word you exclude as rightly filtered","status":"skipped","title":"marks a near miss in A word you exclude as rightly filtered","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage filtered by rule"],"fullName":"InboxPage filtered by rule groups the near misses by the rule that filtered them","status":"skipped","title":"groups the near misses by the rule that filtered them","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage filtered by rule"],"fullName":"InboxPage filtered by rule lists the offers of a group of near misses under it, always open","status":"skipped","title":"lists the offers of a group of near misses under it, always open","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage filtered by rule"],"fullName":"InboxPage filtered by rule lists the offers further away with their strip","status":"skipped","title":"lists the offers further away with their strip","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage exclusion proposal"],"fullName":"InboxPage exclusion proposal proposes excluding the word with the effect { leaving_pending: 3, …(2) }","status":"skipped","title":"proposes excluding the word with the effect { leaving_pending: 3, …(2) }","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage exclusion proposal"],"fullName":"InboxPage exclusion proposal proposes excluding the word with the effect { leaving_pending: 1, …(2) }","status":"skipped","title":"proposes excluding the word with the effect { leaving_pending: 1, …(2) }","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage exclusion proposal"],"fullName":"InboxPage exclusion proposal Only discard this one discards the offer because of the word","status":"skipped","title":"Only discard this one discards the offer because of the word","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage exclusion proposal"],"fullName":"InboxPage exclusion proposal Discard and exclude “Lead” discards the offer because of the word","status":"skipped","title":"Discard and exclude “Lead” discards the offer because of the word","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage discarding"],"fullName":"InboxPage discarding keeps the title as a link and offers its words under A word in the title","status":"skipped","title":"keeps the title as a link and offers its words under A word in the title","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage discarding"],"fullName":"InboxPage discarding a word of an offer without a profile discards it right away","status":"skipped","title":"a word of an offer without a profile discards it right away","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage discarding with a slow inbox"],"fullName":"InboxPage discarding with a slow inbox shows the message and takes the offer out without waiting for the inbox","status":"skipped","title":"shows the message and takes the offer out without waiting for the inbox","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage discarding with a slow inbox"],"fullName":"InboxPage discarding with a slow inbox disables Cancel while the discard is being done","status":"skipped","title":"disables Cancel while the discard is being done","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage frequent titles"],"fullName":"InboxPage frequent titles lists them in Filtered and adds one as a criteria change","status":"skipped","title":"lists them in Filtered and adds one as a criteria change","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage triages batch after batch until none is left or one triages none","status":"skipped","title":"triages batch after batch until none is left or one triages none","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage triages batch after batch until none is left or one triages none","status":"skipped","title":"triages batch after batch until none is left or one triages none","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage triages batch after batch until none is left or one triages none","status":"skipped","title":"triages batch after batch until none is left or one triages none","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows outstanding verdicts only while a triage request is pending","status":"skipped","title":"shows outstanding verdicts only while a triage request is pending","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows the AI section of a triaged offer","status":"skipped","title":"shows the AI section of a triaged offer","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows only what the triage has: no confidence","status":"skipped","title":"shows only what the triage has: no confidence","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows only what the triage has: medium confidence","status":"skipped","title":"shows only what the triage has: medium confidence","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows a suggested discard contract as its action","status":"skipped","title":"shows a suggested discard contract as its action","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows a suggested discard title_word as its action","status":"skipped","title":"shows a suggested discard title_word as its action","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows a suggested discard null as its action","status":"skipped","title":"shows a suggested discard null as its action","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage discards as suggested because contract","status":"skipped","title":"discards as suggested because contract","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage discards as suggested because title_word","status":"skipped","title":"discards as suggested because title_word","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage an offer discarded as suggested leaves the inbox at once","status":"skipped","title":"an offer discarded as suggested leaves the inbox at once","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage improves the filter from the offer the suggestion comes from","status":"skipped","title":"improves the filter from the offer the suggestion comes from","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows the triager's suggestion above the offers, and Not now","status":"skipped","title":"shows the triager's suggestion above the offers, and Not now","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows the triager's suggestion above the offers, and Exclude it","status":"skipped","title":"shows the triager's suggestion above the offers, and Exclude it","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triage"],"fullName":"InboxPage triage shows the verdict of a near miss and relaxes its rule from it","status":"skipped","title":"shows the verdict of a near miss and relaxes its rule from it","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triager discards"],"fullName":"InboxPage triager discards lets the AI discard the offers it is sure of","status":"skipped","title":"lets the AI discard the offers it is sure of","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triager discards"],"fullName":"InboxPage triager discards undoes the AI's discards right away","status":"skipped","title":"undoes the AI's discards right away","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triager discards"],"fullName":"InboxPage triager discards without anything for the AI to discard there is no \"Let AI discard\"","status":"skipped","title":"without anything for the AI to discard there is no \"Let AI discard\"","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triager discards"],"fullName":"InboxPage triager discards says a triager discard is the AI's, and restores it","status":"skipped","title":"says a triager discard is the AI's, and restores it","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triager discards"],"fullName":"InboxPage triager discards links the header of the pane to the original posting","status":"skipped","title":"links the header of the pane to the original posting","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triager discards"],"fullName":"InboxPage triager discards says a near miss is ok: worth rescuing is true","status":"skipped","title":"says a near miss is ok: worth rescuing is true","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage triager discards"],"fullName":"InboxPage triager discards says a near miss is ko: worth rescuing is false","status":"skipped","title":"says a near miss is ko: worth rescuing is false","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line a promoted offer says Promoted and Application created","status":"skipped","title":"a promoted offer says Promoted and Application created","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line a discarded offer says Discarded and No reason","status":"skipped","title":"a discarded offer says Discarded and No reason","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line a pending offer marked ok with high confidence says AI: OK · High","status":"skipped","title":"a pending offer marked ok with high confidence says AI: OK · High","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line a pending offer marked ko with medium confidence says AI: KO · Medium","status":"skipped","title":"a pending offer marked ko with medium confidence says AI: KO · Medium","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line an offer added by hand says it was not triaged and { …(26) }","status":"skipped","title":"an offer added by hand says it was not triaged and { …(26) }","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line an offer from an email alert says it was not triaged and { …(26) }","status":"skipped","title":"an offer from an email alert says it was not triaged and { …(26) }","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line an offer with a reading says it was not triaged and { …(26) }","status":"skipped","title":"an offer with a reading says it was not triaged and { …(26) }","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line a near miss that has no verdict says undefined and its failed rule","status":"skipped","title":"a near miss that has no verdict says undefined and its failed rule","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line a near miss that was marked OK says { verdict: 'ok', …(3) } and its failed rule","status":"skipped","title":"a near miss that was marked OK says { verdict: 'ok', …(3) } and its failed rule","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage row line"],"fullName":"InboxPage row line says a triager discard is the AI's","status":"skipped","title":"says a triager discard is the AI's","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage action bar"],"fullName":"InboxPage action bar says which offer of the view is open and offers Promote and Discard","status":"skipped","title":"says which offer of the view is open and offers Promote and Discard","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage action bar"],"fullName":"InboxPage action bar opens the next offer after discarding","status":"skipped","title":"opens the next offer after discarding","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage action bar"],"fullName":"InboxPage action bar opens the previous one after the last after discarding","status":"skipped","title":"opens the previous one after the last after discarding","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage action bar"],"fullName":"InboxPage action bar opens the next near miss after marking one as rightly filtered","status":"skipped","title":"opens the next near miss after marking one as rightly filtered","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage action bar"],"fullName":"InboxPage action bar makes a suggested discard the main action, with Promote and Other reason","status":"skipped","title":"makes a suggested discard the main action, with Promote and Other reason","failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage keyboard"],"fullName":"InboxPage keyboard opens the promotion dialog with P on a near miss","status":"failed","title":"opens the promotion dialog with P on a near miss","duration":2251.748200000002,"failureMessages":["Error: Unable to find role=\"dialog\"\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-j9r8az\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<section\u001b[39m\n        \u001b[33maria-label\u001b[39m=\u001b[32m\"Offer list\"\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1c1f6di\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-by5w8z\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-1rchsbk-MuiStack-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-189mb5e-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<h1\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-h4 css-jt26b8-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mInbox\u001b[0m\n              \u001b[36m</h1>\u001b[39m\n              \u001b[36m<p\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body1 css-yi2tas-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0m1\u001b[0m\n                \u001b[0m \u001b[0m\n                \u001b[0mfiltered\u001b[0m\n              \u001b[36m</p>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-193iwg-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mImport job board\u001b[0m\n              \u001b[36m</button>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mAdd offer\u001b[0m\n              \u001b[36m</button>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-root css-17011zc-MuiTabs-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scrollableX MuiTabs-hideScrollbar css-i8yde5\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"width: 99px; height: 99px; position: absolute; top: -9999px; overflow: scroll; pointer-events: none;\"\u001b[39m\n              \u001b[36m/>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scroller MuiTabs-hideScrollbar MuiTabs-scrollableX css-1fr578y-MuiTabs-scroller\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"margin-bottom: 0px;\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<div\u001b[39m\n                  \u001b[33maria-label\u001b[39m=\u001b[32m\"Offers\"\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-list css-hzcega-MuiTabs-list\"\u001b[39m\n                  \u001b[33mrole\u001b[39m=\u001b[32m\"tablist\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPending\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"true\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mFiltered\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m1\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mDiscarded\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPromoted\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                \u001b[36m</div>\u001b[39m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-indicator css-11vcyky-MuiTabs-indicator\"\u001b[39m\n                  \u001b[33mstyle\u001b[39m=\u001b[32m\"left: 0px; width: 0px...\n    at waitForWrapper (C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\wait-for.js:163:27)\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:86:33\n    at C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx:1935:25\n    at async file:///C:/Users/Ra%C3%BAl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/node_modules/.pnpm/vitest@5.1.0_@types+node@26_64e525da7ddecea3dea74153515e5f15/node_modules/vitest/dist/chunks/run.CjdgFZiW.js:2801:20"],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage keyboard"],"fullName":"InboxPage keyboard opens the reasons with D and does not discard a suggested discard","status":"failed","title":"opens the reasons with D and does not discard a suggested discard","duration":1431.699099999998,"failureMessages":["Error: Unable to find role=\"group\" and name \"Discard because\"\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-j9r8az\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<section\u001b[39m\n        \u001b[33maria-label\u001b[39m=\u001b[32m\"Offer list\"\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1c1f6di\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-by5w8z\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-1rchsbk-MuiStack-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-189mb5e-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<h1\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-h4 css-jt26b8-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mInbox\u001b[0m\n              \u001b[36m</h1>\u001b[39m\n              \u001b[36m<p\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body1 css-yi2tas-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0m1\u001b[0m\n                \u001b[0m \u001b[0m\n                \u001b[0mto decide\u001b[0m\n              \u001b[36m</p>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-193iwg-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mImport job board\u001b[0m\n              \u001b[36m</button>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mAdd offer\u001b[0m\n              \u001b[36m</button>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-12g6mlx-MuiStack-root\"\u001b[39m\n          \u001b[36m/>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n          \u001b[36m/>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-root css-17011zc-MuiTabs-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scrollableX MuiTabs-hideScrollbar css-i8yde5\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"width: 99px; height: 99px; position: absolute; top: -9999px; overflow: scroll; pointer-events: none;\"\u001b[39m\n              \u001b[36m/>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scroller MuiTabs-hideScrollbar MuiTabs-scrollableX css-1fr578y-MuiTabs-scroller\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"margin-bottom: 0px;\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<div\u001b[39m\n                  \u001b[33maria-label\u001b[39m=\u001b[32m\"Offers\"\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-list css-hzcega-MuiTabs-list\"\u001b[39m\n                  \u001b[33mrole\u001b[39m=\u001b[32m\"tablist\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"true\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPending\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m1\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mFiltered\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mDiscarded\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPromoted\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  ...\n    at waitForWrapper (C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\wait-for.js:163:27)\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:86:33\n    at C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx:1963:25\n    at async file:///C:/Users/Ra%C3%BAl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/node_modules/.pnpm/vitest@5.1.0_@types+node@26_64e525da7ddecea3dea74153515e5f15/node_modules/vitest/dist/chunks/run.CjdgFZiW.js:2801:20"],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage keyboard"],"fullName":"InboxPage keyboard ignores P with a modifier","status":"passed","title":"ignores P with a modifier","duration":265.8183999999965,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage keyboard"],"fullName":"InboxPage keyboard ignores P in a field","status":"passed","title":"ignores P in a field","duration":222.34999999999854,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["InboxPage keyboard"],"fullName":"InboxPage keyboard shows the hints at the foot of the list and on the buttons","status":"failed","title":"shows the hints at the foot of the list and on the buttons","duration":171.51450000000477,"failureMessages":["TestingLibraryElementError: Unable to find an element with the text: J/K move · P promote · D discard. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.\n\nIgnored nodes: comments, script, style\n\u001b[36m<section\u001b[39m\n  \u001b[33maria-label\u001b[39m=\u001b[32m\"Offer list\"\u001b[39m\n  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1c1f6di\"\u001b[39m\n\u001b[36m>\u001b[39m\n  \u001b[36m<div\u001b[39m\n    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-by5w8z\"\u001b[39m\n  \u001b[36m>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-1rchsbk-MuiStack-root\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-189mb5e-MuiStack-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h1\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-h4 css-jt26b8-MuiTypography-root\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mInbox\u001b[0m\n        \u001b[36m</h1>\u001b[39m\n        \u001b[36m<p\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body1 css-yi2tas-MuiTypography-root\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0m1\u001b[0m\n          \u001b[0m \u001b[0m\n          \u001b[0mto decide\u001b[0m\n        \u001b[36m</p>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-193iwg-MuiStack-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n          \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mImport job board\u001b[0m\n        \u001b[36m</button>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n          \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mAdd offer\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-12g6mlx-MuiStack-root\"\u001b[39m\n    \u001b[36m/>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n    \u001b[36m/>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-root css-17011zc-MuiTabs-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scrollableX MuiTabs-hideScrollbar css-i8yde5\"\u001b[39m\n          \u001b[33mstyle\u001b[39m=\u001b[32m\"width: 99px; height: 99px; position: absolute; top: -9999px; overflow: scroll; pointer-events: none;\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scroller MuiTabs-hideScrollbar MuiTabs-scrollableX css-1fr578y-MuiTabs-scroller\"\u001b[39m\n          \u001b[33mstyle\u001b[39m=\u001b[32m\"margin-bottom: 0px;\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33maria-label\u001b[39m=\u001b[32m\"Offers\"\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-list css-hzcega-MuiTabs-list\"\u001b[39m\n            \u001b[33mrole\u001b[39m=\u001b[32m\"tablist\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"true\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mPending\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m1\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mFiltered\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m0\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mDiscarded\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m0\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mPromoted\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m0\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<span\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-indicator css-11vcyky-MuiTabs-indicator\"\u001b[39m\n            \u001b[33mstyle\u001b[39m=\u001b[32m\"left: 0px; width: 0px;\"\u001b[39m\n          \u001b[36m/>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n  \u001b[36m<section\u001b[39m\n    \u001b[33maria-label\u001b[39m=\u001b[32m\"Today\"\u001b[39m\n    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-0\"\u001b[39m\n  \u001b[36m>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7f18p2\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<h2\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-overline css-y9esu-MuiTypography-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[0mToday\u001b[0m\n        \u001b[0m · \u001b[0m\n        \u001b[36m<span\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-q1br8v\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0m1\u001b[0m\n        \u001b[36m</span>\u001b[39m\n        \u001b[0m \u001b[0m\n        \u001b[0moffer\u001b[0m\n      \u001b[36m</h2>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n    \u001b[36m<ul\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1iruc8t\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<li\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-y2xl1p\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1t4zmu8\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33maria-hidden\u001b[39m=\u001b[32m\"true\"\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiAvatar-root MuiAvatar-rounded MuiAvatar-colorDefault css-1ypqfds-MuiAvatar-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[0mA\u001b[0m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-31l7gp\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<button\u001b[39m\n            \u001b[33maria-current\u001b[39m=\u001b[32m\"true\"\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root css-p2qrx2-MuiButtonBase-root\"\u001b[39m\n            \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n            \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[0mBackend Engineer\u001b[0m\n          \u001b[36m</button>\u001b[39m\n          \u001b[36m<p\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body2 css-knx5qr-MuiTypography-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[0mAcme\u001b[0m\n          \u001b[36m</p>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1bczpqu\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<span\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1mz6t0\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mNot triaged\u001b[0m\n            \u001b[36m</span>\u001b[39m\n            \u001b[36m<p\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body2 css-l2ob38-MuiTypography-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mNothing to read: added by hand\u001b[0m\n            \u001b[36m</p>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-13fejg7\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<span\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-8zpzrg\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<time\u001b[39m\n              \u001b[33maria-label\u001b[39m=\u001b[32m\"Nov 22, 2026\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-13qa7pk\"\u001b[39m\n              \u001b[33mdata-mui-internal-clone-element\u001b[39m=\u001b[32m\"true\"\u001b[39m\n              \u001b[33mdatetime\u001b[39m=\u001b[32m\"2026-11-22\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mtoday\u001b[0m\n            \u001b[36m</time>\u001b[39m\n          \u001b[36m</span>\u001b[39m\n          \u001b[36m<span\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1ki2ix8\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<svg\u001b[39m\n              \u001b[33maria-hidden\u001b[39m=\u001b[32m\"true\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-aizyws-MuiSvgIcon-root\"\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"EditOutlinedIcon\"\u001b[39m\n              \u001b[33mfocusable\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<path\u001b[39m\n                \u001b[33md\u001b[39m=\u001b[32m\"m14.06 9.02.92.92L5.92 19H5v-.92zM17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29m-3.6 3.19L3 17.25V21h3.75L17.81 9.94z\"\u001b[39m\n              \u001b[36m/>\u001b[39m\n            \u001b[36m</svg>\u001b[39m\n            \u001b[0mBy hand · Remote OK\u001b[0m\n          \u001b[36m</span>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</li>\u001b[39m\n    \u001b[36m</ul>\u001b[39m\n  \u001b[36m</section>\u001b[39m\n\u001b[36m</section>\u001b[39m\n    at Object.getElementError (C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx:2004:32\n    at async file:///C:/Users/Ra%C3%BAl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/node_modules/.pnpm/vitest@5.1.0_@types+node@26_64e525da7ddecea3dea74153515e5f15/node_modules/vitest/dist/chunks/run.CjdgFZiW.js:2801:20"],"meta":{},"tags":[],"benchmarks":[]}],"startTime":1795354696508,"endTime":1795354700851.5144,"status":"failed","message":"","name":"C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx"}]}
+{
+  "numTotalTestSuites": 20,
+  "numPassedTestSuites": 18,
+  "numFailedTestSuites": 2,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 103,
+  "numPassedTests": 2,
+  "numFailedTests": 3,
+  "numPendingTests": 98,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1795354664982,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["InboxPage filtered offers"],
+          "fullName": "InboxPage filtered offers the filtered view shows only the filtered offers",
+          "status": "skipped",
+          "title": "the filtered view shows only the filtered offers",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage filtered offers"],
+          "fullName": "InboxPage filtered offers the pending view leaves out the filtered offers",
+          "status": "skipped",
+          "title": "the pending view leaves out the filtered offers",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage country tags"],
+          "fullName": "InboxPage country tags an offer located in \"Madrid, Spain\" shows the tag [\"Spain\"] and \"Spain\"",
+          "status": "skipped",
+          "title": "an offer located in \"Madrid, Spain\" shows the tag [\"Spain\"] and \"Spain\"",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage country tags"],
+          "fullName": "InboxPage country tags an offer located in \"Spain, Portugal\" shows the tag [\"Spain\",\"Portugal\"] and \"Spain\"",
+          "status": "skipped",
+          "title": "an offer located in \"Spain, Portugal\" shows the tag [\"Spain\",\"Portugal\"] and \"Spain\"",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage country tags"],
+          "fullName": "InboxPage country tags an offer located in \"Worldwide\" shows the tag [\"Worldwide\"] and \"Worldwide\"",
+          "status": "skipped",
+          "title": "an offer located in \"Worldwide\" shows the tag [\"Worldwide\"] and \"Worldwide\"",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage country tags"],
+          "fullName": "InboxPage country tags an offer located in \"San Francisco, CA\" shows the tag [] and \"San Francisco, CA\"",
+          "status": "skipped",
+          "title": "an offer located in \"San Francisco, CA\" shows the tag [] and \"San Francisco, CA\"",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage groups"],
+          "fullName": "InboxPage groups groups the offers by the day they were added",
+          "status": "skipped",
+          "title": "groups the offers by the day they were added",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage groups"],
+          "fullName": "InboxPage groups shows the variants next to each other as one closed row that opens",
+          "status": "skipped",
+          "title": "shows the variants next to each other as one closed row that opens",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage groups"],
+          "fullName": "InboxPage groups selects the first offer of the view, and the offer of the row chosen",
+          "status": "skipped",
+          "title": "selects the first offer of the view, and the offer of the row chosen",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage groups"],
+          "fullName": "InboxPage groups with verdicts, the pending view goes by verdict",
+          "status": "skipped",
+          "title": "with verdicts, the pending view goes by verdict",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading with the mode remote shows Remote",
+          "status": "skipped",
+          "title": "a reading with the mode remote shows Remote",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading with the mode hybrid shows Hybrid",
+          "status": "skipped",
+          "title": "a reading with the mode hybrid shows Hybrid",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading with the mode null shows Not stated",
+          "status": "skipped",
+          "title": "a reading with the mode null shows Not stated",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading { admits_location: true, …(1) } shows Spain",
+          "status": "skipped",
+          "title": "a reading { admits_location: true, …(1) } shows Spain",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading { admits_location: false, …(1) } shows Not from Spain",
+          "status": "skipped",
+          "title": "a reading { admits_location: false, …(1) } shows Not from Spain",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading { stable: true } shows Stable",
+          "status": "skipped",
+          "title": "a reading { stable: true } shows Stable",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading { stable: false } shows Not stable",
+          "status": "skipped",
+          "title": "a reading { stable: false } shows Not stable",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading { engineering: true } shows Engineering",
+          "status": "skipped",
+          "title": "a reading { engineering: true } shows Engineering",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading { engineering: false } shows Not engineering",
+          "status": "skipped",
+          "title": "a reading { engineering: false } shows Not engineering",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage reading strip"],
+          "fullName": "InboxPage reading strip a reading { stack: [ 'Python', 'Django' ] } shows Python, Django",
+          "status": "skipped",
+          "title": "a reading { stack: [ 'Python', 'Django' ] } shows Python, Django",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'title', …(5) } rule shows in Title as Backend Engineer",
+          "status": "skipped",
+          "title": "a { rule: 'title', …(5) } rule shows in Title as Backend Engineer",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'keywords', …(5) } rule shows in Keywords as Python, Django",
+          "status": "skipped",
+          "title": "a { rule: 'keywords', …(5) } rule shows in Keywords as Python, Django",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'work_mode', …(5) } rule shows in Mode as Remote",
+          "status": "skipped",
+          "title": "a { rule: 'work_mode', …(5) } rule shows in Mode as Remote",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'work_mode', …(5) } rule shows in Mode as Not stated",
+          "status": "skipped",
+          "title": "a { rule: 'work_mode', …(5) } rule shows in Mode as Not stated",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'location', …(5) } rule shows in Location as Spain",
+          "status": "skipped",
+          "title": "a { rule: 'location', …(5) } rule shows in Location as Spain",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'stable', …(5) } rule shows in Contract as Stable",
+          "status": "skipped",
+          "title": "a { rule: 'stable', …(5) } rule shows in Contract as Stable",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'stable', …(5) } rule shows in Contract as Not stated",
+          "status": "skipped",
+          "title": "a { rule: 'stable', …(5) } rule shows in Contract as Not stated",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a { rule: 'engineering', …(5) } rule shows in Role as Engineering",
+          "status": "skipped",
+          "title": "a { rule: 'engineering', …(5) } rule shows in Role as Engineering",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip a rule the profile does not ask for says \"Any\"",
+          "status": "skipped",
+          "title": "a rule the profile does not ask for says \"Any\"",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip an offer of 6f1c1d2e-0000-4000-8000-000000000006 without a description merges its reading rules",
+          "status": "skipped",
+          "title": "an offer of 6f1c1d2e-0000-4000-8000-000000000006 without a description merges its reading rules",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip an offer of 6f1c1d2e-0000-4000-8000-000000000005 without a description merges its reading rules",
+          "status": "skipped",
+          "title": "an offer of 6f1c1d2e-0000-4000-8000-000000000005 without a description merges its reading rules",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rule strip"],
+          "fullName": "InboxPage rule strip an offer added by hand says it has nothing to read",
+          "status": "skipped",
+          "title": "an offer added by hand says it has nothing to read",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage stack cell"],
+          "fullName": "InboxPage stack cell a reading with the stack [ 'Python', 'Django' ] shows Python, Django",
+          "status": "skipped",
+          "title": "a reading with the stack [ 'Python', 'Django' ] shows Python, Django",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage stack cell"],
+          "fullName": "InboxPage stack cell a reading with the stack [] shows Not stated",
+          "status": "skipped",
+          "title": "a reading with the stack [] shows Not stated",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Senior Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Senior\", you exclude it",
+          "status": "skipped",
+          "title": "Senior Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Senior\", you exclude it",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Backend Engineer failing { rule: 'keywords', …(5) } shows in Keywords Missing: Django",
+          "status": "skipped",
+          "title": "Backend Engineer failing { rule: 'keywords', …(5) } shows in Keywords Missing: Django",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Backend Engineer failing { rule: 'work_mode', …(5) } shows in Mode Hybrid, you ask Remote",
+          "status": "skipped",
+          "title": "Backend Engineer failing { rule: 'work_mode', …(5) } shows in Mode Hybrid, you ask Remote",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Backend Engineer failing { rule: 'location', …(5) } shows in Location Not from Spain",
+          "status": "skipped",
+          "title": "Backend Engineer failing { rule: 'location', …(5) } shows in Location Not from Spain",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Backend Engineer failing { rule: 'stable', …(5) } shows in Contract Not stable",
+          "status": "skipped",
+          "title": "Backend Engineer failing { rule: 'stable', …(5) } shows in Contract Not stable",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Backend Engineer failing { rule: 'engineering', …(5) } shows in Role Not engineering",
+          "status": "skipped",
+          "title": "Backend Engineer failing { rule: 'engineering', …(5) } shows in Role Not engineering",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Node\" in its stack, you exclude it",
+          "status": "skipped",
+          "title": "Backend Engineer failing { rule: 'excluded', …(5) } shows in Title \"Node\" in its stack, you exclude it",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage failed cells"],
+          "fullName": "InboxPage failed cells Data Engineer failing { rule: 'title', …(5) } shows in Title No title of yours",
+          "status": "skipped",
+          "title": "Data Engineer failing { rule: 'title', …(5) } shows in Title No title of yours",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage maybe"],
+          "fullName": "InboxPage maybe closes the pending view with the three most recent near misses",
+          "status": "skipped",
+          "title": "closes the pending view with the three most recent near misses",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage maybe"],
+          "fullName": "InboxPage maybe without near misses there is no \"Maybe\"",
+          "status": "skipped",
+          "title": "without near misses there is no \"Maybe\"",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage maybe"],
+          "fullName": "InboxPage maybe promotes a near miss anyway",
+          "status": "skipped",
+          "title": "promotes a near miss anyway",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rightly filtered"],
+          "fullName": "InboxPage rightly filtered marks a near miss in Maybe as rightly filtered",
+          "status": "skipped",
+          "title": "marks a near miss in Maybe as rightly filtered",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage rightly filtered"],
+          "fullName": "InboxPage rightly filtered marks a near miss in A word you exclude as rightly filtered",
+          "status": "skipped",
+          "title": "marks a near miss in A word you exclude as rightly filtered",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage filtered by rule"],
+          "fullName": "InboxPage filtered by rule groups the near misses by the rule that filtered them",
+          "status": "skipped",
+          "title": "groups the near misses by the rule that filtered them",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage filtered by rule"],
+          "fullName": "InboxPage filtered by rule lists the offers of a group of near misses under it, always open",
+          "status": "skipped",
+          "title": "lists the offers of a group of near misses under it, always open",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage filtered by rule"],
+          "fullName": "InboxPage filtered by rule lists the offers further away with their strip",
+          "status": "skipped",
+          "title": "lists the offers further away with their strip",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage exclusion proposal"],
+          "fullName": "InboxPage exclusion proposal proposes excluding the word with the effect { leaving_pending: 3, …(2) }",
+          "status": "skipped",
+          "title": "proposes excluding the word with the effect { leaving_pending: 3, …(2) }",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage exclusion proposal"],
+          "fullName": "InboxPage exclusion proposal proposes excluding the word with the effect { leaving_pending: 1, …(2) }",
+          "status": "skipped",
+          "title": "proposes excluding the word with the effect { leaving_pending: 1, …(2) }",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage exclusion proposal"],
+          "fullName": "InboxPage exclusion proposal Only discard this one discards the offer because of the word",
+          "status": "skipped",
+          "title": "Only discard this one discards the offer because of the word",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage exclusion proposal"],
+          "fullName": "InboxPage exclusion proposal Discard and exclude “Lead” discards the offer because of the word",
+          "status": "skipped",
+          "title": "Discard and exclude “Lead” discards the offer because of the word",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage discarding"],
+          "fullName": "InboxPage discarding keeps the title as a link and offers its words under A word in the title",
+          "status": "skipped",
+          "title": "keeps the title as a link and offers its words under A word in the title",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage discarding"],
+          "fullName": "InboxPage discarding a word of an offer without a profile discards it right away",
+          "status": "skipped",
+          "title": "a word of an offer without a profile discards it right away",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage discarding with a slow inbox"],
+          "fullName": "InboxPage discarding with a slow inbox shows the message and takes the offer out without waiting for the inbox",
+          "status": "skipped",
+          "title": "shows the message and takes the offer out without waiting for the inbox",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage discarding with a slow inbox"],
+          "fullName": "InboxPage discarding with a slow inbox disables Cancel while the discard is being done",
+          "status": "skipped",
+          "title": "disables Cancel while the discard is being done",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage frequent titles"],
+          "fullName": "InboxPage frequent titles lists them in Filtered and adds one as a criteria change",
+          "status": "skipped",
+          "title": "lists them in Filtered and adds one as a criteria change",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage triages batch after batch until none is left or one triages none",
+          "status": "skipped",
+          "title": "triages batch after batch until none is left or one triages none",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage triages batch after batch until none is left or one triages none",
+          "status": "skipped",
+          "title": "triages batch after batch until none is left or one triages none",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage triages batch after batch until none is left or one triages none",
+          "status": "skipped",
+          "title": "triages batch after batch until none is left or one triages none",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows outstanding verdicts only while a triage request is pending",
+          "status": "skipped",
+          "title": "shows outstanding verdicts only while a triage request is pending",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows the AI section of a triaged offer",
+          "status": "skipped",
+          "title": "shows the AI section of a triaged offer",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows only what the triage has: no confidence",
+          "status": "skipped",
+          "title": "shows only what the triage has: no confidence",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows only what the triage has: medium confidence",
+          "status": "skipped",
+          "title": "shows only what the triage has: medium confidence",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows a suggested discard contract as its action",
+          "status": "skipped",
+          "title": "shows a suggested discard contract as its action",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows a suggested discard title_word as its action",
+          "status": "skipped",
+          "title": "shows a suggested discard title_word as its action",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows a suggested discard null as its action",
+          "status": "skipped",
+          "title": "shows a suggested discard null as its action",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage discards as suggested because contract",
+          "status": "skipped",
+          "title": "discards as suggested because contract",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage discards as suggested because title_word",
+          "status": "skipped",
+          "title": "discards as suggested because title_word",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage an offer discarded as suggested leaves the inbox at once",
+          "status": "skipped",
+          "title": "an offer discarded as suggested leaves the inbox at once",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage improves the filter from the offer the suggestion comes from",
+          "status": "skipped",
+          "title": "improves the filter from the offer the suggestion comes from",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows the triager's suggestion above the offers, and Not now",
+          "status": "skipped",
+          "title": "shows the triager's suggestion above the offers, and Not now",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows the triager's suggestion above the offers, and Exclude it",
+          "status": "skipped",
+          "title": "shows the triager's suggestion above the offers, and Exclude it",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triage"],
+          "fullName": "InboxPage triage shows the verdict of a near miss and relaxes its rule from it",
+          "status": "skipped",
+          "title": "shows the verdict of a near miss and relaxes its rule from it",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triager discards"],
+          "fullName": "InboxPage triager discards lets the AI discard the offers it is sure of",
+          "status": "skipped",
+          "title": "lets the AI discard the offers it is sure of",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triager discards"],
+          "fullName": "InboxPage triager discards undoes the AI's discards right away",
+          "status": "skipped",
+          "title": "undoes the AI's discards right away",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triager discards"],
+          "fullName": "InboxPage triager discards without anything for the AI to discard there is no \"Let AI discard\"",
+          "status": "skipped",
+          "title": "without anything for the AI to discard there is no \"Let AI discard\"",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triager discards"],
+          "fullName": "InboxPage triager discards says a triager discard is the AI's, and restores it",
+          "status": "skipped",
+          "title": "says a triager discard is the AI's, and restores it",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triager discards"],
+          "fullName": "InboxPage triager discards links the header of the pane to the original posting",
+          "status": "skipped",
+          "title": "links the header of the pane to the original posting",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triager discards"],
+          "fullName": "InboxPage triager discards says a near miss is ok: worth rescuing is true",
+          "status": "skipped",
+          "title": "says a near miss is ok: worth rescuing is true",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage triager discards"],
+          "fullName": "InboxPage triager discards says a near miss is ko: worth rescuing is false",
+          "status": "skipped",
+          "title": "says a near miss is ko: worth rescuing is false",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line a promoted offer says Promoted and Application created",
+          "status": "skipped",
+          "title": "a promoted offer says Promoted and Application created",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line a discarded offer says Discarded and No reason",
+          "status": "skipped",
+          "title": "a discarded offer says Discarded and No reason",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line a pending offer marked ok with high confidence says AI: OK · High",
+          "status": "skipped",
+          "title": "a pending offer marked ok with high confidence says AI: OK · High",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line a pending offer marked ko with medium confidence says AI: KO · Medium",
+          "status": "skipped",
+          "title": "a pending offer marked ko with medium confidence says AI: KO · Medium",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line an offer added by hand says it was not triaged and { …(26) }",
+          "status": "skipped",
+          "title": "an offer added by hand says it was not triaged and { …(26) }",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line an offer from an email alert says it was not triaged and { …(26) }",
+          "status": "skipped",
+          "title": "an offer from an email alert says it was not triaged and { …(26) }",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line an offer with a reading says it was not triaged and { …(26) }",
+          "status": "skipped",
+          "title": "an offer with a reading says it was not triaged and { …(26) }",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line a near miss that has no verdict says undefined and its failed rule",
+          "status": "skipped",
+          "title": "a near miss that has no verdict says undefined and its failed rule",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line a near miss that was marked OK says { verdict: 'ok', …(3) } and its failed rule",
+          "status": "skipped",
+          "title": "a near miss that was marked OK says { verdict: 'ok', …(3) } and its failed rule",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage row line"],
+          "fullName": "InboxPage row line says a triager discard is the AI's",
+          "status": "skipped",
+          "title": "says a triager discard is the AI's",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage action bar"],
+          "fullName": "InboxPage action bar says which offer of the view is open and offers Promote and Discard",
+          "status": "skipped",
+          "title": "says which offer of the view is open and offers Promote and Discard",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage action bar"],
+          "fullName": "InboxPage action bar opens the next offer after discarding",
+          "status": "skipped",
+          "title": "opens the next offer after discarding",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage action bar"],
+          "fullName": "InboxPage action bar opens the previous one after the last after discarding",
+          "status": "skipped",
+          "title": "opens the previous one after the last after discarding",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage action bar"],
+          "fullName": "InboxPage action bar opens the next near miss after marking one as rightly filtered",
+          "status": "skipped",
+          "title": "opens the next near miss after marking one as rightly filtered",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage action bar"],
+          "fullName": "InboxPage action bar makes a suggested discard the main action, with Promote and Other reason",
+          "status": "skipped",
+          "title": "makes a suggested discard the main action, with Promote and Other reason",
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage keyboard"],
+          "fullName": "InboxPage keyboard opens the promotion dialog with P on a near miss",
+          "status": "failed",
+          "title": "opens the promotion dialog with P on a near miss",
+          "duration": 2251.748200000002,
+          "failureMessages": [
+            "Error: Unable to find role=\"dialog\"\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-j9r8az\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<section\u001b[39m\n        \u001b[33maria-label\u001b[39m=\u001b[32m\"Offer list\"\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1c1f6di\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-by5w8z\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-1rchsbk-MuiStack-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-189mb5e-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<h1\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-h4 css-jt26b8-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mInbox\u001b[0m\n              \u001b[36m</h1>\u001b[39m\n              \u001b[36m<p\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body1 css-yi2tas-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0m1\u001b[0m\n                \u001b[0m \u001b[0m\n                \u001b[0mfiltered\u001b[0m\n              \u001b[36m</p>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-193iwg-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mImport job board\u001b[0m\n              \u001b[36m</button>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mAdd offer\u001b[0m\n              \u001b[36m</button>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-root css-17011zc-MuiTabs-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scrollableX MuiTabs-hideScrollbar css-i8yde5\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"width: 99px; height: 99px; position: absolute; top: -9999px; overflow: scroll; pointer-events: none;\"\u001b[39m\n              \u001b[36m/>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scroller MuiTabs-hideScrollbar MuiTabs-scrollableX css-1fr578y-MuiTabs-scroller\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"margin-bottom: 0px;\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<div\u001b[39m\n                  \u001b[33maria-label\u001b[39m=\u001b[32m\"Offers\"\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-list css-hzcega-MuiTabs-list\"\u001b[39m\n                  \u001b[33mrole\u001b[39m=\u001b[32m\"tablist\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPending\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"true\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mFiltered\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m1\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mDiscarded\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPromoted\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                \u001b[36m</div>\u001b[39m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-indicator css-11vcyky-MuiTabs-indicator\"\u001b[39m\n                  \u001b[33mstyle\u001b[39m=\u001b[32m\"left: 0px; width: 0px...\n    at waitForWrapper (C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\wait-for.js:163:27)\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:86:33\n    at C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx:1935:25\n    at async file:///C:/Users/Ra%C3%BAl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/node_modules/.pnpm/vitest@5.1.0_@types+node@26_64e525da7ddecea3dea74153515e5f15/node_modules/vitest/dist/chunks/run.CjdgFZiW.js:2801:20"
+          ],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage keyboard"],
+          "fullName": "InboxPage keyboard opens the reasons with D and does not discard a suggested discard",
+          "status": "failed",
+          "title": "opens the reasons with D and does not discard a suggested discard",
+          "duration": 1431.699099999998,
+          "failureMessages": [
+            "Error: Unable to find role=\"group\" and name \"Discard because\"\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-j9r8az\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<section\u001b[39m\n        \u001b[33maria-label\u001b[39m=\u001b[32m\"Offer list\"\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1c1f6di\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-by5w8z\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-1rchsbk-MuiStack-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-189mb5e-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<h1\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-h4 css-jt26b8-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mInbox\u001b[0m\n              \u001b[36m</h1>\u001b[39m\n              \u001b[36m<p\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body1 css-yi2tas-MuiTypography-root\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0m1\u001b[0m\n                \u001b[0m \u001b[0m\n                \u001b[0mto decide\u001b[0m\n              \u001b[36m</p>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-193iwg-MuiStack-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mImport job board\u001b[0m\n              \u001b[36m</button>\u001b[39m\n              \u001b[36m<button\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n                \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mAdd offer\u001b[0m\n              \u001b[36m</button>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-12g6mlx-MuiStack-root\"\u001b[39m\n          \u001b[36m/>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n          \u001b[36m/>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-root css-17011zc-MuiTabs-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scrollableX MuiTabs-hideScrollbar css-i8yde5\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"width: 99px; height: 99px; position: absolute; top: -9999px; overflow: scroll; pointer-events: none;\"\u001b[39m\n              \u001b[36m/>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scroller MuiTabs-hideScrollbar MuiTabs-scrollableX css-1fr578y-MuiTabs-scroller\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"margin-bottom: 0px;\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<div\u001b[39m\n                  \u001b[33maria-label\u001b[39m=\u001b[32m\"Offers\"\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-list css-hzcega-MuiTabs-list\"\u001b[39m\n                  \u001b[33mrole\u001b[39m=\u001b[32m\"tablist\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"true\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPending\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m1\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mFiltered\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mDiscarded\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</button>\u001b[39m\n                  \u001b[36m<button\u001b[39m\n                    \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n                    \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n                    \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n                    \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mPromoted\u001b[0m\n                      \u001b[36m<span\u001b[39m\n                        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                      \u001b[36m>\u001b[39m\n                        \u001b[0m0\u001b[0m\n                      \u001b[36m</span>\u001b[39m\n                    \u001b[36m</span>\u001b[39m\n                  ...\n    at waitForWrapper (C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\wait-for.js:163:27)\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:86:33\n    at C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx:1963:25\n    at async file:///C:/Users/Ra%C3%BAl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/node_modules/.pnpm/vitest@5.1.0_@types+node@26_64e525da7ddecea3dea74153515e5f15/node_modules/vitest/dist/chunks/run.CjdgFZiW.js:2801:20"
+          ],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage keyboard"],
+          "fullName": "InboxPage keyboard ignores P with a modifier",
+          "status": "passed",
+          "title": "ignores P with a modifier",
+          "duration": 265.8183999999965,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage keyboard"],
+          "fullName": "InboxPage keyboard ignores P in a field",
+          "status": "passed",
+          "title": "ignores P in a field",
+          "duration": 222.34999999999854,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["InboxPage keyboard"],
+          "fullName": "InboxPage keyboard shows the hints at the foot of the list and on the buttons",
+          "status": "failed",
+          "title": "shows the hints at the foot of the list and on the buttons",
+          "duration": 171.51450000000477,
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element with the text: J/K move · P promote · D discard. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.\n\nIgnored nodes: comments, script, style\n\u001b[36m<section\u001b[39m\n  \u001b[33maria-label\u001b[39m=\u001b[32m\"Offer list\"\u001b[39m\n  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1c1f6di\"\u001b[39m\n\u001b[36m>\u001b[39m\n  \u001b[36m<div\u001b[39m\n    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-by5w8z\"\u001b[39m\n  \u001b[36m>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-1rchsbk-MuiStack-root\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-189mb5e-MuiStack-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h1\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-h4 css-jt26b8-MuiTypography-root\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mInbox\u001b[0m\n        \u001b[36m</h1>\u001b[39m\n        \u001b[36m<p\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body1 css-yi2tas-MuiTypography-root\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0m1\u001b[0m\n          \u001b[0m \u001b[0m\n          \u001b[0mto decide\u001b[0m\n        \u001b[36m</p>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-193iwg-MuiStack-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n          \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mImport job board\u001b[0m\n        \u001b[36m</button>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover MuiLink-button css-1a2j7ju-MuiTypography-root-MuiLink-root\"\u001b[39m\n          \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mAdd offer\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiStack-root css-12g6mlx-MuiStack-root\"\u001b[39m\n    \u001b[36m/>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n    \u001b[36m/>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7texn5\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-root css-17011zc-MuiTabs-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scrollableX MuiTabs-hideScrollbar css-i8yde5\"\u001b[39m\n          \u001b[33mstyle\u001b[39m=\u001b[32m\"width: 99px; height: 99px; position: absolute; top: -9999px; overflow: scroll; pointer-events: none;\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-scroller MuiTabs-hideScrollbar MuiTabs-scrollableX css-1fr578y-MuiTabs-scroller\"\u001b[39m\n          \u001b[33mstyle\u001b[39m=\u001b[32m\"margin-bottom: 0px;\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33maria-label\u001b[39m=\u001b[32m\"Offers\"\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-list css-hzcega-MuiTabs-list\"\u001b[39m\n            \u001b[33mrole\u001b[39m=\u001b[32m\"tablist\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"true\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mPending\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m1\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mFiltered\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m0\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mDiscarded\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m0\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33maria-selected\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-p7eizz-MuiButtonBase-root-MuiTab-root\"\u001b[39m\n              \u001b[33mrole\u001b[39m=\u001b[32m\"tab\"\u001b[39m\n              \u001b[33mtabindex\u001b[39m=\u001b[32m\"-1\"\u001b[39m\n              \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-ff1trd\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mPromoted\u001b[0m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1wcjygc\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0m0\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<span\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTabs-indicator css-11vcyky-MuiTabs-indicator\"\u001b[39m\n            \u001b[33mstyle\u001b[39m=\u001b[32m\"left: 0px; width: 0px;\"\u001b[39m\n          \u001b[36m/>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n  \u001b[36m<section\u001b[39m\n    \u001b[33maria-label\u001b[39m=\u001b[32m\"Today\"\u001b[39m\n    \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-0\"\u001b[39m\n  \u001b[36m>\u001b[39m\n    \u001b[36m<div\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-7f18p2\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<h2\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-overline css-y9esu-MuiTypography-root\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[0mToday\u001b[0m\n        \u001b[0m · \u001b[0m\n        \u001b[36m<span\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-q1br8v\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0m1\u001b[0m\n        \u001b[36m</span>\u001b[39m\n        \u001b[0m \u001b[0m\n        \u001b[0moffer\u001b[0m\n      \u001b[36m</h2>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n    \u001b[36m<ul\u001b[39m\n      \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1iruc8t\"\u001b[39m\n    \u001b[36m>\u001b[39m\n      \u001b[36m<li\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-y2xl1p\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1t4zmu8\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33maria-hidden\u001b[39m=\u001b[32m\"true\"\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiAvatar-root MuiAvatar-rounded MuiAvatar-colorDefault css-1ypqfds-MuiAvatar-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[0mA\u001b[0m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-31l7gp\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<button\u001b[39m\n            \u001b[33maria-current\u001b[39m=\u001b[32m\"true\"\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiButtonBase-root css-p2qrx2-MuiButtonBase-root\"\u001b[39m\n            \u001b[33mtabindex\u001b[39m=\u001b[32m\"0\"\u001b[39m\n            \u001b[33mtype\u001b[39m=\u001b[32m\"button\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[0mBackend Engineer\u001b[0m\n          \u001b[36m</button>\u001b[39m\n          \u001b[36m<p\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body2 css-knx5qr-MuiTypography-root\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[0mAcme\u001b[0m\n          \u001b[36m</p>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1bczpqu\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<span\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1mz6t0\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mNot triaged\u001b[0m\n            \u001b[36m</span>\u001b[39m\n            \u001b[36m<p\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiTypography-root MuiTypography-body2 css-l2ob38-MuiTypography-root\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mNothing to read: added by hand\u001b[0m\n            \u001b[36m</p>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-13fejg7\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<span\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-8zpzrg\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<time\u001b[39m\n              \u001b[33maria-label\u001b[39m=\u001b[32m\"Nov 22, 2026\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-13qa7pk\"\u001b[39m\n              \u001b[33mdata-mui-internal-clone-element\u001b[39m=\u001b[32m\"true\"\u001b[39m\n              \u001b[33mdatetime\u001b[39m=\u001b[32m\"2026-11-22\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mtoday\u001b[0m\n            \u001b[36m</time>\u001b[39m\n          \u001b[36m</span>\u001b[39m\n          \u001b[36m<span\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"MuiBox-root css-1ki2ix8\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<svg\u001b[39m\n              \u001b[33maria-hidden\u001b[39m=\u001b[32m\"true\"\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-aizyws-MuiSvgIcon-root\"\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"EditOutlinedIcon\"\u001b[39m\n              \u001b[33mfocusable\u001b[39m=\u001b[32m\"false\"\u001b[39m\n              \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<path\u001b[39m\n                \u001b[33md\u001b[39m=\u001b[32m\"m14.06 9.02.92.92L5.92 19H5v-.92zM17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29m-3.6 3.19L3 17.25V21h3.75L17.81 9.94z\"\u001b[39m\n              \u001b[36m/>\u001b[39m\n            \u001b[36m</svg>\u001b[39m\n            \u001b[0mBy hand · Remote OK\u001b[0m\n          \u001b[36m</span>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</li>\u001b[39m\n    \u001b[36m</ul>\u001b[39m\n  \u001b[36m</section>\u001b[39m\n\u001b[36m</section>\u001b[39m\n    at Object.getElementError (C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Users\\Raúl\\Documents\\Repositorios\\job_offer_funnel\\.claude\\worktrees\\agent-ae488cb85d65f7bb9\\frontend\\node_modules\\.pnpm\\@testing-library+dom@10.4.2\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx:2004:32\n    at async file:///C:/Users/Ra%C3%BAl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/node_modules/.pnpm/vitest@5.1.0_@types+node@26_64e525da7ddecea3dea74153515e5f15/node_modules/vitest/dist/chunks/run.CjdgFZiW.js:2801:20"
+          ],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1795354696508,
+      "endTime": 1795354700851.5144,
+      "status": "failed",
+      "message": "",
+      "name": "C:/Users/Raúl/Documents/Repositorios/job_offer_funnel/.claude/worktrees/agent-ae488cb85d65f7bb9/frontend/src/pages/inbox/InboxPage.test.tsx"
+    }
+  ]
+}

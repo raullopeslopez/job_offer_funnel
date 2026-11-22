@@ -63,7 +63,8 @@ function statusLine(offer: Offer): string | undefined {
 }
 
 /** A near miss: a filtered offer that fails a single rule (specs/inbox/rescues.feature). */
-const isNearMiss = (offer: Offer) => offer.filtered && offer.filter_reason?.near_miss === true;
+export const isNearMiss = (offer: Offer) =>
+  offer.filtered && offer.filter_reason?.near_miss === true;
 
 type Props = OfferContext &
   Omit<OfferActions, "onDiscard"> &
@@ -71,6 +72,8 @@ type Props = OfferContext &
     offer: Offer | null;
     /** Which offer of the view it is, for the action bar. */
     position?: { index: number; total: number };
+    isDiscarding: boolean;
+    onDiscarding: (isDiscarding: boolean) => void;
     onDiscarded: (offer: Offer) => void;
     /** The other variants of its role, when it is the first of them. */
     variants?: { count: number; open: boolean; onToggle: () => void };
@@ -83,6 +86,8 @@ type Props = OfferContext &
 export function ReadingPane({
   offer,
   position,
+  isDiscarding,
+  onDiscarding,
   onDiscarded,
   variants,
   onBack,
@@ -106,6 +111,8 @@ export function ReadingPane({
       offer={offer}
       position={phone ? undefined : position}
       phone={phone}
+      isDiscarding={isDiscarding}
+      onDiscarding={onDiscarding}
       nearMiss={isNearMiss(offer)}
       profiles={context.profiles}
       onDiscarded={onDiscarded}

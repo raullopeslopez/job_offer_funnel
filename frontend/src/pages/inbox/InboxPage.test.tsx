@@ -1988,7 +1988,9 @@ describe("InboxPage keyboard", () => {
 
     // Assert
     expect(await screen.findByRole("group", { name: "Discard because" })).toBeInTheDocument();
-    expect(within(offerList()).getByRole("button", { name: "Backend Engineer Lead" })).toBeVisible();
+    expect(
+      within(offerList()).getByRole("button", { name: "Backend Engineer Lead" }),
+    ).toBeVisible();
     expect(discarded).toEqual([]);
   });
 
