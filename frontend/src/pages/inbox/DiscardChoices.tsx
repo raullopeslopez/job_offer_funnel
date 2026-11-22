@@ -141,7 +141,10 @@ export function DiscardChoices({ offer, profiles, phone = false, onCancel, onDis
                 variant="outlined"
                 disabled={discard.isPending}
                 onClick={() => discard.mutate({ reason })}
-                sx={{ minHeight: phone ? 50 : 44, justifyContent: phone ? "space-between" : "center" }}
+                sx={{
+                  minHeight: phone ? 50 : 44,
+                  justifyContent: phone ? "space-between" : "center",
+                }}
               >
                 {DISCARD_REASON_LABELS[reason]}
                 {phone && refersTo[reason] && (

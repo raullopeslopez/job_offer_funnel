@@ -3,8 +3,8 @@ import { Box, IconButton, Link, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import { OfferPiece } from "../../components/OfferPiece";
 import { offerSourceKind } from "../../components/offerSource";
-import { ActionBar } from "./ActionBar";
 import { mono } from "../../theme";
+import { ActionBar } from "./ActionBar";
 import { discardReasonText } from "./discardReasons";
 import type { NearMissActions } from "./MaybeGroup";
 import type { OfferActions, OfferContext } from "./OfferList";
@@ -140,7 +140,13 @@ export function ReadingPane({
     >
       <Box
         component="header"
-        sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1, pt: 1 }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 1,
+          pt: 1,
+        }}
       >
         <IconButton aria-label="Back" onClick={onBack} sx={{ width: 44, height: 44 }}>
           <ArrowBackOutlined />
