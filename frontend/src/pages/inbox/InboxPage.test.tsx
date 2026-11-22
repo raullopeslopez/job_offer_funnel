@@ -1111,7 +1111,9 @@ describe("InboxPage frequent titles", () => {
       }),
     );
     renderInbox("/inbox?status=filtered");
-    const block = await screen.findByRole("region", { name: "No title of yours · 6 offers · Backend" });
+    const block = await screen.findByRole("region", {
+      name: "No title of yours · 6 offers · Backend",
+    });
     expect(within(block).getByText("Most frequent titles")).toBeInTheDocument();
     expect(
       within(block).getByText("2 mention python and django · 1 remote and open to Spain"),

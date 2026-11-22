@@ -227,7 +227,12 @@ export function InboxPage() {
   const nearMissItems =
     view === "filtered" ? (nearMissGroups.data ?? []).flatMap((group) => group.offers) : [];
   const rowOffers = [...items, ...maybeItems, ...nearMissItems];
-  const selected = rowOffers.find((o) => o.id === selectedId) ?? nearMissItems[0] ?? items[0] ?? maybeItems[0] ?? null;
+  const selected =
+    rowOffers.find((o) => o.id === selectedId) ??
+    nearMissItems[0] ??
+    items[0] ??
+    maybeItems[0] ??
+    null;
   const select = (offer: Offer) => {
     setSelectedId(offer.id);
     // On a phone the pane follows the list: bring it into view.
