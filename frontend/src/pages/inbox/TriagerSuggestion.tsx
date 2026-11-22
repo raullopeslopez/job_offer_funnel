@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Paper, Typography } from "@mui/material";
+import { Alert, Box, Button, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import {
@@ -9,7 +9,7 @@ import {
   useSuggestionChoice,
 } from "../../components/criteriaSuggestions";
 
-// The criteria suggestions of the offer triager, above the offers, one at a time
+// The criteria suggestions of the offer triager, in the list header, one at a time
 // (specs/ui/inbox.feature): "Not now", or "Exclude it", a logged criteria change. Without an
 // offer triager there are none.
 export function TriagerSuggestion() {
@@ -27,7 +27,11 @@ export function TriagerSuggestion() {
 
   if (!suggestion) return null;
   return (
-    <Paper component="section" variant="outlined" sx={{ p: 2, mb: 3 }} aria-label="AI suggestion">
+    <Box
+      component="section"
+      aria-label="AI suggestion"
+      sx={{ borderTop: 2, borderBottom: 1, borderColor: "text.primary", py: 1.5 }}
+    >
       {choose.isError && (
         <Alert severity="error" sx={{ mb: 1.5 }}>
           {choose.error.title}
@@ -35,26 +39,26 @@ export function TriagerSuggestion() {
       )}
       <Typography variant="subtitle2">AI suggests: {suggestionChange(suggestion)}</Typography>
       <Typography variant="body2">{suggestion.why}</Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{ color: "tone.green.fg" }}>
         {suggestionEffect(suggestion)}
       </Typography>
       <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
         <Button
           size="small"
           disabled={choose.isPending}
-          onClick={() => choose.mutate({ suggestion, choice: "dismiss" })}
-        >
-          Not now
-        </Button>
-        <Button
-          size="small"
-          variant="contained"
-          disabled={choose.isPending}
           onClick={() => choose.mutate({ suggestion, choice: "exclude" })}
         >
           {acceptLabel(suggestion)}
         </Button>
+        <Button
+          size="small"
+          color="inherit"
+          disabled={choose.isPending}
+          onClick={() => choose.mutate({ suggestion, choice: "dismiss" })}
+        >
+          Not now
+        </Button>
       </Box>
-    </Paper>
+    </Box>
   );
 }

@@ -27,18 +27,23 @@ export function TriagerDiscardButton({ onDiscarded }: { onDiscarded: (ids: strin
   const count = triager.data?.discardable ?? 0;
   if (count === 0) return null;
   return (
-    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+    <Stack
+      direction="row"
+      spacing={1.5}
+      useFlexGap
+      sx={{ alignItems: "baseline", flexWrap: "wrap" }}
+    >
+      <Button size="small" loading={discard.isPending} onClick={() => discard.mutate()}>
+        Let AI discard {count}
+      </Button>
+      <Typography variant="body2" color="text.secondary">
+        The ones it marked KO with high confidence. You can restore any of them.
+      </Typography>
       {discard.isError && (
         <Typography variant="body2" color="error" role="alert">
           The AI could not discard.
         </Typography>
       )}
-      <Typography variant="body2" color="text.secondary">
-        The ones it marked KO with high confidence. You can restore any of them.
-      </Typography>
-      <Button variant="outlined" loading={discard.isPending} onClick={() => discard.mutate()}>
-        Let AI discard {count}
-      </Button>
     </Stack>
   );
 }

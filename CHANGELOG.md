@@ -315,6 +315,11 @@ While the version is `0.x`, the API may change without a major version bump.
   stay the same (by verdict or by day, and "Maybe" at the end of Pending); the variants
   of a role are one row that says "+{n} variants", and its pane opens them in the list
   (`specs/ui/inbox.feature`).
+- The AI controls of Pending are in the list header, as discreet buttons and plain text
+  with no banner: "Triage with AI" with its result in one line, "Let AI discard {n}"
+  with its sentence, and the triager's criteria suggestion, one at a time, as a block
+  between two lines (the change, why, its effect in green, "Exclude it" and "Not now";
+  `specs/ui/inbox.feature`).
 - An offer is not a stable job when it is freelance or paid by the hour or by the task,
   even if it says full-time: the offer reader is told so.
 - Inbox on a phone: the title of an offer stays readable while discarding it, its words

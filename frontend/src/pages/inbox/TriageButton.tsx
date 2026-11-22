@@ -51,7 +51,15 @@ export function TriageButton({ running }: { running: boolean }) {
 
   if (!triager.data?.is_available) return null;
   return (
-    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+    <Stack
+      direction="row"
+      spacing={1.5}
+      useFlexGap
+      sx={{ alignItems: "baseline", flexWrap: "wrap" }}
+    >
+      <Button size="small" loading={running} onClick={() => triage.mutate()}>
+        Triage with AI
+      </Button>
       {triage.isError && (
         <Typography variant="body2" color="error" role="alert">
           The triage failed.
@@ -65,9 +73,6 @@ export function TriageButton({ running }: { running: boolean }) {
           {progress.isStopped ? ". Try again later." : ""}
         </Typography>
       )}
-      <Button variant="outlined" loading={running} onClick={() => triage.mutate()}>
-        Triage with AI
-      </Button>
     </Stack>
   );
 }

@@ -295,16 +295,11 @@ export function InboxPage() {
 
             {view === "pending" && (
               <Stack
-                direction="row"
-                spacing={1}
+                spacing={0.5}
                 useFlexGap
-                sx={{
-                  mt: 2,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  "& .MuiButton-root": { whiteSpace: "nowrap" },
-                }}
+                sx={{ mt: 1.5, "& .MuiButton-root": { whiteSpace: "nowrap" } }}
               >
+                <TriageButton running={triageRunning} />
                 <TriagerDiscardButton
                   onDiscarded={(offerIds) => {
                     for (const offerId of offerIds) leaveView(offerId);
@@ -315,8 +310,13 @@ export function InboxPage() {
                     refresh();
                   }}
                 />
-                <TriageButton running={triageRunning} />
               </Stack>
+            )}
+
+            {view === "pending" && (
+              <Box sx={{ mt: 2 }}>
+                <TriagerSuggestion />
+              </Box>
             )}
 
             <Box sx={{ mt: 2 }}>
@@ -333,11 +333,6 @@ export function InboxPage() {
             </Box>
           </Box>
 
-          {view === "pending" && (
-            <Box sx={{ px: 2, pt: 2 }}>
-              <TriagerSuggestion />
-            </Box>
-          )}
           {view === "filtered" && <NearMissGroups {...context} {...selection} />}
           {view === "filtered" && (
             <Box sx={{ px: 2 }}>
