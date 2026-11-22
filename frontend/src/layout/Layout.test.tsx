@@ -1,11 +1,11 @@
 import { ThemeProvider } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { delay, HttpResponse, http } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { server } from "../test/server";
 import { theme } from "../theme";
-import { Layout } from "./Layout";
+import { Layout, WAKING_UP_AFTER_MS } from "./Layout";
 import { navGroups } from "./navItems";
 
 function pendingOffers(total: number) {
@@ -25,7 +25,7 @@ function pendingOffers(total: number) {
 function renderLayout() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter([
-    { element: <Layout />, children: [{ path: "*", element: null }] },
+    { element: <Layout />, children: [{ path: "*", element: <p>Screen content</p> }] },
   ]);
   return render(
     <ThemeProvider theme={theme}>
@@ -98,5 +98,68 @@ describe("Layout", () => {
     // Assert
     expect(screen.getByRole("button", { name: after })).toBeInTheDocument();
     expect(screen.getByText(after)).toBeInTheDocument();
+  });
+
+  // specs/ui/waking_up.feature
+  describe("while the API wakes up", () => {
+    afterEach(() => vi.useRealTimers());
+
+    function apiNeverAnswers() {
+      server.use(http.get("/api/v1/offers", () => delay("infinite")));
+    }
+
+    it("covers the content until the API answers", () => {
+      // Arrange
+      apiNeverAnswers();
+
+      // Act
+      renderLayout();
+
+      // Assert
+      expect(screen.getByRole("progressbar", { name: "Loading" })).toBeVisible();
+      expect(screen.getByText("Screen content")).not.toBeVisible();
+    });
+
+    it("says the server is waking up when the answer is slow", async () => {
+      // Arrange
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      apiNeverAnswers();
+      renderLayout();
+      expect(screen.queryByText(/Waking up the server/u)).not.toBeInTheDocument();
+
+      // Act
+      await act(() => vi.advanceTimersByTimeAsync(WAKING_UP_AFTER_MS));
+
+      // Assert
+      expect(screen.getByText("Waking up the server. It can take up to a minute.")).toBeVisible();
+    });
+
+    it("shows the content once the API answers", async () => {
+      // Arrange
+      pendingOffers(3);
+
+      // Act
+      renderLayout();
+
+      // Assert
+      await waitFor(() => expect(screen.getByText("Screen content")).toBeVisible());
+      expect(screen.queryByRole("progressbar", { name: "Loading" })).not.toBeInTheDocument();
+    });
+
+    it("offers to try again when the API fails, and shows the content when it answers", async () => {
+      // Arrange
+      server.use(http.get("/api/v1/offers", () => HttpResponse.json({}, { status: 503 })));
+      renderLayout();
+      const tryAgain = await screen.findByRole("button", { name: "Try again" });
+      expect(screen.getByText("The server did not answer.")).toBeVisible();
+      pendingOffers(3);
+
+      // Act
+      fireEvent.click(tryAgain);
+
+      // Assert
+      await waitFor(() => expect(screen.getByText("Screen content")).toBeVisible());
+      expect(screen.queryByText("The server did not answer.")).not.toBeInTheDocument();
+    });
   });
 });
