@@ -24,11 +24,14 @@ declare module "@mui/material/styles" {
     source: Sources;
     // Neutral fill of a passing rule cell. Used in sx as "fill".
     fill: string;
+    // Background of the selected row of a list. Used in sx as "rowSelected".
+    rowSelected: string;
   }
   interface PaletteOptions {
     tone?: Tones;
     source?: Sources;
     fill?: string;
+    rowSelected?: string;
   }
 }
 
@@ -145,6 +148,7 @@ export const theme = createTheme({
         tone: lightTones,
         source: lightSources,
         fill: "#efeff2",
+        rowSelected: "#f3f4fa",
       },
     },
     dark: {
@@ -159,6 +163,7 @@ export const theme = createTheme({
         tone: darkTones,
         source: darkSources,
         fill: "#24252b",
+        rowSelected: "#1d1e24",
       },
     },
   },

@@ -1,9 +1,10 @@
-import { Box, Button, Typography } from "@mui/material";
+import { Button } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import { groupedPiecesSx } from "../../components/GroupedList";
-import { mono } from "../../theme";
-import { InboxOffer, type OfferContext } from "./OfferList";
+import { Count, GroupedList } from "../../components/GroupedList";
+import { offerSourceKind } from "../../components/offerSource";
+import type { OfferContext, RowSelection } from "./OfferList";
+import { OfferRow } from "./OfferRow";
 import type { Offer } from "./types";
 
 const SHOWN = 3;
@@ -50,45 +51,35 @@ export function NearMissButtons({
   );
 }
 
-type Props = OfferContext & NearMissActions;
+type Props = OfferContext & RowSelection;
 
-// The last group of the pending view: the three most recent near misses.
-export function MaybeGroup({ onPromote, onRightlyFiltered, ...context }: Props) {
+// The last group of the pending view: the three most recent near misses, as rows that open in
+// the reading pane.
+export function MaybeGroup({ selectedId, onSelect, jobBoards, now }: Props) {
   const nearMisses = useQuery(nearMissesQuery(SHOWN));
   const page = nearMisses.data;
   if (!page || page.total === 0) return null;
   return (
-    <Box component="section" aria-label="Maybe" sx={{ mt: 4 }}>
-      <Typography variant="h6" component="h2">
-        Maybe ·{" "}
-        <Box component="span" sx={{ fontFamily: mono, fontWeight: 500 }}>
-          {page.items.length}
-        </Box>{" "}
-        of{" "}
-        <Box component="span" sx={{ fontFamily: mono, fontWeight: 500 }}>
-          {page.total}
-        </Box>{" "}
-        near misses
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 1.5 }}>
-        Filtered by a single rule. Promoting one tells the app the rule was too strict.
-      </Typography>
-      <Box sx={groupedPiecesSx}>
-        {page.items.map((offer) => (
-          <InboxOffer
-            key={offer.id}
-            offer={offer}
-            {...context}
-            actions={
-              <NearMissButtons
-                offer={offer}
-                onPromote={onPromote}
-                onRightlyFiltered={onRightlyFiltered}
-              />
-            }
-          />
-        ))}
-      </Box>
-    </Box>
+    <GroupedList
+      title="Maybe"
+      count={page.total}
+      heading={
+        <>
+          Maybe · <Count value={page.items.length} /> of <Count value={page.total} /> near misses
+        </>
+      }
+      note="Filtered by a single rule. Promoting one tells the app the rule was too strict."
+    >
+      {page.items.map((offer) => (
+        <OfferRow
+          key={offer.id}
+          offer={offer}
+          sourceKind={offerSourceKind(offer, jobBoards)}
+          selected={offer.id === selectedId}
+          onSelect={onSelect}
+          now={now}
+        />
+      ))}
+    </GroupedList>
   );
 }

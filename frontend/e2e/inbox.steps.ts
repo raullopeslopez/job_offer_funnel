@@ -7,8 +7,7 @@ const STATUS_TABS = { pending: "Pending", discarded: "Discarded", promoted: "Pro
 type Status = keyof typeof STATUS_TABS;
 
 // The list of rows, one per offer, and the reading pane with the offer chosen.
-const rows = (page: Page) =>
-  page.getByRole("region", { name: "Offer list" }).getByRole("listitem");
+const rows = (page: Page) => page.getByRole("region", { name: "Offer list" }).getByRole("listitem");
 const titles = (page: Page) => rows(page).getByRole("button");
 const rowButton = (page: Page, title: string): Locator =>
   rows(page).getByRole("button", { name: title, exact: true });
@@ -24,7 +23,9 @@ async function row(page: Page, title: string): Promise<Locator> {
 
 async function showVariants(page: Page, title: string) {
   const offer = await row(page, title);
-  await offer.getByRole("button", { name: /more variants? of this role$/, expanded: false }).click();
+  await offer
+    .getByRole("button", { name: /more variants? of this role$/, expanded: false })
+    .click();
 }
 
 // How many offers the view has: "3 to decide", "1 filtered".
@@ -229,7 +230,8 @@ Then(/^I see the offers, in order: (".*")$/, async ({ page }, list: string) => {
 });
 
 Then("the row of {string} says {string}", async ({ page }, title: string, text: string) => {
-  await expect(rows(page).filter({ has: rowButton(page, title) })).toContainText(text);
+  const button = page.getByRole("button", { name: title, exact: true });
+  await expect(rows(page).filter({ has: button })).toContainText(text);
 });
 
 Then("no row says it has variants", async ({ page }) => {
