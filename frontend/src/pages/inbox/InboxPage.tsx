@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
 import { SegmentedTabs } from "../../components/SegmentedTabs";
@@ -80,7 +80,6 @@ export function InboxPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openVariants, setOpenVariants] = useState<string[]>([]);
   const isWide = useMediaQuery((theme) => theme.breakpoints.up("md"));
-  const pane = useRef<HTMLElement>(null);
 
   const offers = useInfiniteQuery({
     queryKey: ["offers", view],
@@ -229,11 +228,10 @@ export function InboxPage() {
   const nearMissItems =
     view === "filtered" ? (nearMissGroups.data ?? []).flatMap((group) => group.offers) : [];
   const rowOffers = [...items, ...maybeItems, ...nearMissItems];
+  // On a phone no offer is open until a row is tapped.
   const selected =
     rowOffers.find((o) => o.id === selectedId) ??
-    nearMissItems[0] ??
-    items[0] ??
-    maybeItems[0] ??
+    (isWide ? (nearMissItems[0] ?? items[0] ?? maybeItems[0]) : undefined) ??
     null;
   // The rows as the list shows them, for "3 of 7" and for the offer that follows an action:
   // in Filtered the near-miss groups first, then the offers further away.
@@ -245,17 +243,20 @@ export function InboxPage() {
   const position = orderIndex < 0 ? undefined : { index: orderIndex, total: order.length };
   // After an action on an offer the next one opens, or the previous one if it was the last
   // (specs/ui/inbox.feature).
+  // On a phone the screen goes back to the list instead.
   function openNextAfter(offerId: string) {
+    if (!isWide) {
+      setSelectedId(null);
+      return;
+    }
     const index = order.findIndex((o) => o.id === offerId);
     if (index < 0) return;
     setSelectedId((order[index + 1] ?? order[index - 1])?.id ?? null);
   }
-  const select = (offer: Offer) => {
-    setSelectedId(offer.id);
-    // On a phone the pane follows the list: bring it into view.
-    if (!isWide) pane.current?.scrollIntoView?.({ block: "start" });
+  const selection = {
+    selectedId: selected?.id ?? null,
+    onSelect: (offer: Offer) => setSelectedId(offer.id),
   };
-  const selection = { selectedId: selected?.id ?? null, onSelect: select };
 
   // The variants of the selected offer, when its row stands for them (specs/ui/inbox.feature).
   const run =
@@ -276,6 +277,40 @@ export function InboxPage() {
         }
       : undefined;
 
+  // The four views: above the AI controls on a wide screen, under them on a phone.
+  const viewTabs = (
+    <Box sx={{ mt: 2 }}>
+      <SegmentedTabs
+        aria-label="Offers"
+        value={view}
+        onChange={changeView}
+        items={VIEWS.map(({ value, label }, index) => ({
+          value,
+          label,
+          count: counts[index]?.data ?? 0,
+        }))}
+      />
+    </Box>
+  );
+  const readingPane = (
+    <ReadingPane
+      offer={selected}
+      {...context}
+      variants={variants}
+      position={position}
+      onBack={isWide ? undefined : () => setSelectedId(null)}
+      onDiscarded={(offer) => {
+        openNextAfter(offer.id);
+        leaveView(offer.id);
+        setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
+        refresh();
+      }}
+      onPromote={setPromoting}
+      onRestore={(offer) => restore.mutate(offer.id)}
+      onRightlyFiltered={(offer) => markRightlyFiltered.mutate(offer)}
+    />
+  );
+
   return (
     <>
       <Box
@@ -288,6 +323,7 @@ export function InboxPage() {
         <Box
           component="section"
           aria-label="Offer list"
+          inert={!isWide && selected !== null}
           sx={{ minWidth: 0, borderRight: { md: 1 }, borderColor: { md: "divider" } }}
         >
           <Box sx={{ px: 2, pb: 1 }}>
@@ -315,6 +351,7 @@ export function InboxPage() {
               </Stack>
             </Stack>
 
+            {!isWide && viewTabs}
             {view === "pending" && (
               <Stack
                 spacing={0.5}
@@ -341,18 +378,7 @@ export function InboxPage() {
               </Box>
             )}
 
-            <Box sx={{ mt: 2 }}>
-              <SegmentedTabs
-                aria-label="Offers"
-                value={view}
-                onChange={changeView}
-                items={VIEWS.map(({ value, label }, index) => ({
-                  value,
-                  label,
-                  count: counts[index]?.data ?? 0,
-                }))}
-              />
-            </Box>
+            {isWide && viewTabs}
           </Box>
 
           {view === "filtered" && <NearMissGroups {...context} {...selection} />}
@@ -390,43 +416,29 @@ export function InboxPage() {
           {view === "pending" && <MaybeGroup {...context} {...selection} />}
         </Box>
 
-        <Box
-          ref={pane}
-          component="section"
-          aria-label="Reading pane"
-          sx={{
-            minWidth: 0,
-            px: { xs: 2, md: 5 },
-            pt: { xs: 3, md: 1 },
-            pb: { xs: 3, md: 0 },
-            display: "flex",
-            flexDirection: "column",
-            minHeight: { md: "70vh" },
-            borderTop: { xs: 1, md: 0 },
-            borderColor: "divider",
-            // On a wide screen the pane stays in view while the list scrolls.
-            position: { md: "sticky" },
-            top: { md: 0 },
-            maxHeight: { md: "100vh" },
-            overflowY: { md: "auto" },
-          }}
-        >
-          <ReadingPane
-            offer={selected}
-            {...context}
-            variants={variants}
-            position={position}
-            onDiscarded={(offer) => {
-              openNextAfter(offer.id);
-              leaveView(offer.id);
-              setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
-              refresh();
+        {isWide ? (
+          <Box
+            component="section"
+            aria-label="Reading pane"
+            sx={{
+              minWidth: 0,
+              px: 5,
+              pt: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: "70vh",
+              // The pane stays in view while the list scrolls.
+              position: "sticky",
+              top: 0,
+              maxHeight: "100vh",
+              overflowY: "auto",
             }}
-            onPromote={setPromoting}
-            onRestore={(offer) => restore.mutate(offer.id)}
-            onRightlyFiltered={(offer) => markRightlyFiltered.mutate(offer)}
-          />
-        </Box>
+          >
+            {readingPane}
+          </Box>
+        ) : (
+          readingPane
+        )}
       </Box>
 
       <AddOfferDialog
