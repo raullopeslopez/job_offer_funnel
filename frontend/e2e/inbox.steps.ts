@@ -253,7 +253,10 @@ async function press(page: Page, key: string) {
   }
   await page.keyboard.press(key);
   if (moves) await expect(selectedRow(page)).not.toHaveText(before ?? "");
-  if (key.toLowerCase() === "p") await expect(page.getByRole("dialog")).toBeVisible();
+  if (key.toLowerCase() === "p") {
+    // The dialog has the "Promote" button ready for Enter.
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Promote" })).toBeFocused();
+  }
   if (key.toLowerCase() === "d") await expect(reasons(page)).toBeVisible();
   if (key === "Enter") {
     // Enter confirms the promotion dialog that "P" opened.

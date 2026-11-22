@@ -24,7 +24,7 @@ Feature: Inbox screen
   foot as 50 px buttons. After an action the screen goes back to the list, with the message
   and "Undo".
 
-  The list is also triaged from the keyboard, with no global handler: with a row focused,
+  The list is also triaged from the keyboard, with no global handler: with the selected row focused,
   "J" or the down arrow selects the next row and "K" or the up arrow the previous one,
   "P" promotes the offer (a near miss too) and "D" opens "Discard because". "D" never
   discards by itself, not even with a suggested discard. The keys are ignored with a modifier
