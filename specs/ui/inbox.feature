@@ -19,6 +19,18 @@ Feature: Inbox screen
   is selected. On a wide screen the list is a column on the left and the pane fills the
   rest; on a phone the pane follows the list.
 
+  Each row also says in one line what decides the offer, so it can be decided without
+  opening it: a label, in text and not only in color, and a line. A pending offer with a
+  verdict says "AI: OK" or "AI: KO", with its confidence when it has one ("AI: OK · High"),
+  and the why of its side. One without a verdict says "Not triaged" and what its reading
+  says of the mode, the location, the contract and the stack, or why there is nothing to
+  read ("Nothing to read: email alert", "Nothing to read: added by hand"). A filtered offer
+  says "AI: OK" when the triage marked it OK, "Near miss" when it fails a single rule and
+  "Filtered" otherwise, and the rule that filtered it, as its failed cell says it ("Mode:
+  On-site, you ask Remote"). A discarded offer says "Discarded", or "Discarded by AI", and
+  its reason. A promoted offer says "Promoted" and "Application created". The row also has
+  the mark of its company, and its source as a tag.
+
   The reading pane shows the offer with the same parts, wherever it came from: its
   source and age, its title, its company and country, its actions and a strip of
   rules. The country is a tag with the first country of the offer
@@ -133,6 +145,69 @@ Feature: Inbox screen
     When I choose the row of "A"
     Then the row of "A" is selected
     And the reading pane shows the offer "A"
+
+  # --- What the row says ---
+
+  Scenario Outline: A row says what decides its offer
+    Given an offer for "Acme" as "Backend Engineer" that was <status>
+    When I open the inbox showing the "<status>" offers
+    Then the row of "Backend Engineer" says "<label>"
+    And the row of "Backend Engineer" says "<line>"
+
+    Examples:
+      | status    | label     | line                |
+      | promoted  | Promoted  | Application created |
+      | discarded | Discarded | No reason           |
+
+  Scenario: A pending offer without a verdict says it was not triaged
+    Given an offer for "Acme" as "Backend Engineer"
+    When I open the inbox
+    Then the row of "Backend Engineer" says "Not triaged"
+    And the row of "Backend Engineer" says "Nothing to read: added by hand"
+
+  @component
+  Scenario Outline: A pending offer with a verdict says it and its why
+    Given a pending offer for "Acme" as "Backend Engineer" that the triager marked "<verdict>" with "<confidence>" confidence, saying "<why>"
+    When I open the inbox
+    Then the row of "Backend Engineer" says "<label>" and "<why>"
+
+    Examples:
+      | verdict | confidence | label           | why              |
+      | ok      | high       | AI: OK · High   | Like Acme's role |
+      | ko      | medium     | AI: KO · Medium | A part-time role |
+
+  @component
+  Scenario: An email alert says there is nothing to read
+    Given an offer for "Acme" as "Backend Engineer" imported through an email, without a description
+    When I open the inbox
+    Then the row of "Backend Engineer" says "Not triaged"
+    And the row of "Backend Engineer" says "Nothing to read: email alert"
+
+  @component
+  Scenario: A pending offer with a reading says what it read
+    Given an offer for "Acme" as "Backend Engineer" whose reading says the mode is "remote", the location "Spain" is admitted, the contract is stable and the stack is "Python, Django"
+    When I open the inbox
+    Then the row of "Backend Engineer" says "Remote · Spain · Stable · Python, Django"
+
+  @component
+  Scenario Outline: A filtered offer says the rule that filtered it
+    Given a filtered offer for "Acme" as "Backend Engineer" that fails "work_mode" with "hybrid" and the evidence "Two days in the office"
+    And the triage <triage>
+    When I open the inbox showing the "filtered" offers
+    Then the row of "Backend Engineer" says "<label>"
+    And the row of "Backend Engineer" says "Mode: Hybrid, you ask Remote"
+
+    Examples:
+      | triage         | label     |
+      | has no verdict | Near miss |
+      | marked it OK   | AI: OK    |
+
+  @component
+  Scenario: A discarded offer says whether the AI discarded it
+    Given an offer for "Acme" as "Backend Engineer" that the triager discarded because of its contract
+    When I open the inbox showing the "discarded" offers
+    Then the row of "Backend Engineer" says "Discarded by AI"
+    And the row of "Backend Engineer" says "Contract"
 
   # --- The country ---
 
