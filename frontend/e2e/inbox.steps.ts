@@ -15,10 +15,14 @@ const pane = (page: Page) => page.getByRole("region", { name: "Reading pane" });
 const opened = (page: Page, title: string): Locator =>
   pane(page).getByRole("article", { name: title, exact: true });
 
-// The offer of a row, opened in the reading pane.
+// The action bar at the foot of the reading pane.
+const actionBar = (page: Page) => pane(page).getByRole("group", { name: "Offer actions" });
+
+// The offer of a row, opened in the reading pane: the pane, with its offer and its action bar.
 async function row(page: Page, title: string): Promise<Locator> {
   await rowButton(page, title).click();
-  return opened(page, title);
+  await expect(opened(page, title)).toBeVisible();
+  return pane(page);
 }
 
 async function showVariants(page: Page, title: string) {
@@ -146,6 +150,10 @@ When("I choose the row of {string}", async ({ page }, title: string) => {
   await rowButton(page, title).click();
 });
 
+Given("I chose the row of {string}", async ({ page }, title: string) => {
+  await rowButton(page, title).click();
+});
+
 When("I open the inbox", async ({ page }) => {
   await openInbox(page);
 });
@@ -242,6 +250,19 @@ Then("the row of {string} is selected", async ({ page }, title: string) => {
   await expect(rowButton(page, title)).toHaveAttribute("aria-current", "true");
 });
 
+Then("the action bar says {string}", async ({ page }, text: string) => {
+  await expect(actionBar(page)).toContainText(text);
+});
+
+Then(
+  /^the action bar has "([^"]+)" and "([^"]+)"$/,
+  async ({ page }, first: string, second: string) => {
+    for (const name of [first, second]) {
+      await expect(actionBar(page).getByRole("button", { name, exact: true })).toBeVisible();
+    }
+  },
+);
+
 Then("the reading pane shows the offer {string}", async ({ page }, title: string) => {
   await expect(opened(page, title)).toBeVisible();
 });
@@ -265,7 +286,7 @@ Then("the offer {string} shows no country tag", async ({ page }, title: string) 
 
 Then("the offer {string} links to its application", async ({ page }, title: string) => {
   const offer = await row(page, title);
-  await expect(offer.getByRole("link", { name: "View application" })).toHaveAttribute(
+  await expect(offer.getByRole("link", { name: "Open application" })).toHaveAttribute(
     "href",
     /^\/applications\/[0-9a-f-]{36}$/,
   );

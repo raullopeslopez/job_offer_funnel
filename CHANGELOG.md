@@ -339,6 +339,13 @@ While the version is `0.x`, the API may change without a major version bump.
   list, a line per rule, with a filled dot when it passes, a hollow one when it is "Not
   stated" and a red one with "filtered it" when it filtered the offer, and the literal
   evidence under that rule.
+- The actions of an offer in the inbox are a bar fixed at the foot of the reading pane,
+  with a line above and no box, and it says which offer of the view is open ("3 of 7").
+  "Discard" opens its reasons in the bar itself. With a suggested discard, "Discard:
+  {reason}" is the main action, "Promote" is secondary and "Other reason" opens the rest
+  of the reasons; it is still my click. After promoting, discarding, restoring or marking
+  an offer the next offer of the view opens, or the previous one when it was the last
+  (`specs/ui/inbox.feature`). A promoted offer says "Open application".
 - An offer is not a stable job when it is freelance or paid by the hour or by the task,
   even if it says full-time: the offer reader is told so.
 - Inbox on a phone: the title of an offer stays readable while discarding it, its words

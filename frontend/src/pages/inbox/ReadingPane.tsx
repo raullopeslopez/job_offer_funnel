@@ -1,11 +1,10 @@
-import { Box, Button, Link } from "@mui/material";
+import { Box, Link } from "@mui/material";
 import type { ReactNode } from "react";
-import { Link as RouterLink } from "react-router";
 import { OfferPiece } from "../../components/OfferPiece";
 import { offerSourceKind } from "../../components/offerSource";
-import { DiscardingOffer } from "./DiscardingOffer";
+import { ActionBar } from "./ActionBar";
 import { discardReasonText } from "./discardReasons";
-import { type NearMissActions, NearMissButtons } from "./MaybeGroup";
+import type { NearMissActions } from "./MaybeGroup";
 import type { OfferActions, OfferContext } from "./OfferList";
 import { OfferStrip } from "./OfferStrip";
 import { TriagePending, TriageVerdict } from "./TriageVerdict";
@@ -18,17 +17,12 @@ export function InboxOffer({
   jobBoards,
   profiles,
   now = new Date(),
-  actions,
   extra,
   triageRunning,
-  onDiscarded,
 }: OfferContext & {
   offer: Offer;
-  actions: ReactNode;
   /** Shown under its company and country: the variants of its role. */
   extra?: ReactNode;
-  /** Given, a pending offer with a suggested discard can be discarded as suggested. */
-  onDiscarded?: (offer: Offer) => void;
 }) {
   const sourceKind = offerSourceKind(offer, jobBoards);
   const waiting =
@@ -37,16 +31,13 @@ export function InboxOffer({
     offer.filter_reason?.has_description &&
     (!offer.filtered || offer.filter_reason.near_miss);
   const verdict =
-    (offer.status === "pending" && offer.triage && (
-      <TriageVerdict offer={offer} onDiscarded={onDiscarded} />
-    )) ||
+    (offer.status === "pending" && offer.triage && <TriageVerdict offer={offer} />) ||
     (waiting && <TriagePending />);
   return (
     <OfferPiece
       offer={offer}
       sourceKind={sourceKind}
       now={now}
-      actions={actions}
       statusLine={statusLine(offer)}
       strip={
         <>
@@ -70,68 +61,44 @@ function statusLine(offer: Offer): string | undefined {
 const isNearMiss = (offer: Offer) => offer.filtered && offer.filter_reason?.near_miss === true;
 
 type Props = OfferContext &
-  OfferActions &
+  Omit<OfferActions, "onDiscard"> &
   NearMissActions & {
     offer: Offer | null;
-    /** The offer open to discard, if any. */
-    discardingId?: string | null;
-    onCancelDiscard: () => void;
+    /** Which offer of the view it is, for the action bar. */
+    position?: { index: number; total: number };
     onDiscarded: (offer: Offer) => void;
     /** The other variants of its role, when it is the first of them. */
     variants?: { count: number; open: boolean; onToggle: () => void };
   };
 
-// The reading pane (specs/ui/inbox.feature): the offer chosen in the list, with its strip, its
-// verdict and what can be done with it. Empty while no offer is chosen.
+// The reading pane (specs/ui/inbox.feature): the offer chosen in the list, with its strip and
+// its verdict, and the action bar at its foot. Empty while no offer is chosen.
 export function ReadingPane({
   offer,
-  discardingId,
-  onCancelDiscard,
+  position,
   onDiscarded,
   variants,
-  onDiscard,
   onPromote,
   onRestore,
   onRightlyFiltered,
   ...context
 }: Props) {
   if (!offer) return null;
-  if (offer.id === discardingId) {
-    return (
-      <DiscardingOffer
-        key={offer.id}
-        offer={offer}
-        {...context}
-        onCancel={onCancelDiscard}
-        onDiscarded={onDiscarded}
-      />
-    );
-  }
   const nearMiss = isNearMiss(offer);
   return (
-    <InboxOffer
-      key={offer.id}
-      offer={offer}
-      {...context}
-      extra={variants && <VariantsToggle {...variants} />}
-      actions={
-        nearMiss ? (
-          <NearMissButtons
-            offer={offer}
-            onPromote={onPromote}
-            onRightlyFiltered={onRightlyFiltered}
-          />
-        ) : (
-          <Actions
-            offer={offer}
-            onDiscard={onDiscard}
-            onPromote={onPromote}
-            onRestore={onRestore}
-          />
-        )
-      }
-      onDiscarded={nearMiss ? undefined : onDiscarded}
-    />
+    <Box key={offer.id} sx={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <InboxOffer offer={offer} {...context} extra={variants && <VariantsToggle {...variants} />} />
+      <ActionBar
+        offer={offer}
+        position={position}
+        nearMiss={nearMiss}
+        profiles={context.profiles}
+        onDiscarded={onDiscarded}
+        onPromote={onPromote}
+        onRestore={onRestore}
+        onRightlyFiltered={onRightlyFiltered}
+      />
+    </Box>
   );
 }
 
@@ -144,34 +111,4 @@ function VariantsToggle({ count, open, onToggle }: NonNullable<Props["variants"]
       </Link>
     </Box>
   );
-}
-
-function Actions({ offer, onDiscard, onPromote, onRestore }: { offer: Offer } & OfferActions) {
-  if (offer.status === "pending") {
-    return (
-      <>
-        <Button variant="contained" onClick={() => onPromote(offer)}>
-          Promote
-        </Button>
-        <Button variant="outlined" onClick={() => onDiscard(offer)}>
-          Discard
-        </Button>
-      </>
-    );
-  }
-  if (offer.status === "discarded") {
-    return (
-      <Button variant="outlined" onClick={() => onRestore(offer)}>
-        Restore
-      </Button>
-    );
-  }
-  if (offer.application_id) {
-    return (
-      <Link component={RouterLink} to={`/applications/${offer.application_id}`}>
-        View application
-      </Link>
-    );
-  }
-  return null;
 }

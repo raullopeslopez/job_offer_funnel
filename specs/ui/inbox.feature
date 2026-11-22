@@ -34,8 +34,14 @@ Feature: Inbox screen
   The reading pane shows the offer with the same parts, wherever it came from: its
   header (the company with its mark, the source, the age and "Original posting", a
   link to the posting), its title big, its country and, when it has one, a status line
-  ("Near miss · filtered by one rule", "Discarded by AI · Contract"), its actions, its
-  AI section when it has a verdict, and the rules as a list. The country is a tag with the first country of the offer
+  ("Near miss · filtered by one rule", "Discarded by AI · Contract"), its AI section
+  when it has a verdict, and the rules as a list; and, in a bar fixed at its foot with a
+  line above and no box, its actions: "Promote" and "Discard" for a pending offer,
+  "Promote anyway" and "Rightly filtered" for a near miss, "Restore" for a discarded one
+  and "Open application" for a promoted one. The bar also says which offer of the view it
+  is ("3 of 7"). After promoting, discarding or marking an offer the next offer of the
+  view is selected, or the previous one when it was the last, and the message of each
+  action appears as ever. The country is a tag with the first country of the offer
   (specs/inbox/offer_countries.feature), followed by how many more it has ("+1
   country", "+27 countries"); when its location names no known country the tag shows
   the location as published, and an offer without a location has no tag. On a phone
@@ -142,6 +148,29 @@ Feature: Inbox screen
     When I open the inbox
     Then the row of "C" is selected
     And the reading pane shows the offer "C"
+
+  Scenario: The action bar says which offer of the view is open
+    Given offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    When I choose the row of "B"
+    Then the action bar says "2 of 3"
+    And the action bar has "Promote" and "Discard"
+
+  Scenario: The next offer opens after an action
+    Given offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    And I chose the row of "B"
+    When I discard the offer "B" because "No reason"
+    Then the row of "A" is selected
+    And the reading pane shows the offer "A"
+    And the action bar says "2 of 2"
+
+  Scenario: The previous offer opens after the last one
+    Given offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    And I chose the row of "A"
+    When I discard the offer "A" because "No reason"
+    Then the row of "B" is selected
 
   Scenario: Choosing a row opens its offer in the reading pane
     Given offers for "Acme" as "A", "B" and "C", added in that order
@@ -502,8 +531,8 @@ Feature: Inbox screen
 
   # --- Discarding and restoring ---
 
-  # Discarding happens inside the reading pane: "Discard" opens the reasons under "Discard
-  # because", and the title stays as it is. The words of the title show as buttons under "A word in
+  # Discarding happens inside the reading pane: "Discard" opens, in the action bar, the
+  # reasons under "Discard because", and the offer stays as it is. The words of the title show as buttons under "A word in
   # the title", and the other reasons follow: "Stack", "Location", "Contract", "Company"
   # and "No reason". Choosing a word or a reason discards. On a phone the reasons are
   # full-width rows that also say what they refer to in the offer (its country, its
@@ -678,6 +707,12 @@ Feature: Inbox screen
       |                          | says "Why yes: Like Acme's role." and no "Why not" |
       | , with no confidence     | shows no confidence                                |
       | , with medium confidence | says "Medium"                                      |
+
+  @component
+  Scenario: A suggested discard is the main action of the bar
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with a suggested discard because "contract" with "Part-time"
+    When I open the inbox
+    Then the action bar has "Discard: Contract", "Promote" and "Other reason"
 
   @component
   Scenario Outline: A suggested discard shows its reason as the action
