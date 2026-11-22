@@ -82,6 +82,7 @@ function NearMissGroup({ label, total, breakdown, offers, context, selection }: 
             key={offer.id}
             offer={offer}
             sourceKind={offerSourceKind(offer, context.jobBoards)}
+            profiles={context.profiles}
             selected={offer.id === selection.selectedId}
             onSelect={selection.onSelect}
             now={context.now}

@@ -8,12 +8,12 @@ type Reading = components["schemas"]["ReadingRead"];
 const cell = (value: string | null) =>
   value ? ({ value, state: "pass" } as const) : ({ state: "unknown" } as const);
 
-function location({ admits_location, location }: Reading): string | null {
+export function location({ admits_location, location }: Reading): string | null {
   if (admits_location === null) return null;
   return admits_location ? (location ?? "Yes") : `Not from ${location}`;
 }
 
-function contract({ stable }: Reading): string | null {
+export function contract({ stable }: Reading): string | null {
   if (stable === null) return null;
   return stable ? "Stable" : "Not stable";
 }

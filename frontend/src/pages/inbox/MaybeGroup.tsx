@@ -55,7 +55,7 @@ type Props = OfferContext & RowSelection;
 
 // The last group of the pending view: the three most recent near misses, as rows that open in
 // the reading pane.
-export function MaybeGroup({ selectedId, onSelect, jobBoards, now }: Props) {
+export function MaybeGroup({ selectedId, onSelect, jobBoards, profiles, now }: Props) {
   const nearMisses = useQuery(nearMissesQuery(SHOWN));
   const page = nearMisses.data;
   if (!page || page.total === 0) return null;
@@ -75,6 +75,7 @@ export function MaybeGroup({ selectedId, onSelect, jobBoards, now }: Props) {
           key={offer.id}
           offer={offer}
           sourceKind={offerSourceKind(offer, jobBoards)}
+          profiles={profiles}
           selected={offer.id === selectedId}
           onSelect={onSelect}
           now={now}

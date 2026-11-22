@@ -325,6 +325,12 @@ While the version is `0.x`, the API may change without a major version bump.
   with its sentence, and the triager's criteria suggestion, one at a time, as a block
   between two lines (the change, why, its effect in green, "Exclude it" and "Not now";
   `specs/ui/inbox.feature`).
+- Each inbox row says in one line what decides its offer, with a text label and the
+  company's mark: "AI: OK · High" or "AI: KO · Medium" with the why of its side; "Not
+  triaged" with what its reading says (mode, location, contract, stack) or "Nothing to
+  read: email alert"; "Near miss" or "Filtered" with the rule that filtered it ("Mode:
+  Hybrid, you ask Remote"); "Discarded" or "Discarded by AI" with the reason; "Promoted"
+  with "Application created" (`specs/ui/inbox.feature`).
 - An offer is not a stable job when it is freelance or paid by the hour or by the task,
   even if it says full-time: the offer reader is told so.
 - Inbox on a phone: the title of an offer stays readable while discarding it, its words
