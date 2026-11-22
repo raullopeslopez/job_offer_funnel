@@ -1673,19 +1673,22 @@ describe("InboxPage row line", () => {
   it.each([
     ["ok", "high", "AI: OK · High", "Like Acme's role"],
     ["ko", "medium", "AI: KO · Medium", "A part-time role"],
-  ] as const)("a pending offer marked %s with %s confidence says %s", async (verdict, confidence, label, why) => {
-    // Arrange
-    inboxWith([offer("Backend Engineer", { triage: triaged(verdict, why, { confidence }) })]);
-    noCriteriaSuggestions();
+  ] as const)(
+    "a pending offer marked %s with %s confidence says %s",
+    async (verdict, confidence, label, why) => {
+      // Arrange
+      inboxWith([offer("Backend Engineer", { triage: triaged(verdict, why, { confidence }) })]);
+      noCriteriaSuggestions();
 
-    // Act
-    renderInbox();
+      // Act
+      renderInbox();
 
-    // Assert
-    const text = await rowText("Backend Engineer");
-    expect(text).toContain(label);
-    expect(text).toContain(why);
-  });
+      // Assert
+      const text = await rowText("Backend Engineer");
+      expect(text).toContain(label);
+      expect(text).toContain(why);
+    },
+  );
 
   it.each([
     [
@@ -1740,7 +1743,7 @@ describe("InboxPage row line", () => {
     noCriteriaSuggestions();
 
     // Act
-    renderInbox("/inbox?status=filtered");
+    renderInbox("/inbox");
 
     // Assert
     const text = await rowText("Backend Engineer");

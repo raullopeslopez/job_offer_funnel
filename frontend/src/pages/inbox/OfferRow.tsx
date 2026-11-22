@@ -1,15 +1,20 @@
 import { Box, ButtonBase, Typography } from "@mui/material";
+import { CompanyAvatar } from "../../components/CompanyAvatar";
 import { whereText } from "../../components/OfferPiece";
 import { RelativeDate } from "../../components/RelativeDate";
 import { SourceTag } from "../../components/SourceTag";
 import type { Source } from "../../theme";
-import { mono } from "../../theme";
+import { mono, offerShape, offerType } from "../../theme";
+import type { SearchProfile } from "./filterRules";
+import { rowLine } from "./rowLine";
 import type { Offer } from "./types";
 
 type Props = {
   offer: Offer;
   sourceKind: Source;
   selected: boolean;
+  /** The profiles, to say which rule filtered a filtered offer. */
+  profiles?: SearchProfile[];
   onSelect: (offer: Offer) => void;
   /** How many more variants of its role it stands for, while they are closed. */
   variants?: number;
@@ -31,20 +36,22 @@ export function OfferRow({
   offer,
   sourceKind,
   selected,
+  profiles = [],
   onSelect,
   variants = 0,
   indented = false,
   now,
 }: Props) {
   const where = whereText(offer);
+  const { label, tone, line } = rowLine(offer, sourceKind, profiles);
   return (
     <Box
       component="li"
       sx={{
         position: "relative",
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) auto",
-        columnGap: 2,
+        gridTemplateColumns: "auto minmax(0, 1fr) auto",
+        columnGap: 1.5,
         py: 1.5,
         pl: indented ? 4 : 2,
         pr: 2,
@@ -58,6 +65,9 @@ export function OfferRow({
         "&:has(:focus-visible)": { outline: 2, outlineColor: "text.primary", outlineOffset: -2 },
       }}
     >
+      <Box sx={{ mt: 0.25 }}>
+        <CompanyAvatar name={offer.company} size={28} />
+      </Box>
       <Box sx={{ minWidth: 0 }}>
         <ButtonBase
           aria-current={selected ? "true" : undefined}
@@ -88,6 +98,33 @@ export function OfferRow({
             .filter(Boolean)
             .join(" · ")}
         </Typography>
+        <Box sx={{ mt: 0.5, display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+          <Box
+            component="span"
+            sx={{
+              flexShrink: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              height: 20,
+              px: 0.75,
+              borderRadius: offerShape.tagRadius,
+              bgcolor: `tone.${tone}.bg`,
+              color: `tone.${tone}.fg`,
+              ...offerType.tag,
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {label}
+          </Box>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+          >
+            {line}
+          </Typography>
+        </Box>
       </Box>
       <Box
         sx={{

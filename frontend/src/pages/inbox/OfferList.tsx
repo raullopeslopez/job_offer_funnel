@@ -68,6 +68,7 @@ export function OfferList({
   view,
   offers,
   jobBoards,
+  profiles,
   now = new Date(),
   single,
   byVerdict = false,
@@ -85,6 +86,7 @@ export function OfferList({
       key={offer.id}
       offer={offer}
       sourceKind={offerSourceKind(offer, jobBoards)}
+      profiles={profiles}
       selected={offer.id === selectedId}
       onSelect={onSelect}
       variants={more}
