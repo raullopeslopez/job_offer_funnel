@@ -331,6 +331,14 @@ While the version is `0.x`, the API may change without a major version bump.
   read: email alert"; "Near miss" or "Filtered" with the rule that filtered it ("Mode:
   Hybrid, you ask Remote"); "Discarded" or "Discarded by AI" with the reason; "Promoted"
   with "Application created" (`specs/ui/inbox.feature`).
+- The reading pane of the inbox reads like a page: the company with its mark, the source
+  and the age, "Original posting" as a link and the title big, with its status line
+  ("Near miss · filtered by one rule", "Discarded by AI · Contract"). The AI verdict is set
+  off by a line, with no box, and its quotes are always visible under "Why yes" and "Why
+  not" (no more "View evidence"); an OK near miss says "worth rescuing". The rules are a
+  list, a line per rule, with a filled dot when it passes, a hollow one when it is "Not
+  stated" and a red one with "filtered it" when it filtered the offer, and the literal
+  evidence under that rule.
 - An offer is not a stable job when it is freelance or paid by the hour or by the task,
   even if it says full-time: the offer reader is told so.
 - Inbox on a phone: the title of an offer stays readable while discarding it, its words
