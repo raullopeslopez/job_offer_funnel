@@ -1639,3 +1639,131 @@ describe("InboxPage triager discards", () => {
     expect(within(piece).getByRole("button", { name: "Restore" })).toBeInTheDocument();
   });
 });
+
+// specs/ui/inbox.feature, "What the row says"
+describe("InboxPage row line", () => {
+  /** The text of the row of an offer: its label and its line. */
+  async function rowText(title: string): Promise<string> {
+    const button = await within(offerList()).findByRole("button", { name: title });
+    return button.closest("li")?.textContent ?? "";
+  }
+
+  it.each([
+    ["promoted", "Promoted", "Application created"],
+    ["discarded", "Discarded", "No reason"],
+  ] as const)("a %s offer says %s and %s", async (status, label, line) => {
+    // Arrange
+    inboxWith([
+      offer("Backend Engineer", {
+        status,
+        discard_reason: status === "discarded" ? "none" : null,
+        application_id: status === "promoted" ? crypto.randomUUID() : null,
+      }),
+    ]);
+
+    // Act
+    renderInbox(`/inbox?status=${status}`);
+
+    // Assert
+    const text = await rowText("Backend Engineer");
+    expect(text).toContain(label);
+    expect(text).toContain(line);
+  });
+
+  it.each([
+    ["ok", "high", "AI: OK · High", "Like Acme's role"],
+    ["ko", "medium", "AI: KO · Medium", "A part-time role"],
+  ] as const)("a pending offer marked %s with %s confidence says %s", async (verdict, confidence, label, why) => {
+    // Arrange
+    inboxWith([offer("Backend Engineer", { triage: triaged(verdict, why, { confidence }) })]);
+    noCriteriaSuggestions();
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const text = await rowText("Backend Engineer");
+    expect(text).toContain(label);
+    expect(text).toContain(why);
+  });
+
+  it.each([
+    [
+      "added by hand",
+      offer("Backend Engineer", { job_board_id: null, job_board_name: null }),
+      "Nothing to read: added by hand",
+    ],
+    [
+      "from an email alert",
+      imported("Backend Engineer", [TITLE_PASSES], {
+        hasDescription: false,
+        job_board_id: LINKEDIN_ID,
+      }),
+      "Nothing to read: email alert",
+    ],
+    [
+      "with a reading",
+      offer("Backend Engineer", {
+        readings: [
+          reading({
+            work_mode: "remote",
+            admits_location: true,
+            location: "Spain",
+            stable: true,
+            stack: ["Python", "Django"],
+          }),
+        ],
+      }),
+      "Remote · Spain · Stable · Python, Django",
+    ],
+  ])("an offer %s says it was not triaged and %s", async (_case, pending, line) => {
+    // Arrange
+    inboxWith([pending], [BACKEND], [jobBoard(LINKEDIN_ID, "LinkedIn", "email")]);
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const text = await rowText("Backend Engineer");
+    expect(text).toContain("Not triaged");
+    expect(text).toContain(line);
+  });
+
+  it.each([
+    ["has no verdict", undefined, "Near miss"],
+    ["was marked OK", triaged("ok", "Fits."), "AI: OK"],
+  ])("a near miss that %s says %s and its failed rule", async (_case, triage, label) => {
+    // Arrange
+    inboxWith([
+      nearMiss("Backend Engineer", rule("work_mode", "failed", { value: "hybrid" }), { triage }),
+    ]);
+    noCriteriaSuggestions();
+
+    // Act
+    renderInbox("/inbox?status=filtered");
+
+    // Assert
+    const text = await rowText("Backend Engineer");
+    expect(text).toContain(label);
+    expect(text).toContain("Mode: Hybrid, you ask Remote");
+  });
+
+  it("says a triager discard is the AI's", async () => {
+    // Arrange
+    inboxWith([
+      offer("Backend Engineer", {
+        status: "discarded",
+        discard_reason: "contract",
+        triager_discard: "discarded",
+      }),
+    ]);
+
+    // Act
+    renderInbox("/inbox?status=discarded");
+
+    // Assert
+    const text = await rowText("Backend Engineer");
+    expect(text).toContain("Discarded by AI");
+    expect(text).toContain("Contract");
+  });
+});

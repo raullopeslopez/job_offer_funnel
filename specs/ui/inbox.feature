@@ -27,7 +27,7 @@ Feature: Inbox screen
   read ("Nothing to read: email alert", "Nothing to read: added by hand"). A filtered offer
   says "AI: OK" when the triage marked it OK, "Near miss" when it fails a single rule and
   "Filtered" otherwise, and the rule that filtered it, as its failed cell says it ("Mode:
-  On-site, you ask Remote"). A discarded offer says "Discarded", or "Discarded by AI", and
+  Hybrid, you ask Remote"). A discarded offer says "Discarded", or "Discarded by AI", and
   its reason. A promoted offer says "Promoted" and "Application created". The row also has
   the mark of its company, and its source as a tag.
 
