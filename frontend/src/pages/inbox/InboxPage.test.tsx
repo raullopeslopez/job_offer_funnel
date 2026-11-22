@@ -668,9 +668,6 @@ describe("InboxPage failed cells", () => {
     await screen.findByText("1 filtered");
 
     // Act
-    if (failing.rule !== "title") {
-      await user.click(await screen.findByRole("button", { name: "Show" }));
-    }
     const piece = await openRow(user, title);
 
     // Assert
@@ -757,13 +754,10 @@ describe("InboxPage maybe", () => {
 
 // specs/ui/inbox.feature: "Mark a near miss as rightly filtered".
 describe("InboxPage rightly filtered", () => {
-  const shown = async () => {};
-  const showGroup = (user: User, region: HTMLElement) =>
-    user.click(within(region).getByRole("button", { name: "Show" }));
   it.each([
-    ["Maybe", "/inbox", shown],
-    ["A word you exclude", "/inbox?status=filtered", showGroup],
-  ])("marks a near miss in %s as rightly filtered", async (group, path, open) => {
+    ["Maybe", "/inbox"],
+    ["A word you exclude", "/inbox?status=filtered"],
+  ])("marks a near miss in %s as rightly filtered", async (group, path) => {
     // Arrange
     const user = userEvent.setup();
     const candidate = nearMiss(
@@ -780,8 +774,7 @@ describe("InboxPage rightly filtered", () => {
       }),
     );
     renderInbox(path);
-    const region = await screen.findByRole("region", { name: group });
-    await open(user, region);
+    await screen.findByRole("region", { name: group });
     const piece = await openRow(user, "Junior Backend Engineer");
 
     // Act
@@ -827,25 +820,23 @@ describe("InboxPage filtered by rule", () => {
     expect(screen.getByRole("heading", { name: "Further away · 1 offer" })).toBeInTheDocument();
   });
 
-  it("opens a group of near misses to show its offers", async () => {
+  it("lists the offers of a group of near misses under it, always open", async () => {
     // Arrange
-    const user = userEvent.setup();
     inboxWith([
       nearMiss("Junior Backend Engineer", rule("excluded", "failed", { found: ["Junior"] })),
     ]);
-    renderInbox("/inbox?status=filtered");
-    const group = await screen.findByRole("region", { name: "A word you exclude" });
-    expect(within(group).queryByRole("listitem")).not.toBeInTheDocument();
 
     // Act
-    await user.click(within(group).getByRole("button", { name: "Show" }));
+    renderInbox("/inbox?status=filtered");
 
     // Assert
+    const group = await screen.findByRole("region", { name: "A word you exclude" });
+    expect(within(group).queryByRole("button", { name: /^(Show|Hide)$/ })).not.toBeInTheDocument();
     const row = await within(group).findByRole("listitem");
     expect(rowTitles(group)).toEqual(["Junior Backend Engineer"]);
     expect(row).toHaveTextContent("Remote OK");
     expect(row).toHaveTextContent("Acme");
-    const piece = await openRow(user, "Junior Backend Engineer");
+    const piece = within(readingPane()).getByRole("article", { name: "Junior Backend Engineer" });
     expect(cellOf(piece, "Title")).toHaveAttribute("data-state", "failed");
     expect(within(piece).getByRole("button", { name: "Promote anyway" })).toBeInTheDocument();
   });
@@ -857,11 +848,14 @@ describe("InboxPage filtered by rule", () => {
       nearMiss("Junior Backend Engineer", rule("excluded", "failed", { found: ["Junior"] })),
     ]);
 
-    // Act
+    const user = userEvent.setup();
     renderInbox("/inbox?status=filtered");
 
-    // Assert
+    // Act
     const further = await screen.findByRole("region", { name: "Further away" });
+    await openRow(user, "Data Engineer");
+
+    // Assert
     expect(rowTitles(further)).toEqual(["Data Engineer"]);
     const piece = within(readingPane()).getByRole("article", { name: "Data Engineer" });
     const title = cellOf(piece, "Title");
@@ -1117,7 +1111,7 @@ describe("InboxPage frequent titles", () => {
       }),
     );
     renderInbox("/inbox?status=filtered");
-    const block = await screen.findByRole("region", { name: "No title of yours · 6 offers" });
+    const block = await screen.findByRole("region", { name: "No title of yours · 6 offers · Backend" });
     expect(within(block).getByText("Most frequent titles")).toBeInTheDocument();
     expect(
       within(block).getByText("2 mention python and django · 1 remote and open to Spain"),
