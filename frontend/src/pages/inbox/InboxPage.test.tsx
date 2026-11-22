@@ -6,6 +6,7 @@ import { HttpResponse, http } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import type { components } from "../../api/schema";
 import { server } from "../../test/server";
+import { setViewportWidth } from "../../test/viewport";
 import { theme } from "../../theme";
 import { InboxPage } from "./InboxPage";
 import type { Offer } from "./types";
@@ -412,6 +413,32 @@ describe("InboxPage groups", () => {
       "true",
     );
     expect(within(readingPane()).getByRole("article", { name: "A" })).toBeInTheDocument();
+  });
+
+  it("on a phone no offer is open until a row is tapped, and it opens full screen", async () => {
+    // Arrange: specs/ui/inbox.feature, "On a phone".
+    const user = userEvent.setup();
+    setViewportWidth(390);
+    inboxWith([offer("C"), offer("B"), offer("A")]);
+    renderInbox();
+    await within(offerList()).findByRole("button", { name: "B" });
+    const closed = screen.queryByRole("region", { name: "Reading pane" });
+
+    // Act
+    await user.click(within(offerList()).getByRole("button", { name: "B" }));
+    const pane = readingPane();
+    const header = {
+      back: within(pane).getByRole("button", { name: "Back" }),
+      original: within(pane).getAllByRole("link", { name: "Original posting" }),
+      position: within(pane).getByText("2 of 3"),
+    };
+
+    // Assert
+    expect(closed).toBeNull();
+    expect(header.back).toBeInTheDocument();
+    expect(header.original).toHaveLength(1);
+    expect(header.position).toBeInTheDocument();
+    expect(within(pane).getByRole("button", { name: "Discard" })).toBeInTheDocument();
   });
 
   it("with verdicts, the pending view goes by verdict", async () => {

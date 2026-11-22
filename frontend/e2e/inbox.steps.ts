@@ -368,3 +368,48 @@ Then(/^there is no "([^"]+)"$/, async ({ page }, name: string) => {
   await expect(titles(page).first()).toBeVisible();
   await expect(page.getByRole("button", { name })).toHaveCount(0);
 });
+
+// --- On a phone ---
+
+Given("I am on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+});
+
+Then("no offer is open", async ({ page }) => {
+  await expect(rows(page).first()).toBeVisible();
+  await expect(pane(page)).toHaveCount(0);
+});
+
+Then(
+  "the offer {string} is open full screen with {string}, {string} and {string}",
+  async ({ page }, title: string, back: string, original: string, position: string) => {
+    await expect(opened(page, title)).toBeVisible();
+    await expect(pane(page).getByRole("button", { name: back, exact: true })).toBeVisible();
+    await expect(pane(page).getByRole("link", { name: original })).toHaveCount(1);
+    await expect(pane(page)).toContainText(position);
+  },
+);
+
+Then(
+  "its actions {string} and {string} are {int} px tall",
+  async ({ page }, first: string, second: string, height: number) => {
+    for (const name of [first, second]) {
+      const box = await actionBar(page).getByRole("button", { name, exact: true }).boundingBox();
+      expect(box?.height).toBeGreaterThanOrEqual(height);
+    }
+  },
+);
+
+When("I go back to the list", async ({ page }) => {
+  await pane(page).getByRole("button", { name: "Back", exact: true }).click();
+});
+
+Then("I can undo it", async ({ page }) => {
+  await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+});
+
+Then("the reason {string} says {string}", async ({ page }, reason: string, text: string) => {
+  await expect(reasons(page).getByRole("button", { name: reason, exact: true })).toContainText(
+    text,
+  );
+});
