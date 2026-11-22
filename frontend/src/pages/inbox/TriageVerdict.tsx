@@ -1,6 +1,4 @@
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
-import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import {
   acceptLabel,
@@ -10,10 +8,9 @@ import {
   useSuggestionChoice,
 } from "../../components/criteriaSuggestions";
 import { offerShape, offerType } from "../../theme";
-import { DISCARD_REASON_LABELS } from "./discardReasons";
 import type { Offer } from "./types";
 
-type Props = { offer: Offer; onDiscarded?: (offer: Offer) => void };
+type Props = { offer: Offer };
 type Why = components["schemas"]["WhyRead"];
 type Confidence = components["schemas"]["Confidence"];
 
@@ -117,38 +114,20 @@ function WhyLine({ side, why }: { side: "yes" | "no"; why: Why }) {
 }
 
 // The AI section of a pending offer or a near miss (specs/ui/inbox.feature): its verdict and
-// confidence, why yes and why not with their quotes, and "Discard: {reason}" with a suggested
-// discard (with title_word the word goes with it); and, for an offer a criteria suggestion
+// confidence, why yes and why not with their quotes; and, for an offer a criteria suggestion
 // comes from (a KO offer, or an OK near miss), "Improve the filter", a criteria change made
 // from this offer.
-export function TriageVerdict({ offer, onDiscarded }: Props) {
+export function TriageVerdict({ offer }: Props) {
   const triage = offer.triage;
-  const suggestion = offer.suggested_discard;
   const canImprove = triage?.verdict === (offer.filtered ? "ok" : "ko");
   const suggestions = useCriteriaSuggestions(canImprove);
   const improvement = suggestions.data?.find(
     (s) => s.source === "triager" && s.offer_ids.includes(offer.id),
   );
   const choose = useSuggestionChoice();
-  const discard = useMutation<void, { title: string }>({
-    mutationFn: async () => {
-      if (!suggestion) return;
-      const { reason, evidence } = suggestion;
-      const { error } = await api.POST("/api/v1/offers/{offer_id}/discard", {
-        params: { path: { offer_id: offer.id } },
-        body: reason === "title_word" ? { reason, word: evidence } : { reason },
-      });
-      if (error) throw error;
-    },
-    // Not returned: the discard is done once its request is, whatever the inbox does next.
-    onSuccess: () => {
-      onDiscarded?.(offer);
-    },
-  });
-
   if (!triage) return null;
   const isOk = triage.verdict === "ok";
-  const error = discard.error ?? choose.error;
+  const error = choose.error;
   return (
     <Stack spacing={1.5}>
       {error && <Alert severity="error">{error.title}</Alert>}
@@ -185,17 +164,6 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
           {triage.why_yes && <WhyLine side="yes" why={triage.why_yes} />}
           {triage.why_not && <WhyLine side="no" why={triage.why_not} />}
         </Stack>
-        {suggestion && (
-          <Button
-            size="small"
-            variant="outlined"
-            loading={discard.isPending}
-            onClick={() => discard.mutate()}
-            sx={{ mt: 2 }}
-          >
-            Discard: {DISCARD_REASON_LABELS[suggestion.reason]}
-          </Button>
-        )}
         {improvement && (
           <Box
             sx={{

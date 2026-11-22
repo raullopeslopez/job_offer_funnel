@@ -19,6 +19,7 @@ import { NearMissGroups, nearMissGroupsQuery } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
 import { ReadingPane } from "./ReadingPane";
+import { rowOrder } from "./rowOrder";
 import { TriageButton, triageMutationKey } from "./TriageButton";
 import { TriagerDiscardButton } from "./TriagerDiscardButton";
 import { TriagerSuggestion } from "./TriagerSuggestion";
@@ -73,7 +74,6 @@ export function InboxPage() {
   const [params, setParams] = useSearchParams();
   const view = (params.get("status") as View | null) ?? "pending";
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
-  const [discarding, setDiscarding] = useState<Offer | null>(null);
   const [promoting, setPromoting] = useState<Offer | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   // The offer open in the reading pane, and the roles whose variants are open in the list.
@@ -161,6 +161,7 @@ export function InboxPage() {
       return offerId;
     },
     onSuccess: (offerId) => {
+      openNextAfter(offerId);
       leaveView(offerId);
       setNotice({ message: "Offer restored" });
       refresh();
@@ -202,6 +203,7 @@ export function InboxPage() {
       return offer;
     },
     onSuccess: (offer) => {
+      openNextAfter(offer.id);
       setNotice({ message: "Marked as rightly filtered", undo: () => unmark.mutate(offer.id) });
       refresh();
     },
@@ -233,6 +235,21 @@ export function InboxPage() {
     items[0] ??
     maybeItems[0] ??
     null;
+  // The rows as the list shows them, for "3 of 7" and for the offer that follows an action:
+  // in Filtered the near-miss groups first, then the offers further away.
+  const order =
+    view === "pending"
+      ? [...rowOrder(items, { byVerdict: true, variants: true, openVariants }), ...maybeItems]
+      : [...nearMissItems, ...rowOrder(items, { single: view === "filtered" })];
+  const orderIndex = order.findIndex((o) => o.id === selected?.id);
+  const position = orderIndex < 0 ? undefined : { index: orderIndex, total: order.length };
+  // After an action on an offer the next one opens, or the previous one if it was the last
+  // (specs/ui/inbox.feature).
+  function openNextAfter(offerId: string) {
+    const index = order.findIndex((o) => o.id === offerId);
+    if (index < 0) return;
+    setSelectedId((order[index + 1] ?? order[index - 1])?.id ?? null);
+  }
   const select = (offer: Offer) => {
     setSelectedId(offer.id);
     // On a phone the pane follows the list: bring it into view.
@@ -380,7 +397,11 @@ export function InboxPage() {
           sx={{
             minWidth: 0,
             px: { xs: 2, md: 5 },
-            py: { xs: 3, md: 1 },
+            pt: { xs: 3, md: 1 },
+            pb: { xs: 3, md: 0 },
+            display: "flex",
+            flexDirection: "column",
+            minHeight: { md: "70vh" },
             borderTop: { xs: 1, md: 0 },
             borderColor: "divider",
             // On a wide screen the pane stays in view while the list scrolls.
@@ -394,15 +415,13 @@ export function InboxPage() {
             offer={selected}
             {...context}
             variants={variants}
-            discardingId={discarding?.id}
-            onCancelDiscard={() => setDiscarding(null)}
+            position={position}
             onDiscarded={(offer) => {
-              setDiscarding(null);
+              openNextAfter(offer.id);
               leaveView(offer.id);
               setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
               refresh();
             }}
-            onDiscard={setDiscarding}
             onPromote={setPromoting}
             onRestore={(offer) => restore.mutate(offer.id)}
             onRightlyFiltered={(offer) => markRightlyFiltered.mutate(offer)}
@@ -424,7 +443,10 @@ export function InboxPage() {
         offer={promoting}
         onClose={() => setPromoting(null)}
         onPromoted={() => {
-          if (promoting) leaveView(promoting.id);
+          if (promoting) {
+            openNextAfter(promoting.id);
+            leaveView(promoting.id);
+          }
           setPromoting(null);
           setNotice({ message: "Application created" });
           refresh();

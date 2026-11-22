@@ -275,7 +275,13 @@ function rowTitles(scope: HTMLElement = offerList()): string[] {
 /** Chooses the row of an offer and returns the offer, as the reading pane shows it. */
 async function openRow(user: User, title: string): Promise<HTMLElement> {
   await user.click(await within(offerList()).findByRole("button", { name: title }));
-  return within(readingPane()).findByRole("article", { name: title });
+  return openedPane(title);
+}
+
+/** The reading pane once it shows an offer: its offer and its action bar. */
+async function openedPane(title: string): Promise<HTMLElement> {
+  await within(readingPane()).findByRole("article", { name: title });
+  return readingPane();
 }
 
 /** The cell of a rule in a piece, failed or not. */
@@ -330,7 +336,7 @@ describe("InboxPage country tags", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     const shown = within(piece)
       .getAllByTitle("Country")
       .map((shownTag) => shownTag.textContent);
@@ -466,7 +472,7 @@ describe("InboxPage reading strip", () => {
     renderInbox("/inbox?status=discarded");
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     expect(cellOf(piece, "Mode")).toHaveTextContent(shown);
   });
 
@@ -486,7 +492,7 @@ describe("InboxPage reading strip", () => {
     renderInbox("/inbox?status=discarded");
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     expect(within(piece).getByText(shown)).toBeInTheDocument();
   });
 });
@@ -514,7 +520,7 @@ describe("InboxPage rule strip", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     const cell = cellOf(piece, label);
     expect(cell).toHaveTextContent(shown);
     expect(cell).toHaveAttribute("data-state", state);
@@ -538,7 +544,7 @@ describe("InboxPage rule strip", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     for (const label of ["Keywords", "Mode", "Location"]) {
       expect(cellOf(piece, label)).toHaveTextContent("Any");
     }
@@ -570,7 +576,7 @@ describe("InboxPage rule strip", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     expect(cellOf(piece, "Title")).toHaveTextContent("Backend Engineer");
     expect(within(piece).getByText(merged)).toBeInTheDocument();
   });
@@ -583,7 +589,7 @@ describe("InboxPage rule strip", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     expect(
       within(piece).getByText(
         "Mode, location, contract, role and stack unknown: you added it by hand",
@@ -608,7 +614,7 @@ describe("InboxPage stack cell", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     const cell = cellOf(piece, "Stack");
     expect(cell).toHaveTextContent(shown);
     expect(cell).toHaveAttribute("data-state", state);
@@ -890,10 +896,10 @@ describe("InboxPage exclusion proposal", () => {
   }
 
   async function chooseWord(user: User, title: string, word: string) {
-    const piece = await screen.findByRole("article", { name: title });
+    const piece = await openedPane(title);
     await user.click(within(piece).getByRole("button", { name: "Discard" }));
     // Discarding opens another piece for the same offer.
-    const opened = await screen.findByRole("article", { name: title });
+    const opened = await openedPane(title);
     const words = within(opened).getByRole("group", { name: "A word in the title" });
     await user.click(within(words).getByRole("button", { name: word }));
   }
@@ -979,13 +985,13 @@ describe("InboxPage discarding", () => {
     const user = userEvent.setup();
     inboxWith([offer("Senior Backend Engineer")]);
     renderInbox();
-    const piece = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+    const piece = await openedPane("Senior Backend Engineer");
 
     // Act
     await user.click(within(piece).getByRole("button", { name: "Discard" }));
 
     // Assert
-    const opened = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+    const opened = await openedPane("Senior Backend Engineer");
     expect(within(opened).getByRole("heading", { name: "Senior Backend Engineer" })).toBeVisible();
     const words = within(opened).getByRole("group", { name: "A word in the title" });
     expect(
@@ -1008,7 +1014,7 @@ describe("InboxPage discarding", () => {
       }),
     );
     renderInbox();
-    const piece = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+    const piece = await openedPane("Senior Backend Engineer");
     await user.click(within(piece).getByRole("button", { name: "Discard" }));
     const words = await screen.findByRole("group", { name: "A word in the title" });
 
@@ -1029,7 +1035,7 @@ describe("InboxPage discarding with a slow inbox", () => {
     inboxWith([offer("Backend Engineer")]);
     const release = slowToListAfterDiscard();
     renderInbox();
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     await user.click(within(piece).getByRole("button", { name: "Discard" }));
     const reasons = await screen.findByRole("group", { name: "Discard because" });
 
@@ -1060,7 +1066,7 @@ describe("InboxPage discarding with a slow inbox", () => {
       }),
     );
     renderInbox();
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     await user.click(within(piece).getByRole("button", { name: "Discard" }));
     const reasons = await screen.findByRole("group", { name: "Discard because" });
 
@@ -1272,7 +1278,7 @@ describe("InboxPage triage", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    const piece = await openedPane("Backend Engineer Lead");
     const section = within(piece).getByRole("region", { name: "AI verdict" });
     expect(section).toHaveTextContent("AI: KO");
     expect(within(section).getByRole("img", { name: "High confidence" })).toBeInTheDocument();
@@ -1297,7 +1303,7 @@ describe("InboxPage triage", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    const piece = await openedPane("Backend Engineer Lead");
     const section = within(piece).getByRole("region", { name: "AI verdict" });
     expect(section).toHaveTextContent("Why yes: Like Acme's role.");
     expect(section).not.toHaveTextContent("Why not");
@@ -1322,7 +1328,7 @@ describe("InboxPage triage", () => {
     renderInbox();
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    const piece = await openedPane("Backend Engineer Lead");
     const discard = within(piece).queryByRole("button", { name: /^Discard: / });
     expect(discard?.textContent ?? null).toBe(action);
   });
@@ -1349,7 +1355,7 @@ describe("InboxPage triage", () => {
       }),
     );
     renderInbox();
-    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    const piece = await openedPane("Backend Engineer Lead");
 
     // Act
     await user.click(within(piece).getByRole("button", { name: /^Discard: / }));
@@ -1372,7 +1378,7 @@ describe("InboxPage triage", () => {
     noCriteriaSuggestions();
     const release = slowToListAfterDiscard();
     renderInbox();
-    const piece = await screen.findByRole("article", { name: "Backend Engineer Lead" });
+    const piece = await openedPane("Backend Engineer Lead");
 
     try {
       // Act
@@ -1395,7 +1401,7 @@ describe("InboxPage triage", () => {
     inboxWith([ko]);
     const sent = triagerSuggesting(ko.id);
     renderInbox();
-    const piece = await screen.findByRole("article", { name: "Lead Backend Engineer" });
+    const piece = await openedPane("Lead Backend Engineer");
     expect(
       await within(piece).findByText("Improve the filter: exclude “Lead” from Backend"),
     ).toBeInTheDocument();
@@ -1518,7 +1524,7 @@ describe("InboxPage triage", () => {
       }),
     );
     renderInbox("/inbox?view=filtered");
-    const piece = await screen.findByRole("article", { name: "Senior Backend Engineer" });
+    const piece = await openedPane("Senior Backend Engineer");
     expect(within(piece).getByRole("region", { name: "AI verdict" })).toHaveTextContent(
       "Why yes: Worth it.",
     );
@@ -1632,7 +1638,7 @@ describe("InboxPage triager discards", () => {
     renderInbox("/inbox?status=discarded");
 
     // Assert
-    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    const piece = await openedPane("Backend Engineer");
     expect(piece).toHaveTextContent("Discarded by AI · Contract");
     expect(within(piece).getByRole("button", { name: "Restore" })).toBeInTheDocument();
   });
@@ -1806,5 +1812,71 @@ describe("InboxPage row line", () => {
     const text = await rowText("Backend Engineer");
     expect(text).toContain("Discarded by AI");
     expect(text).toContain("Contract");
+  });
+});
+
+// specs/ui/inbox.feature: "The action bar says which offer of the view is open" and "The next
+// offer opens after an action".
+describe("InboxPage action bar", () => {
+  const bar = () => within(readingPane()).getByRole("group", { name: "Offer actions" });
+
+  it("says which offer of the view is open and offers Promote and Discard", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("A"), offer("B"), offer("C")]);
+    renderInbox();
+
+    // Act
+    await openRow(user, "B");
+
+    // Assert
+    expect(bar()).toHaveTextContent("2 of 3");
+    expect(within(bar()).getByRole("button", { name: "Promote" })).toBeInTheDocument();
+    expect(within(bar()).getByRole("button", { name: "Discard" })).toBeInTheDocument();
+  });
+
+  it.each([
+    ["the next offer", "A", "B"],
+    ["the previous one after the last", "C", "B"],
+  ])("opens %s after discarding", async (_, discarded, next) => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("A"), offer("B"), offer("C")]);
+    server.use(
+      http.post("/api/v1/offers/:offerId/discard", () => HttpResponse.json({}, { status: 201 })),
+    );
+    renderInbox();
+    await openRow(user, discarded);
+    await user.click(within(bar()).getByRole("button", { name: "Discard" }));
+    const reasons = within(readingPane()).getByRole("group", { name: "Discard because" });
+
+    // Act
+    await user.click(within(reasons).getByRole("button", { name: "No reason" }));
+
+    // Assert
+    expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
+    expect(await within(readingPane()).findByRole("article", { name: next })).toBeInTheDocument();
+  });
+
+  it("makes a suggested discard the main action, with Promote and Other reason", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([
+      offer("Backend Engineer Lead", {
+        triage: triaged("ko", "Part-time role."),
+        suggested_discard: { reason: "contract", evidence: "Part-time" },
+      }),
+    ]);
+    noCriteriaSuggestions();
+    renderInbox();
+    await openedPane("Backend Engineer Lead");
+    expect(within(bar()).getByRole("button", { name: "Discard: Contract" })).toBeInTheDocument();
+    expect(within(bar()).getByRole("button", { name: "Promote" })).toBeInTheDocument();
+
+    // Act
+    await user.click(within(bar()).getByRole("button", { name: "Other reason" }));
+
+    // Assert
+    expect(within(readingPane()).getByRole("group", { name: "Discard because" })).toBeVisible();
   });
 });
