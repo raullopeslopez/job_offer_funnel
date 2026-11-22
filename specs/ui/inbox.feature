@@ -973,7 +973,7 @@ Feature: Inbox screen
     And I focus the offer list
     When I press "D"
     Then I see the reasons to discard
-    And the offer "Backend Engineer" is still pending
+    And the offer "Backend Engineer" is still listed
 
   @component
   Scenario: "P" promotes a near miss
@@ -988,7 +988,7 @@ Feature: Inbox screen
     And I am on the inbox
     When I press "D" on the focused row of "Backend Engineer Lead"
     Then I see the reasons to discard
-    And the offer "Backend Engineer Lead" is not discarded
+    And the offer "Backend Engineer Lead" is still listed
 
   @component
   Scenario: The keys are ignored while typing in a field
@@ -1011,9 +1011,10 @@ Feature: Inbox screen
     When I press "P"
     And I press "Enter"
     And I press "D"
-    And I discard with "No reason" by keyboard
+    And I tab to "No reason" and press "Enter"
     And I press "P"
     And I press "Enter"
     Then I see that there are no offers
-    And the "promoted" offers show "A" and "C"
+    And the "promoted" offers show "C"
+    And the "promoted" offers show "A"
     And the "discarded" offers show "B" with reason "No reason"
