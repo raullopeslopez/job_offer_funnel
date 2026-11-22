@@ -1668,7 +1668,6 @@ describe("InboxPage triager discards", () => {
 
     // Act
     renderInbox("/inbox?status=filtered");
-    await userEvent.click(await screen.findByRole("button", { name: "Show" }));
     await userEvent.click(await screen.findByRole("button", { name: "Backend Engineer" }));
 
     // Assert
