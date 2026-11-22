@@ -525,7 +525,7 @@ Feature: Inbox screen
   # --- Triage ---
 
   # With an offer triager (specs/inbox/offer_triages.feature), the pending view offers
-  # "Triage with AI": it triages batch after batch until none is left, saying how many it
+  # "Triage with AI", a discreet button in the list header: it triages batch after batch until none is left, saying how many it
   # triaged, how many are OK, how many KO and how many are left, and stops when a batch
   # triages none. A pending offer with a verdict says it in the reading pane, under its
   # strip, in its AI section: "AI: OK" or "AI: KO", its confidence ("High", "Medium" or "Low", none if it
@@ -533,8 +533,8 @@ Feature: Inbox screen
   # with its quote under "View evidence" when it has one. During a triage run, eligible
   # offers awaiting a verdict show three dots (static with reduced motion). With a suggested discard it adds
   # "Discard: {reason}", which discards it with that reason and word, like any
-  # discard. The criteria suggestions from the triager show above the offers, one at a
-  # time, the first first: "AI suggests: exclude “{word}” from {profile}", its why, the
+  # discard. The criteria suggestions from the triager show in the list header, one at a
+  # time, the first first, as a block between two lines with no box: "AI suggests: exclude “{word}” from {profile}", its why, the
   # line "Takes {m} out of Pending, loses none you promoted." and "Not now" or "Exclude
   # it" (a criteria change), as in the metrics (specs/ui/metrics.feature). An offer that a
   # criteria suggestion comes from also says it under its verdict, "Improve the filter:
@@ -673,7 +673,7 @@ Feature: Inbox screen
   # --- Triager discards ---
 
   # When the triager would discard offers (specs/inbox/triager_discards.feature), the
-  # pending view offers "Let AI discard {n}", next to "Triage with AI", with the line
+  # pending view offers "Let AI discard {n}", a discreet button in the list header under "Triage with AI", with the line
   # "The ones it marked KO with high confidence. You can restore any of them." Choosing it
   # discards them and shows "AI discarded {n} offers" with "Undo", which restores all of
   # them. In the discarded view a triager discard says "Discarded by AI" before its
