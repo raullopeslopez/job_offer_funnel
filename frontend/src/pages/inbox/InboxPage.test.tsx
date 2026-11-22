@@ -280,7 +280,7 @@ async function openRow(user: User, title: string): Promise<HTMLElement> {
 
 /** The cell of a rule in a piece, failed or not. */
 function cellOf(piece: HTMLElement, label: string): HTMLElement {
-  const name = within(piece).getByText(new RegExp(`^${label}( · filtered it)?$`));
+  const name = within(piece).getByText(new RegExp(`^${label}$`));
   return name.parentElement as HTMLElement;
 }
 
@@ -672,7 +672,7 @@ describe("InboxPage failed cells", () => {
 
     // Assert
     const cell = cellOf(piece, label);
-    expect(cell).toHaveTextContent(`${label} · filtered it`);
+    expect(cell).toHaveTextContent("filtered it");
     expect(cell).toHaveTextContent(shown);
     expect(cell).toHaveAttribute("data-state", "failed");
     if (failing.evidence) {
@@ -986,7 +986,7 @@ describe("InboxPage discarding", () => {
 
     // Assert
     const opened = await screen.findByRole("article", { name: "Senior Backend Engineer" });
-    expect(within(opened).getByRole("link", { name: "Senior Backend Engineer" })).toBeVisible();
+    expect(within(opened).getByRole("heading", { name: "Senior Backend Engineer" })).toBeVisible();
     const words = within(opened).getByRole("group", { name: "A word in the title" });
     expect(
       within(words)
@@ -1278,11 +1278,9 @@ describe("InboxPage triage", () => {
     expect(within(section).getByRole("img", { name: "High confidence" })).toBeInTheDocument();
     expect(section).toHaveTextContent("Why yes: A backend role.");
     expect(section).toHaveTextContent("Why not: A part-time role.");
-    const evidence = within(section).getByText("View evidence");
-    expect(evidence.parentElement).not.toHaveAttribute("open");
-    await userEvent.click(evidence);
-    expect(evidence.parentElement).toHaveAttribute("open");
-    expect(section).toHaveTextContent("“Part-time, 20 hours a week”");
+    expect(within(section).queryByText("View evidence")).not.toBeInTheDocument();
+    expect(within(section).getByText("“Backend Engineer”")).toBeVisible();
+    expect(within(section).getByText("“Part-time, 20 hours a week”")).toBeVisible();
   });
 
   it.each([
@@ -1637,6 +1635,46 @@ describe("InboxPage triager discards", () => {
     const piece = await screen.findByRole("article", { name: "Backend Engineer" });
     expect(piece).toHaveTextContent("Discarded by AI · Contract");
     expect(within(piece).getByRole("button", { name: "Restore" })).toBeInTheDocument();
+  });
+
+  // specs/ui/inbox.feature, "The reading pane shows the offer with the same parts"
+  it("links the header of the pane to the original posting", async () => {
+    // Arrange
+    inboxWith([offer("Backend Engineer")]);
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    expect(within(piece).getByRole("link", { name: "Original posting" })).toHaveAttribute(
+      "href",
+      "https://remoteok.com/Backend Engineer",
+    );
+  });
+
+  // specs/ui/inbox.feature, "A near miss with a verdict says it in its AI section"
+  it.each([
+    ["ok", true],
+    ["ko", false],
+  ] as const)("says a near miss is %s: worth rescuing is %s", async (verdict, rescue) => {
+    // Arrange
+    inboxWith([
+      nearMiss("Backend Engineer", rule("stable", "failed", { value: false }), {
+        triage: triaged(verdict, "Because."),
+      }),
+    ]);
+    noCriteriaSuggestions();
+
+    // Act
+    renderInbox("/inbox?status=filtered");
+    await userEvent.click(await screen.findByRole("button", { name: "Backend Engineer" }));
+
+    // Assert
+    const piece = await screen.findByRole("article", { name: "Backend Engineer" });
+    expect(piece).toHaveTextContent("Near miss · filtered by one rule");
+    const section = within(piece).getByRole("region", { name: "AI verdict" });
+    expect(section.textContent?.includes("worth rescuing")).toBe(rescue);
   });
 });
 

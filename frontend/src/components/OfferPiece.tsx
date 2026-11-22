@@ -2,6 +2,7 @@ import { Box, Link, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import type { components } from "../api/schema";
 import { mono, type Source } from "../theme";
+import { CompanyAvatar } from "./CompanyAvatar";
 import { CountryTag } from "./CountryTag";
 import { RelativeDate } from "./RelativeDate";
 import { SourceTag } from "./SourceTag";
@@ -17,6 +18,8 @@ type Props = {
   actions?: ReactNode;
   strip?: ReactNode;
   footer?: ReactNode;
+  /** What stands out about its state, after its country: "Near miss · filtered by one rule". */
+  statusLine?: string;
   now?: Date;
 };
 
@@ -39,9 +42,9 @@ export function whereText(offer: Offer): string {
 }
 
 // One offer, as the reading pane shows it, with no box around it: where it came from, its age,
-// the title as a link, company and country, and slots for its actions, its rule strip and a
+// the company, the title, the country and a status line, and slots for its actions, its rule strip and a
 // footer. On a phone the actions go full width at its foot, after the rest.
-export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: Props) {
+export function OfferPiece({ offer, sourceKind, actions, strip, footer, statusLine, now }: Props) {
   const sourceName = sourceKind === "watched" ? undefined : offer.job_board_name;
   const [country, ...otherCountries] = countryLabels(offer);
   return (
@@ -60,29 +63,44 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: P
       }}
     >
       <Box sx={{ gridArea: "main", minWidth: 0 }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.25,
-            color: "text.secondary",
-            typography: "body2",
-          }}
-        >
-          <SourceTag kind={sourceKind} name={sourceName} />
-          <Box component="span" sx={{ fontFamily: mono }}>
-            <RelativeDate value={offer.created_at} now={now} />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <CompanyAvatar name={offer.company} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle2" component="span" sx={{ display: "block" }}>
+              {offer.company}
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1.25,
+                color: "text.secondary",
+                typography: "body2",
+              }}
+            >
+              <SourceTag kind={sourceKind} name={sourceName} />
+              <Box component="span" sx={{ fontFamily: mono }}>
+                <RelativeDate value={offer.created_at} now={now} />
+              </Box>
+            </Box>
           </Box>
-        </Box>
-        <Typography variant="h6" component="h3" sx={{ mt: 1 }}>
-          <Link href={offer.url} target="_blank" rel="noopener noreferrer" color="inherit">
-            {offer.title}
+          <Link
+            href={offer.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="body2"
+            sx={{ ml: "auto", whiteSpace: "nowrap" }}
+          >
+            Original posting
           </Link>
+        </Box>
+        <Typography variant="h4" component="h3" sx={{ mt: 3 }}>
+          {offer.title}
         </Typography>
         <Box
           sx={{
-            mt: 0.75,
+            mt: 1.5,
             display: "flex",
             alignItems: "center",
             flexWrap: "wrap",
@@ -91,7 +109,6 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: P
             typography: "body2",
           }}
         >
-          <span>{offer.company}</span>
           {country && <CountryTag label={country} />}
           {otherCountries.length > 0 && (
             <Box
@@ -101,6 +118,12 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: P
             >
               {moreCountries(otherCountries.length)}
             </Box>
+          )}
+          {statusLine && (
+            <>
+              {country && <span aria-hidden>·</span>}
+              <span>{statusLine}</span>
+            </>
           )}
         </Box>
       </Box>
@@ -120,7 +143,7 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: P
           {actions}
         </Box>
       )}
-      {strip && <Box sx={{ gridArea: "strip", mt: 2 }}>{strip}</Box>}
+      {strip && <Box sx={{ gridArea: "strip" }}>{strip}</Box>}
       {footer && <Box sx={{ gridArea: "footer", mt: 1.5 }}>{footer}</Box>}
     </Box>
   );

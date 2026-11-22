@@ -89,18 +89,30 @@ export function TriagePending() {
   );
 }
 
-/** One side of the triage: "Why yes: {why}" or "Why not: {why}",. */
+/** One side of the triage: "Why yes: {why}" or "Why not: {why}", with its quote under it. */
 function WhyLine({ side, why }: { side: "yes" | "no"; why: Why }) {
   return (
-    <Typography variant="body2">
-      <Box
-        component="span"
-        sx={{ fontWeight: 500, color: side === "yes" ? "tone.green.fg" : "tone.red.fg" }}
-      >
-        {side === "yes" ? "Why yes:" : "Why not:"}
-      </Box>{" "}
-      {why.why}
-    </Typography>
+    <Box>
+      <Typography variant="body1">
+        <Box
+          component="span"
+          sx={{ fontWeight: 500, color: side === "yes" ? "tone.green.fg" : "tone.red.fg" }}
+        >
+          {side === "yes" ? "Why yes:" : "Why not:"}
+        </Box>{" "}
+        {why.why}
+      </Typography>
+      {why.quote && (
+        <Typography
+          component="blockquote"
+          variant="body1"
+          color="text.secondary"
+          sx={{ mx: 0, mt: 0.75, mb: 0, pl: 1.75, borderLeft: 1, borderColor: "divider" }}
+        >
+          “{why.quote}”
+        </Typography>
+      )}
+    </Box>
   );
 }
 
@@ -135,13 +147,6 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
   });
 
   if (!triage) return null;
-  const quotes = [
-    ...new Set(
-      [triage.why_yes?.quote, triage.why_not?.quote].filter((quote): quote is string =>
-        Boolean(quote),
-      ),
-    ),
-  ];
   const isOk = triage.verdict === "ok";
   const error = discard.error ?? choose.error;
   return (
@@ -150,21 +155,9 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
       <Box
         component="section"
         aria-label="AI verdict"
-        sx={{
-          borderTop: 1,
-          borderColor: "divider",
-          pt: 1.75,
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "132px minmax(0, 1fr) auto" },
-          gap: { xs: 1.5, sm: 2.5 },
-          alignItems: "start",
-        }}
+        sx={{ borderTop: 1, borderColor: "text.primary", pt: 2.5, mt: 4 }}
       >
-        <Stack
-          direction={{ xs: "row", sm: "column" }}
-          spacing={{ xs: 1.5, sm: 1 }}
-          sx={{ alignItems: { xs: "center", sm: "flex-start" } }}
-        >
+        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.25 }}>
           <Box
             component="span"
             sx={{
@@ -182,32 +175,15 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
             AI: {triage.verdict.toUpperCase()}
           </Box>
           {triage.confidence && <ConfidenceMeter confidence={triage.confidence} />}
-        </Stack>
-        <Stack spacing={0.75} sx={{ minWidth: 0 }}>
+          {isOk && offer.filtered && (
+            <Typography variant="caption" sx={{ color: "tone.green.fg" }}>
+              · worth rescuing
+            </Typography>
+          )}
+        </Box>
+        <Stack spacing={2} sx={{ mt: 2, minWidth: 0 }}>
           {triage.why_yes && <WhyLine side="yes" why={triage.why_yes} />}
           {triage.why_not && <WhyLine side="no" why={triage.why_not} />}
-          {quotes.length > 0 && (
-            <Box
-              component="details"
-              sx={{
-                typography: "body2",
-                color: "text.secondary",
-                "& summary": { cursor: "pointer" },
-              }}
-            >
-              <summary>View evidence</summary>
-              {quotes.map((quote) => (
-                <Typography
-                  key={quote}
-                  component="blockquote"
-                  variant="body2"
-                  sx={{ mx: 0, my: 0.75, pl: 1.5, borderLeft: 2, borderColor: "divider" }}
-                >
-                  “{quote}”
-                </Typography>
-              ))}
-            </Box>
-          )}
         </Stack>
         {suggestion && (
           <Button
@@ -215,35 +191,46 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
             variant="outlined"
             loading={discard.isPending}
             onClick={() => discard.mutate()}
-            sx={{ alignSelf: "center", justifySelf: { xs: "start", sm: "end" } }}
+            sx={{ mt: 2 }}
           >
             Discard: {DISCARD_REASON_LABELS[suggestion.reason]}
           </Button>
         )}
-      </Box>
-      {improvement && (
-        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
-          <Box>
-            <Typography variant="body2">
-              Improve the filter: {suggestionChange(improvement)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {suggestionEffect(improvement)}
-            </Typography>
-          </Box>
-          <Button
-            size="small"
-            variant="contained"
-            loading={choose.isPending}
-            onClick={() =>
-              choose.mutate({ suggestion: improvement, choice: "exclude", offerId: offer.id })
-            }
-            sx={{ ml: "auto" }}
+        {improvement && (
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 1,
+              mt: 2.5,
+              pt: 2,
+              borderTop: 1,
+              borderColor: "divider",
+            }}
           >
-            {acceptLabel(improvement)}
-          </Button>
-        </Box>
-      )}
+            <Box>
+              <Typography variant="body2">
+                Improve the filter: {suggestionChange(improvement)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {suggestionEffect(improvement)}
+              </Typography>
+            </Box>
+            <Button
+              size="small"
+              variant="contained"
+              loading={choose.isPending}
+              onClick={() =>
+                choose.mutate({ suggestion: improvement, choice: "exclude", offerId: offer.id })
+              }
+              sx={{ ml: "auto" }}
+            >
+              {acceptLabel(improvement)}
+            </Button>
+          </Box>
+        )}
+      </Box>
     </Stack>
   );
 }

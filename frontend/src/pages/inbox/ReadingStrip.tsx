@@ -30,7 +30,7 @@ export function ReadingStrip({ readings }: { readings: Reading[] }) {
   if (!reading) {
     return (
       <RuleStrip>
-        <MergedRuleCell span={5}>Not read yet, or no description to read</MergedRuleCell>
+        <MergedRuleCell>Not read yet, or no description to read</MergedRuleCell>
       </RuleStrip>
     );
   }

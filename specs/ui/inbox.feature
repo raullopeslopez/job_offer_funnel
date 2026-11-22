@@ -32,24 +32,28 @@ Feature: Inbox screen
   the mark of its company, and its source as a tag.
 
   The reading pane shows the offer with the same parts, wherever it came from: its
-  source and age, its title, its company and country, its actions and a strip of
-  rules. The country is a tag with the first country of the offer
+  header (the company with its mark, the source, the age and "Original posting", a
+  link to the posting), its title big, its country and, when it has one, a status line
+  ("Near miss · filtered by one rule", "Discarded by AI · Contract"), its actions, its
+  AI section when it has a verdict, and the rules as a list. The country is a tag with the first country of the offer
   (specs/inbox/offer_countries.feature), followed by how many more it has ("+1
   country", "+27 countries"); when its location names no known country the tag shows
   the location as published, and an offer without a location has no tag. On a phone
-  the actions go full width and the strip shows two rules to a row, so no value is
-  cut. The rows are grouped by the day they were added: Today, Yesterday and Earlier.
+  the actions go full width and each rule has a line of its own, so no value is cut. The rows are grouped by the day they were added: Today, Yesterday and Earlier.
 
   An imported pending offer has a filter reason (specs/inbox/filter_reasons.feature),
-  and its strip has a cell per rule of its reference profile: Title, Keywords, Mode,
+  and its rules list has a cell per rule of its reference profile: Title, Keywords, Mode,
   Location, Contract and Role, and then Stack. The Title cell also holds the excluded
   keywords, found in the title or in the main stack of the offer. Stack is not a rule:
   it says the main stack the reading of the offer says, whether it filters or not, or
   "Not stated". Each cell says the
   value that passed the rule, "Not stated" when it is unknown, or, when the rule
   filtered the offer, the value against what the profile asks, marked "filtered it". A
-  cell whose rule the profile does not ask for says "Any". Only filtered offers have a
-  failed cell, so it only shows in "Maybe" and in the filtered view. Without a
+  cell whose rule the profile does not ask for says "Any". A cell tells its state by
+  its shape, not only by color: a filled dot when the offer passes, a hollow one when it is
+  "Not stated", and a red one with "filtered it" when it filtered the offer; the evidence
+  of the failed cell, the literal sentence of the description, is under that cell. Only
+  filtered offers have a failed cell, so it only shows in "Maybe" and in the filtered view. Without a
   description to read, Mode, Location, Contract, Role and Stack merge into one cell
   that says why. Offers with no filter reason (added by hand, discarded
   or promoted) keep the strip of what their reading says of the mode, the location,
@@ -606,9 +610,10 @@ Feature: Inbox screen
   # "Triage with AI", a discreet button in the list header: it triages batch after batch until none is left, saying how many it
   # triaged, how many are OK, how many KO and how many are left, and stops when a batch
   # triages none. A pending offer with a verdict says it in the reading pane, under its
-  # strip, in its AI section: "AI: OK" or "AI: KO", its confidence ("High", "Medium" or "Low", none if it
-  # has none), and a line per side it has: "Why yes: {why}" and "Why not: {why}", each
-  # with its quote under "View evidence" when it has one. During a triage run, eligible
+  # rules, in its AI section, set off by a line and with no box: "AI: OK" or "AI: KO", its
+  # confidence ("High", "Medium" or "Low", none if it has none), and a line per side it has:
+  # "Why yes: {why}" and "Why not: {why}", each with its quote under it, always visible,
+  # when it has one. During a triage run, eligible
   # offers awaiting a verdict show three dots (static with reduced motion). With a suggested discard it adds
   # "Discard: {reason}", which discards it with that reason and word, like any
   # discard. The criteria suggestions from the triager show in the list header, one at a
@@ -660,7 +665,6 @@ Feature: Inbox screen
       | High                       |
       | Why yes: A backend role.   |
       | Why not: A part-time role. |
-    When I expand "View evidence"
     Then I see the quotes "Backend Engineer" and "Part-time, 20 hours a week"
 
   @component
@@ -791,7 +795,7 @@ Feature: Inbox screen
 
   # The triage also marks the near misses (specs/inbox/near_miss_triages.feature), and
   # says how many it marked OK as "{n} to rescue". A near miss with a verdict, in "Maybe"
-  # and in the filtered view, says it under its strip like any offer, in its AI section. An OK near miss with a suggestion to relax its rule says "Improve the
+  # and in the filtered view, says it in its AI section like any offer, which adds "worth rescuing" when it is OK. An OK near miss with a suggestion to relax its rule says "Improve the
   # filter: {change} in {profile}", the line "Brings {n} into Pending, none you
   # discarded." and "Relax it" (a criteria change made from that offer). Rescuing it is
   # promoting it, as always.

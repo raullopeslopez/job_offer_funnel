@@ -1,4 +1,4 @@
-import { Box, Button, Link, Typography } from "@mui/material";
+import { Box, Button, Link } from "@mui/material";
 import type { ReactNode } from "react";
 import { Link as RouterLink } from "react-router";
 import { OfferPiece } from "../../components/OfferPiece";
@@ -36,31 +36,34 @@ export function InboxOffer({
     offer.status === "pending" &&
     offer.filter_reason?.has_description &&
     (!offer.filtered || offer.filter_reason.near_miss);
+  const verdict =
+    (offer.status === "pending" && offer.triage && (
+      <TriageVerdict offer={offer} onDiscarded={onDiscarded} />
+    )) ||
+    (waiting && <TriagePending />);
   return (
     <OfferPiece
       offer={offer}
       sourceKind={sourceKind}
       now={now}
       actions={actions}
+      statusLine={statusLine(offer)}
       strip={
         <>
           {extra}
+          {verdict}
           <OfferStrip offer={offer} sourceKind={sourceKind} profiles={profiles} />
         </>
       }
-      footer={
-        (offer.status === "discarded" && (
-          <Typography variant="body2" color="text.secondary">
-            Reason: {discardReasonText(offer)}
-          </Typography>
-        )) ||
-        (offer.status === "pending" && offer.triage && (
-          <TriageVerdict offer={offer} onDiscarded={onDiscarded} />
-        )) ||
-        (waiting && <TriagePending />)
-      }
     />
   );
+}
+
+// What stands out about the state of an offer, under its title.
+function statusLine(offer: Offer): string | undefined {
+  if (offer.status === "discarded") return discardReasonText(offer);
+  if (offer.filtered && offer.filter_reason?.near_miss) return "Near miss · filtered by one rule";
+  return undefined;
 }
 
 /** A near miss: a filtered offer that fails a single rule (specs/inbox/rescues.feature). */

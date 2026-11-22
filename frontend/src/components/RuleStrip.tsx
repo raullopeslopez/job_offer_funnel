@@ -1,48 +1,32 @@
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import type { ReactNode } from "react";
-import { offerShape, offerType } from "../theme";
+import { offerType } from "../theme";
 
-// The rules of a profile side by side, in equal columns; on a phone, two to a row so that
-// their values fit.
+// The rules of a profile as a definition list under a "Rules" heading: a line per rule, so no
+// value is cut on a phone.
 export function RuleStrip({ children }: { children: ReactNode }) {
   return (
-    <Box
-      role="group"
-      aria-label="Rules"
-      sx={{
-        display: "grid",
-        gridAutoFlow: { xs: "row", sm: "column" },
-        gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "none" },
-        gridAutoColumns: "minmax(0, 1fr)",
-        gap: offerShape.ruleGap,
-      }}
-    >
-      {children}
+    <Box component="section" sx={{ mt: 4 }}>
+      <Typography component="h4" sx={{ ...offerType.cellLabel, color: "text.secondary" }}>
+        Rules
+      </Typography>
+      <Box component="dl" sx={{ m: 0, mt: 1, borderTop: 1, borderColor: "divider" }}>
+        {children}
+      </Box>
     </Box>
   );
 }
 
-type MergedProps = { span: number; children: ReactNode };
-
-// Several rules that cannot be told apart (no description to read), as one dashed cell.
-export function MergedRuleCell({ span, children }: MergedProps) {
+// Several rules that cannot be told apart (no description to read), as one line that says why.
+export function MergedRuleCell({ children }: { children: ReactNode }) {
   return (
     <Box
       data-state="unknown"
-      sx={{
-        gridColumn: { xs: "1 / -1", sm: `span ${span}` },
-        display: "flex",
-        alignItems: "center",
-        px: 1.25,
-        py: 0.75,
-        borderRadius: offerShape.pieceRadius,
-        border: "1px dashed",
-        borderColor: "text.disabled",
-        color: "text.secondary",
-        ...offerType.cellValue,
-      }}
+      sx={{ py: 1.25, borderBottom: 1, borderColor: "divider", color: "text.secondary" }}
     >
-      {children}
+      <Box component="dd" sx={{ m: 0, ...offerType.cellValue }}>
+        {children}
+      </Box>
     </Box>
   );
 }
