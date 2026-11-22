@@ -307,6 +307,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- Filtered, in the list column beside the reading pane: the groups of "One rule away" are
+  always open (no more "Show" and "Hide"), so every near miss is a row you can choose,
+  and the first of them opens in the pane. "No title of yours" names its profile:
+  "No title of yours · {n} offers · {profile}" (`specs/ui/inbox.feature`).
+
 - The inbox is a list of rows and a reading pane, with no cards: each offer is one row
   (its title, company, where it is, its age and its source), and choosing a row opens
   the offer in the pane, with its rules, its AI verdict and its actions. The first offer
