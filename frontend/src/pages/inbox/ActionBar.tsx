@@ -17,6 +17,8 @@ type Props = Omit<OfferActions, "onDiscard"> &
     /** Which offer of the view it is: "3 of 7". */
     position?: { index: number; total: number };
     nearMiss: boolean;
+    /** On a phone: 50 px buttons side by side, and the reasons as full-width rows. */
+    phone?: boolean;
     onDiscarded: (offer: Offer) => void;
   };
 
@@ -27,6 +29,7 @@ export function ActionBar({
   offer,
   position,
   nearMiss,
+  phone = false,
   profiles,
   onDiscarded,
   onPromote,
@@ -74,6 +77,7 @@ export function ActionBar({
         <DiscardChoices
           offer={offer}
           profiles={profiles}
+          phone={phone}
           onCancel={() => setIsDiscarding(false)}
           onDiscarded={(discarded) => {
             setIsDiscarding(false);
@@ -87,7 +91,9 @@ export function ActionBar({
             alignItems: "center",
             flexWrap: "wrap",
             gap: 1,
-            "& .MuiButton-root": { minHeight: { xs: 44, sm: "auto" } },
+            "& .MuiButton-root": phone
+              ? { minHeight: 50, flex: "1 1 0", minWidth: "fit-content" }
+              : { minHeight: { xs: 44, sm: "auto" } },
           }}
         >
           {position && (

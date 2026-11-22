@@ -21,6 +21,8 @@ type Props = {
   /** What stands out about its state, after its country: "Near miss · filtered by one rule". */
   statusLine?: string;
   now?: Date;
+  /** Hides its "Original posting" link, when the screen has its own. */
+  hideOriginal?: boolean;
 };
 
 // Its countries, or its location as published when it names no known country.
@@ -44,7 +46,16 @@ export function whereText(offer: Offer): string {
 // One offer, as the reading pane shows it, with no box around it: where it came from, its age,
 // the company, the title, the country and a status line, and slots for its actions, its rule strip and a
 // footer. On a phone the actions go full width at its foot, after the rest.
-export function OfferPiece({ offer, sourceKind, actions, strip, footer, statusLine, now }: Props) {
+export function OfferPiece({
+  offer,
+  sourceKind,
+  actions,
+  strip,
+  footer,
+  statusLine,
+  now,
+  hideOriginal,
+}: Props) {
   const sourceName = sourceKind === "watched" ? undefined : offer.job_board_name;
   const [country, ...otherCountries] = countryLabels(offer);
   return (
@@ -85,15 +96,17 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, statusLi
               </Box>
             </Box>
           </Box>
-          <Link
-            href={offer.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="body2"
-            sx={{ ml: "auto", whiteSpace: "nowrap" }}
-          >
-            Original posting
-          </Link>
+          {!hideOriginal && (
+            <Link
+              href={offer.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="body2"
+              sx={{ ml: "auto", whiteSpace: "nowrap" }}
+            >
+              Original posting
+            </Link>
+          )}
         </Box>
         <Typography variant="h4" component="h3" sx={{ mt: 3 }}>
           {offer.title}

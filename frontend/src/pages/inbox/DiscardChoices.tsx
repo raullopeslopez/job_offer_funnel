@@ -15,6 +15,8 @@ import type { Offer } from "./types";
 
 type Props = Pick<OfferContext, "profiles"> & {
   offer: Offer;
+  /** On a phone: full-width 50 px rows that say what each one refers to. */
+  phone?: boolean;
   onCancel: () => void;
   onDiscarded: (offer: Offer) => void;
 };
@@ -26,7 +28,7 @@ const OTHER_REASONS = CHOSEN_REASONS.filter((reason) => reason !== "title_word")
 // (specs/ui/inbox.feature): its title words are buttons under "A word in the title", and
 // choosing a word or one of the other reasons discards. With a reference profile, a word first
 // proposes excluding it from the profile.
-export function DiscardChoices({ offer, profiles, onCancel, onDiscarded }: Props) {
+export function DiscardChoices({ offer, profiles, phone = false, onCancel, onDiscarded }: Props) {
   const [word, setWord] = useState<string | null>(null);
   const [isProposing, setIsProposing] = useState(false);
   const queryClient = useQueryClient();
@@ -126,9 +128,9 @@ export function DiscardChoices({ offer, profiles, onCancel, onDiscarded }: Props
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "none" },
-              gridAutoFlow: { xs: "row", sm: "column" },
-              justifyContent: { sm: "start" },
+              gridTemplateColumns: phone ? "minmax(0, 1fr)" : "none",
+              gridAutoFlow: phone ? "row" : "column",
+              justifyContent: phone ? undefined : "start",
               gap: 1,
             }}
           >
@@ -139,14 +141,16 @@ export function DiscardChoices({ offer, profiles, onCancel, onDiscarded }: Props
                 variant="outlined"
                 disabled={discard.isPending}
                 onClick={() => discard.mutate({ reason })}
-                sx={{ minHeight: 44, justifyContent: { xs: "space-between", sm: "center" } }}
+                sx={{
+                  minHeight: phone ? 50 : 44,
+                  justifyContent: phone ? "space-between" : "center",
+                }}
               >
                 {DISCARD_REASON_LABELS[reason]}
-                {refersTo[reason] && (
+                {phone && refersTo[reason] && (
                   <Box
                     component="span"
                     sx={{
-                      display: { xs: "inline", sm: "none" },
                       ml: 2,
                       color: "text.secondary",
                       fontWeight: 400,
@@ -164,7 +168,7 @@ export function DiscardChoices({ offer, profiles, onCancel, onDiscarded }: Props
           <Button
             disabled={discard.isPending}
             onClick={onCancel}
-            sx={{ alignSelf: { xs: "stretch", sm: "flex-end" } }}
+            sx={{ alignSelf: phone ? "stretch" : "flex-end", minHeight: phone ? 50 : undefined }}
           >
             Cancel
           </Button>

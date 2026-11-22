@@ -17,7 +17,12 @@ Feature: Inbox screen
   where it is, its age and its source. Choosing a row opens its offer in the reading
   pane and marks the row as selected; on opening the inbox the first offer of the view
   is selected. On a wide screen the list is a column on the left and the pane fills the
-  rest; on a phone the pane follows the list.
+  rest. On a phone (under 900 px) the list takes the whole width, with the same rows and
+  groups and the AI controls under the four views; no offer is selected until I tap a
+  row, and tapping it opens the offer full screen, with "Back", "Original posting" and its
+  position ("3 of 7") in a header, the same content as the pane and its actions at the
+  foot as 50 px buttons. After an action the screen goes back to the list, with the message
+  and "Undo".
 
   Each row also says in one line what decides the offer, so it can be decided without
   opening it: a label, in text and not only in color, and a line. A pending offer with a
@@ -45,7 +50,7 @@ Feature: Inbox screen
   (specs/inbox/offer_countries.feature), followed by how many more it has ("+1
   country", "+27 countries"); when its location names no known country the tag shows
   the location as published, and an offer without a location has no tag. On a phone
-  the actions go full width and each rule has a line of its own, so no value is cut. The rows are grouped by the day they were added: Today, Yesterday and Earlier.
+  each rule has a line of its own, so no value is cut. The rows are grouped by the day they were added: Today, Yesterday and Earlier.
 
   An imported pending offer has a filter reason (specs/inbox/filter_reasons.feature),
   and its rules list has a cell per rule of its reference profile: Title, Keywords, Mode,
@@ -171,6 +176,49 @@ Feature: Inbox screen
     And I chose the row of "A"
     When I discard the offer "A" because "No reason"
     Then the row of "B" is selected
+
+  # --- On a phone ---
+
+  Scenario: On a phone the list is full width and no offer is open
+    Given I am on a phone
+    And offers for "Acme" as "A", "B" and "C", added in that order
+    When I open the inbox
+    Then I see the offers, in order: "C", "B", "A"
+    And no offer is open
+
+  Scenario: Tapping a row opens the offer full screen
+    Given I am on a phone
+    And offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    When I choose the row of "B"
+    Then the offer "B" is open full screen with "Back", "Original posting" and "2 of 3"
+    And its actions "Promote" and "Discard" are 50 px tall
+
+  Scenario: Back returns to the list
+    Given I am on a phone
+    And offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    And I chose the row of "A"
+    When I go back to the list
+    Then no offer is open
+    And I see the offers, in order: "C", "B", "A"
+
+  Scenario: After an action the list comes back with the message and Undo
+    Given I am on a phone
+    And offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    When I discard the offer "B" because "No reason"
+    Then no offer is open
+    And I see the message "Offer discarded"
+    And I can undo it
+    And I see the offers, in order: "C", "A"
+
+  Scenario: On a phone the reasons say what they refer to
+    Given I am on a phone
+    And an offer for "Acme" as "Backend Engineer"
+    And I am on the inbox
+    When I start discarding the offer "Backend Engineer"
+    Then the reason "Company" says "Acme"
 
   Scenario: Choosing a row opens its offer in the reading pane
     Given offers for "Acme" as "A", "B" and "C", added in that order
@@ -535,7 +583,7 @@ Feature: Inbox screen
   # reasons under "Discard because", and the offer stays as it is. The words of the title show as buttons under "A word in
   # the title", and the other reasons follow: "Stack", "Location", "Contract", "Company"
   # and "No reason". Choosing a word or a reason discards. On a phone the reasons are
-  # full-width rows that also say what they refer to in the offer (its country, its
+  # full-width 50 px rows that also say what they refer to in the offer (its country, its
   # company).
 
   Scenario: Discarding opens the reasons in the reading pane

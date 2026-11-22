@@ -307,6 +307,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- The inbox on a phone (under 900 px): the list takes the whole width with the same rows
+  and groups, and the AI controls sit under the views. Tapping a row opens the offer full
+  screen, with Back, Original posting and its position ("3 of 7"), and its actions at the
+  foot as 50 px buttons; "Discard because" shows full-width rows that say what each one
+  refers to (country, company). After an action the screen goes back to the list, with the
+  message and Undo. Nothing is open until you tap a row.
 - Filtered, in the list column beside the reading pane: the groups of "One rule away" are
   always open (no more "Show" and "Hide"), so every near miss is a row you can choose,
   and the first of them opens in the pane. "No title of yours" names its profile:
