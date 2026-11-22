@@ -27,7 +27,7 @@ export function titleLine(title: FrequentTitle, profile: SearchProfile): string 
 
 // specs/ui/inbox.feature: in Filtered, the titles that keep coming without a title of the
 // profile (specs/inbox/frequent_titles.feature); adding one is a criteria change.
-function ProfileTitles({ profile, named }: { profile: SearchProfile; named: boolean }) {
+function ProfileTitles({ profile }: { profile: SearchProfile }) {
   const queryClient = useQueryClient();
   const found = useQuery({
     queryKey: ["offers", "frequent-titles", profile.id],
@@ -55,7 +55,7 @@ function ProfileTitles({ profile, named }: { profile: SearchProfile; named: bool
   });
 
   if (!found.data || found.data.titles.length === 0) return null;
-  const heading = `No title of yours${named ? ` in ${profile.name}` : ""} · ${offers(found.data.offers)}`;
+  const heading = `No title of yours · ${offers(found.data.offers)} · ${profile.name}`;
   return (
     <Box component="section" aria-label={heading} sx={{ mb: 3 }}>
       <Typography variant="h6" component="h2">
@@ -109,7 +109,7 @@ export function FrequentTitles({ profiles }: { profiles: SearchProfile[] }) {
   return (
     <>
       {profiles.map((profile) => (
-        <ProfileTitles key={profile.id} profile={profile} named={profiles.length > 1} />
+        <ProfileTitles key={profile.id} profile={profile} />
       ))}
     </>
   );
