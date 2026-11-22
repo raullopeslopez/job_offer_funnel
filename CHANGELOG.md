@@ -10,6 +10,11 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- A loading screen when the app opens: until the API answers for the first time (the
+  pending count in the navigation), a loading animation covers the screen, which loads
+  underneath. After 3 seconds it says the server is waking up (Render's free plan sleeps
+  the API and Neon suspends the database), and if the request fails it offers to try
+  again (`specs/ui/waking_up.feature`).
 - Let the AI discard the offers it is sure of: `POST /offers/triager-discards` discards
   the pending offers that fit a profile and that the offer triager marked `ko` with
   `high` confidence, with the reason and word of its suggested discard, or `none`. It

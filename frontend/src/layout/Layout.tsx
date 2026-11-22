@@ -23,6 +23,9 @@ import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
 import { offerCountQuery } from "../pages/inbox/InboxPage";
 import { navGroups } from "./navItems";
+import { WakingUp } from "./WakingUp";
+
+export { WAKING_UP_AFTER_MS } from "./WakingUp";
 
 const DRAWER_WIDTH = 240;
 
@@ -34,6 +37,8 @@ export function Layout() {
   const ThemeIcon = dark ? LightModeOutlined : DarkModeOutlined;
   const themeLabel = dark ? "Light theme" : "Dark theme";
   const pending = useQuery(offerCountQuery("pending"));
+  // A later refetch keeps the data, so the screen is never covered again.
+  const awake = pending.data !== undefined;
 
   const nav = (
     <Box
@@ -165,7 +170,12 @@ export function Layout() {
           pb: 12,
         }}
       >
-        <Outlet />
+        {/* Until the API answers once, the screen loads hidden: its requests go out at the
+            same time (specs/ui/waking_up.feature). */}
+        {!awake && <WakingUp failed={pending.isError} onRetry={() => void pending.refetch()} />}
+        <Box sx={awake ? undefined : { display: "none" }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );
