@@ -324,19 +324,22 @@ Feature: Inbox screen
       | Mode               | 1     | Hybrid 1            |
     And I see "Further away · 1 offer"
 
+  # The groups of near misses are always open: the reading pane sits beside the list, so
+  # choosing a row does not push the rest away, and a group that needs a click to show its
+  # offers hides what Filtered is for (rescuing them). Each group lists up to 100 offers.
+
   @component
-  Scenario: A group of near misses opens to show its offers
+  Scenario: The offers of a group of near misses are listed under it
     Given the near misses:
       | title                   | rule     | value  |
       | Junior Backend Engineer | excluded | Junior |
-    And I am on the inbox showing the "filtered" offers
-    When I show the group "A word you exclude"
-    Then the group lists "Junior Backend Engineer" with its source and its company
-    And its offer opens with its failed cell and "Promote anyway"
+    When I open the inbox showing the "filtered" offers
+    Then the group "A word you exclude" lists "Junior Backend Engineer" with its source and its company
+    And the reading pane shows the offer "Junior Backend Engineer" with its failed cell and "Promote anyway"
 
   # Filtered also shows, for each profile, the titles that keep coming among the offers
   # with none of its titles (specs/inbox/frequent_titles.feature): "No title of yours ·
-  # {n} offers", "Most frequent titles", and per title its count, the line "{k} mention
+  # {n} offers · {profile}", "Most frequent titles", and per title its count, the line "{k} mention
   # python · {j} remote and open to Spain" and "Add title · brings {n} to Pending", a
   # criteria change (specs/inbox/criteria_changes.feature).
 
