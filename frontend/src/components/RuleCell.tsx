@@ -14,7 +14,8 @@ type Props = {
 // The dot says the state by shape, not only by color: filled (pass), hollow (unknown), red and
 // filled (failed, which also says "filtered it").
 function StateDot({ state }: { state: RuleState }) {
-  const color = state === "failed" ? "tone.red.fg" : state === "unknown" ? "text.disabled" : "text.primary";
+  const color =
+    state === "failed" ? "tone.red.fg" : state === "unknown" ? "text.disabled" : "text.primary";
   return (
     <Box
       aria-hidden

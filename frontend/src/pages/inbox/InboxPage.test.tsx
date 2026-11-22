@@ -986,9 +986,7 @@ describe("InboxPage discarding", () => {
 
     // Assert
     const opened = await screen.findByRole("article", { name: "Senior Backend Engineer" });
-    expect(
-      within(opened).getByRole("heading", { name: "Senior Backend Engineer" }),
-    ).toBeVisible();
+    expect(within(opened).getByRole("heading", { name: "Senior Backend Engineer" })).toBeVisible();
     const words = within(opened).getByRole("group", { name: "A word in the title" });
     expect(
       within(words)

@@ -196,40 +196,40 @@ export function TriageVerdict({ offer, onDiscarded }: Props) {
             Discard: {DISCARD_REASON_LABELS[suggestion.reason]}
           </Button>
         )}
-      {improvement && (
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 1,
-            mt: 2.5,
-            pt: 2,
-            borderTop: 1,
-            borderColor: "divider",
-          }}
-        >
-          <Box>
-            <Typography variant="body2">
-              Improve the filter: {suggestionChange(improvement)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {suggestionEffect(improvement)}
-            </Typography>
-          </Box>
-          <Button
-            size="small"
-            variant="contained"
-            loading={choose.isPending}
-            onClick={() =>
-              choose.mutate({ suggestion: improvement, choice: "exclude", offerId: offer.id })
-            }
-            sx={{ ml: "auto" }}
+        {improvement && (
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 1,
+              mt: 2.5,
+              pt: 2,
+              borderTop: 1,
+              borderColor: "divider",
+            }}
           >
-            {acceptLabel(improvement)}
-          </Button>
-        </Box>
-      )}
+            <Box>
+              <Typography variant="body2">
+                Improve the filter: {suggestionChange(improvement)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {suggestionEffect(improvement)}
+              </Typography>
+            </Box>
+            <Button
+              size="small"
+              variant="contained"
+              loading={choose.isPending}
+              onClick={() =>
+                choose.mutate({ suggestion: improvement, choice: "exclude", offerId: offer.id })
+              }
+              sx={{ ml: "auto" }}
+            >
+              {acceptLabel(improvement)}
+            </Button>
+          </Box>
+        )}
       </Box>
     </Stack>
   );
