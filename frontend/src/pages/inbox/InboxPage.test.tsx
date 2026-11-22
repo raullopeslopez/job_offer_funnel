@@ -260,6 +260,24 @@ function renderInbox(path = "/inbox") {
   );
 }
 
+type User = ReturnType<typeof userEvent.setup>;
+
+const offerList = () => screen.getByRole("region", { name: "Offer list" });
+const readingPane = () => screen.getByRole("region", { name: "Reading pane" });
+
+/** The titles of the rows, in order: of the whole list, or of one of its groups. */
+function rowTitles(scope: HTMLElement = offerList()): string[] {
+  return within(scope)
+    .getAllByRole("listitem")
+    .map((row) => within(row).getByRole("button").textContent ?? "");
+}
+
+/** Chooses the row of an offer and returns the offer, as the reading pane shows it. */
+async function openRow(user: User, title: string): Promise<HTMLElement> {
+  await user.click(await within(offerList()).findByRole("button", { name: title }));
+  return within(readingPane()).findByRole("article", { name: title });
+}
+
 /** The cell of a rule in a piece, failed or not. */
 function cellOf(piece: HTMLElement, label: string): HTMLElement {
   const name = within(piece).getByText(new RegExp(`^${label}( · filtered it)?$`));
@@ -291,7 +309,7 @@ describe("InboxPage filtered offers", () => {
     renderInbox(path);
 
     // Assert
-    expect(await screen.findByRole("heading", { name: heading, level: 1 })).toBeInTheDocument();
+    expect(await screen.findByText(heading)).toBeInTheDocument();
     expect(await screen.findByRole("article", { name: shown })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(1);
   });
@@ -340,8 +358,9 @@ describe("InboxPage groups", () => {
     expect(groups).toEqual(["Today · 1 offer", "Yesterday · 1 offer", "Earlier · 1 offer"]);
   });
 
-  it("shows the variants next to each other as one closed group that opens", async () => {
+  it("shows the variants next to each other as one closed row that opens", async () => {
     // Arrange: specs/ui/inbox.feature, "Variants".
+    const user = userEvent.setup();
     const variant = { base_title: "Backend Engineer", variants: 2 };
     inboxWith([
       offer("Backend Engineer - Platform", variant),
@@ -349,21 +368,44 @@ describe("InboxPage groups", () => {
       offer("Data Engineer"),
     ]);
     renderInbox();
-    const group = await screen.findByRole("region", {
-      name: "Acme · Backend Engineer · 2 variants",
-    });
-    const closed = screen.getAllByRole("article").map((piece) => piece.getAttribute("aria-label"));
+    const first = await openRow(user, "Backend Engineer - Platform");
+    const closed = rowTitles();
+    const firstRow = within(offerList()).getAllByRole("listitem")[0];
 
     // Act
-    await userEvent.click(within(group).getByRole("button", { expanded: false }));
+    await user.click(
+      within(first).getByRole("button", { name: "1 more variant of this role", expanded: false }),
+    );
 
     // Assert
-    expect(closed).toEqual(["Data Engineer"]);
-    const open = within(group).getAllByRole("article");
-    expect(open.map((piece) => piece.getAttribute("aria-label"))).toEqual([
+    expect(closed).toEqual(["Backend Engineer - Platform", "Data Engineer"]);
+    expect(firstRow).toHaveTextContent("+1 variant");
+    expect(rowTitles()).toEqual([
       "Backend Engineer - Platform",
       "Backend Engineer - Payments",
+      "Data Engineer",
     ]);
+  });
+
+  it("selects the first offer of the view, and the offer of the row chosen", async () => {
+    // Arrange: specs/ui/inbox.feature, "Choosing a row opens its offer in the reading pane".
+    const user = userEvent.setup();
+    inboxWith([offer("C"), offer("B"), offer("A")]);
+    renderInbox();
+    const first = await within(offerList()).findByRole("button", { name: "C" });
+    const opened = within(readingPane()).getByRole("article").getAttribute("aria-label");
+
+    // Act
+    await user.click(within(offerList()).getByRole("button", { name: "A" }));
+
+    // Assert
+    expect(opened).toBe("C");
+    expect(first).not.toHaveAttribute("aria-current");
+    expect(within(offerList()).getByRole("button", { name: "A" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    expect(within(readingPane()).getByRole("article", { name: "A" })).toBeInTheDocument();
   });
 
   it("with verdicts, the pending view goes by verdict", async () => {
@@ -395,7 +437,7 @@ describe("InboxPage groups", () => {
     renderInbox();
 
     // Assert
-    await screen.findByRole("article", { name: "Python Engineer" });
+    await within(offerList()).findByRole("button", { name: "Python Engineer" });
     expect(asked).toContain("true");
     const groups = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(groups).toEqual([
@@ -405,8 +447,7 @@ describe("InboxPage groups", () => {
       "AI: KO · Contract · 1 offer",
       "AI: KO · 1 offer",
     ]);
-    const titles = screen.getAllByRole("article").map((a) => a.getAttribute("aria-label"));
-    expect(titles).toEqual(byVerdict.map((o) => o.title));
+    expect(rowTitles()).toEqual(byVerdict.map((o) => o.title));
   });
 });
 
@@ -624,15 +665,15 @@ describe("InboxPage failed cells", () => {
     const user = userEvent.setup();
     inboxWith([nearMiss(title, failing)]);
     renderInbox("/inbox?status=filtered");
-    await screen.findByRole("heading", { name: "1 filtered", level: 1 });
+    await screen.findByText("1 filtered");
 
     // Act
     if (failing.rule !== "title") {
       await user.click(await screen.findByRole("button", { name: "Show" }));
     }
+    const piece = await openRow(user, title);
 
     // Assert
-    const piece = await screen.findByRole("article", { name: title });
     const cell = cellOf(piece, label);
     expect(cell).toHaveTextContent(`${label} · filtered it`);
     expect(cell).toHaveTextContent(shown);
@@ -653,6 +694,7 @@ describe("InboxPage maybe", () => {
 
   it("closes the pending view with the three most recent near misses", async () => {
     // Arrange
+    const user = userEvent.setup();
     inboxWith([offer("Pending one"), ...fiveNearMisses(), twoRulesAway()]);
 
     // Act
@@ -667,13 +709,10 @@ describe("InboxPage maybe", () => {
         "Filtered by a single rule. Promoting one tells the app the rule was too strict.",
       ),
     ).toBeInTheDocument();
-    const pieces = within(maybe).getAllByRole("article");
-    expect(pieces.map((p) => p.getAttribute("aria-label"))).toEqual([
-      "Backend Engineer 1",
-      "Backend Engineer 2",
-      "Backend Engineer 3",
-    ]);
-    for (const piece of pieces) {
+    const titles = rowTitles(maybe);
+    expect(titles).toEqual(["Backend Engineer 1", "Backend Engineer 2", "Backend Engineer 3"]);
+    for (const title of titles) {
+      const piece = await openRow(user, title);
       expect(cellOf(piece, "Contract")).toHaveAttribute("data-state", "failed");
       expect(within(piece).getByRole("button", { name: "Promote anyway" })).toBeInTheDocument();
     }
@@ -704,10 +743,10 @@ describe("InboxPage maybe", () => {
       }),
     );
     renderInbox();
-    const maybe = await screen.findByRole("region", { name: "Maybe" });
+    const piece = await openRow(user, "Backend Engineer");
 
     // Act
-    await user.click(within(maybe).getByRole("button", { name: "Promote anyway" }));
+    await user.click(within(piece).getByRole("button", { name: "Promote anyway" }));
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Promote" }));
 
     // Assert
@@ -718,7 +757,6 @@ describe("InboxPage maybe", () => {
 
 // specs/ui/inbox.feature: "Mark a near miss as rightly filtered".
 describe("InboxPage rightly filtered", () => {
-  type User = ReturnType<typeof userEvent.setup>;
   const shown = async () => {};
   const showGroup = (user: User, region: HTMLElement) =>
     user.click(within(region).getByRole("button", { name: "Show" }));
@@ -744,9 +782,10 @@ describe("InboxPage rightly filtered", () => {
     renderInbox(path);
     const region = await screen.findByRole("region", { name: group });
     await open(user, region);
+    const piece = await openRow(user, "Junior Backend Engineer");
 
     // Act
-    await user.click(within(region).getByRole("button", { name: "Rightly filtered" }));
+    await user.click(within(piece).getByRole("button", { name: "Rightly filtered" }));
 
     // Assert
     expect(await screen.findByText("Marked as rightly filtered")).toBeInTheDocument();
@@ -796,17 +835,19 @@ describe("InboxPage filtered by rule", () => {
     ]);
     renderInbox("/inbox?status=filtered");
     const group = await screen.findByRole("region", { name: "A word you exclude" });
-    expect(within(group).queryByRole("article")).not.toBeInTheDocument();
+    expect(within(group).queryByRole("listitem")).not.toBeInTheDocument();
 
     // Act
     await user.click(within(group).getByRole("button", { name: "Show" }));
 
     // Assert
-    const row = await within(group).findByRole("article", { name: "Junior Backend Engineer" });
+    const row = await within(group).findByRole("listitem");
+    expect(rowTitles(group)).toEqual(["Junior Backend Engineer"]);
     expect(row).toHaveTextContent("Remote OK");
     expect(row).toHaveTextContent("Acme");
-    expect(cellOf(row, "Title")).toHaveAttribute("data-state", "failed");
-    expect(within(row).getByRole("button", { name: "Promote anyway" })).toBeInTheDocument();
+    const piece = await openRow(user, "Junior Backend Engineer");
+    expect(cellOf(piece, "Title")).toHaveAttribute("data-state", "failed");
+    expect(within(piece).getByRole("button", { name: "Promote anyway" })).toBeInTheDocument();
   });
 
   it("lists the offers further away with their strip", async () => {
@@ -821,9 +862,9 @@ describe("InboxPage filtered by rule", () => {
 
     // Assert
     const further = await screen.findByRole("region", { name: "Further away" });
-    const pieces = await within(further).findAllByRole("article");
-    expect(pieces.map((p) => p.getAttribute("aria-label"))).toEqual(["Data Engineer"]);
-    const title = cellOf(pieces[0] as HTMLElement, "Title");
+    expect(rowTitles(further)).toEqual(["Data Engineer"]);
+    const piece = within(readingPane()).getByRole("article", { name: "Data Engineer" });
+    const title = cellOf(piece, "Title");
     expect(title).toHaveTextContent("No title of yours");
     expect(title).toHaveAttribute("data-state", "failed");
   });

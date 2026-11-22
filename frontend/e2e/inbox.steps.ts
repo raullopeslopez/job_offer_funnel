@@ -6,13 +6,30 @@ import { fieldLabel, quoted } from "./support/form";
 const STATUS_TABS = { pending: "Pending", discarded: "Discarded", promoted: "Promoted" } as const;
 type Status = keyof typeof STATUS_TABS;
 
-const pieces = (page: Page) => page.getByRole("article");
-const titles = (page: Page) => pieces(page).getByRole("heading", { level: 3 }).getByRole("link");
-const row = (page: Page, title: string): Locator =>
-  page.getByRole("article", { name: title, exact: true });
+// The list of rows, one per offer, and the reading pane with the offer chosen.
+const rows = (page: Page) => page.getByRole("region", { name: "Offer list" }).getByRole("listitem");
+const titles = (page: Page) => rows(page).getByRole("button");
+const rowButton = (page: Page, title: string): Locator =>
+  rows(page).getByRole("button", { name: title, exact: true });
+const pane = (page: Page) => page.getByRole("region", { name: "Reading pane" });
+const opened = (page: Page, title: string): Locator =>
+  pane(page).getByRole("article", { name: title, exact: true });
 
-const variantGroup = (page: Page, name: string): Locator =>
-  page.getByRole("region", { name, exact: true });
+// The offer of a row, opened in the reading pane.
+async function row(page: Page, title: string): Promise<Locator> {
+  await rowButton(page, title).click();
+  return opened(page, title);
+}
+
+async function showVariants(page: Page, title: string) {
+  const offer = await row(page, title);
+  await offer
+    .getByRole("button", { name: /more variants? of this role$/, expanded: false })
+    .click();
+}
+
+// How many offers the view has: "3 to decide", "1 filtered".
+const viewCount = (page: Page) => page.getByText(/^\d+ (to decide|filtered|discarded|promoted)$/);
 
 async function openInbox(page: Page, status: Status = "pending") {
   await page.goto("/inbox");
@@ -36,7 +53,7 @@ async function addOffer(page: Page, fields: Record<string, string>) {
 const reasons = (page: Page) => page.getByRole("group", { name: "Discard because" });
 
 async function startDiscarding(page: Page, title: string) {
-  await row(page, title).getByRole("button", { name: "Discard" }).click();
+  await (await row(page, title)).getByRole("button", { name: "Discard" }).click();
 }
 
 const titleWords = (page: Page) =>
@@ -115,14 +132,18 @@ Given("I started discarding the offer {string}", async ({ page }, title: string)
   await expect(reasons(page)).toBeVisible();
 });
 
-Given("I showed the group of variants {string}", async ({ page }, group: string) => {
-  await variantGroup(page, group).getByRole("button", { expanded: false }).click();
+Given("I showed the variants of {string}", async ({ page }, title: string) => {
+  await showVariants(page, title);
 });
 
 // --- When ---
 
-When("I show the group of variants {string}", async ({ page }, group: string) => {
-  await variantGroup(page, group).getByRole("button", { expanded: false }).click();
+When("I show the variants of {string}", async ({ page }, title: string) => {
+  await showVariants(page, title);
+});
+
+When("I choose the row of {string}", async ({ page }, title: string) => {
+  await rowButton(page, title).click();
 });
 
 When("I open the inbox", async ({ page }) => {
@@ -187,13 +208,13 @@ When("I undo the discard", async ({ page }) => {
 });
 
 When("I restore the offer {string}", async ({ page }, title: string) => {
-  await row(page, title).getByRole("button", { name: "Restore" }).click();
+  await (await row(page, title)).getByRole("button", { name: "Restore" }).click();
 });
 
 When(
   "I promote the offer {string} through {string}",
   async ({ page }, title: string, channel: string) => {
-    await row(page, title).getByRole("button", { name: "Promote" }).click();
+    await (await row(page, title)).getByRole("button", { name: "Promote" }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("combobox", { name: "Channel" }).click();
     await page.getByRole("option", { name: channel, exact: true }).click();
@@ -208,16 +229,25 @@ Then(/^I see the offers, in order: (".*")$/, async ({ page }, list: string) => {
   await expect(titles(page)).toHaveText(quoted(list));
 });
 
-Then("I see the group of variants {string}", async ({ page }, group: string) => {
-  await expect(variantGroup(page, group)).toBeVisible();
+Then("the row of {string} says {string}", async ({ page }, title: string, text: string) => {
+  const button = page.getByRole("button", { name: title, exact: true });
+  await expect(rows(page).filter({ has: button })).toContainText(text);
 });
 
-Then("I see no group of variants", async ({ page }) => {
-  await expect(page.getByRole("region", { name: / variants$/ })).toHaveCount(0);
+Then("no row says it has variants", async ({ page }) => {
+  await expect(rows(page).filter({ hasText: /\+\d+ variants?/ })).toHaveCount(0);
+});
+
+Then("the row of {string} is selected", async ({ page }, title: string) => {
+  await expect(rowButton(page, title)).toHaveAttribute("aria-current", "true");
+});
+
+Then("the reading pane shows the offer {string}", async ({ page }, title: string) => {
+  await expect(opened(page, title)).toBeVisible();
 });
 
 Then("the inbox says {string}", async ({ page }, heading: string) => {
-  await expect(page.getByRole("heading", { level: 1, includeHidden: true })).toHaveText(heading);
+  await expect(viewCount(page)).toHaveText(heading);
 });
 
 Then("I see {int} offers listed", async ({ page }, count: number) => {
@@ -226,15 +256,16 @@ Then("I see {int} offers listed", async ({ page }, count: number) => {
 });
 
 Then("the offer {string} shows {string}", async ({ page }, title: string, text: string) => {
-  await expect(row(page, title)).toContainText(text);
+  await expect(await row(page, title)).toContainText(text);
 });
 
 Then("the offer {string} shows no country tag", async ({ page }, title: string) => {
-  await expect(row(page, title).getByTitle("Country")).toHaveCount(0);
+  await expect((await row(page, title)).getByTitle("Country")).toHaveCount(0);
 });
 
 Then("the offer {string} links to its application", async ({ page }, title: string) => {
-  await expect(row(page, title).getByRole("link", { name: "View application" })).toHaveAttribute(
+  const offer = await row(page, title);
+  await expect(offer.getByRole("link", { name: "View application" })).toHaveAttribute(
     "href",
     /^\/applications\/[0-9a-f-]{36}$/,
   );
@@ -246,41 +277,41 @@ Then("I see that there are no offers", async ({ page }) => {
 });
 
 Then("the offer {string} links to {string}", async ({ page }, title: string, url: string) => {
-  await expect(titles(page).filter({ hasText: title })).toHaveAttribute("href", url);
+  const offer = await row(page, title);
+  await expect(offer.getByRole("link", { name: title, exact: true })).toHaveAttribute("href", url);
 });
 
 Then(
   "the offer {string} shows {string} and {string}",
   async ({ page }, title: string, company: string, jobBoard: string) => {
-    await expect(row(page, title)).toContainText(company);
-    await expect(row(page, title)).toContainText(jobBoard);
+    const offer = await row(page, title);
+    await expect(offer).toContainText(company);
+    await expect(offer).toContainText(jobBoard);
   },
 );
 
 Then("the offer is not added", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, includeHidden: true })).toHaveText(
-    "0 to decide",
-  );
+  await expect(viewCount(page)).toHaveText("0 to decide");
 });
 
 Then(
   "the {string} offers show {string} with reason {string}",
   async ({ page }, status: Status, title: string, reason: string) => {
     await page.getByRole("tab", { name: STATUS_TABS[status] }).click();
-    await expect(row(page, title)).toContainText(reason);
+    await expect(await row(page, title)).toContainText(reason);
   },
 );
 
 Then("the {string} offers show {string}", async ({ page }, status: Status, title: string) => {
   await page.getByRole("tab", { name: STATUS_TABS[status] }).click();
-  await expect(row(page, title)).toBeVisible();
+  await expect(await row(page, title)).toBeVisible();
 });
 
 Then(
   "the offer keeps its title and shows the words {string}, {string} and {string} under {string}",
   async ({ page }, first: string, second: string, third: string, group: string) => {
-    await expect(pieces(page).getByRole("heading", { level: 3 }).getByRole("link")).toBeVisible();
+    await expect(pane(page).getByRole("heading", { level: 3 }).getByRole("link")).toBeVisible();
     const words = reasons(page).getByRole("group", { name: group });
     await expect(words.getByRole("button")).toHaveText([first, second, third]);
   },
@@ -301,8 +332,9 @@ Then("the offer shows no reasons", async ({ page }) => {
 });
 
 Then("the offer {string} cannot be discarded or promoted", async ({ page }, title: string) => {
-  await expect(row(page, title)).toBeVisible();
-  await expect(row(page, title).getByRole("button", { name: /Discard|Promote/ })).toHaveCount(0);
+  const offer = await row(page, title);
+  await expect(offer).toBeVisible();
+  await expect(offer.getByRole("button", { name: /Discard|Promote/ })).toHaveCount(0);
 });
 
 Then("I can import the job boards: {string}", async ({ page }, name: string) => {

@@ -10,15 +10,23 @@ Feature: Inbox screen
   most recent first; the filtered ones (specs/inbox/filtered_offers.feature) have
   their own view.
 
-  Every offer is a piece with the same parts, wherever it came from: its source and
-  age, its title, its company and country, its actions and a strip of rules. The
-  country is a tag with the first country of the offer
+  The inbox is a list of rows and a reading pane, with no cards: one surface, the rows
+  split by thin lines. The list has its header ("Inbox", how many offers the view has:
+  "{n} to decide", "{n} filtered", "{n} discarded" or "{n} promoted", "Import job board"
+  and "Add offer", and the four views) and a row per offer: its title, its company and
+  where it is, its age and its source. Choosing a row opens its offer in the reading
+  pane and marks the row as selected; on opening the inbox the first offer of the view
+  is selected. On a wide screen the list is a column on the left and the pane fills the
+  rest; on a phone the pane follows the list.
+
+  The reading pane shows the offer with the same parts, wherever it came from: its
+  source and age, its title, its company and country, its actions and a strip of
+  rules. The country is a tag with the first country of the offer
   (specs/inbox/offer_countries.feature), followed by how many more it has ("+1
   country", "+27 countries"); when its location names no known country the tag shows
   the location as published, and an offer without a location has no tag. On a phone
-  the actions go full width at the foot of the piece and the strip shows two rules
-  to a row, so no value is cut. The pieces are grouped by the day they were added:
-  Today, Yesterday and Earlier.
+  the actions go full width and the strip shows two rules to a row, so no value is
+  cut. The rows are grouped by the day they were added: Today, Yesterday and Earlier.
 
   An imported pending offer has a filter reason (specs/inbox/filter_reasons.feature),
   and its strip has a cell per rule of its reference profile: Title, Keywords, Mode,
@@ -86,31 +94,45 @@ Feature: Inbox screen
 
   # The pending view lists the offers with their variants together
   # (specs/inbox/offer_variants.feature). Variants that come one after another show as one
-  # closed group, "{company} · {base title} · {n} variants", in the place of the first of
-  # them; opening it shows its pieces, each with its own actions. An offer with no other
-  # variant next to it is a piece as always. The count of the inbox still counts offers,
-  # and the other views and "Maybe" do not group.
+  # closed group: the row of the first of them, which says how many more there are ("+1
+  # variant", "+2 variants"). Its reading pane says "{n} more variants of this role", which
+  # opens the group: the rows of the other variants follow it, each opening its own offer
+  # with its own actions. An offer with no other variant next to it is a row as always. The
+  # count of the inbox still counts offers, and the other views and "Maybe" do not group.
 
   Scenario: The variants of a role show as one closed group
     Given offers for "Acme" as "Backend Engineer - Payments", "Data Engineer" and "Backend Engineer - Platform", added in that order
     When I open the inbox
-    Then I see the group of variants "Acme · Backend Engineer · 2 variants"
-    And I see the offers, in order: "Data Engineer"
+    Then I see the offers, in order: "Backend Engineer - Platform", "Data Engineer"
+    And the row of "Backend Engineer - Platform" says "+1 variant"
     And the inbox says "3 to decide"
 
   Scenario: A group of variants opens to show its offers
     Given offers for "Acme" as "Backend Engineer - Payments", "Data Engineer" and "Backend Engineer - Platform", added in that order
     And I am on the inbox
-    When I show the group of variants "Acme · Backend Engineer · 2 variants"
+    When I show the variants of "Backend Engineer - Platform"
     Then I see the offers, in order: "Backend Engineer - Platform", "Backend Engineer - Payments", "Data Engineer"
 
-  Scenario: A group left with one offer is a piece again
+  Scenario: A group left with one offer is a row again
     Given offers for "Acme" as "Backend Engineer - Payments", "Data Engineer" and "Backend Engineer - Platform", added in that order
     And I am on the inbox
-    And I showed the group of variants "Acme · Backend Engineer · 2 variants"
+    And I showed the variants of "Backend Engineer - Platform"
     When I discard the offer "Backend Engineer - Platform" because "No reason"
-    Then I see no group of variants
+    Then no row says it has variants
     And I see the offers, in order: "Data Engineer", "Backend Engineer - Payments"
+
+  Scenario: The first offer of the view opens on its own
+    Given offers for "Acme" as "A", "B" and "C", added in that order
+    When I open the inbox
+    Then the row of "C" is selected
+    And the reading pane shows the offer "C"
+
+  Scenario: Choosing a row opens its offer in the reading pane
+    Given offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    When I choose the row of "A"
+    Then the row of "A" is selected
+    And the reading pane shows the offer "A"
 
   # --- The country ---
 
@@ -253,7 +275,7 @@ Feature: Inbox screen
     When I open the inbox
     Then the last group is "Maybe · 3 of 5 near misses"
     And it says "Filtered by a single rule. Promoting one tells the app the rule was too strict."
-    And it shows the three most recent near misses, each with its failed cell and "Promote anyway"
+    And it lists the three most recent near misses, each opening with its failed cell and "Promote anyway"
 
   @component
   Scenario: Without near misses there is no "Maybe"
@@ -309,7 +331,8 @@ Feature: Inbox screen
       | Junior Backend Engineer | excluded | Junior |
     And I am on the inbox showing the "filtered" offers
     When I show the group "A word you exclude"
-    Then the group lists "Junior Backend Engineer" with its source, its company, its failed cell and "Promote anyway"
+    Then the group lists "Junior Backend Engineer" with its source and its company
+    And its offer opens with its failed cell and "Promote anyway"
 
   # Filtered also shows, for each profile, the titles that keep coming among the offers
   # with none of its titles (specs/inbox/frequent_titles.feature): "No title of yours ·
@@ -397,14 +420,14 @@ Feature: Inbox screen
 
   # --- Discarding and restoring ---
 
-  # Discarding happens inside the piece: "Discard" opens it under "Discard because", and
-  # the title stays as it is. The words of the title show as buttons under "A word in
+  # Discarding happens inside the reading pane: "Discard" opens the reasons under "Discard
+  # because", and the title stays as it is. The words of the title show as buttons under "A word in
   # the title", and the other reasons follow: "Stack", "Location", "Contract", "Company"
   # and "No reason". Choosing a word or a reason discards. On a phone the reasons are
   # full-width rows that also say what they refer to in the offer (its country, its
   # company).
 
-  Scenario: Discarding opens the piece with the reasons
+  Scenario: Discarding opens the reasons in the reading pane
     Given an offer for "Acme" as "Senior Backend Engineer"
     And I am on the inbox
     When I start discarding the offer "Senior Backend Engineer"
@@ -504,11 +527,11 @@ Feature: Inbox screen
   # With an offer triager (specs/inbox/offer_triages.feature), the pending view offers
   # "Triage with AI": it triages batch after batch until none is left, saying how many it
   # triaged, how many are OK, how many KO and how many are left, and stops when a batch
-  # triages none. A pending offer with a verdict says it under its strip, in its AI
-  # section: "AI: OK" or "AI: KO", its confidence ("High", "Medium" or "Low", none if it
+  # triages none. A pending offer with a verdict says it in the reading pane, under its
+  # strip, in its AI section: "AI: OK" or "AI: KO", its confidence ("High", "Medium" or "Low", none if it
   # has none), and a line per side it has: "Why yes: {why}" and "Why not: {why}", each
   # with its quote under "View evidence" when it has one. During a triage run, eligible
-  # cards awaiting a verdict show three dots (static with reduced motion). With a suggested discard it adds
+  # offers awaiting a verdict show three dots (static with reduced motion). With a suggested discard it adds
   # "Discard: {reason}", which discards it with that reason and word, like any
   # discard. The criteria suggestions from the triager show above the offers, one at a
   # time, the first first: "AI suggests: exclude “{word}” from {profile}", its why, the

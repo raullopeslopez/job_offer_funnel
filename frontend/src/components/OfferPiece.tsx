@@ -1,7 +1,7 @@
 import { Box, Link, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import type { components } from "../api/schema";
-import { mono, offerShape, type Source } from "../theme";
+import { mono, type Source } from "../theme";
 import { CountryTag } from "./CountryTag";
 import { RelativeDate } from "./RelativeDate";
 import { SourceTag } from "./SourceTag";
@@ -38,9 +38,9 @@ export function whereText(offer: Offer): string {
   return rest.length > 0 ? `${first} ${moreCountries(rest.length)}` : first;
 }
 
-// One offer: where it came from, its age, the title as a link, company and country, and slots
-// for its actions, its rule strip and a footer. On a phone the actions go full width at its
-// foot, after the rest.
+// One offer, as the reading pane shows it, with no box around it: where it came from, its age,
+// the title as a link, company and country, and slots for its actions, its rule strip and a
+// footer. On a phone the actions go full width at its foot, after the rest.
 export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: Props) {
   const sourceName = sourceKind === "watched" ? undefined : offer.job_board_name;
   const [country, ...otherCountries] = countryLabels(offer);
@@ -49,11 +49,6 @@ export function OfferPiece({ offer, sourceKind, actions, strip, footer, now }: P
       component="article"
       aria-label={offer.title}
       sx={{
-        p: { xs: 2, sm: 2.5 },
-        bgcolor: "background.paper",
-        border: 1,
-        borderColor: "divider",
-        borderRadius: offerShape.pieceRadius,
         display: "grid",
         gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "minmax(0, 1fr) auto" },
         gridTemplateAreas: {

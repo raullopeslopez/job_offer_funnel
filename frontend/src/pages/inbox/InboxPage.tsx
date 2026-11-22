@@ -1,4 +1,4 @@
-import { Box, Button, Snackbar, Stack, Typography } from "@mui/material";
+import { Box, Button, Link, Snackbar, Stack, Typography, useMediaQuery } from "@mui/material";
 import {
   useInfiniteQuery,
   useIsMutating,
@@ -7,21 +7,23 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../api/client";
 import { SegmentedTabs } from "../../components/SegmentedTabs";
 import { AddOfferDialog } from "./AddOfferDialog";
 import { FrequentTitles } from "./FrequentTitles";
 import { ImportJobBoardDialog } from "./ImportJobBoardDialog";
-import { MaybeGroup } from "./MaybeGroup";
-import { NearMissGroups } from "./NearMissGroups";
+import { MaybeGroup, nearMissesQuery } from "./MaybeGroup";
+import { NearMissGroups, nearMissGroupsQuery } from "./NearMissGroups";
 import { OfferList } from "./OfferList";
 import { PromoteDialog } from "./PromoteDialog";
+import { ReadingPane } from "./ReadingPane";
 import { TriageButton, triageMutationKey } from "./TriageButton";
 import { TriagerDiscardButton } from "./TriagerDiscardButton";
 import { TriagerSuggestion } from "./TriagerSuggestion";
 import type { Offer, OfferStatus, OfferView } from "./types";
+import { groupVariants, variantKey } from "./variants";
 
 // The pending offers are split: those that fit a search profile and the filtered ones
 // (specs/inbox/filtered_offers.feature).
@@ -61,6 +63,8 @@ export function offerCountQuery(view: View) {
 }
 
 const PAGE_SIZE = 20;
+// As many near misses as "Maybe" shows (MaybeGroup).
+const MAYBE_SHOWN = 3;
 
 type Notice = { message: string; undo?: () => void };
 
@@ -72,6 +76,11 @@ export function InboxPage() {
   const [discarding, setDiscarding] = useState<Offer | null>(null);
   const [promoting, setPromoting] = useState<Offer | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  // The offer open in the reading pane, and the roles whose variants are open in the list.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [openVariants, setOpenVariants] = useState<string[]>([]);
+  const isWide = useMediaQuery((theme) => theme.breakpoints.up("md"));
+  const pane = useRef<HTMLElement>(null);
 
   const offers = useInfiniteQuery({
     queryKey: ["offers", view],
@@ -110,6 +119,10 @@ export function InboxPage() {
       return data.items;
     },
   });
+
+  // The near misses of "Maybe" and of "One rule away" also open in the reading pane.
+  const maybe = useQuery({ ...nearMissesQuery(MAYBE_SHOWN), enabled: view === "pending" });
+  const nearMissGroups = useQuery({ ...nearMissGroupsQuery, enabled: view === "filtered" });
 
   const counts = useQueries({
     queries: VIEWS.map(({ value }) => offerCountQuery(value)),
@@ -193,12 +206,12 @@ export function InboxPage() {
       refresh();
     },
   });
-  const nearMissActions = {
-    onPromote: setPromoting,
-    onRightlyFiltered: (offer: Offer) => markRightlyFiltered.mutate(offer),
-  };
 
-  const changeView = (next: View) => setParams(next === "pending" ? {} : { status: next });
+  const changeView = (next: View) => {
+    setSelectedId(null);
+    setOpenVariants([]);
+    setParams(next === "pending" ? {} : { status: next });
+  };
 
   const pages = offers.data?.pages ?? [];
   const items = pages.flatMap((page) => page.items);
@@ -209,109 +222,193 @@ export function InboxPage() {
   const triageRunning = useIsMutating({ mutationKey: triageMutationKey }) > 0;
   const context = { triageRunning, jobBoards: jobBoards.data ?? [], profiles: profiles.data ?? [] };
 
+  // The offers of the view's rows; the selected one, or else the first of the view.
+  const maybeItems = view === "pending" ? (maybe.data?.items ?? []) : [];
+  const nearMissItems =
+    view === "filtered" ? (nearMissGroups.data ?? []).flatMap((group) => group.offers) : [];
+  const rowOffers = [...items, ...maybeItems, ...nearMissItems];
+  const selected = rowOffers.find((o) => o.id === selectedId) ?? items[0] ?? maybeItems[0] ?? null;
+  const select = (offer: Offer) => {
+    setSelectedId(offer.id);
+    // On a phone the pane follows the list: bring it into view.
+    if (!isWide) pane.current?.scrollIntoView?.({ block: "start" });
+  };
+  const selection = { selectedId: selected?.id ?? null, onSelect: select };
+
+  // The variants of the selected offer, when its row stands for them (specs/ui/inbox.feature).
+  const run =
+    view === "pending" && selected
+      ? groupVariants(items).find(({ first }) => first.id === selected.id)
+      : undefined;
+  const variants =
+    run && run.offers.length > 1
+      ? {
+          count: run.offers.length - 1,
+          open: openVariants.includes(variantKey(run.first)),
+          onToggle: () => {
+            const key = variantKey(run.first);
+            setOpenVariants((open) =>
+              open.includes(key) ? open.filter((k) => k !== key) : [...open, key],
+            );
+          },
+        }
+      : undefined;
+
   return (
     <>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        sx={{ alignItems: { sm: "flex-end" }, mb: 3 }}
-        spacing={2}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(420px, 520px) minmax(0, 1fr)" },
+          alignItems: "start",
+        }}
       >
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h4" component="h1">
-            {total} {heading}
-          </Typography>
-          {view === "pending" && (
-            <Typography color="text.secondary" sx={{ mt: 1 }}>
-              Each offer shows the rules of your profile it passed. Promote it, or discard it and
-              say why.
-            </Typography>
-          )}
-        </Box>
-        {/* On a phone the buttons wrap to a new row instead of breaking their labels. */}
-        <Stack
-          direction="row"
-          spacing={1}
-          useFlexGap
-          sx={{
-            alignItems: "center",
-            flexWrap: "wrap",
-            "& .MuiButton-root": { whiteSpace: "nowrap" },
-          }}
+        <Box
+          component="section"
+          aria-label="Offer list"
+          sx={{ minWidth: 0, borderRight: { md: 1 }, borderColor: { md: "divider" } }}
         >
+          <Box sx={{ px: 2, pb: 1 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              useFlexGap
+              sx={{ alignItems: "baseline", flexWrap: "wrap", justifyContent: "space-between" }}
+            >
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: "baseline" }}>
+                <Typography variant="h4" component="h1">
+                  Inbox
+                </Typography>
+                <Typography color="text.secondary">
+                  {total} {heading}
+                </Typography>
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <Link component="button" type="button" onClick={() => setDialog("import")}>
+                  Import job board
+                </Link>
+                <Link component="button" type="button" onClick={() => setDialog("add")}>
+                  Add offer
+                </Link>
+              </Stack>
+            </Stack>
+
+            {view === "pending" && (
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{
+                  mt: 2,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  "& .MuiButton-root": { whiteSpace: "nowrap" },
+                }}
+              >
+                <TriagerDiscardButton
+                  onDiscarded={(offerIds) => {
+                    for (const offerId of offerIds) leaveView(offerId);
+                    setNotice({
+                      message: `AI discarded ${offerIds.length} offers`,
+                      undo: () => restoreAll.mutate(offerIds),
+                    });
+                    refresh();
+                  }}
+                />
+                <TriageButton running={triageRunning} />
+              </Stack>
+            )}
+
+            <Box sx={{ mt: 2 }}>
+              <SegmentedTabs
+                aria-label="Offers"
+                value={view}
+                onChange={changeView}
+                items={VIEWS.map(({ value, label }, index) => ({
+                  value,
+                  label,
+                  count: counts[index]?.data ?? 0,
+                }))}
+              />
+            </Box>
+          </Box>
+
           {view === "pending" && (
-            <TriagerDiscardButton
-              onDiscarded={(offerIds) => {
-                for (const offerId of offerIds) leaveView(offerId);
-                setNotice({
-                  message: `AI discarded ${offerIds.length} offers`,
-                  undo: () => restoreAll.mutate(offerIds),
-                });
-                refresh();
-              }}
+            <Box sx={{ px: 2, pt: 2 }}>
+              <TriagerSuggestion />
+            </Box>
+          )}
+          {view === "filtered" && <NearMissGroups {...context} {...selection} />}
+          {view === "filtered" && (
+            <Box sx={{ px: 2 }}>
+              <FrequentTitles profiles={context.profiles} />
+            </Box>
+          )}
+
+          {offers.isSuccess && (view !== "filtered" || listed > 0 || total === 0) && (
+            <OfferList
+              view={view}
+              offers={items}
+              {...context}
+              {...selection}
+              single={view === "filtered" ? { title: "Further away", count: listed } : undefined}
+              byVerdict={view === "pending"}
+              variants={view === "pending"}
+              openVariants={openVariants}
             />
           )}
-          {view === "pending" && <TriageButton running={triageRunning} />}
-          <Button variant="outlined" onClick={() => setDialog("import")}>
-            Import job board
-          </Button>
-          <Button variant="contained" onClick={() => setDialog("add")}>
-            Add offer
-          </Button>
-        </Stack>
-      </Stack>
 
-      <Box sx={{ mb: 3 }}>
-        <SegmentedTabs
-          aria-label="Offers"
-          value={view}
-          onChange={changeView}
-          items={VIEWS.map(({ value, label }, index) => ({
-            value,
-            label,
-            count: counts[index]?.data ?? 0,
-          }))}
-        />
-      </Box>
+          {offers.hasNextPage && (
+            <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+              <Button
+                variant="outlined"
+                loading={offers.isFetchingNextPage}
+                onClick={() => offers.fetchNextPage()}
+              >
+                Show more
+              </Button>
+            </Box>
+          )}
 
-      {view === "pending" && <TriagerSuggestion />}
-      {view === "filtered" && <NearMissGroups {...context} {...nearMissActions} />}
-      {view === "filtered" && <FrequentTitles profiles={context.profiles} />}
-
-      {offers.isSuccess && (view !== "filtered" || listed > 0 || total === 0) && (
-        <OfferList
-          view={view}
-          offers={items}
-          {...context}
-          single={view === "filtered" ? { title: "Further away", count: listed } : undefined}
-          byVerdict={view === "pending"}
-          variants={view === "pending"}
-          onDiscard={setDiscarding}
-          discardingId={discarding?.id}
-          onCancelDiscard={() => setDiscarding(null)}
-          onDiscarded={(offer) => {
-            setDiscarding(null);
-            leaveView(offer.id);
-            setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
-            refresh();
-          }}
-          onPromote={setPromoting}
-          onRestore={(offer) => restore.mutate(offer.id)}
-        />
-      )}
-
-      {offers.hasNextPage && (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-          <Button
-            variant="outlined"
-            loading={offers.isFetchingNextPage}
-            onClick={() => offers.fetchNextPage()}
-          >
-            Show more
-          </Button>
+          {view === "pending" && <MaybeGroup {...context} {...selection} />}
         </Box>
-      )}
 
-      {view === "pending" && <MaybeGroup {...context} {...nearMissActions} />}
+        <Box
+          ref={pane}
+          component="section"
+          aria-label="Reading pane"
+          sx={{
+            minWidth: 0,
+            px: { xs: 2, md: 5 },
+            py: { xs: 3, md: 1 },
+            borderTop: { xs: 1, md: 0 },
+            borderColor: "divider",
+            // On a wide screen the pane stays in view while the list scrolls.
+            position: { md: "sticky" },
+            top: { md: 0 },
+            maxHeight: { md: "100vh" },
+            overflowY: { md: "auto" },
+          }}
+        >
+          <ReadingPane
+            offer={selected}
+            {...context}
+            variants={variants}
+            discardingId={discarding?.id}
+            onCancelDiscard={() => setDiscarding(null)}
+            onDiscarded={(offer) => {
+              setDiscarding(null);
+              leaveView(offer.id);
+              setNotice({ message: "Offer discarded", undo: () => restore.mutate(offer.id) });
+              refresh();
+            }}
+            onDiscard={setDiscarding}
+            onPromote={setPromoting}
+            onRestore={(offer) => restore.mutate(offer.id)}
+            onRightlyFiltered={(offer) => markRightlyFiltered.mutate(offer)}
+          />
+        </Box>
+      </Box>
 
       <AddOfferDialog
         open={dialog === "add"}

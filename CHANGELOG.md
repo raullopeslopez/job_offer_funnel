@@ -307,6 +307,14 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Changed
 
+- The inbox is a list of rows and a reading pane, with no cards: each offer is one row
+  (its title, company, where it is, its age and its source), and choosing a row opens
+  the offer in the pane, with its rules, its AI verdict and its actions. The first offer
+  of the view opens on its own, and the selected row is marked. On a wide screen the
+  list is a column next to the pane; on a phone the pane follows the list. The groups
+  stay the same (by verdict or by day, and "Maybe" at the end of Pending); the variants
+  of a role are one row that says "+{n} variants", and its pane opens them in the list
+  (`specs/ui/inbox.feature`).
 - An offer is not a stable job when it is freelance or paid by the hour or by the task,
   even if it says full-time: the offer reader is told so.
 - Inbox on a phone: the title of an offer stays readable while discarding it, its words
