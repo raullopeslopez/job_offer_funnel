@@ -230,6 +230,67 @@ When(
   },
 );
 
+// --- Keyboard ---
+
+// The row button the keys go to: the focused one.
+const focusedRow = (page: Page) => rows(page).locator("button:focus");
+const selectedRow = (page: Page) => rows(page).locator('button[aria-current="true"]');
+
+Given("I focus the offer list", async ({ page }) => {
+  await selectedRow(page).focus();
+  await expect(focusedRow(page)).toHaveCount(1);
+});
+
+// A key press goes where the focus is, so it first waits for the focus to be on a row, which
+// is where the previous action leaves it, and then for what the key does.
+async function press(page: Page, key: string) {
+  const moves = ["j", "k", "ArrowDown", "ArrowUp"].includes(
+    key.length === 1 ? key.toLowerCase() : key,
+  );
+  const before = moves ? await selectedRow(page).textContent() : null;
+  if (key.toLowerCase() === "p" || moves || key.toLowerCase() === "d") {
+    await expect(focusedRow(page)).toHaveCount(1);
+  }
+  await page.keyboard.press(key);
+  if (moves) await expect(selectedRow(page)).not.toHaveText(before ?? "");
+  if (key.toLowerCase() === "p") {
+    // The dialog has the "Promote" button ready for Enter.
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Promote" })).toBeFocused();
+  }
+  if (key.toLowerCase() === "d") await expect(reasons(page)).toBeVisible();
+  if (key === "Enter") {
+    // Enter confirms the promotion dialog that "P" opened.
+    await expect(page.getByRole("dialog")).toBeHidden();
+  }
+}
+
+When("I press {string}", async ({ page }, key: string) => {
+  await press(page, key);
+});
+
+When("I press {string} {int} times", async ({ page }, key: string, times: number) => {
+  for (let i = 0; i < times; i++) await press(page, key);
+});
+
+When("I tab to {string} and press {string}", async ({ page }, name: string, key: string) => {
+  const target = reasons(page).getByRole("button", { name, exact: true });
+  for (let i = 0; i < 12 && !(await target.evaluate((el) => el === document.activeElement)); i++) {
+    await page.keyboard.press("Tab");
+  }
+  await expect(target).toBeFocused();
+  await page.keyboard.press(key);
+  await expect(reasons(page)).toBeHidden();
+});
+
+Then("I see the reasons to discard", async ({ page }) => {
+  await expect(reasons(page)).toBeVisible();
+  await expect(reasons(page).getByRole("button").first()).toBeFocused();
+});
+
+Then("the offer {string} is still listed", async ({ page }, title: string) => {
+  await expect(rowButton(page, title)).toBeVisible();
+});
+
 // --- Then ---
 
 // A list like `"C", "B", "A"` is not one {string}: match the whole quoted list.

@@ -1935,3 +1935,103 @@ describe("InboxPage action bar", () => {
     expect(within(readingPane()).getByRole("group", { name: "Discard because" })).toBeVisible();
   });
 });
+
+// specs/ui/inbox.feature, "Keyboard": the keys of the list. The E2E tests cover the keys that
+// move the selection, "P" and "D" in Pending and the triage with the keyboard alone.
+describe("InboxPage keyboard", () => {
+  /** Focuses the row of an offer by choosing it, as a click does. */
+  async function focusRow(user: User, title: string): Promise<HTMLElement> {
+    const button = await within(offerList()).findByRole("button", { name: title });
+    await user.click(button);
+    await openedPane(title);
+    return button;
+  }
+
+  // "P" promotes a near miss
+  it("opens the promotion dialog with P on a near miss", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([nearMiss("Backend Engineer", rule("stable", "failed", { value: false }))]);
+    renderInbox("/inbox?status=filtered");
+    await focusRow(user, "Backend Engineer");
+
+    // Act
+    await user.keyboard("p");
+
+    // Assert
+    expect(await screen.findByRole("dialog")).toHaveTextContent("Promote “Backend Engineer”");
+  });
+
+  // "D" opens the reasons even with a suggested discard
+  it("opens the reasons with D and does not discard a suggested discard", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([
+      offer("Backend Engineer Lead", {
+        triage: triaged("ko", "Not for you."),
+        suggested_discard: { reason: "contract", evidence: "Part-time" },
+      }),
+    ]);
+    noCriteriaSuggestions();
+    const discarded: unknown[] = [];
+    server.use(
+      http.post("/api/v1/offers/:offerId/discard", () => {
+        discarded.push(true);
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderInbox();
+    await focusRow(user, "Backend Engineer Lead");
+
+    // Act
+    await user.keyboard("d");
+
+    // Assert
+    expect(await screen.findByRole("group", { name: "Discard because" })).toBeInTheDocument();
+    expect(
+      within(offerList()).getByRole("button", { name: "Backend Engineer Lead" }),
+    ).toBeVisible();
+    expect(discarded).toEqual([]);
+  });
+
+  // The keys are ignored with a modifier and while typing in a field
+  it.each([
+    ["with a modifier", "{Control>}p{/Control}", false],
+    ["in a field", "p", true],
+  ])("ignores P %s", async (_case, keys, inField) => {
+    // Arrange
+    const user = userEvent.setup();
+    inboxWith([offer("Backend Engineer")]);
+    renderInbox();
+    const row = await focusRow(user, "Backend Engineer");
+    if (inField) {
+      // A field inside the row: the list never has one, but the keys must still be ignored.
+      const field = document.createElement("input");
+      row.closest("li")?.appendChild(field);
+      field.focus();
+    }
+
+    // Act
+    await user.keyboard(keys);
+
+    // Assert
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  // The hints are shown
+  it("shows the hints at the foot of the list and on the buttons", async () => {
+    // Arrange
+    inboxWith([offer("Backend Engineer")]);
+
+    // Act
+    renderInbox();
+
+    // Assert
+    const bar = within(await openedPane("Backend Engineer")).getByRole("group", {
+      name: "Offer actions",
+    });
+    expect(within(offerList()).getByText("J/K move · P promote · D discard")).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Promote" })).toHaveTextContent("P");
+    expect(within(bar).getByRole("button", { name: "Discard" })).toHaveTextContent("D");
+  });
+});

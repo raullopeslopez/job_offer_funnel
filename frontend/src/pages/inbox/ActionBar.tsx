@@ -1,11 +1,11 @@
 import { Alert, Box, Button, Link, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import { api } from "../../api/client";
 import { mono } from "../../theme";
 import { DiscardChoices } from "./DiscardChoices";
 import { DISCARD_REASON_LABELS } from "./discardReasons";
+import { KeyHint } from "./KeyHint";
 import { type NearMissActions, NearMissButtons } from "./MaybeGroup";
 import type { OfferActions, OfferContext } from "./OfferList";
 import type { Offer } from "./types";
@@ -19,6 +19,9 @@ type Props = Omit<OfferActions, "onDiscard"> &
     nearMiss: boolean;
     /** On a phone: 50 px buttons side by side, and the reasons as full-width rows. */
     phone?: boolean;
+    /** The reasons to discard are open; "D" opens them too, so the inbox holds this. */
+    isDiscarding: boolean;
+    onDiscarding: (isDiscarding: boolean) => void;
     onDiscarded: (offer: Offer) => void;
   };
 
@@ -30,13 +33,14 @@ export function ActionBar({
   position,
   nearMiss,
   phone = false,
+  isDiscarding,
+  onDiscarding,
   profiles,
   onDiscarded,
   onPromote,
   onRestore,
   onRightlyFiltered,
 }: Props) {
-  const [isDiscarding, setIsDiscarding] = useState(false);
   const suggestion = offer.status === "pending" && !nearMiss ? offer.suggested_discard : null;
   const discardAsSuggested = useMutation<void, { title: string }>({
     mutationFn: async () => {
@@ -78,9 +82,9 @@ export function ActionBar({
           offer={offer}
           profiles={profiles}
           phone={phone}
-          onCancel={() => setIsDiscarding(false)}
+          onCancel={() => onDiscarding(false)}
           onDiscarded={(discarded) => {
-            setIsDiscarding(false);
+            onDiscarding(false);
             onDiscarded(discarded);
           }}
         />
@@ -121,18 +125,21 @@ export function ActionBar({
                 >
                   Discard: {DISCARD_REASON_LABELS[suggestion.reason]}
                 </Button>
-                <Button variant="outlined" onClick={() => onPromote(offer)}>
+                <Button variant="outlined" aria-keyshortcuts="P" onClick={() => onPromote(offer)}>
                   Promote
+                  <KeyHint>P</KeyHint>
                 </Button>
-                <Button onClick={() => setIsDiscarding(true)}>Other reason</Button>
+                <Button onClick={() => onDiscarding(true)}>Other reason</Button>
               </>
             ) : (
               <>
-                <Button variant="contained" onClick={() => onPromote(offer)}>
+                <Button variant="contained" aria-keyshortcuts="P" onClick={() => onPromote(offer)}>
                   Promote
+                  <KeyHint>P</KeyHint>
                 </Button>
-                <Button variant="outlined" onClick={() => setIsDiscarding(true)}>
+                <Button variant="outlined" aria-keyshortcuts="D" onClick={() => onDiscarding(true)}>
                   Discard
+                  <KeyHint>D</KeyHint>
                 </Button>
               </>
             )

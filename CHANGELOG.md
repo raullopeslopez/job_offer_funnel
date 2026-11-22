@@ -10,6 +10,7 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Added
 
+- Keyboard triage in the inbox: with the selected row focused, J or the down arrow selects the next offer, K or the up arrow the previous one, P promotes (near misses too) and D opens "Discard because", never discarding by itself. The keys are ignored while typing, and hints show them at the foot of the list and on the action bar buttons.
 - A loading screen when the app opens: until the API answers for the first time (the
   pending count in the navigation), a loading animation covers the screen, which loads
   underneath. After 3 seconds it says the server is waking up (Render's free plan sleeps

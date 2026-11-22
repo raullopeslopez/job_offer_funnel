@@ -9,6 +9,7 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
+import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { api } from "../../api/client";
 import { CHANNELS, type Channel } from "../applications/options";
@@ -24,6 +25,8 @@ export function PromoteDialog({ offer, onClose, onPromoted }: Props) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<{ channel: Channel }>({ defaultValues: { channel: "portal" } });
+
+  const promote = useRef<HTMLButtonElement>(null);
 
   const close = () => {
     reset();
@@ -45,7 +48,13 @@ export function PromoteDialog({ offer, onClose, onPromoted }: Props) {
   });
 
   return (
-    <Dialog open={offer !== null} onClose={close} fullWidth>
+    <Dialog
+      open={offer !== null}
+      onClose={close}
+      fullWidth
+      // So that "P", then Enter promotes: the dialog takes the focus first, so this waits for it.
+      slotProps={{ transition: { onEntered: () => promote.current?.focus() } }}
+    >
       <form onSubmit={onSubmit} noValidate>
         <DialogTitle>Promote “{offer?.title}”</DialogTitle>
         <DialogContent>
@@ -73,7 +82,7 @@ export function PromoteDialog({ offer, onClose, onPromoted }: Props) {
         </DialogContent>
         <DialogActions>
           <Button onClick={close}>Cancel</Button>
-          <Button type="submit" variant="contained" loading={isSubmitting}>
+          <Button type="submit" variant="contained" loading={isSubmitting} ref={promote}>
             Promote
           </Button>
         </DialogActions>

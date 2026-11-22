@@ -24,6 +24,13 @@ Feature: Inbox screen
   foot as 50 px buttons. After an action the screen goes back to the list, with the message
   and "Undo".
 
+  The list is also triaged from the keyboard, with no global handler: with the selected row focused,
+  "J" or the down arrow selects the next row and "K" or the up arrow the previous one,
+  "P" promotes the offer (a near miss too) and "D" opens "Discard because". "D" never
+  discards by itself, not even with a suggested discard. The keys are ignored with a modifier
+  or while typing in a field, and the hints are shown at the foot of the list and next to
+  the buttons of the action bar.
+
   Each row also says in one line what decides the offer, so it can be decided without
   opening it: a label, in text and not only in color, and a line. A pending offer with a
   verdict says "AI: OK" or "AI: KO", with its confidence when it has one ("AI: OK · High"),
@@ -931,3 +938,83 @@ Feature: Inbox screen
     Given an offer for "Acme" as "Backend Engineer" that was promoted
     When I open the inbox showing the "promoted" offers
     Then the offer "Backend Engineer" cannot be discarded or promoted
+
+  # --- Keyboard ---
+
+  # The keys act on the focused list, and the focus follows the selected row. "P" opens the
+  # promotion dialog, with "Promote" ready for Enter; "D" opens the reasons and focuses the first.
+
+  Scenario Outline: The keys move the selection through the rows
+    Given offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    And I focus the offer list
+    When I press "<next>" 2 times
+    And I press "<previous>"
+    Then the row of "B" is selected
+    And the reading pane shows the offer "B"
+
+    Examples:
+      | next      | previous |
+      | J         | K        |
+      | ArrowDown | ArrowUp  |
+
+  Scenario: "P" promotes the selected offer
+    Given an offer for "Acme" as "Backend Engineer"
+    And I am on the inbox
+    And I focus the offer list
+    When I press "P"
+    And I press "Enter"
+    Then I see the message "Application created"
+    And the "promoted" offers show "Backend Engineer"
+
+  Scenario: "D" opens the reasons and does not discard
+    Given an offer for "Acme" as "Backend Engineer"
+    And I am on the inbox
+    And I focus the offer list
+    When I press "D"
+    Then I see the reasons to discard
+    And the offer "Backend Engineer" is still listed
+
+  @component
+  Scenario: "P" promotes a near miss
+    Given a near miss for "Acme" as "Backend Engineer"
+    And I am on the inbox showing the "filtered" offers
+    When I press "P" on the focused row of "Backend Engineer"
+    Then I see the promotion dialog of "Backend Engineer"
+
+  @component
+  Scenario: "D" opens the reasons even with a suggested discard
+    Given a pending offer for "Globex" as "Backend Engineer Lead" with a suggested discard because "contract" with "Part-time"
+    And I am on the inbox
+    When I press "D" on the focused row of "Backend Engineer Lead"
+    Then I see the reasons to discard
+    And the offer "Backend Engineer Lead" is still listed
+
+  @component
+  Scenario: The keys are ignored while typing in a field
+    Given an offer for "Acme" as "Backend Engineer"
+    And I am on the inbox
+    When I press "P" in a field of the list
+    Then there is no promotion dialog
+
+  @component
+  Scenario: The hints are shown
+    Given an offer for "Acme" as "Backend Engineer"
+    When I open the inbox
+    Then the foot of the list says "J/K move · P promote · D discard"
+    And the action bar hints "P" on "Promote" and "D" on "Discard"
+
+  Scenario: Three offers are triaged with the keyboard alone
+    Given offers for "Acme" as "A", "B" and "C", added in that order
+    And I am on the inbox
+    And I focus the offer list
+    When I press "P"
+    And I press "Enter"
+    And I press "D"
+    And I tab to "No reason" and press "Enter"
+    And I press "P"
+    And I press "Enter"
+    Then I see that there are no offers
+    And the "promoted" offers show "C"
+    And the "promoted" offers show "A"
+    And the "discarded" offers show "B" with reason "No reason"
