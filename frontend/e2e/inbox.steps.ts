@@ -278,7 +278,7 @@ Then("I see that there are no offers", async ({ page }) => {
 
 Then("the offer {string} links to {string}", async ({ page }, title: string, url: string) => {
   const offer = await row(page, title);
-  await expect(offer.getByRole("link", { name: title, exact: true })).toHaveAttribute("href", url);
+  await expect(offer.getByRole("link", { name: "Original posting" })).toHaveAttribute("href", url);
 });
 
 Then(
@@ -311,7 +311,7 @@ Then("the {string} offers show {string}", async ({ page }, status: Status, title
 Then(
   "the offer keeps its title and shows the words {string}, {string} and {string} under {string}",
   async ({ page }, first: string, second: string, third: string, group: string) => {
-    await expect(pane(page).getByRole("heading", { level: 3 }).getByRole("link")).toBeVisible();
+    await expect(pane(page).getByRole("heading", { level: 3 })).toBeVisible();
     const words = reasons(page).getByRole("group", { name: group });
     await expect(words.getByRole("button")).toHaveText([first, second, third]);
   },

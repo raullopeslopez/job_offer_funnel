@@ -21,7 +21,7 @@ function renderThemed(ui: ReactElement) {
 }
 
 describe("OfferPiece", () => {
-  it("shows the company, its age and the title as a link to the offer", () => {
+  it("shows the company, its age, the title and a link to the original posting", () => {
     // Arrange / Act
     renderThemed(<OfferPiece offer={offer} sourceKind="api" now={now} />);
 
@@ -29,7 +29,8 @@ describe("OfferPiece", () => {
     const piece = screen.getByRole("article", { name: "Backend Engineer" });
     expect(piece).toHaveTextContent("3d ago");
     expect(piece).toHaveTextContent("Acme");
-    expect(screen.getByRole("link", { name: "Backend Engineer" })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: "Backend Engineer" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Original posting" })).toHaveAttribute(
       "href",
       "https://example.com/jobs/1",
     );

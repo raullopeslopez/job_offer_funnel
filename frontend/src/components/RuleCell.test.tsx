@@ -11,31 +11,42 @@ function renderThemed(ui: ReactElement) {
 }
 
 describe("RuleCell", () => {
-  it.each<[RuleState, string, string]>([
-    ["pass", "Mode", "Hybrid"],
-    ["unknown", "Mode", "Not stated"],
-    ["failed", "Mode · filtered it", "Hybrid"],
-  ])("shows a %s rule with label %j and value %j", (state, label, value) => {
+  it.each<[RuleState, string, boolean]>([
+    ["pass", "Hybrid", false],
+    ["unknown", "Not stated", false],
+    ["failed", "Hybrid", true],
+  ])("shows a %s rule with value %j, marked as filtered: %s", (state, value, marked) => {
     // Arrange / Act
     renderThemed(<RuleCell label="Mode" value="Hybrid" state={state} />);
 
     // Assert
-    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.getByText("Mode")).toBeInTheDocument();
     expect(screen.getByText(value)).toBeInTheDocument();
+    expect(screen.queryByText("filtered it") !== null).toBe(marked);
   });
 
-  it.each<RuleState>(["pass", "unknown", "failed"])(
-    "tells the %s state apart by shape",
-    (state) => {
-      // Arrange / Act
-      renderThemed(<RuleCell label="Title" value="Engineer" state={state} />);
+  it.each<[RuleState, string]>([
+    ["pass", "filled"],
+    ["unknown", "hollow"],
+    ["failed", "filled"],
+  ])("tells the %s state apart by the shape of its dot: %s", (state, shape) => {
+    // Arrange / Act
+    renderThemed(<RuleCell label="Title" value="Engineer" state={state} />);
 
-      // Assert
-      const cell = screen.getByText(/^Title/).parentElement as HTMLElement;
-      const style = getComputedStyle(cell);
-      expect(style.borderStyle).toBe(state === "unknown" ? "dashed" : "solid");
-    },
-  );
+    // Assert
+    const dot = screen.getByText("Title").firstElementChild as HTMLElement;
+    expect(dot).toHaveAttribute("data-dot", shape);
+  });
+
+  it("shows the evidence of a failed rule under its value", () => {
+    // Arrange / Act
+    renderThemed(
+      <RuleCell label="Mode" value="On-site" state="failed" evidence="Five days in Bilbao" />,
+    );
+
+    // Assert
+    expect(screen.getByText("“Five days in Bilbao”")).toBeInTheDocument();
+  });
 
   it("shows a dash for a passing rule without a value", () => {
     // Arrange / Act
@@ -47,20 +58,25 @@ describe("RuleCell", () => {
 });
 
 describe("RuleStrip", () => {
-  it("groups its cells and spans the merged one over several columns", () => {
+  it("lists its cells under a Rules heading, with the merged one as a line", () => {
     // Arrange / Act
     renderThemed(
       <RuleStrip>
         <RuleCell label="Title" value="Engineer" state="pass" />
         <RuleCell label="Keywords" value="python" state="pass" />
-        <MergedRuleCell span={3}>No description to read</MergedRuleCell>
+        <MergedRuleCell>No description to read</MergedRuleCell>
       </RuleStrip>,
     );
 
     // Assert
-    expect(screen.getByRole("group", { name: "Rules" })).toBeInTheDocument();
-    const merged = screen.getByText("No description to read");
-    expect(getComputedStyle(merged).gridColumn).toContain("span 3");
-    expect(getComputedStyle(merged).borderStyle).toBe("dashed");
+    expect(screen.getByRole("heading", { name: "Rules" })).toBeInTheDocument();
+    expect(screen.getAllByRole("term").map((term) => term.textContent)).toEqual([
+      "Title",
+      "Keywords",
+    ]);
+    expect(screen.getByText("No description to read").closest("[data-state]")).toHaveAttribute(
+      "data-state",
+      "unknown",
+    );
   });
 });
