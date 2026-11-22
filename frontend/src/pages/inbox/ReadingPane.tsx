@@ -31,9 +31,7 @@ export function InboxOffer({
     offer.filter_reason?.has_description &&
     (!offer.filtered || offer.filter_reason.near_miss);
   const verdict =
-    (offer.status === "pending" && offer.triage && (
-      <TriageVerdict offer={offer} />
-    )) ||
+    (offer.status === "pending" && offer.triage && <TriageVerdict offer={offer} />) ||
     (waiting && <TriagePending />);
   return (
     <OfferPiece

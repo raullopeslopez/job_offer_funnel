@@ -106,32 +106,30 @@ export function ActionBar({
               onRightlyFiltered={onRightlyFiltered}
             />
           ) : offer.status === "pending" ? (
-            <>
-              {suggestion ? (
-                <>
-                  <Button
-                    variant="contained"
-                    loading={discardAsSuggested.isPending}
-                    onClick={() => discardAsSuggested.mutate()}
-                  >
-                    Discard: {DISCARD_REASON_LABELS[suggestion.reason]}
-                  </Button>
-                  <Button variant="outlined" onClick={() => onPromote(offer)}>
-                    Promote
-                  </Button>
-                  <Button onClick={() => setIsDiscarding(true)}>Other reason</Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="contained" onClick={() => onPromote(offer)}>
-                    Promote
-                  </Button>
-                  <Button variant="outlined" onClick={() => setIsDiscarding(true)}>
-                    Discard
-                  </Button>
-                </>
-              )}
-            </>
+            suggestion ? (
+              <>
+                <Button
+                  variant="contained"
+                  loading={discardAsSuggested.isPending}
+                  onClick={() => discardAsSuggested.mutate()}
+                >
+                  Discard: {DISCARD_REASON_LABELS[suggestion.reason]}
+                </Button>
+                <Button variant="outlined" onClick={() => onPromote(offer)}>
+                  Promote
+                </Button>
+                <Button onClick={() => setIsDiscarding(true)}>Other reason</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="contained" onClick={() => onPromote(offer)}>
+                  Promote
+                </Button>
+                <Button variant="outlined" onClick={() => setIsDiscarding(true)}>
+                  Discard
+                </Button>
+              </>
+            )
           ) : offer.status === "discarded" ? (
             <Button variant="outlined" onClick={() => onRestore(offer)}>
               Restore

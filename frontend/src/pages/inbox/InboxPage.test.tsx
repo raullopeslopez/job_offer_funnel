@@ -842,7 +842,7 @@ describe("InboxPage filtered by rule", () => {
     expect(rowTitles(group)).toEqual(["Junior Backend Engineer"]);
     expect(row).toHaveTextContent("Remote OK");
     expect(row).toHaveTextContent("Acme");
-    const piece = within(readingPane()).getByRole("article", { name: "Junior Backend Engineer" });
+    const piece = await openedPane("Junior Backend Engineer");
     expect(cellOf(piece, "Title")).toHaveAttribute("data-state", "failed");
     expect(within(piece).getByRole("button", { name: "Promote anyway" })).toBeInTheDocument();
   });
@@ -1856,6 +1856,34 @@ describe("InboxPage action bar", () => {
     // Assert
     expect(await screen.findByText("Offer discarded")).toBeInTheDocument();
     expect(await within(readingPane()).findByRole("article", { name: next })).toBeInTheDocument();
+  });
+
+  it("opens the next near miss after marking one as rightly filtered", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const excluded = (word: string) => rule("excluded", "failed", { found: [word] });
+    inboxWith([
+      offer("Pending one"),
+      nearMiss("Junior Backend Engineer", excluded("Junior")),
+      nearMiss("Backend Intern", excluded("Intern")),
+    ]);
+    server.use(
+      http.post("/api/v1/offers/:offerId/rightly-filtered", () =>
+        HttpResponse.json({}, { status: 201 }),
+      ),
+    );
+    renderInbox("/inbox?status=filtered");
+    await openRow(user, "Junior Backend Engineer");
+    expect(bar()).toHaveTextContent("1 of 2");
+
+    // Act
+    await user.click(within(bar()).getByRole("button", { name: "Rightly filtered" }));
+
+    // Assert
+    expect(await screen.findByText("Marked as rightly filtered")).toBeInTheDocument();
+    expect(
+      await within(readingPane()).findByRole("article", { name: "Backend Intern" }),
+    ).toBeInTheDocument();
   });
 
   it("makes a suggested discard the main action, with Promote and Other reason", async () => {
