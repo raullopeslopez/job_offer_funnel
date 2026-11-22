@@ -1,6 +1,5 @@
-import { Box, Button, Stack, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { api } from "../../api/client";
 import { Count, GroupHeader } from "../../components/GroupedList";
 import { offerSourceKind } from "../../components/offerSource";
@@ -62,44 +61,33 @@ type GroupProps = {
   selection: RowSelection;
 };
 
-// A rule and how many near misses it filtered, closed until shown; open, its rows.
+// A rule, how many near misses it filtered and what they were filtered by, always open: the
+// reading pane sits beside the list, so its rows are there to be chosen.
 function NearMissGroup({ label, total, breakdown, offers, context, selection }: GroupProps) {
-  const [open, setOpen] = useState(false);
   return (
-    <Box component="section" aria-label={label} sx={{ borderBottom: 1, borderColor: "divider" }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: "center", px: 2, py: 1.5 }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 600 }}>
-            {label} · <Count value={total} />
+    <Box component="section" aria-label={label}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+        <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 600 }}>
+          {label} · <Count value={total} />
+        </Typography>
+        {breakdown && (
+          <Typography variant="body2" color="text.secondary">
+            {breakdown}
           </Typography>
-          {breakdown && (
-            <Typography variant="body2" color="text.secondary">
-              {breakdown}
-            </Typography>
-          )}
-        </Box>
-        <Button aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? "Hide" : "Show"}
-        </Button>
-      </Stack>
-      {open && (
-        <Box
-          component="ul"
-          sx={{ listStyle: "none", m: 0, p: 0, borderTop: 1, borderColor: "divider" }}
-        >
-          {offers.map((offer) => (
-            <OfferRow
-              key={offer.id}
-              offer={offer}
-              sourceKind={offerSourceKind(offer, context.jobBoards)}
-              selected={offer.id === selection.selectedId}
-              onSelect={selection.onSelect}
-              indented
-              now={context.now}
-            />
-          ))}
-        </Box>
-      )}
+        )}
+      </Box>
+      <Box component="ul" sx={{ listStyle: "none", m: 0, p: 0 }}>
+        {offers.map((offer) => (
+          <OfferRow
+            key={offer.id}
+            offer={offer}
+            sourceKind={offerSourceKind(offer, context.jobBoards)}
+            selected={offer.id === selection.selectedId}
+            onSelect={selection.onSelect}
+            now={context.now}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }
