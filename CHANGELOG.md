@@ -445,6 +445,12 @@ While the version is `0.x`, the API may change without a major version bump.
 
 ### Fixed
 
+- The Filtered view of the inbox no longer takes seconds to show: the list of filtered offers,
+  the near misses (`GET /offers/near-misses`), the filtered counts
+  (`GET /offers/filtered-counts`) and the counts of the tabs no longer work out the filter
+  of every pending offer on each request. What the filter works out is kept for each offer
+  and worked out again only for new offers, offers read again, or all of them once after a
+  search profile or the filter's rules change, so a criteria change still shows at once.
 - The triager no longer marks near misses OK just for the role: it judges the rule that
   filtered them, and is told each offer's published location and each profile's location.
   A near miss is OK (to rescue) only when its why yes quotes, letter for letter, a sentence
