@@ -1,7 +1,9 @@
+import hashlib
 import re
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime
+from pathlib import Path
 from typing import Any, cast
 from uuid import UUID, uuid7
 
@@ -41,6 +43,7 @@ from funnel.core.db import flush_checking_unique
 from funnel.core.exceptions import AlreadyExistsError
 from funnel.core.pagination import PageParams
 from funnel.modules.discovery.domain import SearchTerms
+from funnel.modules.inbox import domain as inbox_domain
 from funnel.modules.inbox.domain import (
     COUNTRY_FORMS,
     EXPIRED_REASON,
@@ -60,6 +63,8 @@ from funnel.modules.inbox.domain import (
     Review,
     ReviewMade,
     Rule,
+    RuleCheck,
+    RuleResult,
     SuggestedDiscard,
     Triage,
     TriageMistake,
@@ -219,13 +224,39 @@ def _fits_any(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
     return or_(false(), *(_fits(terms) for terms in profiles))
 
 
-def filtered(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
+def _filtered_now(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
     """Pending, imported (only those have a description) and fitting no profile."""
     return and_(
         OfferRow.status == OfferStatus.PENDING,
         OfferRow.description.is_not(None),
         not_(_fits_any(profiles)),
     )
+
+
+def filtered(profiles: Sequence[SearchTerms]) -> ColumnElement[bool]:
+    """As _filtered_now, by what OfferRepository._refresh kept for these profiles: only for
+    queries made after it."""
+    del profiles  # the key of what was kept: see _filter_key
+    return and_(
+        OfferRow.status == OfferStatus.PENDING,
+        OfferRow.description.is_not(None),
+        OfferRow.fits.is_(False),
+    )
+
+
+# What the filter keeps depends on the profiles and on the code of its rules: a deploy that
+# changes them works the filter out again.
+_RULES_CODE = hashlib.sha256(
+    Path(inbox_domain.__file__).read_bytes() + Path(__file__).read_bytes()
+).digest()
+
+
+# Any number that no other advisory lock uses: there is no other.
+_REFRESH_LOCK = 74_001
+
+
+def _filter_key(profiles: Sequence[SearchTerms]) -> str:
+    return hashlib.sha256(_RULES_CODE + repr(list(profiles)).encode()).hexdigest()
 
 
 # The triager's discards are never the user's decisions (specs/inbox/triager_discards.feature).
@@ -308,6 +339,7 @@ class OfferRepository:
         return await self._reload(offer, profiles)
 
     async def get(self, offer_id: UUID, profiles: Sequence[SearchTerms]) -> OfferRow | None:
+        await self._refresh(profiles)
         found: OfferRow | None = await self._session.scalar(
             _select_offers(profiles).where(OfferRow.id == offer_id)
         )
@@ -316,7 +348,67 @@ class OfferRepository:
         return found
 
     async def all_reasons(self, profiles: Sequence[SearchTerms]) -> list[FilterReason]:
-        return list((await self._reasons(true(), profiles)).values())
+        """Only their failed rules and whether they are rightly filtered: all that the counts
+        and the near misses need."""
+        await self._refresh(profiles)
+        return list((await self._failed_reasons()).values())
+
+    async def _refresh(self, profiles: Sequence[SearchTerms]) -> None:
+        """Work out and keep the filter of the pending imported offers that have none kept
+        for these profiles: new ones, those read again, or all of them when a profile
+        changes. Every read that depends on the profiles comes after it."""
+        key = _filter_key(profiles)
+        stale = OfferRow.filter_key.is_distinct_from(key)
+        if not await self._session.scalar(select(exists().where(_HAS_REASON, stale))):
+            return
+        # One request works it out; those that wait for it find it done when it commits.
+        await self._session.execute(select(func.pg_advisory_xact_lock(_REFRESH_LOCK)))
+        words = list(
+            await self._session.execute(
+                select(OfferRow.id, _fits_any(profiles), *_word_columns(profiles))
+                .where(_HAS_REASON, stale)
+                .order_by(OfferRow.id)  # the same order in every request: no deadlocks
+            )
+        )
+        if not words:
+            return
+        hits = {offer_id: [bool(flag) for flag in flags] for offer_id, _, *flags in words}
+        reasons = await self._reasons_from(_among(list(hits)), profiles, hits)
+        await self._session.execute(
+            update(OfferRow).execution_options(synchronize_session=False),
+            [
+                {
+                    "id": offer_id,
+                    "filter_key": key,
+                    "word_hits": hits[offer_id],
+                    "fits": bool(fits),
+                    "failed_rules": [str(rule) for rule in reasons[offer_id].failed],
+                }
+                for offer_id, fits, *_ in words
+            ],
+        )
+
+    async def _failed_reasons(self) -> dict[UUID, FilterReason]:
+        """The kept failed rules of each pending imported offer, as a filter reason with no
+        more than them: what the counts and the near misses read."""
+        rows = await self._session.execute(
+            select(
+                OfferRow.id,
+                OfferRow.description != "",
+                OfferRow.review.is_not_distinct_from(Review.RIGHTLY_FILTERED),
+                OfferRow.failed_rules,
+            ).where(_HAS_REASON)
+        )
+        return {
+            offer_id: FilterReason(
+                None,
+                None,
+                has_description,
+                [RuleCheck(Rule(rule), RuleResult.FAILED) for rule in failed_rules or ()],
+                is_rightly_filtered=is_rightly_filtered,
+            )
+            for offer_id, has_description, is_rightly_filtered, failed_rules in rows
+        }
 
     async def _set_reasons(
         self, offers: Sequence[OfferRow], profiles: Sequence[SearchTerms]
@@ -328,15 +420,29 @@ class OfferRepository:
     async def _reasons(
         self, condition: ColumnElement[bool], profiles: Sequence[SearchTerms]
     ) -> dict[UUID, FilterReason]:
-        """The filter reason of each pending imported offer the condition selects. The
-        database finds the words; the domain decides the rules and the reference profile."""
+        """The filter reason of each pending imported offer the condition selects, from the
+        words kept by _refresh."""
+        kept = await self._session.execute(
+            select(OfferRow.id, OfferRow.word_hits).where(_HAS_REASON, condition)
+        )
+        word_hits = {offer_id: list(flags or ()) for offer_id, flags in kept}
+        return await self._reasons_from(condition, profiles, word_hits)
+
+    async def _reasons_from(
+        self,
+        condition: ColumnElement[bool],
+        profiles: Sequence[SearchTerms],
+        word_hits: Mapping[UUID, Sequence[bool]],
+    ) -> dict[UUID, FilterReason]:
+        """The filter reason of each pending imported offer the condition selects, with the
+        words of each profile it has. The database finds the words (_word_columns); the
+        domain decides the rules and the reference profile."""
         words = await self._session.execute(
             select(
                 OfferRow.id,
                 OfferRow.description != "",
                 OfferRow.review.is_not_distinct_from(Review.RIGHTLY_FILTERED),
                 OfferRow.location,
-                *_word_columns(profiles),
             ).where(_HAS_REASON, condition)
         )
         readings = {
@@ -354,19 +460,22 @@ class OfferRepository:
                         ProfileMatch(
                             terms, hits, readings.get((offer_id, terms.location)), location
                         )
-                        for terms, hits in zip(profiles, _word_hits(profiles, flags), strict=True)
+                        for terms, hits in zip(
+                            profiles, _word_hits(profiles, word_hits[offer_id]), strict=True
+                        )
                     ],
                     has_description=has_description,
                 ),
                 is_rightly_filtered=is_rightly_filtered,
             )
-            for offer_id, has_description, is_rightly_filtered, location, *flags in words
+            for offer_id, has_description, is_rightly_filtered, location in words
         }
 
     async def without_a_title_of(
         self, terms: SearchTerms, profiles: Sequence[SearchTerms]
     ) -> list[UntitledOffer]:
         """The filtered offers with none of the profile's titles, the oldest first."""
+        await self._refresh(profiles)
         rows = await self._session.execute(
             select(
                 OfferRow.title,
@@ -477,6 +586,7 @@ class OfferRepository:
     async def list_page(
         self, offer_filter: OfferFilter, page: PageParams, profiles: Sequence[SearchTerms]
     ) -> tuple[list[OfferRow], int]:
+        await self._refresh(profiles)
         conditions = await self._conditions(offer_filter, profiles)
         rows = list(
             await self._session.scalars(
@@ -497,8 +607,9 @@ class OfferRepository:
         self, profiles: Sequence[SearchTerms], limit: int
     ) -> list[tuple[Rule, int, list[OfferRow]]]:
         """Each rule with near misses, how many fail it and its most recent ones, up to the
-        limit; the filter reasons are worked out once for all of them."""
-        reasons = await self._reasons(true(), profiles)
+        limit."""
+        await self._refresh(profiles)
+        reasons = await self._failed_reasons()
         groups = []
         for rule, offer_ids in near_misses_by_rule(reasons).items():
             rows = list(
@@ -509,8 +620,7 @@ class OfferRepository:
                     .limit(limit)
                 )
             )
-            for row in rows:
-                row.filter_reason = reasons[row.id]
+            await self._set_reasons(rows, profiles)
             groups.append((rule, len(offer_ids), rows))
         return groups
 
@@ -535,7 +645,7 @@ class OfferRepository:
         if offer_filter.is_near_miss is None and offer_filter.failed_rule is None:
             return conditions
         # Near misses and failed rules are decided by the domain, so they filter by id.
-        reasons = await self._reasons(true(), profiles)
+        reasons = await self._failed_reasons()
         if offer_filter.is_near_miss is not None:
             near_misses = [offer_id for offer_id, reason in reasons.items() if reason.near_miss]
             in_near_misses = _among(near_misses)
@@ -729,6 +839,10 @@ class ReadingRepository:
                 stack=list(reading.stack),
                 stack_evidence=reading.stack_evidence,
             )
+        )
+        # What the reading says changes its filter reason: worked out again on the next read.
+        await self._session.execute(
+            update(OfferRow).where(OfferRow.id == offer_id).values(filter_key=None)
         )
         await self._session.flush()
 
@@ -950,7 +1064,7 @@ class FeedImportRepository:
         total = await self._session.scalar(
             select(func.count())
             .select_from(OfferRow)
-            .where(OfferRow.id.in_(offer_ids), filtered(profiles))
+            .where(OfferRow.id.in_(offer_ids), _filtered_now(profiles))
         )
         return total or 0
 

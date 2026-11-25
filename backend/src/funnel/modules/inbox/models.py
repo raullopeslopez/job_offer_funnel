@@ -274,6 +274,14 @@ class OfferRow(Base):
         _enum_column_type(TriagerDiscard, "triager_discard")
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # What the filter worked out for a pending imported offer, kept so that reading it is not
+    # working it out again (repository.OfferRepository._refresh): which words of each profile
+    # it has, whether it fits a profile and the rules its filter reason fails. filter_key
+    # says for which profiles and rules; any other key, or none, means to work it out again.
+    filter_key: Mapped[str | None] = mapped_column(String(64))
+    word_hits: Mapped[list[bool] | None] = mapped_column(ARRAY(Boolean))
+    fits: Mapped[bool | None] = mapped_column(Boolean)
+    failed_rules: Mapped[list[str] | None] = mapped_column(ARRAY(String(32)))
     # Depends on the current search profiles, so every query computes it (see repository.py).
     filtered: Mapped[bool] = query_expression()
     # Depends on which offers are pending and not filtered now: every query computes it too.
