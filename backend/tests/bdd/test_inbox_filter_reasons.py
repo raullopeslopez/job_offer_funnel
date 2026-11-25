@@ -239,6 +239,11 @@ def given_read(client: TestClient) -> None:
     _ok(client.post(f"{OFFERS_URL}/readings"))
 
 
+@given(parsers.parse('I viewed the offer "{title}"'))
+def given_viewed(client: TestClient, title: str) -> None:
+    _ok(client.get(f"{OFFERS_URL}/{_offer_id(client, title)}"), 200)
+
+
 @given(parsers.parse('an offer for "{company}" as "{title}"'))
 def given_offer(client: TestClient, state: ScenarioState, company: str, title: str) -> None:
     body = {"url": f"https://jobs.example/{next(state.urls)}", "company": company, "title": title}

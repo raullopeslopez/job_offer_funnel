@@ -135,6 +135,30 @@ Feature: Filter reasons
       | engineering | unknown |
     And the filter reason says the offer has a description
 
+  Scenario: The reason follows a reading made after the offer was viewed
+    Given I delete the profile "Backend"
+    And a search profile named "Remote in Spain" with:
+      | titles     | Backend Engineer |
+      | location   | Spain            |
+      | work_modes | remote           |
+    And the job board "Remote OK" was imported with:
+      | title            | company | description                 | url                    |
+      | Backend Engineer | Acme    | Based in our London office. | https://remoteok.com/1 |
+    And I viewed the offer "Backend Engineer"
+    And the offer reader answers for "Backend Engineer":
+      | work_mode | work_mode_evidence         |
+      | onsite    | Based in our London office |
+    And I read the offers
+    When I view the offer "Backend Engineer"
+    Then the filter reason is against the profile "Remote in Spain" with:
+      | rule        | result  | value  | evidence                   |
+      | title       | passed  |        |                            |
+      | work_mode   | failed  | onsite | Based in our London office |
+      | location    | unknown |        |                            |
+      | stable      | unknown |        |                            |
+      | engineering | unknown |        |                            |
+    And the offer is filtered
+
   Scenario: An imported offer without a description says so
     Given the job board "Remote OK" was imported with:
       | title            | company | description | url                    |
@@ -177,6 +201,7 @@ Feature: Filter reasons
     Given the job board "Remote OK" was imported with:
       | title            | company | description     | url                    |
       | Backend Engineer | Acme    | Python services | https://remoteok.com/1 |
+    And I viewed the offer "Backend Engineer"
     And I edit the profile "Backend" to have the keywords "Python"
     When I view the offer "Backend Engineer"
     Then the filter reason is against the profile "Backend" with:
